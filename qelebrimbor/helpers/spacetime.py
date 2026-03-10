@@ -63,3 +63,9 @@ class Spacetime:
             if restriction is None or restriction.dot(step) == 0:
                 constellation.append(position + step)
         return constellation
+
+    @staticmethod
+    def in_octant(
+        position: Coordinates, octant : tuple[Coordinates, Coordinates, Coordinates] = (XP, YP, ZP)
+    ) -> bool:
+        return all( position.dot(axis) >= 0 for axis in octant)
