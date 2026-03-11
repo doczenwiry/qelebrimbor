@@ -1,8 +1,9 @@
 import logging
 
 from qelebrimbor.pathfinders.pathfinder_bfs import find_paths_bfs
+from qelebrimbor.pathfinders.pathfinder_dfs import find_paths_dfs
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 console = logging.getLogger(__name__)
 console.setLevel(logging.INFO)
 
@@ -15,7 +16,7 @@ from qelebrimbor.helpers.spacetime import Spacetime
 
 if __name__ == "__main__":
 
-    MD = 2
+    MD = 1
 
     kinds = [ CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ ]
     steps = set(filter(
@@ -34,12 +35,14 @@ if __name__ == "__main__":
     print(f"Targets : {total}")
 
     statistics = defaultdict(int)
-    for target in targets:
-        discovered_paths = find_paths_bfs(target, extra_volume = 6)
+    for target in targets[:1]:
+        discovered_paths = find_paths_dfs(target, extra_volume = 6)
         minimal_volume = min(discovered_paths.keys())
         manhattan_distance = Spacetime.ORIGIN.get_manhattan_distance(target[1])
         differential = minimal_volume - manhattan_distance
         console.info(f"{count}/{total}> Target {target} [min-vol={minimal_volume}/man-dis={manhattan_distance}] : volume +{differential}")
+        for mv, path in discovered_paths.items():
+            console.info(f"> {path}")
         statistics[differential] += 1
         count += 1
 

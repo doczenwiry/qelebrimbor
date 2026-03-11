@@ -1,17 +1,17 @@
 import logging as lgr
-
-from qelebrimbor.pathfinders.paths import Path
-
 console = lgr.getLogger(__name__)
 
-from collections import defaultdict, deque
+from collections import defaultdict
+from queue import PriorityQueue
 
 from qelebrimbor.common.components_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import Spacetime
 
-def find_paths_bfs(
+from qelebrimbor.pathfinders.paths import Path
+
+def find_paths_dfs(
     final: tuple[CubeKind, Coordinates], start: tuple[CubeKind, Coordinates] = (CubeKind.XZZ, Spacetime.ORIGIN),
     extra_volume: int = 3
 ) -> defaultdict[int, list[Path]]:
@@ -20,15 +20,16 @@ def find_paths_bfs(
     start_kind, start_position = start
     final_kind, final_position = final
 
-    console.info(f"Searching for paths from {start_kind}@{start_position} to {final_kind}@{final_position}.")
-
-    maximal_volume = start_position.get_manhattan_distance(final_position) + extra_volume
+    minimal_manhattan_distance = start_position.get_manhattan_distance(final_position) + extra_volume
 
     initial = Path( start )
-    queue: deque[Path] = deque([ initial ])
+    queue: PriorityQueue = PriorityQueue()
+    queue.put( (initial.manhattan_distance_remaining(final), initial) )
 
-    while queue:
-        path = queue.popleft()
+    console.info(f"Searching for paths from {start_kind}@{start_position} to {final_kind}@{final_position}.")
+
+    while not queue.empty():
+        mdr, path = queue.get()
         kind, position = path.cubes[-1]
         console.debug(f"Current : {kind}@{position}")
         for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(kind, position):
@@ -46,12 +47,12 @@ def find_paths_bfs(
 
             if next_kind == final_kind and next_position == final_position:
                 console.debug(f"> Target reached : {next_kind}@{next_position}")
-                maximal_volume = extended.manhattan_length()
-                paths[ maximal_volume ].append( extended )
+                minimal_manhattan_distance = extended.manhattan_length()
+                paths[ minimal_manhattan_distance ].append( extended )
 
-            if extended.manhattan_length() <= maximal_volume:
+            if extended.manhattan_length() <= minimal_manhattan_distance:
                 console.debug(f"> {next_kind}@{next_position}")
 
-                queue.append( extended )
+                queue.put( (extended.manhattan_distance_remaining(final), extended) )
 
     return paths
