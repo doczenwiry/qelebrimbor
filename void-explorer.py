@@ -14,6 +14,8 @@ from collections import defaultdict
 from qelebrimbor.common.components_bg import CubeKind
 from qelebrimbor.helpers.spacetime import Spacetime
 
+logging.getLogger('qelebrimbor.helpers').setLevel(logging.CRITICAL)
+
 if __name__ == "__main__":
 
     MD = 1
@@ -36,7 +38,7 @@ if __name__ == "__main__":
 
     statistics = defaultdict(int)
     for target in targets[:1]:
-        discovered_paths = find_paths_dfs(target, extra_volume = 6)
+        discovered_paths = find_paths_bfs(target, extra_volume = 6)
         minimal_volume = min(discovered_paths.keys())
         manhattan_distance = Spacetime.ORIGIN.get_manhattan_distance(target[1])
         differential = minimal_volume - manhattan_distance

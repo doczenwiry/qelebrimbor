@@ -24,7 +24,7 @@ def find_paths_bfs(
 
     maximal_volume = start_position.get_manhattan_distance(final_position) + extra_volume
 
-    initial = Path( start )
+    initial = Path( start, final )
     queue: deque[Path] = deque([ initial ])
 
     while queue:

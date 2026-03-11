@@ -22,9 +22,9 @@ def find_paths_dfs(
 
     minimal_manhattan_distance = start_position.get_manhattan_distance(final_position) + extra_volume
 
-    initial = Path( start )
+    initial = Path( start , final )
     queue: PriorityQueue = PriorityQueue()
-    queue.put( (initial.manhattan_distance_remaining(final), initial) )
+    queue.put( (initial.manhattan_distance_remaining(), initial) )
 
     console.info(f"Searching for paths from {start_kind}@{start_position} to {final_kind}@{final_position}.")
 
@@ -45,14 +45,15 @@ def find_paths_dfs(
             extended: Path = path.copy()
             extended.append(next_kind, next_position)
 
-            if next_kind == final_kind and next_position == final_position:
-                console.debug(f"> Target reached : {next_kind}@{next_position}")
+            if extended.has_reached_target():
                 minimal_manhattan_distance = extended.manhattan_length()
+                console.debug(f"> Target reached : {next_kind}@{next_position} [{extended.manhattan_length()}]")
+                console.debug(f">> {extended}")
                 paths[ minimal_manhattan_distance ].append( extended )
 
             if extended.manhattan_length() <= minimal_manhattan_distance:
                 console.debug(f"> {next_kind}@{next_position}")
 
-                queue.put( (extended.manhattan_distance_remaining(final), extended) )
+                queue.put( (extended.manhattan_distance_remaining(), extended) )
 
     return paths
