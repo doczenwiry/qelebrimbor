@@ -2,3 +2,5 @@
 .venv/
 # PyCharm
 .idea/
+# Cache
+__pycache__/
