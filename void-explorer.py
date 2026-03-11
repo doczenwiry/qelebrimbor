@@ -7,8 +7,6 @@ logging.basicConfig(level=logging.DEBUG)
 console = logging.getLogger(__name__)
 console.setLevel(logging.INFO)
 
-from functools import reduce
-from itertools import product
 from collections import defaultdict
 
 from qelebrimbor.common.components_bg import CubeKind
@@ -19,37 +17,40 @@ logging.getLogger('qelebrimbor.pathfinders').setLevel(logging.CRITICAL)
 
 if __name__ == "__main__":
 
-    MD = 4
+    MD = 11
+    START = MD * Spacetime.XP
+    MOVE_ABOVE = Spacetime.XM + Spacetime.ZP
+    MOVE_RIGHT = Spacetime.XM + Spacetime.YP
 
-    kinds = [ CubeKind.XZZ ] #, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ ]
-    steps = set(filter(
-        lambda entry : entry.x >= 0 and entry.y >= 0 and entry.z >= 0 and Spacetime.ORIGIN.get_manhattan_distance(entry) == MD,
-        [ reduce(lambda acc, x : acc + x, steps, Spacetime.ORIGIN)
-          for steps in product(Spacetime.STEPS, repeat = MD) ]
-    ))
+    # The following seem to follow from symmetry relative to the source Cube
+    # > Conjecture 1 : CubeKind.ZZX yields the same outcomes as CubeKind.ZXZ
+    # > Conjecture 2 : CubeKind.XXZ yields the same outcomes as CubeKind.XZX
+    kinds = [ CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZXX, CubeKind.XZX]
+    positions = [ START + z * MOVE_ABOVE + xy * MOVE_RIGHT for z in range(MD+1) for xy in range(MD - z + 1) ]
 
-    targets = [
-        (kind, Spacetime.ORIGIN + step)
-        for kind, step in product(kinds, steps)
-    ]
+    total_kinds = len(kinds)
+    total_positions = len(positions)
+    console.info(f"Kinds [{total_kinds}]")
+    console.info(f"Positions [{total_positions}]")
 
-    count = 1
-    total = len(targets)
-    console.info(f"Targets : {total}")
-
-    statistics = defaultdict(int)
-    for target in targets:
-        discovered_paths = find_paths_dfs(target, extra_volume = 12)
-        minimal_volume = min(discovered_paths.keys())
-        manhattan_distance = Spacetime.ORIGIN.get_manhattan_distance(target[1])
-        differential = minimal_volume - manhattan_distance
-        console.info(f"{count}/{total}> Target {target} [min-vol={minimal_volume}/man-dis={manhattan_distance}] : volume +{differential}")
-        # for mv, path in discovered_paths.items(): console.info(f"> {path}")
-        statistics[differential] += 1
-        count += 1
-
-    console.info(f"Statistics for MD={MD} / cases={total} : {statistics}")
-
+    console.info(f"Manhattan Distance : {MD}")
+    for target_kind in kinds:
+        count = 1
+        statistics = defaultdict(int)
+        console.info(f"Target kind : {target_kind}")
+        for target_position in positions:
+            target = (target_kind, target_position)
+            discovered_paths = find_paths_dfs(target, extra_volume = 12)
+            minimal_volume = min(discovered_paths.keys())
+            manhattan_distance = Spacetime.ORIGIN.get_manhattan_distance(target_position)
+            differential = minimal_volume - manhattan_distance
+            console.debug(f"{count}/{total_positions}> @{target_position} [min-vol={minimal_volume}/man-dis={manhattan_distance}] : volume +{differential}")
+            # for mv, path in discovered_paths.items(): console.info(f"> {path}")
+            statistics[differential] += 1
+            count += 1
+        percentage = 100.0 * statistics[0] / total_positions
+        console.info(f"> Zero-overhead percentage : {percentage:.2f}% [{statistics}]")
+        # console.info(f"> Statistics for MD={MD} / cases={total_positions} : {statistics}")
 
     # Target : [ XZZ ]
     # INFO:__main__:Statistics for MD=2 / cases=6 : defaultdict(<class 'int'>, {2: 3, 0: 3})

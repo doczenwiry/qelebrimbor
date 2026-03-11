@@ -56,7 +56,7 @@ def find_paths_dfs(
                     console.debug(f">> {extended}")
                     paths[ manhattan_distance ].append( extended )
 
-            if extended.manhattan_length() + extended.manhattan_distance_remaining() <= minimal_manhattan_distance:
+            if extended.manhattan_length() + extended.manhattan_distance_remaining() < minimal_manhattan_distance:
                 console.debug(f"> {next_kind}@{next_position}")
                 queue.put( (extended.manhattan_distance_remaining(), extended) )
 
