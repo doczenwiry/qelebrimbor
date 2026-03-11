@@ -17,7 +17,7 @@ logging.getLogger('qelebrimbor.pathfinders').setLevel(logging.CRITICAL)
 
 if __name__ == "__main__":
 
-    MD = 11
+    MD = 12
     START = MD * Spacetime.XP
     MOVE_ABOVE = Spacetime.XM + Spacetime.ZP
     MOVE_RIGHT = Spacetime.XM + Spacetime.YP
@@ -25,8 +25,8 @@ if __name__ == "__main__":
     # The following seem to follow from symmetry relative to the source Cube
     # > Conjecture 1 : CubeKind.ZZX yields the same outcomes as CubeKind.ZXZ
     # > Conjecture 2 : CubeKind.XXZ yields the same outcomes as CubeKind.XZX
-    kinds = [ CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZXX, CubeKind.XZX]
-    positions = [ START + z * MOVE_ABOVE + xy * MOVE_RIGHT for z in range(MD+1) for xy in range(MD - z + 1) ]
+    kinds = [ CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ ]
+    positions = [ (xy, z) for z in range(MD+1) for xy in range(MD - z + 1) ]
 
     total_kinds = len(kinds)
     total_positions = len(positions)
@@ -38,7 +38,9 @@ if __name__ == "__main__":
         count = 1
         statistics = defaultdict(int)
         console.info(f"Target kind : {target_kind}")
-        for target_position in positions:
+        overheads = defaultdict(int)
+        for xy, z in positions:
+            target_position = START + z * MOVE_ABOVE + xy * MOVE_RIGHT
             target = (target_kind, target_position)
             discovered_paths = find_paths_dfs(target, extra_volume = 12)
             minimal_volume = min(discovered_paths.keys())
@@ -47,9 +49,15 @@ if __name__ == "__main__":
             console.debug(f"{count}/{total_positions}> @{target_position} [min-vol={minimal_volume}/man-dis={manhattan_distance}] : volume +{differential}")
             # for mv, path in discovered_paths.items(): console.info(f"> {path}")
             statistics[differential] += 1
+            overheads[xy, z] = differential
             count += 1
         percentage = 100.0 * statistics[0] / total_positions
         console.info(f"> Zero-overhead percentage : {percentage:.2f}% [{statistics}]")
+        for current_z in reversed(range(MD+1)):
+            report = current_z * ' '
+            for current_xy in range(MD - current_z + 1):
+                report += f" {overheads[current_xy, current_z]}"
+            console.info(f">> Overhead :{report}")
         # console.info(f"> Statistics for MD={MD} / cases={total_positions} : {statistics}")
 
     # Target : [ XZZ ]
