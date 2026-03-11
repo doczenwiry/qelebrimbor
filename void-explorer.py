@@ -1,95 +1,21 @@
 import logging
+
+from qelebrimbor.pathfinders.pathfinder_bfs import find_paths_bfs
+
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger(__name__)
 console.setLevel(logging.INFO)
 
-import numpy as np
 from functools import reduce
 from itertools import product
-from collections import deque, defaultdict
+from collections import defaultdict
 
 from qelebrimbor.common.components_bg import CubeKind
-from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import Spacetime
-
-class Path:
-    def __init__(self, source: tuple[CubeKind, Coordinates] = None):
-        self.cubes = []
-        self.occupied = set()
-
-        if source is not None:
-            self.cubes.append(source)
-            self.occupied.add(source[1])
-
-    def volume(self):
-        return len(self.cubes) - 1
-
-    def contains(self, position: Coordinates):
-        return position in self.occupied
-
-    def append(self, kind: CubeKind, position: Coordinates):
-        self.cubes.append((kind, position))
-        self.occupied.add(position)
-
-    def copy(self):
-        cp = Path()
-        cp.cubes.extend(self.cubes)
-        cp.occupied = set(self.occupied)
-        return cp
-
-    def __str__(self):
-        return str(self.cubes)
-
-    def __repr__(self):
-        return str(self.cubes)
-
-def find_paths(
-    final: tuple[CubeKind, Coordinates], start: tuple[CubeKind, Coordinates] = (CubeKind.XZZ, Spacetime.ORIGIN),
-    extra_volume: int = 3
-) -> defaultdict[int, list[Path]]:
-    paths = defaultdict(list)
-
-    start_kind, start_position = start
-    final_kind, final_position = final
-
-    maximal_volume = start_position.get_manhattan_distance(final_position) + extra_volume
-
-    initial = Path( start )
-    queue: deque[Path] = deque([ initial ])
-
-    while queue:
-        path = queue.popleft()
-        kind, position = path.cubes[-1]
-        console.debug(f"Current : {kind}@{position}")
-        for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(kind, position):
-            if path.contains(next_position):
-                continue
-
-            if not Spacetime.in_octant(next_position):
-                continue
-
-            if next_kind in [ CubeKind.YYY , CubeKind.OOO ]:
-                continue
-
-            extended: Path = path.copy()
-            extended.append(next_kind, next_position)
-
-            if next_kind == final_kind and next_position == final_position:
-                console.debug(f"> Target reached : {next_kind}@{next_position}")
-                maximal_volume = extended.volume()
-                paths[ maximal_volume ].append( extended )
-
-            if extended.volume() <= maximal_volume:
-                console.debug(f"> {next_kind}@{next_position}")
-
-                queue.append( extended )
-
-    return paths
 
 if __name__ == "__main__":
 
-    MD = 6
+    MD = 2
 
     kinds = [ CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ ]
     steps = set(filter(
@@ -109,7 +35,7 @@ if __name__ == "__main__":
 
     statistics = defaultdict(int)
     for target in targets:
-        discovered_paths = find_paths(target, extra_volume = 6)
+        discovered_paths = find_paths_bfs(target, extra_volume = 6)
         minimal_volume = min(discovered_paths.keys())
         manhattan_distance = Spacetime.ORIGIN.get_manhattan_distance(target[1])
         differential = minimal_volume - manhattan_distance
