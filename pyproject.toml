@@ -4,7 +4,7 @@ authors = [
     { name = "Seweryn Dynerowicz", email = "seweryn.dynerowicz@gmail.com" },
 ]
 version = "0.1.0"
-description = "A toolbox for compiling ZX-graphs to Lattice Surgery."
+description = "A toolbox for studying the relationships between ZX-graphs and Lattice Surgery."
 requires-python = ">=3.14"
 dependencies = [
     "jsonpickle==4.1.1",
