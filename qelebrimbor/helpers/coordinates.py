@@ -44,3 +44,12 @@ class CoordinatesHelper:
             lambda position : Spacetime.in_octant(position, octant),
             CoordinatesHelper.get_octahedron(manhattan_distance)
         )
+
+    @staticmethod
+    def get_hemi_octahedron(manhattan_distance: int, upper: bool = True) -> Iterable[Coordinates]:
+        positions = [
+            position for position in CoordinatesHelper.get_octahedron(manhattan_distance)
+            if (+1 if upper else -1) * position.z >= 0
+        ]
+
+        return positions
