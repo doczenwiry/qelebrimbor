@@ -36,9 +36,6 @@ def find_paths_dfs(
             if path.contains(next_position):
                 continue
 
-            if not Spacetime.in_octant(next_position):
-                continue
-
             if next_kind in [ CubeKind.YYY , CubeKind.OOO ]:
                 continue
 
