@@ -7,11 +7,11 @@ from qelebrimbor.common.components_bg import CubeKind
 from qelebrimbor.pathfinders.pathfinder_dfs import find_paths_dfs
 
 class VolumeFinder:
-    source = (CubeKind.XZZ, Spacetime.ORIGIN)
+    SOURCE = (CubeKind.XZZ, Spacetime.ORIGIN)
 
     @staticmethod
-    def find_path_overhead(target: tuple[CubeKind, Coordinates]):
-        discovered_paths = find_paths_dfs(target, VolumeFinder.source, extra_volume = 12)
+    def get_path_overhead(target: tuple[CubeKind, Coordinates]):
+        discovered_paths = find_paths_dfs(target, VolumeFinder.SOURCE, extra_volume = 12)
         minimal_volume = min(discovered_paths.keys())
         _, target_position = target
         manhattan_distance = Spacetime.ORIGIN.get_manhattan_distance(target_position)

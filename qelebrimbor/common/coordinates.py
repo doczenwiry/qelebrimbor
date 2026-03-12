@@ -33,6 +33,16 @@ class Coordinates:
         raise NotImplemented("Scalar multiplication requires <int> or <float>.")
     __rmul__ = __mul__
 
+    def __getitem__(self, index):
+        if index == 0:
+            return self.x
+        elif index == 1:
+            return self.y
+        elif index == 2:
+            return self.z
+        else:
+            raise ValueError("Invalid index provided.")
+
     def __truediv__(self, scalar: float):
         return Coordinates(self.x / scalar, self.y / scalar, self.z / scalar)
 

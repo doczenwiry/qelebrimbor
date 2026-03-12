@@ -31,7 +31,7 @@ if __name__ == "__main__":
         overheads = defaultdict(int)
         for xy, z in positions:
             target_position = start_position + z * MOVE_ABOVE + xy * MOVE_RIGHT
-            overhead = VolumeFinder.find_path_overhead( (target_kind, target_position) )
+            overhead = VolumeFinder.get_path_overhead((target_kind, target_position))
 
             statistics[overhead] += 1
             overheads[xy, z] = overhead

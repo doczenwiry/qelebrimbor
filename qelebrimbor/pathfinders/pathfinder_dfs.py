@@ -24,12 +24,12 @@ def find_paths_dfs(
 
     initial = Path( start , final )
     queue: PriorityQueue = PriorityQueue()
-    queue.put( (initial.manhattan_distance_remaining(), initial) )
+    queue.put( initial )
 
     console.info(f"Searching for paths from {start_kind}@{start_position} to {final_kind}@{final_position}.")
 
     while not queue.empty():
-        mdr, path = queue.get()
+        path = queue.get()
         kind, position = path.cubes[-1]
         console.debug(f"Current : {kind}@{position}")
         for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(kind, position):
@@ -58,6 +58,6 @@ def find_paths_dfs(
 
             if extended.manhattan_length() + extended.manhattan_distance_remaining() < minimal_manhattan_distance:
                 console.debug(f"> {next_kind}@{next_position}")
-                queue.put( (extended.manhattan_distance_remaining(), extended) )
+                queue.put( extended )
 
     return paths

@@ -1,4 +1,19 @@
+from enum import Enum
+
 from qelebrimbor.common.coordinates import Coordinates
+
+class Octant(Enum):
+    PPP = Coordinates(+1, +1, +1)
+    PPM = Coordinates(+1, +1, -1)
+    PMP = Coordinates(+1, -1, +1)
+    PMM = Coordinates(+1, -1, -1)
+    MPP = Coordinates(-1, +1, +1)
+    MPM = Coordinates(-1, +1, -1)
+    MMP = Coordinates(-1, -1, +1)
+    MMM = Coordinates(-1, -1, -1)
+
+    def __getitem__(self, index):
+        return self.value[index]
 
 class Spacetime:
     ORIGIN = Coordinates(0, 0, 0)
@@ -43,20 +58,6 @@ class Spacetime:
         return [step for step in Spacetime.STEPS if reach.dot(step) == 0]
 
     @staticmethod
-    def get_orthogonal_plane(plane: Coordinates, line_of_intersection: Coordinates) -> Coordinates:
-        if plane.dot(line_of_intersection) != 0:
-            raise ValueError(f"Line of intersection {line_of_intersection} does not lie in plane {plane}.")
-
-        reach = plane
-
-        if abs(reach.x) == abs(line_of_intersection.x):
-            return Spacetime.YZ
-        elif abs(reach.y) == abs(line_of_intersection.y):
-            return Spacetime.XZ
-        else: # abs(reach.z) != abs(line_of_intersection.z)
-            return Spacetime.XY
-
-    @staticmethod
     def get_constellation(position: Coordinates, restriction: Coordinates = None) -> list[Coordinates]:
         constellation = []
         for step in Spacetime.STEPS:
@@ -65,7 +66,5 @@ class Spacetime:
         return constellation
 
     @staticmethod
-    def in_octant(
-        position: Coordinates, octant : tuple[Coordinates, Coordinates, Coordinates] = (XP, YP, ZP)
-    ) -> bool:
-        return all( position.dot(axis) >= 0 for axis in octant)
+    def in_octant(position: Coordinates, octant : Octant = Octant.PPP) -> bool:
+        return all( position[i] * octant[i] >= 0 for i in range(3) )
