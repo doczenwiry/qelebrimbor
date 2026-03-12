@@ -31,20 +31,23 @@ if __name__ == "__main__":
     # The following seem to follow from symmetry relative to the source Cube
     # > Conjecture 1 : CubeKind.ZZX yields the same outcomes as CubeKind.ZXZ
     # > Conjecture 2 : CubeKind.XXZ yields the same outcomes as CubeKind.XZX
-    kinds = [CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ]
-    positions = list(CoordinatesHelper.get_octahedron_face(manhattan_distance, Octant.PPP))
+    kinds = [CubeKind.ZXX] #, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ]
+    octants = [ Octant.PPP , Octant.MPP , Octant.MMP , Octant.PMP ]
+    positions = list(CoordinatesHelper.get_octahedron_face(manhattan_distance, Octant.MMP))
 
     for target_kind in kinds:
         console.info(f"Target kind : {target_kind}")
-        count = 1
-        statistics: defaultdict[int, int] = defaultdict(int)
-        overheads: defaultdict[Coordinates, int] = defaultdict(int)
-        for target_position in positions:
-            overhead = VolumeFinder.get_path_overhead((target_kind, target_position))
-            statistics[overhead] += 1
-            overheads[target_position] = overhead
+        for octant in octants:
+            count = 1
+            statistics: defaultdict[int, int] = defaultdict(int)
+            overheads: defaultdict[Coordinates, int] = defaultdict(int)
+            positions = list(CoordinatesHelper.get_octahedron_face(manhattan_distance, octant))
+            for target_position in positions:
+                overhead = VolumeFinder.get_path_overhead((target_kind, target_position))
+                statistics[overhead] += 1
+                overheads[target_position] = overhead
 
-            count += 1
-        percentage = 100.0 * statistics[0] / len(positions)
-        console.info(f"> Zero-overhead percentage : {percentage:.2f}% [{statistics}]")
-        layout_overheads(manhattan_distance, overheads)
+                count += 1
+            percentage = 100.0 * statistics[0] / len(positions)
+            console.info(f"{octant}> Zero-overhead percentage : {percentage:.2f}% [{statistics}]")
+            layout_overheads(manhattan_distance, overheads)
