@@ -1,1 +1,1 @@
-A toolbox for compiling ZX-graphs to Lattice Surgery.
+A toolbox for studying the relationships between ZX-graphs and Lattice Surgery.
