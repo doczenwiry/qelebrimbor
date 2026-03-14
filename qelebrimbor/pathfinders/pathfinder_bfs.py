@@ -3,7 +3,7 @@ console = lgr.getLogger(__name__)
 
 from collections import deque
 
-from qelebrimbor.pathfinders.paths import Path
+from qelebrimbor.pathfinders.path import Path
 from qelebrimbor.common.components_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper

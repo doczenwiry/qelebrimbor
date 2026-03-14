@@ -16,6 +16,12 @@ class Path:
         target_kind, target_position = self.target
         return terminal_kind == target_kind and terminal_position == target_position
 
+    def overhead(self):
+        _, source_position = self.source
+        _, target_position = self.target
+
+        return self.manhattan_length() - source_position.get_manhattan_distance(target_position)
+
     def manhattan_distance_remaining(self) -> int:
         _, target_position = self.target
         _, terminal_position = self.cubes[-1]

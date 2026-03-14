@@ -1,6 +1,6 @@
 import logging
 
-from IPython.core.magics.ast_mod import mangle_all
+from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
 
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger(__name__)
@@ -118,9 +118,9 @@ if __name__ == "__main__":
             positions.update(OctahedronHelper.get_face_positions(manhattan_distance, target_face_p))
             positions.update(OctahedronHelper.get_face_positions(manhattan_distance, target_face_m))
             for target_position in positions:
-                overhead = VolumeFinder.get_path_overhead((target_kind, target_position))
-                statistics[overhead] += 1
-                overheads[target_position] = overhead
+                minimal_overhead, _ = PathFinderDFS.find_minimal_paths((target_kind, target_position))
+                statistics[minimal_overhead] += 1
+                overheads[target_position] = minimal_overhead
 
                 count += 1
             percentage = 100.0 * statistics[0] / len(positions)
