@@ -66,24 +66,31 @@ if __name__ == "__main__":
     console.info(f"Positions : {len(positions)}")
 
     # Cases w/ 3 X-spiders
-    console.info(f"Three X-spiders")
+    console.info("###################################################################################################")
+    console.info("#                                            { X,X,X }                                            #")
+    console.info("###################################################################################################")
     three_xs = list(product(range(len(x_kinds)), positions))
 
     for index_a, position_a in three_xs:
-        kind_a = x_kinds[index_a]
-        target_a = (kind_a, position_a)
+        target_a = (x_kinds[index_a], position_a)
         paths_ra = PathFinderDFS.find_paths(target_a, maximal_overhead = range(6, 10, 2))
         for index_b, position_b in three_xs:
             if index_a <= index_b and position_a != position_b:
-                kind_b = x_kinds[index_b]
-                target_b = (kind_b, position_b)
+                target_b = (x_kinds[index_b], position_b)
                 paths_rb = PathFinderDFS.find_paths(target_b, maximal_overhead = range(6, 10, 2))
                 find_complete_rings(target_a, paths_ra, target_b, paths_rb)
 
-    # # Cases w/ 2 X-spiders, 1 Z-spider
-    # console.info(f"Two X-spiders, one Z-spider")
-    # for index_a in range(len(x_kinds)):
-    #     for index_b in range(len(x_kinds)):
-    #         link_a_kind = x_kinds[index_a]
-    #         link_b_kind = z_kinds[index_b]
-    #         console.info(f"Link-A kind : {link_a_kind}, Link-B kind : {link_b_kind}")
+    # Cases w/ 2 X-spiders, 1 Z-spider
+    console.info("###################################################################################################")
+    console.info("#                                            { X,X,Z }                                            #")
+    console.info("###################################################################################################")
+    two_xs = list(product(range(len(x_kinds)), positions))
+    one_zs = list(product(range(len(z_kinds)), positions))
+    for index_a, position_a in two_xs:
+        target_a = (x_kinds[index_a], position_a)
+        paths_ra = PathFinderDFS.find_paths(target_a, maximal_overhead = range(6, 10, 2))
+        for index_b, position_b in one_zs:
+            if position_a != position_b:
+                target_b = (z_kinds[index_b], position_b)
+                paths_rb = PathFinderDFS.find_paths(target_b, maximal_overhead = range(6, 10, 2))
+                find_complete_rings(target_a, paths_ra, target_b, paths_rb)
