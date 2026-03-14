@@ -28,11 +28,19 @@ def find_complete_rings(
         target_b: tuple[CubeKind, Coordinates], paths_rb: defaultdict[int, list[Path]]
 ):
     console.info(f"> Targets : {target_a} and {target_b}")
-    console.info(f"> Paths R -> A : {format_paths(paths_ra)}")
-    console.info(f"> Paths R -> B : {format_paths(paths_rb)}")
-
+    paths_report  = ""
+    paths_report += f"[ R -> A : {format_paths(paths_ra)}] , "
+    paths_report += f"[ R -> B : {format_paths(paths_rb)}] , "
     paths_ab = PathFinderDFS.find_paths(target_b, target_a)
-    console.info(f"> Paths A -> B : {format_paths(paths_ab)}")
+    paths_report += f"[ A -> B : {format_paths(paths_ab)}]"
+
+    console.info(f">> Paths : {paths_report}")
+
+    minimal_overhead_ra = min(paths_ra.keys())
+    minimal_overhead_rb = min(paths_rb.keys())
+    minimal_overhead_ab = min(paths_ab.keys())
+    minimal_overhead = minimal_overhead_ra + minimal_overhead_rb + minimal_overhead_ab
+    console.info(f">> MINIMAL OVERHEAD POSSIBLE : {minimal_overhead}\n")
 
 if __name__ == "__main__":
     manhattan_distance = 1
