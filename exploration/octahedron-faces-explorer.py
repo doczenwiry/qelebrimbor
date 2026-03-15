@@ -102,12 +102,12 @@ SORTING_FUNCTIONS = {
 }
 
 if __name__ == "__main__":
-    manhattan_distance = 3
+    manhattan_distance = 6
     # The following seem to follow from symmetry relative to the source Cube
     # > Conjecture 1 : CubeKind.ZZX yields the same outcomes as CubeKind.ZXZ up to symmetry
     # > Conjecture 2 : CubeKind.XXZ yields the same outcomes as CubeKind.XZX up to symmetry
     kinds = [ CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ ]
-    faces = [ Octant.PPP ] #, Octant.PPM, Octant.MPP, Octant.MPM, Octant.MMP, Octant.MMM, Octant.PMP, Octant.PMM ]
+    faces = [ Octant.PPP, Octant.PPM, Octant.MPP, Octant.MPM, Octant.MMP, Octant.MMM, Octant.PMP, Octant.PMM ]
 
     source_kind = CubeKind.XZZ
     source_position = Spacetime.ORIGIN
@@ -117,6 +117,7 @@ if __name__ == "__main__":
     for target_kind in kinds:
         console.info(f"Target kind : {target_kind} [Overheads: explored vs. computed]")
         for target_face in faces:
+            console.info(f"> Target face : {target_face}")
             count = 1
             statistics: defaultdict[int, int] = defaultdict(int)
             explored_overheads: defaultdict[Coordinates, int] = defaultdict(int)

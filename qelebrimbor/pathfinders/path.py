@@ -39,22 +39,28 @@ class Path:
             return 0
 
         overhead = 0
-        if source_kind == target_kind:
-            overhead -= 1
-            # reached = abs(np.dot(relative, manhattan * source_kind.get_reach())) == 1
-            # if reached:
-            #     overhead += 2
-            # if manhattan >= 2:
-            #     reached = any( abs(np.dot(relative, manhattan * source_kind.get_reach())) == 1 for step in [ Spacetime.XP])
-            #     reach_xp = abs(np.dot(relative, manhattan * source_kind.get_reach() + Spacetime.XP))
-            #     reach_xm = abs(np.dot(relative, manhattan * source_kind.get_reach() + Spacetime.XM))
-            #     reach_zp = abs(np.dot(relative, manhattan * source_kind.get_reach() + Spacetime.ZP))
-            #     reach_zm = abs(np.dot(relative, manhattan * source_kind.get_reach() + Spacetime.ZM))
-            #     if 1 in [ reach_xp , reach_xm , reach_zp , reach_zm ]:
-            #         overhead += 2
-        else:
-            relative = target_position - source_position
 
+        manhattan = source_position.get_manhattan_distance(target_position)
+        relative = target_position - source_position
+
+        if source_kind == target_kind:
+            source_reach = source_kind.get_reach()
+
+            if manhattan >= 1 and relative == manhattan * source_reach:
+                overhead += 2
+
+            if manhattan >= 2:
+                if any(relative == (manhattan-1) * source_reach + step
+                       for step in Spacetime.get_step_constellation(source_reach)
+                ):
+                    overhead += 2
+
+            if manhattan >= 3:
+                if any(relative == (manhattan-2) * source_reach + step + source_reach.cross(step)
+                       for step in Spacetime.get_step_constellation(source_reach)
+                ):
+                    overhead += 2
+        else:
             differences = source_kind.differences(target_kind)
             overhead += sum(2 for i in range(3) if differences[i] == 1 and relative[i] == 0)
             # if manhattan == 1:
