@@ -118,7 +118,7 @@ if __name__ == "__main__":
             positions.update(OctahedronHelper.get_face_positions(manhattan_distance, target_face_p))
             positions.update(OctahedronHelper.get_face_positions(manhattan_distance, target_face_m))
             for target_position in positions:
-                minimal_overhead, _ = PathFinderDFS.find_minimal_paths((target_kind, target_position))
+                minimal_overhead, _ = PathFinderDFS.find_minimal_paths((target_kind, target_position), maximal_overhead = 8)
                 statistics[minimal_overhead] += 1
                 overheads[target_position] = minimal_overhead
 

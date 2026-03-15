@@ -23,26 +23,17 @@ logging.getLogger('qelebrimbor.utilities').setLevel(logging.INFO)
 MOVE_ABOVE = Spacetime.XM + Spacetime.ZP
 MOVE_RIGHT = Spacetime.XM + Spacetime.YP
 
-def __convert_direction(axis: str, direction: int):
-    if direction == +1:
-        return axis + 'P'
-    elif direction == -1:
-        return axis + 'M'
-    else:
-        raise ValueError("Direction must be +1/-1.")
-
-def __make_overhead_header(face: Octant, z: int):
+def __make_overhead_delimiter(face: Octant, z: int, header: bool = True):
     if z == 0:
-        xd, yd, zd = face.value
-        point_l = __convert_direction("X", xd) if xd == yd else __convert_direction("Y", yd)
-        point_r = __convert_direction("Y", yd) if xd == yd else __convert_direction("X", xd)
-        hdr = f"{point_l}--{point_r}"
-    elif z == manhattan_distance:
-        hdr = "  ZP  "
-    elif z == -manhattan_distance:
-        hdr = "  ZM  "
+        xd, yd, _ = face.value
+        if header:
+            hdr = 'X' if xd == yd else 'Y'
+        else:
+            hdr = 'Y' if xd == yd else 'X'
+    elif abs(z) == manhattan_distance:
+        hdr = 'Z'
     else:
-        hdr = "      "
+        hdr = ' '
 
     return hdr
 
@@ -59,8 +50,10 @@ def __layout_overheads(face: Octant, manhattan_distance: int, overheads: default
         current_row = filter(lambda p : p[0].z == z, overheads.items())
         for pos, oh in current_row:
             oh_row += f" {oh}"
-        hdr = __make_overhead_header(face, z)
-        console.info(f"{hdr}>{oh_row}")
+        oh_row += abs(z) * ' '
+        hdr = __make_overhead_delimiter(face, z, header = True)
+        trl = __make_overhead_delimiter(face, z, header = False)
+        console.info(f" {hdr} >{oh_row} < {trl} ")
 
 def __cmp_xp_yp(position1: Coordinates, position2: Coordinates):
     return -1 if position1.x > position2.x and position1.y < position2.y else +1
@@ -90,8 +83,8 @@ if __name__ == "__main__":
     # The following seem to follow from symmetry relative to the source Cube
     # > Conjecture 1 : CubeKind.ZZX yields the same outcomes as CubeKind.ZXZ
     # > Conjecture 2 : CubeKind.XXZ yields the same outcomes as CubeKind.XZX
-    kinds = [ CubeKind.XZZ ] #, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ ]
-    faces = [ Octant.PPP, Octant.PPM, Octant.MPP, Octant.MPM, Octant.MMP, Octant.MMM, Octant.PMP, Octant.PMM ]
+    kinds = [ CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ ]
+    faces = [ Octant.PPP ] #, Octant.PPM, Octant.MPP, Octant.MPM, Octant.MMP, Octant.MMM, Octant.PMP, Octant.PMM ]
 
     for target_kind in kinds:
         console.info(f"Target kind : {target_kind}")

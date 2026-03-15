@@ -1,3 +1,5 @@
+import numpy as np
+
 from enum import Enum
 from functools import total_ordering
 
@@ -9,13 +11,21 @@ CubeId = int
 
 class CubeKind(Enum):
     OOO = 0
-    XZZ = 1
+    ZZX = 1
     ZXZ = 2
-    ZZX = 3
-    ZXX = 4
+    ZXX = 3
+    XZZ = 4
     XZX = 5
     XXZ = 6
     YYY = 7
+
+    def differences(self, other) -> np.ndarray:
+        combination = self.value ^ other.value
+        result = np.zeros(3, dtype = np.int32)
+        for i in range(3):
+            result[i] = combination & 0x1
+            combination >>= 1
+        return result
 
     @staticmethod
     def suitable_kinds(node_type: NodeType):
