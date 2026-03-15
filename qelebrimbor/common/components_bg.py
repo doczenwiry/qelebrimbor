@@ -23,7 +23,7 @@ class CubeKind(Enum):
         combination = self.value ^ other.value
         result = np.zeros(3, dtype = np.int32)
         for i in range(3):
-            result[i] = combination & 0x1
+            result[2 - i] = combination & 0x1
             combination >>= 1
         return result
 

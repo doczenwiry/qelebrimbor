@@ -14,7 +14,6 @@ from qelebrimbor.common.components_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import Spacetime, Octant
 from qelebrimbor.helpers.octahedron import OctahedronHelper
-from qelebrimbor.utilities.volume_finder import VolumeFinder
 
 logging.getLogger('qelebrimbor.helpers').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.pathfinders').setLevel(logging.CRITICAL)
@@ -37,7 +36,9 @@ def __make_overhead_delimiter(face: Octant, z: int, header: bool = True):
 
     return hdr
 
-def __layout_overheads(face: Octant, manhattan_distance: int, overheads: defaultdict[Coordinates, int]):
+def __make_overheads_layout(
+        face: Octant, manhattan_distance: int, overheads: defaultdict[Coordinates, int]
+) -> dict[int, str]:
     if face.value.z == +1:
         # The face lies in the upper hemi-octahedron
         zs = range(manhattan_distance, -1, -1)
@@ -45,6 +46,8 @@ def __layout_overheads(face: Octant, manhattan_distance: int, overheads: default
         zs = range(0, -manhattan_distance-1, -1)
     else:
         raise ValueError("Z must be +1/-1 [upper/lower hemi-octahedron].")
+
+    layout: dict[int, str] = {}
     for z in zs:
         oh_row = abs(z) * ' '
         current_row = filter(lambda p : p[0].z == z, overheads.items())
@@ -53,7 +56,27 @@ def __layout_overheads(face: Octant, manhattan_distance: int, overheads: default
         oh_row += abs(z) * ' '
         hdr = __make_overhead_delimiter(face, z, header = True)
         trl = __make_overhead_delimiter(face, z, header = False)
-        console.info(f" {hdr} >{oh_row} < {trl} ")
+        layout[z] = f" {hdr} >{oh_row} < {trl} "
+    return layout
+
+def __show_layouts_sidebyside(
+        target_face: Octant,
+        overheads1: defaultdict[Coordinates, int],
+        overheads2: defaultdict[Coordinates, int]
+):
+    if target_face.value.z == +1:
+        # The face lies in the upper hemi-octahedron
+        zs = range(manhattan_distance, -1, -1)
+    elif target_face.value.z == -1:
+        zs = range(0, -manhattan_distance - 1, -1)
+    else:
+        raise ValueError("Z must be +1/-1 [upper/lower hemi-octahedron].")
+
+    layout1 = __make_overheads_layout(target_face, manhattan_distance, overheads1)
+    layout2 = __make_overheads_layout(target_face, manhattan_distance, overheads2)
+
+    for z in zs:
+        console.info(f"{layout1[z]}   {layout2[z]}")
 
 def __cmp_xp_yp(position1: Coordinates, position2: Coordinates):
     return -1 if position1.x > position2.x and position1.y < position2.y else +1
@@ -79,26 +102,32 @@ SORTING_FUNCTIONS = {
 }
 
 if __name__ == "__main__":
-    manhattan_distance = 6
+    manhattan_distance = 3
     # The following seem to follow from symmetry relative to the source Cube
-    # > Conjecture 1 : CubeKind.ZZX yields the same outcomes as CubeKind.ZXZ
-    # > Conjecture 2 : CubeKind.XXZ yields the same outcomes as CubeKind.XZX
+    # > Conjecture 1 : CubeKind.ZZX yields the same outcomes as CubeKind.ZXZ up to symmetry
+    # > Conjecture 2 : CubeKind.XXZ yields the same outcomes as CubeKind.XZX up to symmetry
     kinds = [ CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ ]
     faces = [ Octant.PPP ] #, Octant.PPM, Octant.MPP, Octant.MPM, Octant.MMP, Octant.MMM, Octant.PMP, Octant.PMM ]
 
+    source_kind = CubeKind.XZZ
+    source_position = Spacetime.ORIGIN
+    source = (source_kind, source_position)
+
+    console.info(f"Source : {source_kind}@{source_position}")
     for target_kind in kinds:
-        console.info(f"Target kind : {target_kind}")
+        console.info(f"Target kind : {target_kind} [Overheads: explored vs. computed]")
         for target_face in faces:
             count = 1
             statistics: defaultdict[int, int] = defaultdict(int)
-            overheads: defaultdict[Coordinates, int] = defaultdict(int)
+            explored_overheads: defaultdict[Coordinates, int] = defaultdict(int)
+            computed_overheads: defaultdict[Coordinates, int] = defaultdict(int)
             positions = sorted(OctahedronHelper.get_face_positions(manhattan_distance, target_face), key = SORTING_FUNCTIONS[target_face])
             for target_position in positions:
-                minimal_overhead, _ = PathFinderDFS.find_minimal_paths((target_kind, target_position))
-                statistics[minimal_overhead] += 1
-                overheads[target_position] = minimal_overhead
+                explored_overhead, paths = PathFinderDFS.find_minimal_paths(final = (target_kind, target_position), start = source)
+                statistics[explored_overhead] += 1
+                explored_overheads[target_position] = explored_overhead
+                computed_overheads[target_position] = paths[0].minimal_overhead_possible()
 
                 count += 1
             percentage = 100.0 * statistics[0] / len(positions)
-            console.info(f"{target_face}> Zero-overhead percentage : {percentage:.2f}% [{statistics}]")
-            __layout_overheads(target_face, manhattan_distance, overheads)
+            __show_layouts_sidebyside(target_face, explored_overheads, computed_overheads)

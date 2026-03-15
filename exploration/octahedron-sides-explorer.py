@@ -96,8 +96,8 @@ SIDE = {
 if __name__ == "__main__":
     manhattan_distance = 3
     # The following seem to follow from symmetry relative to the source Cube
-    # > Conjecture 1 : CubeKind.ZZX yields the same outcomes as CubeKind.ZXZ
-    # > Conjecture 2 : CubeKind.XXZ yields the same outcomes as CubeKind.XZX
+    # > Conjecture 1 : CubeKind.ZZX yields the same outcomes as CubeKind.ZXZ up to symmetry
+    # > Conjecture 2 : CubeKind.XXZ yields the same outcomes as CubeKind.XZX up to symmetry
     kinds = [ CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ ]
     sides = [ "PP", "MP", "MM", "PM" ]
 
