@@ -40,14 +40,19 @@ class Path:
 
         overhead = 0
 
+        source_reach = source_kind.get_reach()
+        target_reach = target_kind.get_reach()
+
         manhattan = source_position.get_manhattan_distance(target_position)
         relative = target_position - source_position
 
-        if source_kind == target_kind:
-            source_reach = source_kind.get_reach()
-            if np.sign( np.dot(relative, source_reach) ) == -1:
-                source_reach *= -1
+        if np.sign( np.dot(relative, source_reach) ) == -1:
+            source_reach *= -1
+        if np.sign( np.dot(relative, target_reach) ) == -1:
+            target_reach *= -1
 
+        # TODO: work out the formalisation and justification of the cases for all the overhead values.
+        if source_kind == target_kind:
             if manhattan >= 1 and relative == manhattan * source_reach:
                 overhead += 2
 
@@ -65,10 +70,15 @@ class Path:
         else:
             differences = source_kind.differences(target_kind)
             overhead += sum(2 for i in range(3) if differences[i] == 1 and relative[i] == 0)
-            # if manhattan == 1:
-            #     overhead = 1
-            # elif manhattan == 2:
-            #     overhead = 2
+            if manhattan == 1:
+                if source_kind.get_type() == target_kind.get_type():
+                    overhead += 2
+                elif source_reach == target_reach != relative:
+                    overhead += 2
+            elif manhattan == 2 and source_kind.get_type() != target_kind.get_type():
+                # TODO: deal with the case where the reach points in the negative directions
+                if source_reach == target_reach != relative and Spacetime.XYZ - source_reach == relative:
+                    overhead += 2
 
         return overhead
 

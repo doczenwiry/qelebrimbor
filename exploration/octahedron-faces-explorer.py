@@ -102,7 +102,7 @@ SORTING_FUNCTIONS = {
 }
 
 if __name__ == "__main__":
-    manhattan_distance = 6
+    manhattan_distance = 2
     # The following seem to follow from symmetry relative to the source Cube
     # > Conjecture 1 : CubeKind.ZZX yields the same outcomes as CubeKind.ZXZ up to symmetry
     # > Conjecture 2 : CubeKind.XXZ yields the same outcomes as CubeKind.XZX up to symmetry
@@ -114,6 +114,7 @@ if __name__ == "__main__":
     source = (source_kind, source_position)
 
     console.info(f"Source : {source_kind}@{source_position}")
+    console.info(f"Manhattan Distance: {manhattan_distance}")
     for target_kind in kinds:
         console.info(f"Target kind : {target_kind} [Overheads: explored vs. computed]")
         for target_face in faces:
@@ -124,11 +125,22 @@ if __name__ == "__main__":
             computed_overheads: defaultdict[Coordinates, int] = defaultdict(int)
             positions = sorted(OctahedronHelper.get_face_positions(manhattan_distance, target_face), key = SORTING_FUNCTIONS[target_face])
             for target_position in positions:
-                explored_overhead, paths = PathFinderDFS.find_minimal_paths(final = (target_kind, target_position), start = source)
+                explored_overhead, paths = PathFinderDFS.find_minimal_paths(final = (target_kind, target_position), start = source, maximal_overhead = 8)
                 statistics[explored_overhead] += 1
                 explored_overheads[target_position] = explored_overhead
                 computed_overheads[target_position] = paths[0].minimal_overhead_possible()
 
                 count += 1
+
             percentage = 100.0 * statistics[0] / len(positions)
             __show_layouts_sidebyside(target_face, explored_overheads, computed_overheads)
+
+            if explored_overheads != computed_overheads:
+                for target_position in positions:
+                    explored = explored_overheads[target_position]
+                    computed = computed_overheads[target_position]
+                    if explored != computed:
+                        console.info(f"Inconsistency : {target_position} [relative:{target_position - source_position}]")
+                        console.info(f"> Explored : {explored_overheads[target_position]}")
+                        console.info(f"> Computed : {computed_overheads[target_position]}")
+                # raise Exception(f"FRK")

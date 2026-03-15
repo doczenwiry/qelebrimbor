@@ -18,17 +18,17 @@ class Octant(Enum):
 class Spacetime:
     ORIGIN = Coordinates(0, 0, 0)
 
-    XP = Coordinates(+1, 0, 0)
-    XM = Coordinates(-1, 0, 0)
-    YP = Coordinates(0, +1, 0)
-    YM = Coordinates(0, -1, 0)
-    ZP = Coordinates(0, 0, +1)
-    ZM = Coordinates(0, 0, -1)
+    XP = Coordinates(+1,  0,  0)
+    XM = Coordinates(-1,  0,  0)
+    YP = Coordinates( 0, +1,  0)
+    YM = Coordinates( 0, -1,  0)
+    ZP = Coordinates( 0,  0, +1)
+    ZM = Coordinates( 0,  0, -1)
 
-    XYZ = Coordinates(0, 0, 0)
-    XY  = Coordinates(0, 0, 1)
-    XZ  = Coordinates(0, 1, 0)
-    YZ  = Coordinates(1, 0, 0)
+    XYZ = Coordinates(+1, +1, +1)
+    XY  = Coordinates( 0,  0, +1)
+    XZ  = Coordinates( 0, +1,  0)
+    YZ  = Coordinates(+1,  0,  0)
 
     STEPS = [ XP ,YP, ZP, XM, YM, ZM ]
     PLANES = [ XY, XZ, YZ ]
