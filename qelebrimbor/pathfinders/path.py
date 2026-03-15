@@ -45,6 +45,8 @@ class Path:
 
         if source_kind == target_kind:
             source_reach = source_kind.get_reach()
+            if np.sign( np.dot(relative, source_reach) ) == -1:
+                source_reach *= -1
 
             if manhattan >= 1 and relative == manhattan * source_reach:
                 overhead += 2
