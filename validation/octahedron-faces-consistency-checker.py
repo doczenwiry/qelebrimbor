@@ -1,4 +1,6 @@
 import logging
+from typing import Iterable
+
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger(__name__)
 
@@ -26,7 +28,7 @@ def __make_overhead_delimiter(face: Octant, z: int, header: bool = True):
             hdr = 'X' if xd == yd else 'Y'
         else:
             hdr = 'Y' if xd == yd else 'X'
-    elif abs(z) == manhattan_distance:
+    elif abs(z) == manhattan_distance_checked:
         hdr = 'Z'
     else:
         hdr = ' '
@@ -57,11 +59,13 @@ def __make_overheads_layout(
     return layout
 
 def __show_layouts(face: Octant, manhattan: int, *data: defaultdict[Coordinates, int]):
-    if face.value.z == 0:
+    if face.value.z == +1:
+        # The face lies in the upper hemi-octahedron
+        zs = range(manhattan, -1, -1)
+    elif face.value.z == -1:
+        zs = range(0, -manhattan - 1, -1)
+    else:
         raise ValueError("Z must be +1/-1 [upper/lower hemi-octahedron].")
-
-    # Based on whether the face lies in the upper (+1) or lower (-1) hemi-octahedron
-    zs = range(manhattan, -1, -1) if face.value.z == +1 else range(0, -manhattan - 1, -1)
 
     layouts = []
     for overheads in data:
@@ -72,6 +76,25 @@ def __show_layouts(face: Octant, manhattan: int, *data: defaultdict[Coordinates,
         for layout in layouts:
             line += f"{layout[z]}   "
         console.info(line)
+
+def __show_layouts_sidebyside(
+        target_face: Octant,
+        overheads1: defaultdict[Coordinates, int],
+        overheads2: defaultdict[Coordinates, int]
+):
+    if target_face.value.z == +1:
+        # The face lies in the upper hemi-octahedron
+        zs = range(manhattan_distance_checked, -1, -1)
+    elif target_face.value.z == -1:
+        zs = range(0, -manhattan_distance_checked - 1, -1)
+    else:
+        raise ValueError("Z must be +1/-1 [upper/lower hemi-octahedron].")
+
+    layout1 = __make_overheads_layout(target_face, manhattan_distance_checked, overheads1)
+    layout2 = __make_overheads_layout(target_face, manhattan_distance_checked, overheads2)
+
+    for z in zs:
+        console.info(f"{layout1[z]}   {layout2[z]}")
 
 def __cmp_xp_yp(position1: Coordinates, position2: Coordinates):
     return -1 if position1.x > position2.x and position1.y < position2.y else +1
@@ -96,35 +119,58 @@ SORTING_FUNCTIONS = {
     Octant.PMM : cmp_to_key(__cmp_ym_xp)
 }
 
-if __name__ == "__main__":
-    manhattan_distance = 6
+def check_consistency(kinds: Iterable[CubeKind], faces: Iterable[Octant], manhattan_distance: int = 3):
     # The following seem to follow from symmetry relative to the source Cube
     # > Conjecture 1 : CubeKind.ZZX yields the same outcomes as CubeKind.ZXZ up to symmetry
     # > Conjecture 2 : CubeKind.XXZ yields the same outcomes as CubeKind.XZX up to symmetry
-    kinds = [ CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ ]
-    faces = [ Octant.PPP, Octant.PPM, Octant.MPP, Octant.MPM, Octant.MMP, Octant.MMM, Octant.PMP, Octant.PMM ]
-
     source_kind = CubeKind.XZZ
     source_position = Spacetime.ORIGIN
     source = (source_kind, source_position)
 
+    inconsistencies = 0
+
+    target_kinds = list(kinds)
+    target_faces = list(faces)
+
     console.info(f"Source : {source_kind}@{source_position}")
     console.info(f"Manhattan Distance: {manhattan_distance}")
-    for target_kind in kinds:
+    for target_kind in target_kinds:
         console.info(f"Target kind : {target_kind} [Overheads: explored vs. computed]")
-        for target_face in faces:
+        for target_face in target_faces:
             console.info(f"> Target face : {target_face}")
             count = 1
             statistics: defaultdict[int, int] = defaultdict(int)
+            explored_overheads: defaultdict[Coordinates, int] = defaultdict(int)
             computed_overheads: defaultdict[Coordinates, int] = defaultdict(int)
             positions = sorted(OctahedronHelper.get_face_positions(manhattan_distance, target_face), key = SORTING_FUNCTIONS[target_face])
             for target_position in positions:
                 target = (target_kind, target_position)
-                computed_overhead = Path.minimal_overhead_possible(source, target)
-                statistics[computed_overhead] += 1
-                computed_overheads[target_position] = computed_overhead
+                explored_overhead, paths = PathFinderDFS.find_minimal_paths(final = target, start = source, maximal_overhead = 8)
+                statistics[explored_overhead] += 1
+                explored_overheads[target_position] = explored_overhead
+                computed_overheads[target_position] = Path.minimal_overhead_possible(source, target)
 
                 count += 1
 
-            percentage = 100.0 * statistics[0] / len(positions)
-            __show_layouts(target_face, computed_overheads)
+            __show_layouts_sidebyside(target_face, explored_overheads, computed_overheads)
+
+            if explored_overheads != computed_overheads:
+                for target_position in positions:
+                    explored = explored_overheads[target_position]
+                    computed = computed_overheads[target_position]
+                    if explored != computed:
+                        console.info(f"Inconsistency : {target_position} [relative:{target_position - source_position}]")
+                        console.info(f"> Target relative octant : {target_face.value}")
+                        console.info(f"> Source reach : {source_kind.get_reach()}")
+                        console.info(f"> Explored : {explored_overheads[target_position]}")
+                        console.info(f"> Computed : {computed_overheads[target_position]}")
+                inconsistencies += 1
+
+    console.info(f"INCONSISTENCIES : {inconsistencies}")
+
+if __name__ == "__main__":
+    manhattan_distance_checked = 3
+    kinds_checked = [CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ]
+    faces_checked = [Octant.PPP, Octant.PPM, Octant.MPP, Octant.MPM, Octant.MMP, Octant.MMM, Octant.PMP, Octant.PMM]
+
+    check_consistency(kinds = kinds_checked, faces = faces_checked, manhattan_distance = manhattan_distance_checked)

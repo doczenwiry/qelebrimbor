@@ -5,7 +5,6 @@ from qelebrimbor.common.components_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import Spacetime
 
-
 @total_ordering
 class Path:
     def __init__(self, source: tuple[CubeKind, Coordinates], target: tuple[CubeKind, Coordinates]):
@@ -31,9 +30,10 @@ class Path:
 
         return source_position.get_manhattan_distance(target_position) + self.minimal_overhead_possible()
 
-    def minimal_overhead_possible(self):
-        source_kind, source_position = self.source
-        target_kind, target_position = self.target
+    @staticmethod
+    def minimal_overhead_possible(source: tuple[CubeKind, Coordinates], target: tuple[CubeKind, Coordinates]) -> int:
+        source_kind, source_position = source
+        target_kind, target_position = target
 
         if source_kind in [ CubeKind.OOO , CubeKind.YYY ] or target_kind in [ CubeKind.OOO , CubeKind.YYY ]:
             return 0
@@ -76,8 +76,7 @@ class Path:
                 elif source_reach == target_reach != relative:
                     overhead += 2
             elif manhattan == 2 and source_kind.get_type() != target_kind.get_type():
-                # TODO: deal with the case where the reach points in the negative directions
-                if source_reach == target_reach != relative and Spacetime.XYZ - source_reach == relative:
+                if source_reach == target_reach != relative and np.dot(relative, source_reach) == 0 and np.dot(relative, relative) != 4:
                     overhead += 2
 
         return overhead

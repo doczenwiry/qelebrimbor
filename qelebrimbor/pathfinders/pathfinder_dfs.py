@@ -1,10 +1,9 @@
 import logging as lgr
-from collections import defaultdict
-from typing import Iterable
-
 console = lgr.getLogger(__name__)
 
+from typing import Iterable
 from queue import PriorityQueue
+from collections import defaultdict
 
 from qelebrimbor.common.components_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
