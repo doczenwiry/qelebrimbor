@@ -1,0 +1,66 @@
+import logging
+
+from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
+
+logging.basicConfig(level=logging.INFO)
+console = logging.getLogger(__name__)
+
+from itertools import product
+from collections import defaultdict
+
+from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.helpers.spacetime import Spacetime
+
+from qelebrimbor.pathfinders.path import Path
+
+logging.getLogger('qelebrimbor.helpers').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.pathfinders').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.utilities').setLevel(logging.INFO)
+
+def format_paths(paths: defaultdict[int, list[Path]]):
+    report = ""
+    for ovh in sorted(paths.keys()):
+        report += f"+{ovh}:{len(paths[ovh])} "
+    return report
+
+def compute_ring_volume(
+        target_a: tuple[CubeKind, Coordinates],
+        target_b: tuple[CubeKind, Coordinates],
+        target_c: tuple[CubeKind, Coordinates]
+):
+    console.info(f">>>>> Targets : {target_a}, {target_b} and {target_c}")
+    total_volume = (Path.minimal_volume_possible(target_a, target_b, count_endpoints = False)
+                    + Path.minimal_volume_possible(target_a, target_c, count_endpoints = False)
+                    + 2)
+    _, paths = PathFinderDFS.find_minimal_paths(target_b, target_c, maximal_overhead = 8)
+    total_volume += paths[0].manhattan_length()
+    console.info(f">>>>>> Total volume required : {total_volume}\n")
+
+if __name__ == "__main__":
+    manhattan_distance = 1
+    # The following seem to follow from symmetry relative to the source Cube
+    # > Conjecture 1 : CubeKind.ZZX yields the same outcomes as CubeKind.ZXZ
+    # > Conjecture 2 : CubeKind.XXZ yields the same outcomes as CubeKind.XZX
+    kinds = [ CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ ]
+
+    source_kind = CubeKind.XZZ
+    source_position = Spacetime.ORIGIN
+    source = (source_kind, source_position)
+    console.info(f"Source kind : {source_kind}@{source_position}")
+    console.info(f"> Manhattan Distance : {manhattan_distance}")
+
+    possibilities = list(filter(
+        lambda ids : ids[0] <= ids[1] <= ids[2],
+        product(range(len(kinds)), repeat = 3)
+    ))
+
+    positions = [ Spacetime.ORIGIN, Spacetime.YP, Spacetime.ZP ]
+
+    count = 1
+    total = len(possibilities)
+    for indices in possibilities:
+        cubes = list(zip(map(lambda idx : kinds[idx], indices), positions))
+        console.info(f"{count}/{total}> {cubes}")
+        compute_ring_volume(cubes[0], cubes[1], cubes[2])
+        count += 1

@@ -1,0 +1,2 @@
+Cycle basis for a graph ?
+Horton's Algorithm (1987) ?

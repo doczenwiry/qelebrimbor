@@ -25,6 +25,13 @@ class Path:
         return self.manhattan_length() - source_position.get_manhattan_distance(target_position)
 
     @staticmethod
+    def minimal_volume_possible(
+        source: tuple[CubeKind, Coordinates], target: tuple[CubeKind, Coordinates],
+        count_endpoints: bool = True
+    ) -> int:
+        return Path.minimal_length_possible(source, target) + (+1 if count_endpoints else -1)
+
+    @staticmethod
     def minimal_length_possible(source: tuple[CubeKind, Coordinates], target: tuple[CubeKind, Coordinates]) -> int:
         _, source_position = source
         _, target_position = target
