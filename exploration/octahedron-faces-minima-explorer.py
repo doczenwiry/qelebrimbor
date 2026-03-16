@@ -108,23 +108,20 @@ if __name__ == "__main__":
     source_position = Spacetime.ORIGIN
     source = (source_kind, source_position)
 
-    console.info(f"Source : {source_kind}@{source_position}")
-    console.info(f"Manhattan Distance: {manhattan_distance}")
+    console.info(f"Source : {source_kind}@{source_position}. Manhattan Distance : {manhattan_distance}")
     for target_kind in kinds:
-        console.info(f"Target kind : {target_kind} [Overheads: explored vs. computed]")
+        console.info(f"Target kind : {target_kind}")
         for target_face in faces:
-            console.info(f"> Target face : {target_face}")
+            console.info(f"> Target face : {target_face} [Path lengths / Overheads]")
             count = 1
-            statistics: defaultdict[int, int] = defaultdict(int)
-            computed_overheads: defaultdict[Coordinates, int] = defaultdict(int)
+            minimal_overheads: defaultdict[Coordinates, int] = defaultdict(int)
+            minimal_lengths: defaultdict[Coordinates, int] = defaultdict(int)
             positions = sorted(OctahedronHelper.get_face_positions(manhattan_distance, target_face), key = SORTING_FUNCTIONS[target_face])
             for target_position in positions:
                 target = (target_kind, target_position)
-                computed_overhead = Path.minimal_overhead_possible(source, target)
-                statistics[computed_overhead] += 1
-                computed_overheads[target_position] = computed_overhead
+                minimal_lengths[target_position] = Path.minimal_length_possible(source, target)
+                minimal_overheads[target_position] = Path.minimal_overhead_possible(source, target)
 
                 count += 1
 
-            percentage = 100.0 * statistics[0] / len(positions)
-            __show_layouts(target_face, computed_overheads)
+            __show_layouts(target_face, manhattan_distance, minimal_lengths, minimal_overheads)

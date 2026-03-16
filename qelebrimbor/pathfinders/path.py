@@ -24,11 +24,12 @@ class Path:
 
         return self.manhattan_length() - source_position.get_manhattan_distance(target_position)
 
-    def minimal_length_possible(self) -> int:
-        _, source_position = self.source
-        _, target_position = self.target
+    @staticmethod
+    def minimal_length_possible(source: tuple[CubeKind, Coordinates], target: tuple[CubeKind, Coordinates]) -> int:
+        _, source_position = source
+        _, target_position = target
 
-        return source_position.get_manhattan_distance(target_position) + self.minimal_overhead_possible()
+        return source_position.get_manhattan_distance(target_position) + Path.minimal_overhead_possible(source, target)
 
     @staticmethod
     def minimal_overhead_possible(source: tuple[CubeKind, Coordinates], target: tuple[CubeKind, Coordinates]) -> int:

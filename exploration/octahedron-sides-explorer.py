@@ -1,5 +1,6 @@
 import logging
 
+from qelebrimbor.pathfinders.path import Path
 from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
 
 logging.basicConfig(level=logging.INFO)
@@ -101,7 +102,9 @@ if __name__ == "__main__":
     kinds = [ CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ ]
     sides = [ "PP", "MP", "MM", "PM" ]
 
-    source_kind, source_position = VolumeFinder.SOURCE
+    source_kind = CubeKind.XZZ
+    source_position = Spacetime.ORIGIN
+    source = (source_kind, source_position)
     console.info(f"Source kind : {source_kind}@{source_position}")
     console.info(f"> Manhattan Distance : {manhattan_distance}")
 
@@ -118,13 +121,13 @@ if __name__ == "__main__":
             positions.update(OctahedronHelper.get_face_positions(manhattan_distance, target_face_p))
             positions.update(OctahedronHelper.get_face_positions(manhattan_distance, target_face_m))
             for target_position in positions:
-                minimal_overhead, _ = PathFinderDFS.find_minimal_paths((target_kind, target_position), maximal_overhead = 8)
+                target = (target_kind, target_position)
+                minimal_overhead = Path.minimal_overhead_possible(source, target)
                 statistics[minimal_overhead] += 1
                 overheads[target_position] = minimal_overhead
 
                 count += 1
             percentage = 100.0 * statistics[0] / len(positions)
-            # console.info(f"{target_side}> Zero-overhead percentage : {percentage:.2f}% [{statistics}]")
             target_side_layouts[target_side] = __make_overheads_layout(target_faces, manhattan_distance, overheads)
 
         for z in range(manhattan_distance, -manhattan_distance-1, -1):
