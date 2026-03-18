@@ -1,9 +1,9 @@
-import logging
-
-from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
-
-logging.basicConfig(level=logging.INFO)
-console = logging.getLogger(__name__)
+from logging import basicConfig, getLogger, INFO, CRITICAL
+basicConfig(level = INFO)
+console = getLogger(__name__)
+getLogger('qelebrimbor.helpers').setLevel(CRITICAL)
+getLogger('qelebrimbor.pathfinders').setLevel(CRITICAL)
+getLogger('qelebrimbor.utilities').setLevel(INFO)
 
 from itertools import product
 from collections import defaultdict
@@ -13,10 +13,7 @@ from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import Spacetime
 
 from qelebrimbor.pathfinders.path import Path
-
-logging.getLogger('qelebrimbor.helpers').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.pathfinders').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.utilities').setLevel(logging.INFO)
+from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
 
 def format_paths(paths: defaultdict[int, list[Path]]):
     report = ""

@@ -1,10 +1,9 @@
-import logging
-
-from qelebrimbor.pathfinders.path import Path
-from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
-
-logging.basicConfig(level=logging.INFO)
-console = logging.getLogger(__name__)
+from logging import basicConfig, getLogger, INFO, CRITICAL
+basicConfig(level=INFO)
+console = getLogger(__name__)
+getLogger('qelebrimbor.helpers').setLevel(CRITICAL)
+getLogger('qelebrimbor.pathfinders').setLevel(CRITICAL)
+getLogger('qelebrimbor.utilities').setLevel(INFO)
 
 from functools import cmp_to_key
 from collections import defaultdict
@@ -13,11 +12,7 @@ from qelebrimbor.common.components_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import Spacetime, Octant
 from qelebrimbor.helpers.octahedron import OctahedronHelper
-from qelebrimbor.utilities.volume_finder import VolumeFinder
-
-logging.getLogger('qelebrimbor.helpers').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.pathfinders').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.utilities').setLevel(logging.INFO)
+from qelebrimbor.pathfinders.path import Path
 
 MOVE_ABOVE = Spacetime.XM + Spacetime.ZP
 MOVE_RIGHT = Spacetime.XM + Spacetime.YP
