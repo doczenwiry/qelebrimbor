@@ -1,42 +1,46 @@
 from dataclasses import dataclass
 from functools import total_ordering
+from itertools import product
 
-from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.helpers.spacetime import Spacetime
+from qelebrimbor.pathfinders.metric.color_shufflings import ColorShuffling
+
 
 @dataclass
 class PathWeight:
-    source_reach: Coordinates
-    target_reach: Coordinates
-    color_flips: int = 0
+    source: ColorShuffling
+    target: ColorShuffling
     distance: int = 0
 
     def __post_init__(self):
-        if self.source_reach not in [Spacetime.XP, Spacetime.YP, Spacetime.ZP]:
-            raise Exception("Source reach must be in { XP, YP, ZP }.")
-
-        if self.target_reach not in [Spacetime.XP, Spacetime.YP, Spacetime.ZP]:
-            raise Exception("Target reach must be in { XP, YP, ZP }.")
-
         if self.distance < 0:
             raise Exception("Distance cannot be negative.")
 
-    def extend(self, other):
+    def __mul__(self, other):
         return PathWeight(
-            source_reach = self.source_reach,
-            target_reach = other.target_reach,
-            color_flips = self.color_flips, # flip color along the other.axis if self.source.reach =
+            source = self.target if self.source.is_identity() else self.source,
+            target = self.target.extend(other.target),
             distance = self.distance + other.distance
         )
-        # if self.kind.chainable(other.kind):
-        #     return PathWeight(self.kind, self.direction, self.distance + other.distance)
-        # else:
-        #     return PathWeight(PipeKind.NN, Spacetime.ORIGIN, -1)
 
     @total_ordering
     def __lt__(self, other):
         pass
         # return other.kind == PipeKind.UU or (self.kind == other.kind and self.distance < other.distance)
+
+@dataclass
+class PathWeights:
+    weights: list[PathWeight]
+
+    def __post_init__(self):
+        pass
+
+    def select(self, other):
+        return PathWeights(self.weights + other.weights)
+
+    def extend(self, other):
+        return PathWeights([
+            weight_one * weight_two for weight_one, weight_two in product(self.weights, other.weights)
+        ])
 
 if __name__ == '__main__':
     pass
