@@ -36,6 +36,10 @@ class ColorShuffling:
     def convert(move: Coordinates):
         return ColorShuffling.GENERATORS[move]
 
+    @staticmethod
+    def identity():
+        return ColorShuffling('xyz')
+
     def is_identity(self):
         return self.start == 'xyz' and self.final == 'xyz'
 

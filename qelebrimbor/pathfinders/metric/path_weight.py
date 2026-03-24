@@ -6,7 +6,7 @@ from qelebrimbor.pathfinders.metric.color_shufflings import ColorShuffling
 
 @dataclass
 class PathWeight:
-    shuffling : ColorShuffling
+    shuffle : ColorShuffling = ColorShuffling.identity()
     distance: int = 0
 
     def __post_init__(self):
@@ -14,7 +14,9 @@ class PathWeight:
             raise Exception("Distance cannot be negative.")
 
     def __mul__(self, other):
-        return PathWeight(self.shuffling.extend(other.shuffling), self.distance + other.distance)
+        return PathWeight(self.shuffle.extend(other.shuffle), self.distance + other.distance)
+    __rmul__ = __mul__
+
 
 @dataclass
 class PathWeights:
