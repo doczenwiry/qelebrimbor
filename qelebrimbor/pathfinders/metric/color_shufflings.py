@@ -47,11 +47,12 @@ class ColorShuffling:
         else:
             closing = self.final.index('o')
             opening = other.start.index('o')
-            shuffled = other.final
+            shuffled = [ sym for sym in other.final ]
+            locations = { shuffled[idx] : idx for idx in range(3) }
             for idx in filter(lambda i : i != closing, range(3)):
                 symbol = other.start[closing] if idx == opening else other.start[idx]
-                shuffled = shuffled.replace(symbol, self.final[idx], count = 1)
-            return ColorShuffling(self.start, shuffled)
+                shuffled[ locations[symbol] ] = self.final[idx]
+            return ColorShuffling(self.start, "".join(shuffled))
 
     def __eq__(self, other):
         return self.start == other.start and self.final == other.final
@@ -89,3 +90,10 @@ if __name__ == '__main__':
     print(f"Elements [{len(generated)}]:")
     for element in generated:
         print(f"> {element}")
+
+    cs = ColorShuffling('oyz', 'yzo')
+    cs2 = cs.extend(cs)
+
+    print(f"{cs} * {cs} = {cs2}")
+    print(f"{cs} * {cs2} = {cs.extend(cs2)}")
+    print(f"{cs2} * {cs} = {cs2.extend(cs)}")
