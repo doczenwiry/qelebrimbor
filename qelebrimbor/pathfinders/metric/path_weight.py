@@ -1,14 +1,12 @@
-from dataclasses import dataclass
-from functools import total_ordering
 from itertools import product
+from dataclasses import dataclass
 
 from qelebrimbor.pathfinders.metric.color_shufflings import ColorShuffling
 
 
 @dataclass
 class PathWeight:
-    source: ColorShuffling
-    target: ColorShuffling
+    shuffling : ColorShuffling
     distance: int = 0
 
     def __post_init__(self):
@@ -16,16 +14,7 @@ class PathWeight:
             raise Exception("Distance cannot be negative.")
 
     def __mul__(self, other):
-        return PathWeight(
-            source = self.target if self.source.is_identity() else self.source,
-            target = self.target.extend(other.target),
-            distance = self.distance + other.distance
-        )
-
-    @total_ordering
-    def __lt__(self, other):
-        pass
-        # return other.kind == PipeKind.UU or (self.kind == other.kind and self.distance < other.distance)
+        return PathWeight(self.shuffling.extend(other.shuffling), self.distance + other.distance)
 
 @dataclass
 class PathWeights:
