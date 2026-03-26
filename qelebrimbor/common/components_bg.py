@@ -11,18 +11,10 @@ CubeId = int
 
 class CubeKind(Enum):
     OOO = 0
-    # New
-    # ZZX = 1
-    # ZXZ = 2
-    # ZXX = 3
-    # XZZ = 4
-    # XZX = 5
-    # XXZ = 6
-    # Old
-    XZZ = 1
+    ZZX = 1
     ZXZ = 2
-    ZZX = 3
-    ZXX = 4
+    ZXX = 3
+    XZZ = 4
     XZX = 5
     XXZ = 6
     YYY = 7

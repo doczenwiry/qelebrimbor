@@ -6,7 +6,7 @@ from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
 
 SEED = 42
 QUBITS = 5
-LAYERS = 10
+LAYERS = 25
 
 if __name__ == "__main__":
     random.seed(SEED)
@@ -17,4 +17,4 @@ if __name__ == "__main__":
     cycles = [sorted(cycle) for cycle in nx.cycle_basis(azx)]
     cycles = sorted(cycles, key = len, reverse = True)
     for cycle in cycles:
-        print(f"> {cycle}")
+        print(f"> {len(cycle)}/{azx.number_of_nodes()} : {cycle}")
