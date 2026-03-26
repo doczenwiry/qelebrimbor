@@ -1,4 +1,4 @@
-from qelebrimbor.augmented_nx_graph import AugmentedNxGraph
+from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
 
 from vedo import settings, Plotter
 
@@ -22,8 +22,8 @@ VIEWPORTS = [
 settings.enable_default_mouse_callbacks = False
 settings.enable_default_keyboard_callbacks = False
 
-class AugmentedNxGraphViewer(Plotter):
-    def __init__(self, anx: AugmentedNxGraph, label: str):
+class AugmentedZxGraphViewer(Plotter):
+    def __init__(self, anx: AugmentedZxGraph, label: str):
         super().__init__(shape = VIEWPORTS, sharecam = False, title = f"ang-viewer [{label}]")
 
         # Initialise the camera for the BG Graph
@@ -66,10 +66,11 @@ class AugmentedNxGraphViewer(Plotter):
             bg_source_cube = self.__nx_graph.get_cube(zx_source)
             self.__bg_scene_manager.alter_cube_appearance(bg_source_cube, highlight = highlighting)
             previous_cube = bg_source_cube
-            for extra_cube in self.__nx_graph.get_edge_realisation(zx_source, zx_target).get_extra_cubes():
-                self.__bg_scene_manager.alter_cube_appearance(extra_cube, highlight = highlighting)
-                self.__bg_scene_manager.alter_pipe_appearance(previous_cube, extra_cube, highlight = highlighting)
-                previous_cube = extra_cube
+            for current_pipe in self.__nx_graph.get_edge_realisation(zx_source, zx_target):
+                _, current_cube = current_pipe
+                self.__bg_scene_manager.alter_cube_appearance(current_cube, highlight = highlighting)
+                self.__bg_scene_manager.alter_pipe_appearance(previous_cube, current_cube, highlight = highlighting)
+                previous_cube = current_cube
             bg_target_cube = self.__nx_graph.get_cube(zx_target)
             self.__bg_scene_manager.alter_cube_appearance(bg_target_cube, highlight = highlighting)
             self.__bg_scene_manager.alter_pipe_appearance(previous_cube, bg_target_cube, highlight = highlighting)

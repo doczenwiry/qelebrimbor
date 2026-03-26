@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from qelebrimbor.augmented_nx_graph import AugmentedNxGraph
+from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
 from qelebrimbor.common.coordinates import Coordinates
 
 from logging import getLogger
@@ -16,7 +16,7 @@ class TikzWriter:
     ROTATION_X = 58
     ROTATION_Z = 112
 
-    def __init__(self, nx_graph: AugmentedNxGraph, label : str = "circuit"):
+    def __init__(self, nx_graph: AugmentedZxGraph, label : str = "circuit"):
         self.__label = label
         self.__nx_graph = nx_graph
 

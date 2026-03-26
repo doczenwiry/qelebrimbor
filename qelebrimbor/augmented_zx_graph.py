@@ -27,15 +27,13 @@ class LayerTransitionType(Enum):
     UPPER = 3
     OUTER = 4
 
-# TODO: add reading from/writing to .ang files !!!!
-
 # TODO: figure out what the other VertexType and EdgeType represent
 # TODO: how do we deal with the last four VertexType (i.e. H_BOX, W_INPUT, W_OUTPUT, Z_BOX) ?
 # TODO: do we need the last EdgeType (i.e. W_IO) ?
 # TODO: how do we deal with the phase of a spider ?
 # TODO: benchmarking and timing various parts
 # TODO: construction of animation
-class AugmentedNxGraph:
+class AugmentedZxGraph(nx.Graph):
     KEY_ZX_NODE_TYPE = 'zx_node_type'
     KEY_ZX_NODE_QUBIT = 'zx_node_qubit'
     KEY_ZX_NODE_LAYER = 'zx_node_layer'
@@ -51,7 +49,7 @@ class AugmentedNxGraph:
 
     def __init__(self, nodes: Iterable[tuple[NodeId, NodeType]], edges: Iterable[tuple[tuple[NodeId, NodeId], EdgeType]]):
         # Separate ZX-graph and BG-graph
-        self.__zx_graph = nx.Graph()
+        super().__init__()
         self.__bg_graph = nx.Graph()
 
         # Keeps track of which nodes appear on which qubit-line or layer of the ZX-graph
@@ -63,20 +61,20 @@ class AugmentedNxGraph:
         self.__zx_edge_realisation_order = []
 
         for node, node_type in nodes:
-            self.__zx_graph.add_node(node)
-            nx_node = self.__zx_graph.nodes[node]
-            nx_node[AugmentedNxGraph.KEY_ZX_NODE_TYPE] = node_type
-            nx_node[AugmentedNxGraph.KEY_ZX_EDGES_REALISED] = 0
-            nx_node[AugmentedNxGraph.KEY_ZX_BG_CUBE] = None
+            self.add_node(node)
+            nx_node = self.nodes[node]
+            nx_node[AugmentedZxGraph.KEY_ZX_NODE_TYPE] = node_type
+            nx_node[AugmentedZxGraph.KEY_ZX_EDGES_REALISED] = 0
+            nx_node[AugmentedZxGraph.KEY_ZX_BG_CUBE] = -1
 
         for edge, edge_type in edges:
             source = min(edge)
             target = max(edge)
-            self.__zx_graph.add_edge(source, target)
-            self.__zx_graph.get_edge_data(source, target)[AugmentedNxGraph.KEY_ZX_EDGE_TYPE] = edge_type
-            self.__zx_graph.get_edge_data(source, target)[AugmentedNxGraph.KEY_ZX_BG_PATH] = None
+            self.add_edge(source, target)
+            self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_TYPE] = edge_type
+            self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_BG_PATH] = None
 
-        self.__next_cube_id = self.__zx_graph.number_of_nodes()
+        self.__next_cube_id = self.number_of_nodes()
 
         # Keeps track of the coordinates in 3D that are occupied by some cube
         # TODO: replace with efficient data-structure for crowded space (Binary Space Partitioning ?)
@@ -84,7 +82,7 @@ class AugmentedNxGraph:
 
         # TODO: split any spider with more than 4 edges (cfr. graph_manager.py; prep_3d_g)
         # TODO: does the choice of how to split such spiders affect the minimal achievable volume ?
-        _, max_degree = max(self.__zx_graph.degree, key=lambda entry: entry[1])
+        _, max_degree = max(self.degree, key=lambda entry: entry[1])
         if max_degree > 4:
             raise NotImplemented("Enforcement of no-more-than-four-legs condition not implemented.")
 
@@ -93,23 +91,23 @@ class AugmentedNxGraph:
         nodes = zip( zx_graph.vertices(), [ NodeType.convert(zx_graph.type(node)) for node in zx_graph.vertices() ] )
         edges = zip( zx_graph.edges(), [ EdgeType.convert(zx_graph.edge_type(edge)) for edge in zx_graph.edges() ] )
 
-        ang = AugmentedNxGraph(nodes, edges)
+        ang = AugmentedZxGraph(nodes, edges)
 
         # Add qubit and layer information
         for node in zx_graph.vertices():
             node_qubit = zx_graph.qubit(node)
-            ang.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_NODE_QUBIT] = node_qubit
+            ang.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_QUBIT] = node_qubit
             ang.__zx_qubits[node_qubit].append(node)
 
             node_layer = zx_graph.row(node)
-            ang.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_NODE_LAYER] = node_layer
+            ang.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_LAYER] = node_layer
             ang.__zx_layers[node_layer].append(node)
 
         return ang
 
     @staticmethod
-    def __make_tuple(edge: str):
-        source, target = edge.split('-')
+    def __make_tuple(tpl: str):
+        source, target = tpl.split('-')
         return int(source), int(target)
 
     @staticmethod
@@ -135,11 +133,11 @@ class AugmentedNxGraph:
             for edge_type in [ EdgeType.IDENTITY, EdgeType.HADAMARD ]:
                 current = file.readline().split(" ")
                 if current[0] != f">{edge_type.name}:":
-                    raise Exception(f"Invalid file format. Header for {edge_type} not found.")
+                    raise Exception(f"Invalid file format. Header for {edge_type} not found. [got {current[0]}]")
                 if len(current) > 1 and current[1] != '\n':
-                    edges.extend(map(lambda ed: (AugmentedNxGraph.__make_tuple(ed), edge_type), current[1:]))
+                    edges.extend(map(lambda ed: (AugmentedZxGraph.__make_tuple(ed), edge_type), current[1:]))
 
-            ang = AugmentedNxGraph(nodes, edges)
+            ang = AugmentedZxGraph(nodes, edges)
 
             # Read the zx-qubits
             header = file.readline().split(" ")
@@ -152,7 +150,7 @@ class AugmentedNxGraph:
                     raise Exception(f"Invalid file format. Header for qubit {qubit} not found. [got {current[0]}]")
                 ang.__zx_qubits[qubit] = list(map(lambda nd: int(nd), current[1:]))
                 for node in ang.__zx_qubits[qubit]:
-                    ang.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_NODE_QUBIT] = qubit
+                    ang.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_QUBIT] = qubit
 
             # Read the zx-layers
             header = file.readline().split(" ")
@@ -165,7 +163,7 @@ class AugmentedNxGraph:
                     raise Exception(f"Invalid file format. Header for layer {layer} not found. [got {current[0]}]")
                 ang.__zx_layers[layer] = list(map(lambda nd: int(nd), current[1:]))
                 for node in ang.__zx_layers[layer]:
-                    ang.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_NODE_LAYER] = layer
+                    ang.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_LAYER] = layer
 
             # Read zx-realisation-orders
             header = file.readline()
@@ -177,7 +175,7 @@ class AugmentedNxGraph:
             if header != "ZX-EDGE-REALISATION-ORDER:\n":
                 raise Exception(f"Invalid file format. Header for ZX-EDGE-REALISATION-ORDER not found.")
             current = file.readline().split(" ")
-            ang.__zx_edge_realisation_order = list(map(lambda ed: AugmentedNxGraph.__make_tuple(ed), current[1:-1]))
+            ang.__zx_edge_realisation_order = list(map(lambda ed: AugmentedZxGraph.__make_tuple(ed), current[1:-1]))
 
             # Read bg-cubes
             header = file.readline()
@@ -197,8 +195,8 @@ class AugmentedNxGraph:
                     cube = int(cb_id)
                     position = Coordinates.from_string(cb_position)
                     ang.__bg_graph.add_node(cube)
-                    ang.__bg_graph.nodes[cube][AugmentedNxGraph.KEY_BG_CUBE_KIND] = cube_kind
-                    ang.__bg_graph.nodes[cube][AugmentedNxGraph.KEY_BG_CUBE_POSITION] = position
+                    ang.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_KIND] = cube_kind
+                    ang.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_POSITION] = position
 
             # Read bg-pipes
             header = file.readline()
@@ -208,9 +206,10 @@ class AugmentedNxGraph:
                 current = file.readline().split(" ")
                 if current[0] != f">{pipe_kind.name}:":
                     raise Exception(f"Invalid file format. Header for {pipe_kind} not found.")
-                for pipe in current[1:]:
-                    source_cube, target_cube = AugmentedNxGraph.__make_tuple(pipe)
-                    ang.connect_pipe(source_cube, target_cube, pipe_kind)
+                if len(current) > 1 and current[1] != '\n':
+                    for pipe in current[1:]:
+                        source_cube, target_cube = AugmentedZxGraph.__make_tuple(pipe)
+                        ang.connect_pipe(source_cube, target_cube, pipe_kind)
 
             # Read zx-nodes-bg-cubes
             header = file.readline()
@@ -220,8 +219,8 @@ class AugmentedNxGraph:
                 nd_id, cb_id = token.split(':')
                 node = int(nd_id)
                 cube = int(cb_id)
-                ang.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_BG_CUBE] = cube
-                ang.__zx_graph.nodes[node][AugmentedNxGraph.KEY_BG_ZX_NODE] = node
+                ang.nodes[node][AugmentedZxGraph.KEY_ZX_BG_CUBE] = cube
+                ang.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_ZX_NODE] = node
 
             # Read zx-edges-bg-pipes
             header = file.readline()
@@ -231,8 +230,8 @@ class AugmentedNxGraph:
             count = ang.number_of_edges()
             for _ in range(count):
                 current = file.readline().split(' ')
-                edge = AugmentedNxGraph.__make_tuple(current[0][1:-1])
-                ang.__zx_graph.edges[edge][AugmentedNxGraph.KEY_ZX_BG_PATH] = list(map(AugmentedNxGraph.__make_tuple, current[1:]))
+                edge = AugmentedZxGraph.__make_tuple(current[0][1:-1])
+                ang.edges[edge][AugmentedZxGraph.KEY_ZX_BG_PATH] = list(map(AugmentedZxGraph.__make_tuple, current[1:]))
 
             return ang
 
@@ -293,18 +292,18 @@ class AugmentedNxGraph:
         return self.__zx_qubits.keys()
 
     def get_qubit(self, node) -> QubitId:
-        return self.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_NODE_QUBIT]
+        return self.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_QUBIT]
 
     def get_nodes(self, node_type: NodeType = None, qubit: QubitId = None, layer: LayerId = None):
         return filter(
             lambda node : (node_type is None or self.get_node_type(node) == node_type) and
                           (qubit is None or self.get_qubit(node) == qubit) and
                           (layer is None or self.get_node_layer(node) == layer),
-            self.__zx_graph.nodes()
+            self.nodes()
         )
 
-    def number_of_nodes(self) -> int:
-        return self.__zx_graph.number_of_nodes()
+    # def number_of_nodes(self) -> int:
+    #     return self.number_of_nodes()
 
     def get_layers(self):
         return self.__zx_layers.keys()
@@ -324,7 +323,7 @@ class AugmentedNxGraph:
     def get_edges(self, edge_type: EdgeType = None):
         return filter(
             lambda eg: edge_type is None or self.get_edge_type(*eg) == edge_type,
-            self.__zx_graph.edges()
+            self.edges()
         )
 
     def get_layered_edges(self, layer: int, transition: LayerTransitionType = LayerTransitionType.EVERY):
@@ -339,10 +338,7 @@ class AugmentedNxGraph:
         else:
             filtering = lambda edge : True
 
-        return filter(filtering, self.__zx_graph.edges())
-
-    def number_of_edges(self) -> int:
-        return self.__zx_graph.number_of_edges()
+        return filter(filtering, self.edges())
 
     def get_cubes(self, cube_kind: CubeKind = None):
         return filter(
@@ -362,7 +358,7 @@ class AugmentedNxGraph:
         return self.__bg_graph.number_of_edges()
 
     def get_edges_realised(self, node: NodeId):
-        return self.__zx_graph.nodes[node].get(AugmentedNxGraph.KEY_ZX_EDGES_REALISED)
+        return self.nodes[node].get(AugmentedZxGraph.KEY_ZX_EDGES_REALISED)
 
     def get_edges_unrealised(self, node: NodeId):
         return self.get_degree(node) - self.get_edges_realised(node)
@@ -379,13 +375,13 @@ class AugmentedNxGraph:
         else: #transition == LayerTransitionType.OUTER
             raise Exception(f"Requesting OUTER transition type for node neighbours. Will always be empty.")
 
-        return filter(filtering, self.__zx_graph.neighbors(node))
+        return filter(filtering, self.neighbors(node))
 
     def get_cube_neighbours(self, cube: CubeId):
         return self.__bg_graph.neighbors(cube)
 
     def get_degree(self, node: NodeId) -> float:
-        return self.__zx_graph.degree[node]
+        return self.degree[node]
 
     def is_boundary(self, node: NodeId) -> bool:
         return self.get_node_type(node) == NodeType.O
@@ -397,46 +393,46 @@ class AugmentedNxGraph:
         return cube in self.__bg_graph
 
     def get_cube(self, node: NodeId) -> CubeId:
-        return self.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_BG_CUBE]
+        return self.nodes[node][AugmentedZxGraph.KEY_ZX_BG_CUBE]
 
     def get_node(self, cube: CubeId) -> NodeId:
-        return self.__bg_graph.nodes[cube][AugmentedNxGraph.KEY_BG_ZX_NODE]
+        return self.__bg_graph.nodes[cube].get(AugmentedZxGraph.KEY_BG_ZX_NODE) if cube in self.__bg_graph.nodes else -1
 
     def get_node_type(self, node: NodeId) -> NodeType:
-        return self.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_NODE_TYPE]
+        return self.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_TYPE]
 
     def get_node_layer(self, node: int) -> int:
-        return self.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_NODE_LAYER]
+        return self.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_LAYER]
 
     def get_cube_position(self, cube: CubeId) -> Coordinates:
-        return self.__bg_graph.nodes[cube][AugmentedNxGraph.KEY_BG_CUBE_POSITION]
+        return self.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_POSITION]
 
     def get_cube_kind(self, cube: CubeId) -> CubeKind:
-        return self.__bg_graph.nodes[cube][AugmentedNxGraph.KEY_BG_CUBE_KIND]
+        return self.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_KIND]
 
     def get_pipe_kind(self, source_cube: CubeId, target_cube: CubeId) -> EdgeType :
-        return self.__bg_graph.get_edge_data(source_cube, target_cube).get(AugmentedNxGraph.KEY_BG_PIPE_TYPE)
+        return self.__bg_graph.get_edge_data(source_cube, target_cube).get(AugmentedZxGraph.KEY_BG_PIPE_TYPE)
 
     def get_edge_type(self, source: NodeId, target: NodeId) -> EdgeType:
-        return self.__zx_graph.get_edge_data(source, target).get(AugmentedNxGraph.KEY_ZX_EDGE_TYPE)
+        return self.get_edge_data(source, target).get(AugmentedZxGraph.KEY_ZX_EDGE_TYPE)
 
     def get_edge_realisation(self, source: NodeId, target: NodeId) -> list[tuple[CubeId, CubeId]]:
-        return self.__zx_graph.get_edge_data(source, target).get(AugmentedNxGraph.KEY_ZX_BG_PATH)
+        return self.get_edge_data(source, target).get(AugmentedZxGraph.KEY_ZX_BG_PATH)
 
     def is_node_realised(self, node: NodeId) -> bool:
-        return self.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_BG_CUBE] is not None
+        return self.nodes[node][AugmentedZxGraph.KEY_ZX_BG_CUBE] is not None
 
     def realise_node(self, node: NodeId, kind: CubeKind, position: Coordinates) -> CubeId:
         """Realise the node as a cube of the given kind placed at the given coordinates."""
         if kind not in CubeKind.suitable_kinds(self.get_node_type(node)):
             raise Exception(f"Requested {kind} is not compatible with {self.get_node_type(node)}")
 
-        if not self.__zx_graph.has_node(node):
+        if not self.has_node(node):
             raise Exception(f"Node #{node} not found in the ZX-graph.")
 
         cube = self.place_cube(kind, position)
-        self.__bg_graph.nodes[cube][AugmentedNxGraph.KEY_BG_ZX_NODE] = node
-        self.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_BG_CUBE] = cube
+        self.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_ZX_NODE] = node
+        self.nodes[node][AugmentedZxGraph.KEY_ZX_BG_CUBE] = cube
 
         console.info(f"Realising node #{node} [{self.get_node_type(node)}] as cube #{cube} [{kind}@{position}]")
         self.__zx_node_realisation_order.append(node)
@@ -465,7 +461,7 @@ class AugmentedNxGraph:
         return realising
 
     def is_edge_realised(self, source: NodeId, target: NodeId) -> bool:
-        return self.__zx_graph.get_edge_data(source, target)[AugmentedNxGraph.KEY_ZX_BG_PATH] is not None
+        return self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_BG_PATH] is not None
 
     def realise_edge(self, source: NodeId, target: NodeId, proposed_path: Path):
         if not self.is_node_realised(source):
@@ -474,7 +470,7 @@ class AugmentedNxGraph:
         if not self.is_node_realised(target):
             raise Exception(f"{target} is not placed; cannot connect with a path.")
 
-        if not self.__zx_graph.has_edge(source, target):
+        if not self.has_edge(source, target):
             raise Exception(f"No edge {source}-{target} found in the ZX-graph.")
 
         if self.is_edge_realised(source, target):
@@ -513,7 +509,7 @@ class AugmentedNxGraph:
 
             # Place the current cube and connect it to the previous cube.
             current_cube = self.place_cube(current_kind, current_position)
-            self.__bg_graph.nodes[current_cube][AugmentedNxGraph.KEY_BG_ZX_NODE] = None
+            self.__bg_graph.nodes[current_cube][AugmentedZxGraph.KEY_BG_ZX_NODE] = None
             self.connect_pipe(previous_cube, current_cube, current_pipe_type)
 
             # Extend the sequence of extra node ids
@@ -530,11 +526,11 @@ class AugmentedNxGraph:
         pipe_ids.append( (previous_cube, target_cube) )
 
         # Associate the path as a realisation of the edge
-        self.__zx_graph.get_edge_data(source, target)[AugmentedNxGraph.KEY_ZX_BG_PATH] = pipe_ids
+        self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_BG_PATH] = pipe_ids
 
         # One more edge has been realised
-        self.__zx_graph.nodes[source][AugmentedNxGraph.KEY_ZX_EDGES_REALISED] += 1
-        self.__zx_graph.nodes[target][AugmentedNxGraph.KEY_ZX_EDGES_REALISED] += 1
+        self.nodes[source][AugmentedZxGraph.KEY_ZX_EDGES_REALISED] += 1
+        self.nodes[target][AugmentedZxGraph.KEY_ZX_EDGES_REALISED] += 1
         self.__zx_edge_realisation_order.append( (source, target) )
 
     def place_cube(self, kind: CubeKind, position: Coordinates) -> CubeId:
@@ -546,9 +542,9 @@ class AugmentedNxGraph:
 
         self.__bg_graph.add_node(cube)
 
-        self.__bg_graph.nodes[cube][AugmentedNxGraph.KEY_BG_ZX_NODE] = None
-        self.__bg_graph.nodes[cube][AugmentedNxGraph.KEY_BG_CUBE_KIND] = kind
-        self.__bg_graph.nodes[cube][AugmentedNxGraph.KEY_BG_CUBE_POSITION] = position
+        self.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_ZX_NODE] = None
+        self.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_KIND] = kind
+        self.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_POSITION] = position
 
         self.occupied.add(position)
 
@@ -577,7 +573,7 @@ class AugmentedNxGraph:
             raise Exception(f"Cubes #{source_cube}@{source_position} and #{target_cube}@{target_position} are not at adjacent positions.")
 
         self.__bg_graph.add_edge(source_cube, target_cube)
-        self.__bg_graph.get_edge_data(source_cube, target_cube)[AugmentedNxGraph.KEY_BG_PIPE_TYPE] = pipe_type
+        self.__bg_graph.get_edge_data(source_cube, target_cube)[AugmentedZxGraph.KEY_BG_PIPE_TYPE] = pipe_type
 
     def is_path_valid(self, path: Path, edge_type: EdgeType) -> bool:
         is_hadamard_path = False

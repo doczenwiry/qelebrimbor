@@ -1,16 +1,7 @@
-from qelebrimbor.augmented_nx_graph import AugmentedNxGraph
-
-from jsonpickle import encode, decode
-ANG_PATH = "../assets/pickles/"
-def ang_write(graph: AugmentedNxGraph, label: str):
-    with open(ANG_PATH + label + ".json", "w") as f:
-        f.write(encode(graph, indent=2, keys = True, unpicklable=True))
-
-def ang_read(label: str) -> AugmentedNxGraph:
-    return decode(open(ANG_PATH + label + ".json").read(), keys = True)
+from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
 
 if __name__ == "__main__":
-    ang = AugmentedNxGraph.from_file("../assets/ang/ghz8.ang")
+    ang = AugmentedZxGraph.from_file("../assets/ang/ghz8.ang")
     print(list(ang.get_nodes()))
     print(list(ang.get_edges()))
     print(list(ang.get_qubits()))

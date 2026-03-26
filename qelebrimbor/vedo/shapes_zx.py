@@ -1,6 +1,6 @@
 from vedo import Assembly, Disc, Line, Text3D, Box
 
-from qelebrimbor.augmented_nx_graph import AugmentedNxGraph
+from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
 from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 
@@ -13,7 +13,7 @@ QUBIT_SPACING = 6.0
 LAYER_SPACING = 6.0
 
 class ZxNode(Assembly):
-    def __init__(self, node: NodeId, anx: AugmentedNxGraph):
+    def __init__(self, node: NodeId, anx: AugmentedZxGraph):
         self.zx_node = node
 
         node_type = anx.get_node_type(node)
@@ -47,7 +47,7 @@ class ZxEdge(Assembly):
     LENGTH = 3.00
     DIAMETER = 0.50
 
-    def __init__(self, source: NodeId, target: NodeId, anx: AugmentedNxGraph):
+    def __init__(self, source: NodeId, target: NodeId, anx: AugmentedZxGraph):
 
         self.zx_source: NodeId = source
         self.zx_target: NodeId = target

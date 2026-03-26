@@ -1,6 +1,6 @@
 from vedo.plotter.runtime import Plotter
 
-from qelebrimbor.augmented_nx_graph import AugmentedNxGraph
+from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
 from qelebrimbor.common.components_zx import NodeId
 from qelebrimbor.vedo.shapes_zx import ZxNode, ZxEdge
 
@@ -8,7 +8,7 @@ from logging import getLogger
 console = getLogger(__name__)
 
 class ZxSceneManager:
-    def __init__(self, nx_graph: AugmentedNxGraph, plotter: Plotter):
+    def __init__(self, nx_graph: AugmentedZxGraph, plotter: Plotter):
         self.__nx_graph = nx_graph
         self.__plotter = plotter
 

@@ -5,14 +5,14 @@ from qelebrimbor.common.path import Path
 from qelebrimbor.vedo.frame_manager import FrameManager
 
 from qelebrimbor.common.components_bg import CubeId
-from qelebrimbor.augmented_nx_graph import AugmentedNxGraph
+from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
 from qelebrimbor.vedo.shapes_bg import BgCube, BgPipe
 
 from logging import getLogger
 console = getLogger(__name__)
 
 class BgSceneManager:
-    def __init__(self, nx_graph: AugmentedNxGraph, plotter: Plotter):
+    def __init__(self, nx_graph: AugmentedZxGraph, plotter: Plotter):
         self.__nx_graph = nx_graph
         self.__plotter = plotter
 
@@ -63,42 +63,39 @@ class BgSceneManager:
             for source, target in edge_realisation_order:
                 # Add extra cubes to a new frame
                 current_frame = self.__frame_manager.create_next_frame()
-                previous_cube = self.__nx_graph.get_cube(source)
-                for current_cube in self.__nx_graph.get_edge_realisation(source, target).get_cube_ids()[1:]:
-                    pipe = tuple(sorted((previous_cube, current_cube)))
-                    self.__frame_manager.add_to_frame(current_frame, self.__pipes[pipe])
+                for current_pipe in self.__nx_graph.get_edge_realisation(source, target):
+                    _, current_cube = current_pipe
+                    self.__frame_manager.add_to_frame(current_frame, self.__pipes[current_pipe])
 
                     if current_cube not in placed_cubes:
                         self.__frame_manager.add_to_frame(current_frame, self.__cubes[current_cube])
                         placed_cubes.add(current_cube)
 
-                    previous_cube = current_cube
-
                 # Add alternative paths to subsequent subframes
-                alternatives = self.__nx_graph.get_edge_alternatives(source, target)
-                if alternatives is None:
-                    continue
-
-                for alternative in alternatives:
-                    current_subframe = self.__frame_manager.create_next_subframe(current_frame)
-                    previous_cube = alternative.get_source_cube()
-                    previous_kind, previous_position = alternative.get_cubes()[0]
-                    for alternative_kind, alternative_position in alternative.get_cubes()[1:]:
-                        alternative_cube = self.__nx_graph.number_of_nodes() + self.__nx_graph.number_of_cubes() + len(self.__alternative_cubes)
-                        alternative_bg_cube = BgCube(alternative_kind, alternative_position, cube = alternative_cube)
-                        self.__alternative_cubes[alternative_cube] = alternative_bg_cube
-                        pipe = tuple(sorted((previous_cube, alternative_cube)))
-                        alternative_bg_pipe = BgPipe(
-                            previous_kind, previous_position,
-                            alternative_kind, alternative_position,
-                            EdgeType.IDENTITY, source = previous_cube, target = alternative_cube
-                        )
-                        self.__alternative_pipes[pipe] = alternative_bg_pipe
-                        self.__frame_manager.add_to_frame(current_frame, alternative_bg_pipe, subframe_index = current_subframe)
-                        self.__frame_manager.add_to_frame(current_frame, alternative_bg_cube, subframe_index = current_subframe)
-                        previous_cube = alternative_cube
-                        previous_kind = alternative_kind
-                        previous_position = alternative_position
+                # alternatives = self.__nx_graph.get_edge_alternatives(source, target)
+                # if alternatives is None:
+                #     continue
+                #
+                # for alternative in alternatives:
+                #     current_subframe = self.__frame_manager.create_next_subframe(current_frame)
+                #     previous_cube = alternative.get_source_cube()
+                #     previous_kind, previous_position = alternative.get_cubes()[0]
+                #     for alternative_kind, alternative_position in alternative.get_cubes()[1:]:
+                #         alternative_cube = self.__nx_graph.number_of_nodes() + self.__nx_graph.number_of_cubes() + len(self.__alternative_cubes)
+                #         alternative_bg_cube = BgCube(alternative_kind, alternative_position, cube = alternative_cube)
+                #         self.__alternative_cubes[alternative_cube] = alternative_bg_cube
+                #         pipe = tuple(sorted((previous_cube, alternative_cube)))
+                #         alternative_bg_pipe = BgPipe(
+                #             previous_kind, previous_position,
+                #             alternative_kind, alternative_position,
+                #             EdgeType.IDENTITY, source = previous_cube, target = alternative_cube
+                #         )
+                #         self.__alternative_pipes[pipe] = alternative_bg_pipe
+                #         self.__frame_manager.add_to_frame(current_frame, alternative_bg_pipe, subframe_index = current_subframe)
+                #         self.__frame_manager.add_to_frame(current_frame, alternative_bg_cube, subframe_index = current_subframe)
+                #         previous_cube = alternative_cube
+                #         previous_kind = alternative_kind
+                #         previous_position = alternative_position
 
         # Prepare the first frame
         starting_frame = self.__frame_manager.get_frame_count() - 1
