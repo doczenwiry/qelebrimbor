@@ -53,6 +53,9 @@ class Path:
     def get_extra_cubes(self):
         return self.__cubes[1:-1]
 
+    def get_pipe_ids(self) -> list[tuple[CubeId, CubeId]]:
+        return [ (self.__cube_ids[i-1] , self.__cube_ids[i]) for i in range(1, len(self.__cubes)) ]
+
     def get_pipes(self):
         return self.__pipes
 

@@ -28,6 +28,15 @@ class LayerTransitionType(Enum):
     UPPER = 3
     OUTER = 4
 
+# TODO: add reading from/writing to .ang files !!!!
+# TODO: add reading from/writing to .ang files !!!!
+# TODO: add reading from/writing to .ang files !!!!
+# TODO: add reading from/writing to .ang files !!!!
+# TODO: add reading from/writing to .ang files !!!!
+# TODO: add reading from/writing to .ang files !!!!
+# TODO: add reading from/writing to .ang files !!!!
+# TODO: add reading from/writing to .ang files !!!!
+
 # TODO: figure out what the other VertexType and EdgeType represent
 # TODO: how do we deal with the last four VertexType (i.e. H_BOX, W_INPUT, W_OUTPUT, Z_BOX) ?
 # TODO: do we need the last EdgeType (i.e. W_IO) ?
@@ -65,9 +74,10 @@ class AugmentedNxGraph:
 
         for node, node_type in nodes:
             self.__zx_graph.add_node(node)
-            self.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_NODE_TYPE] = node_type
-            self.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_EDGES_REALISED] = 0
-            self.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_BG_CUBE] = None
+            nx_node = self.__zx_graph.nodes[node]
+            nx_node[AugmentedNxGraph.KEY_ZX_NODE_TYPE] = node_type
+            nx_node[AugmentedNxGraph.KEY_ZX_EDGES_REALISED] = 0
+            nx_node[AugmentedNxGraph.KEY_ZX_BG_CUBE] = None
 
         for edge, edge_type in edges:
             source = min(edge)
@@ -107,6 +117,64 @@ class AugmentedNxGraph:
 
         return ang
 
+    @staticmethod
+    def from_file(filepath: str):
+        with open(filepath, 'r') as file:
+            # Read zx-nodes and zx-edges
+            # for node_type in [ NodeType.O, NodeType.X, NodeType.Y, NodeType.Z ]:
+            #     content = map(str, self.get_nodes(node_type = node_type))
+            #     file.write(f">{node_type}: {" ".join(content)}\n")
+            # # Dump zx-edges
+            # file.write(f"ZX-EDGES:\n")
+            # for edge_type in [ EdgeType.IDENTITY, EdgeType.HADAMARD ]:
+            #     content = map(lambda edge: str(edge[0]) + '-' + str(edge[1]), self.get_edges(edge_type = edge_type))
+            #     file.write(f">{edge_type.name}: {" ".join(content)}\n")
+            pass
+
+    def into_file(self, filepath: str):
+        with (open(filepath, 'w') as file):
+            # Dump zx-nodes
+            file.write(f"ZX-NODES:\n")
+            for node_type in [ NodeType.O, NodeType.X, NodeType.Y, NodeType.Z ]:
+                content = map(str, self.get_nodes(node_type = node_type))
+                file.write(f">{node_type}: {" ".join(content)}\n")
+            # Dump zx-edges
+            file.write(f"ZX-EDGES:\n")
+            for edge_type in [ EdgeType.IDENTITY, EdgeType.HADAMARD ]:
+                content = map(lambda edge: str(edge[0]) + '-' + str(edge[1]), self.get_edges(edge_type = edge_type))
+                file.write(f">{edge_type.name}: {" ".join(content)}\n")
+            # Dump zx-qubits
+            file.write(f"ZX-QUBITS:\n")
+            for qubit in self.get_qubits():
+                content = map(str, self.get_nodes(qubit = qubit))
+                file.write(f">{qubit}: {" ".join(content)}\n")
+            # Dump zx-layers
+            file.write(f"ZX-LAYERS:\n")
+            for layer in self.get_layers():
+                content = map(str, self.get_nodes(layer=layer))
+                file.write(f"{layer}> {" ".join(content)}\n")
+            # Dump zx-realisation-orders
+            content = map(str, self.__zx_node_realisation_order)
+            file.write(f"ZX-NODE-REALISATION-ORDER:\n> {" ".join(content)}\n")
+            content = map(lambda edge: str(edge[0]) + '-' + str(edge[1]), self.__zx_edge_realisation_order)
+            file.write(f"ZX-EDGE-REALISATION-ORDER:\n> {" ".join(content)}\n")
+            # Dump bg-cubes
+            file.write(f"BG-CUBES:\n")
+            for cube_kind in [ CubeKind.OOO, CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ, CubeKind.YYY ]:
+                content = map(lambda cb : str(cb) + '@' + str(self.get_cube_position(cb)).replace(" ", ""), self.get_cubes(cube_kind = cube_kind))
+                file.write(f"{cube_kind.name}> {" ".join(content)}\n")
+            file.write(f"BG-PIPES:\n")
+            for pipe_kind in [ EdgeType.IDENTITY, EdgeType.HADAMARD ]:
+                content = map(lambda edge: str(edge[0]) + '-' + str(edge[1]), self.get_pipes(pipe_kind = pipe_kind))
+                file.write(f"{pipe_kind.name}> {" ".join(content)}\n")
+            content = map(lambda nd: str(nd) + ':' + str(self.get_cube(nd)), self.get_nodes())
+            file.write(f"ZX-NODES-BG-CUBES:\n> {" ".join(content)}\n")
+            content = map(
+                lambda ed: '>' + str(ed[0]) + '-' + str(ed[1]) + ": " + " ".join(map(lambda pp: str(pp[0]) + '-' + str(pp[1]), self.get_edge_realisation(*ed).get_pipe_ids())),
+                self.get_edges()
+            )
+            file.write(f"ZX-EDGES-BG-PIPES:\n{"\n".join(content)}")
+
     def get_node_realisation_order(self) -> list[NodeId]:
         return self.__zx_node_realisation_order
 
@@ -119,8 +187,13 @@ class AugmentedNxGraph:
     def get_qubit(self, node) -> QubitId:
         return self.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_NODE_QUBIT]
 
-    def get_nodes(self):
-        return self.__zx_graph.nodes()
+    def get_nodes(self, node_type: NodeType = None, qubit: QubitId = None, layer: LayerId = None):
+        return filter(
+            lambda node : (node_type is None or self.get_node_type(node) == node_type) and
+                          (qubit is None or self.get_qubit(node) == qubit) and
+                          (layer is None or self.get_node_layer(node) == layer),
+            self.__zx_graph.nodes()
+        )
 
     def number_of_nodes(self) -> int:
         return self.__zx_graph.number_of_nodes()
@@ -140,8 +213,11 @@ class AugmentedNxGraph:
         number_of_edges = number_of_edges // 2
         return number_of_nodes, number_of_edges
 
-    def get_edges(self):
-        return self.__zx_graph.edges()
+    def get_edges(self, edge_type: EdgeType = None):
+        return filter(
+            lambda eg: edge_type is None or self.get_edge_type(*eg) == edge_type,
+            self.__zx_graph.edges()
+        )
 
     def get_layered_edges(self, layer: int, transition: LayerTransitionType = LayerTransitionType.EVERY):
         if transition == LayerTransitionType.LOWER:
@@ -160,14 +236,19 @@ class AugmentedNxGraph:
     def number_of_edges(self) -> int:
         return self.__zx_graph.number_of_edges()
 
-    def get_cubes(self):
-        return self.__bg_graph.nodes()
+    def get_cubes(self, cube_kind: CubeKind = None):
+        return filter(
+            lambda cb: (cube_kind is None or self.get_cube_kind(cb) == cube_kind), self.__bg_graph.nodes()
+        )
 
     def number_of_cubes(self) -> int:
         return self.__bg_graph.number_of_nodes()
 
-    def get_pipes(self):
-        return self.__bg_graph.edges()
+    def get_pipes(self, pipe_kind: EdgeType = None):
+        return filter(
+            lambda pp: (pipe_kind is None or self.get_pipe_kind(*pp) == pipe_kind),
+            self.__bg_graph.edges()
+        )
 
     def number_of_pipes(self) -> int:
         return self.__bg_graph.number_of_edges()
@@ -225,7 +306,7 @@ class AugmentedNxGraph:
     def get_cube_kind(self, cube: CubeId) -> CubeKind:
         return self.__bg_graph.nodes[cube][AugmentedNxGraph.KEY_BG_CUBE_KIND]
 
-    def get_pipe_type(self, source_cube: CubeId, target_cube: CubeId) -> EdgeType :
+    def get_pipe_kind(self, source_cube: CubeId, target_cube: CubeId) -> EdgeType :
         return self.__bg_graph.get_edge_data(source_cube, target_cube).get(AugmentedNxGraph.KEY_BG_PIPE_TYPE)
 
     def get_edge_type(self, source: NodeId, target: NodeId) -> EdgeType:
@@ -271,7 +352,7 @@ class AugmentedNxGraph:
 
             for successor in self.get_cube_neighbours(current):
                 successor_type = self.get_node_type(successor)
-                pipe_type = self.get_pipe_type(current, successor)
+                pipe_type = self.get_pipe_kind(current, successor)
                 if successor_type == node_type and pipe_type == EdgeType.IDENTITY and successor not in realising:
                     queue.append(successor)
                     realising.add(successor)

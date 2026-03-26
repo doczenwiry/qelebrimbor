@@ -68,7 +68,7 @@ class TikzWriter:
             source_position = self.__nx_graph.get_cube_position(source_cube)
             target_position = self.__nx_graph.get_cube_position(target_cube)
 
-            pipe_type = self.__nx_graph.get_pipe_type(source_cube, target_cube).name.lower()
+            pipe_type = self.__nx_graph.get_pipe_kind(source_cube, target_cube).name.lower()
 
             if pipe in plain_pipes:
                 pipe_visibility = 'plain'

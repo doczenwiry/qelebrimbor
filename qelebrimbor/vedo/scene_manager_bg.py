@@ -38,7 +38,7 @@ class BgSceneManager:
             target_kind = self.__nx_graph.get_cube_kind(target)
             source_position = self.__nx_graph.get_cube_position(source)
             target_position = self.__nx_graph.get_cube_position(target)
-            pipe_type = self.__nx_graph.get_pipe_type(source, target)
+            pipe_type = self.__nx_graph.get_pipe_kind(source, target)
             bg_pipe = BgPipe(source_kind, source_position, target_kind, target_position, pipe_type, source, target)
             self.__pipes[pipe] = bg_pipe
 
