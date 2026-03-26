@@ -15,7 +15,6 @@ from qelebrimbor.common.components_bg import CubeId, CubeKind
 from qelebrimbor.common.path import Path
 
 from logging import getLogger
-
 console = getLogger(__name__)
 
 QubitId = int
@@ -118,18 +117,128 @@ class AugmentedNxGraph:
         return ang
 
     @staticmethod
+    def __make_tuple(edge: str):
+        source, target = edge.split('-')
+        return int(source), int(target)
+
+    @staticmethod
     def from_file(filepath: str):
+        nodes: list[tuple[NodeId, NodeType]] = []
+        edges: list[tuple[tuple[NodeId, NodeId], EdgeType]] = []
         with open(filepath, 'r') as file:
-            # Read zx-nodes and zx-edges
-            # for node_type in [ NodeType.O, NodeType.X, NodeType.Y, NodeType.Z ]:
-            #     content = map(str, self.get_nodes(node_type = node_type))
-            #     file.write(f">{node_type}: {" ".join(content)}\n")
-            # # Dump zx-edges
-            # file.write(f"ZX-EDGES:\n")
-            # for edge_type in [ EdgeType.IDENTITY, EdgeType.HADAMARD ]:
-            #     content = map(lambda edge: str(edge[0]) + '-' + str(edge[1]), self.get_edges(edge_type = edge_type))
-            #     file.write(f">{edge_type.name}: {" ".join(content)}\n")
-            pass
+            # Read the zx-nodes
+            header = file.readline()
+            if header != "ZX-NODES:\n":
+                raise Exception("Invalid file format. Header for ZX-NODES not found.")
+            for node_type in [ NodeType.O, NodeType.X, NodeType.Y, NodeType.Z ]:
+                current = file.readline().split(' ')
+                if current[0] != f">{node_type}:":
+                    raise Exception(f"Invalid file format. Header for {node_type} not found.")
+                if len(current) > 1 and current[1] != '\n':
+                    nodes.extend(map(lambda nd: (int(nd), node_type), current[1:]))
+
+            # Read the zx-edges
+            header = file.readline()
+            if header != "ZX-EDGES:\n":
+                raise Exception("Invalid file format. Header for ZX-EDGES not found.")
+            for edge_type in [ EdgeType.IDENTITY, EdgeType.HADAMARD ]:
+                current = file.readline().split(" ")
+                if current[0] != f">{edge_type.name}:":
+                    raise Exception(f"Invalid file format. Header for {edge_type} not found.")
+                if len(current) > 1 and current[1] != '\n':
+                    edges.extend(map(lambda ed: (AugmentedNxGraph.__make_tuple(ed), edge_type), current[1:]))
+
+            ang = AugmentedNxGraph(nodes, edges)
+
+            # Read the zx-qubits
+            header = file.readline().split(" ")
+            if header[0] != "ZX-QUBITS:":
+                raise Exception("Invalid file format. Header for ZX-QUBITS not found.")
+            qubits = int(header[1])
+            for qubit in range(qubits):
+                current = file.readline().split(" ")
+                if current[0] != f">{qubit}:":
+                    raise Exception(f"Invalid file format. Header for qubit {qubit} not found. [got {current[0]}]")
+                ang.__zx_qubits[qubit] = list(map(lambda nd: int(nd), current[1:]))
+                for node in ang.__zx_qubits[qubit]:
+                    ang.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_NODE_QUBIT] = qubit
+
+            # Read the zx-layers
+            header = file.readline().split(" ")
+            if header[0] != "ZX-LAYERS:":
+                raise Exception("Invalid file format. Header for ZX-LAYERS not found.")
+            layers = int(header[1])
+            for layer in range(layers):
+                current = file.readline().split(" ")
+                if current[0] != f">{layer}:":
+                    raise Exception(f"Invalid file format. Header for layer {layer} not found. [got {current[0]}]")
+                ang.__zx_layers[layer] = list(map(lambda nd: int(nd), current[1:]))
+                for node in ang.__zx_layers[layer]:
+                    ang.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_NODE_LAYER] = layer
+
+            # Read zx-realisation-orders
+            header = file.readline()
+            if header != "ZX-NODE-REALISATION-ORDER:\n":
+                raise Exception(f"Invalid file format. Header for ZX-NODE-REALISATION-ORDER not found.")
+            current = file.readline().split(" ")
+            ang.__zx_node_realisation_order = list(map(lambda nd: int(nd), current[1:]))
+            header = file.readline()
+            if header != "ZX-EDGE-REALISATION-ORDER:\n":
+                raise Exception(f"Invalid file format. Header for ZX-EDGE-REALISATION-ORDER not found.")
+            current = file.readline().split(" ")
+            ang.__zx_edge_realisation_order = list(map(lambda ed: AugmentedNxGraph.__make_tuple(ed), current[1:-1]))
+
+            # Read bg-cubes
+            header = file.readline()
+            if header != "BG-CUBES:\n":
+                raise Exception(f"Invalid file format. Header for BG-CUBES not found.")
+            for cube_kind in [ CubeKind.OOO, CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ, CubeKind.YYY ]:
+                current = file.readline().split(" ")
+                if current[0] != f">{cube_kind.name}:":
+                    raise Exception(f"Invalid file format. Header for {cube_kind} not found.")
+
+                if len(current) <= 1 or current[1] == '\n':
+                    continue
+
+                for cb_spec in current[1:]:
+                    cb_id, cb_position = cb_spec.split("@")
+
+                    cube = int(cb_id)
+                    position = Coordinates.from_string(cb_position)
+                    ang.__bg_graph.add_node(cube)
+                    ang.__bg_graph.nodes[cube][AugmentedNxGraph.KEY_BG_CUBE_KIND] = cube_kind
+                    ang.__bg_graph.nodes[cube][AugmentedNxGraph.KEY_BG_CUBE_POSITION] = position
+
+            # Read bg-pipes
+            header = file.readline()
+            if header != "BG-PIPES:\n":
+                raise Exception("Invalid file format. Header for BG-PIPES not found.")
+            for pipe_kind in [ EdgeType.IDENTITY, EdgeType.HADAMARD ]:
+                current = file.readline().split(" ")
+                if current[0] != f">{pipe_kind.name}:":
+                    raise Exception(f"Invalid file format. Header for {pipe_kind} not found.")
+                for pipe in current[1:]:
+                    source_cube, target_cube = AugmentedNxGraph.__make_tuple(pipe)
+                    ang.connect_pipe(source_cube, target_cube, pipe_kind)
+
+            # Read zx-nodes-bg-cubes
+            header = file.readline()
+            if header != "ZX-NODES-BG-CUBES:\n":
+                raise Exception("Invalid file format. Header for ZX-NODES-BG-CUBES not found.")
+            for token in file.readline().split(' ')[1:]:
+                nd_id, cb_id = token.split(':')
+                node = int(nd_id)
+                cube = int(cb_id)
+                ang.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_BG_CUBE] = cube
+                ang.__zx_graph.nodes[node][AugmentedNxGraph.KEY_BG_ZX_NODE] = node
+
+            # Read zx-edges-bg-pipes
+            header = file.readline()
+            if header != "ZX-EDGES-BG-PIPES:\n":
+                raise Exception("Invalid file format. Header for ZX-EDGES-BG-PIPES not found.")
+
+
+            return ang
 
     def into_file(self, filepath: str):
         with (open(filepath, 'w') as file):
@@ -144,15 +253,15 @@ class AugmentedNxGraph:
                 content = map(lambda edge: str(edge[0]) + '-' + str(edge[1]), self.get_edges(edge_type = edge_type))
                 file.write(f">{edge_type.name}: {" ".join(content)}\n")
             # Dump zx-qubits
-            file.write(f"ZX-QUBITS:\n")
+            file.write(f"ZX-QUBITS: {len(self.get_qubits())}\n")
             for qubit in self.get_qubits():
                 content = map(str, self.get_nodes(qubit = qubit))
                 file.write(f">{qubit}: {" ".join(content)}\n")
             # Dump zx-layers
-            file.write(f"ZX-LAYERS:\n")
+            file.write(f"ZX-LAYERS: {len(self.get_layers())}\n")
             for layer in self.get_layers():
                 content = map(str, self.get_nodes(layer=layer))
-                file.write(f"{layer}> {" ".join(content)}\n")
+                file.write(f">{layer}: {" ".join(content)}\n")
             # Dump zx-realisation-orders
             content = map(str, self.__zx_node_realisation_order)
             file.write(f"ZX-NODE-REALISATION-ORDER:\n> {" ".join(content)}\n")
@@ -162,13 +271,16 @@ class AugmentedNxGraph:
             file.write(f"BG-CUBES:\n")
             for cube_kind in [ CubeKind.OOO, CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ, CubeKind.YYY ]:
                 content = map(lambda cb : str(cb) + '@' + str(self.get_cube_position(cb)).replace(" ", ""), self.get_cubes(cube_kind = cube_kind))
-                file.write(f"{cube_kind.name}> {" ".join(content)}\n")
+                file.write(f">{cube_kind.name}: {" ".join(content)}\n")
+            # Dump bg-pipes
             file.write(f"BG-PIPES:\n")
             for pipe_kind in [ EdgeType.IDENTITY, EdgeType.HADAMARD ]:
                 content = map(lambda edge: str(edge[0]) + '-' + str(edge[1]), self.get_pipes(pipe_kind = pipe_kind))
-                file.write(f"{pipe_kind.name}> {" ".join(content)}\n")
+                file.write(f">{pipe_kind.name}: {" ".join(content)}\n")
+            # Dump zx-nodes-bg-cubes
             content = map(lambda nd: str(nd) + ':' + str(self.get_cube(nd)), self.get_nodes())
             file.write(f"ZX-NODES-BG-CUBES:\n> {" ".join(content)}\n")
+            # Dump zx-edges-bg-pipes
             content = map(
                 lambda ed: '>' + str(ed[0]) + '-' + str(ed[1]) + ": " + " ".join(map(lambda pp: str(pp[0]) + '-' + str(pp[1]), self.get_edge_realisation(*ed).get_pipe_ids())),
                 self.get_edges()

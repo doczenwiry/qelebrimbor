@@ -1,12 +1,17 @@
 from math import sqrt
 from functools import total_ordering
 from dataclasses import dataclass
+from ast import literal_eval as make_tuple
 
 @dataclass(frozen = True)
 class Coordinates:
     x: float
     y: float
     z: float
+
+    @staticmethod
+    def from_string(s: str):
+        return Coordinates.from_tuple(make_tuple(s))
 
     @staticmethod
     def from_list(l: list[float]):

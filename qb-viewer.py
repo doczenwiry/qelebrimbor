@@ -10,7 +10,7 @@ logging.getLogger('qelebrimbor.helpers').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.vedo').setLevel(logging.DEBUG)
 
 from jsonpickle import encode, decode
-ANG_PATH = "assets/"
+ANG_PATH = "assets/pickles/"
 def ang_write(ang: AugmentedNxGraph, label: str):
     with open(ANG_PATH + label + ".json", "w") as f:
         f.write(encode(ang, indent=2, keys = True, unpicklable=True))
