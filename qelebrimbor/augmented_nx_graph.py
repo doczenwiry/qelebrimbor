@@ -28,13 +28,6 @@ class LayerTransitionType(Enum):
     OUTER = 4
 
 # TODO: add reading from/writing to .ang files !!!!
-# TODO: add reading from/writing to .ang files !!!!
-# TODO: add reading from/writing to .ang files !!!!
-# TODO: add reading from/writing to .ang files !!!!
-# TODO: add reading from/writing to .ang files !!!!
-# TODO: add reading from/writing to .ang files !!!!
-# TODO: add reading from/writing to .ang files !!!!
-# TODO: add reading from/writing to .ang files !!!!
 
 # TODO: figure out what the other VertexType and EdgeType represent
 # TODO: how do we deal with the last four VertexType (i.e. H_BOX, W_INPUT, W_OUTPUT, Z_BOX) ?
@@ -50,13 +43,11 @@ class AugmentedNxGraph:
     KEY_ZX_EDGES_REALISED = 'zx_edges_realised'
     KEY_ZX_BG_CUBE = 'zx_bg_cube'
     KEY_ZX_BG_PATH = 'zx_bg_path'
-    KEY_ZX_BG_ALTERNATIVE_PATHS = 'zx_bg_alternative_paths'
 
     KEY_BG_ZX_NODE   = 'bg_zx_node'
     KEY_BG_CUBE_KIND = 'bg_cube_kind'
     KEY_BG_CUBE_POSITION = 'bg_cube_position'
     KEY_BG_PIPE_TYPE = 'bg_pipe_type'
-    KEY_BG_CUBE_BEAMS = 'bg_cube_beams'
 
     def __init__(self, nodes: Iterable[tuple[NodeId, NodeType]], edges: Iterable[tuple[tuple[NodeId, NodeId], EdgeType]]):
         # Separate ZX-graph and BG-graph
@@ -237,6 +228,11 @@ class AugmentedNxGraph:
             if header != "ZX-EDGES-BG-PIPES:\n":
                 raise Exception("Invalid file format. Header for ZX-EDGES-BG-PIPES not found.")
 
+            count = ang.number_of_edges()
+            for _ in range(count):
+                current = file.readline().split(' ')
+                edge = AugmentedNxGraph.__make_tuple(current[0][1:-1])
+                ang.__zx_graph.edges[edge][AugmentedNxGraph.KEY_ZX_BG_PATH] = list(map(AugmentedNxGraph.__make_tuple, current[1:]))
 
             return ang
 
@@ -282,7 +278,7 @@ class AugmentedNxGraph:
             file.write(f"ZX-NODES-BG-CUBES:\n> {" ".join(content)}\n")
             # Dump zx-edges-bg-pipes
             content = map(
-                lambda ed: '>' + str(ed[0]) + '-' + str(ed[1]) + ": " + " ".join(map(lambda pp: str(pp[0]) + '-' + str(pp[1]), self.get_edge_realisation(*ed).get_pipe_ids())),
+                lambda ed: '>' + str(ed[0]) + '-' + str(ed[1]) + ": " + " ".join(map(lambda pp: str(pp[0]) + '-' + str(pp[1]), self.get_edge_realisation(*ed))),
                 self.get_edges()
             )
             file.write(f"ZX-EDGES-BG-PIPES:\n{"\n".join(content)}")
@@ -424,11 +420,8 @@ class AugmentedNxGraph:
     def get_edge_type(self, source: NodeId, target: NodeId) -> EdgeType:
         return self.__zx_graph.get_edge_data(source, target).get(AugmentedNxGraph.KEY_ZX_EDGE_TYPE)
 
-    def get_edge_realisation(self, source: NodeId, target: NodeId) -> Path:
+    def get_edge_realisation(self, source: NodeId, target: NodeId) -> list[tuple[CubeId, CubeId]]:
         return self.__zx_graph.get_edge_data(source, target).get(AugmentedNxGraph.KEY_ZX_BG_PATH)
-
-    def get_edge_alternatives(self, source: NodeId, target: NodeId) -> list[Path]:
-        return self.__zx_graph.get_edge_data(source, target).get(AugmentedNxGraph.KEY_ZX_BG_ALTERNATIVE_PATHS)
 
     def is_node_realised(self, node: NodeId) -> bool:
         return self.__zx_graph.nodes[node][AugmentedNxGraph.KEY_ZX_BG_CUBE] is not None
@@ -474,7 +467,7 @@ class AugmentedNxGraph:
     def is_edge_realised(self, source: NodeId, target: NodeId) -> bool:
         return self.__zx_graph.get_edge_data(source, target)[AugmentedNxGraph.KEY_ZX_BG_PATH] is not None
 
-    def realise_edge(self, source: NodeId, target: NodeId, proposed_path: Path, alternative_paths: list[Path] = None):
+    def realise_edge(self, source: NodeId, target: NodeId, proposed_path: Path):
         if not self.is_node_realised(source):
             raise Exception(f"{source} is not placed; cannot connect with a path.")
 
@@ -505,7 +498,7 @@ class AugmentedNxGraph:
         console.info(f"Realising edge {source}-{target} [type={self.get_edge_type(source,target)}] with extra cubes : {sequence}")
 
         # Representation of the path that will go into edge_realisations
-        cube_ids = [ source_cube ]
+        pipe_ids = []
 
         # Add all the extra cubes and pipes of the path to the BlockGraph
         previous_cube: int = source_cube
@@ -524,7 +517,7 @@ class AugmentedNxGraph:
             self.connect_pipe(previous_cube, current_cube, current_pipe_type)
 
             # Extend the sequence of extra node ids
-            cube_ids.append(current_cube)
+            pipe_ids.append( (previous_cube, current_cube) )
 
             # Prepare for the next iteration
             previous_cube = current_cube
@@ -534,12 +527,10 @@ class AugmentedNxGraph:
         final_pipe_type = proposed_pipes[-1]
         self.connect_pipe(previous_cube, target_cube, final_pipe_type)
 
-        cube_ids.append(target_cube)
+        pipe_ids.append( (previous_cube, target_cube) )
 
         # Associate the path as a realisation of the edge
-        proposed_path.set_cube_ids(cube_ids)
-        self.__zx_graph.get_edge_data(source, target)[AugmentedNxGraph.KEY_ZX_BG_PATH] = proposed_path
-        self.__zx_graph.get_edge_data(source, target)[AugmentedNxGraph.KEY_ZX_BG_ALTERNATIVE_PATHS] = alternative_paths
+        self.__zx_graph.get_edge_data(source, target)[AugmentedNxGraph.KEY_ZX_BG_PATH] = pipe_ids
 
         # One more edge has been realised
         self.__zx_graph.nodes[source][AugmentedNxGraph.KEY_ZX_EDGES_REALISED] += 1
