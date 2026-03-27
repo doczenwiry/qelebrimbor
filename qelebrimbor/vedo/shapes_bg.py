@@ -43,7 +43,8 @@ class BgCube(Assembly):
 
         # Initialise the labels (i.e. numbers on the cube if it corresponds to a ZX-node)
         self.__texts = []
-        for direction in Spacetime.STEPS:
+        cube_kind_reach: Coordinates = kind.get_reach()
+        for direction in [ cube_kind_reach , Spacetime.ORIGIN - cube_kind_reach ]:
             face_center = (position + step_scale * direction).as_tuple()
             text = Text3D(txt = label, pos = face_center, s = text_size, font ='Roboto', justify ='centered', c ='white')
             # Rotate the text to line it up with its face

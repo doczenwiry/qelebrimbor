@@ -95,6 +95,6 @@ if __name__ == "__main__":
         for cube in graph.get_cubes():
             print(f"Cube #{cube} : {graph.get_cube_kind(cube)}@{graph.get_cube_position(cube)}")
         if c in cases_shown:
-            viewer = AugmentedZxGraphViewer(graph)
+            viewer = AugmentedZxGraphViewer(graph, label = f"Case {c}")
             viewer.display()
     print(f"Total number of cases: {len(zx_cases)}")

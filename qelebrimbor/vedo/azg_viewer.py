@@ -23,8 +23,8 @@ settings.enable_default_mouse_callbacks = False
 settings.enable_default_keyboard_callbacks = False
 
 class AugmentedZxGraphViewer(Plotter):
-    def __init__(self, anx: AugmentedZxGraph, label: str = "qelebrimbor"):
-        super().__init__(shape = VIEWPORTS, sharecam = False, title = f"ang-viewer [{label}]")
+    def __init__(self, anx: AugmentedZxGraph, label: str = ""):
+        super().__init__(shape = VIEWPORTS, sharecam = False, title = f"qelebrimbor [{label}]")
 
         # Initialise the camera for the BG Graph
         zx_camera = self.at(ZX_VIEWPORT).camera
