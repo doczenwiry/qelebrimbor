@@ -1,7 +1,5 @@
 from vedo.plotter.runtime import Plotter
 
-from qelebrimbor.common.components_zx import EdgeType
-from qelebrimbor.common.path import Path
 from qelebrimbor.vedo.frame_manager import FrameManager
 
 from qelebrimbor.common.components_bg import CubeId

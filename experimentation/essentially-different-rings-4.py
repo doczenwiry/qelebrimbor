@@ -1,0 +1,62 @@
+import pyzx as zx
+from pyzx import VertexType
+
+from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
+from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.components_zx import EdgeType
+from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.common.path import Path
+from qelebrimbor.helpers.spacetime import Spacetime
+from qelebrimbor.vedo.azg_viewer import AugmentedZxGraphViewer
+
+qubits = [0, 0, 1, 1]
+layers = [0, 1, 1, 0]
+
+def generate_ring(vtypes : list[VertexType]):
+    graph = zx.Graph()
+
+    for i in range(len(vtypes)):
+        graph.add_vertex(ty = vtypes[i], qubit = qubits[i], row = layers[i])
+
+    for i in range(n):
+        graph.add_edge( (i, (i+1) % n) )
+
+    return graph
+
+def realise_ring(azx: AugmentedZxGraph, cubes: list[tuple[CubeKind, Coordinates]]):
+    for i in range(azx.number_of_nodes()):
+        azx.realise_node(i, *cubes[i])
+
+    for source, target in azx.edges():
+        azx.realise_edge(source, target, Path(source, target))
+
+n = 4
+zx_cases = [
+    # Case 0
+    [ VertexType.X for _ in range(n) ],
+    # Case 1
+    [ VertexType.Z if i in [0] else VertexType.X for i in range(n) ],
+    # Case 2
+    [VertexType.Z if i in [0, 1] else VertexType.X for i in range(n)],
+    [VertexType.Z if i in [0, 2] else VertexType.X for i in range(n)]
+]
+
+bg_cases = [
+    [ (CubeKind.XZZ, position) for position in [ Coordinates(0,0,0) , Coordinates(0,1,0), Coordinates(0,1,1), Coordinates(0,0,1) ] ],
+    [],
+    [],
+    []
+]
+
+if __name__ == "__main__":
+    for c in range(len(zx_cases)):
+        pyzx_graph = generate_ring(vtypes = zx_cases[c])
+        zx.draw(pyzx_graph, labels = True)
+        graph = AugmentedZxGraph.from_pyzx_graph(pyzx_graph)
+        if len(bg_cases[c]) > 0:
+            realise_ring(graph, bg_cases[c])
+        for cube in graph.get_cubes():
+            print(f"Cube #{cube} : {graph.get_cube_kind(cube)}@{graph.get_cube_position(cube)}")
+        viewer = AugmentedZxGraphViewer(graph)
+        viewer.display()
+    print(f"Total number of cases: {len(zx_cases)}")
