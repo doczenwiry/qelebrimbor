@@ -74,7 +74,10 @@ bg_cases = [
     [],
     [],
     [],
-    [],
+    [ (CubeKind.XZX, Coordinates(0, 0, 2)), (CubeKind.XZZ, Coordinates(1, 0, 2)), (CubeKind.ZXX, Coordinates(1, 1, 2)),
+      (CubeKind.ZXX, Coordinates(1, 1, 1)), (CubeKind.ZXZ, Coordinates(1, 1, 0)), (CubeKind.XXZ, Coordinates(0, 1, 0)),
+      (CubeKind.XZZ, Coordinates(0, 0, 0)), (CubeKind.XZZ, Coordinates(0, 0, 1))
+    ],
     [],
     [],
     [ (CubeKind.ZXX, Coordinates(0,0,0)), (CubeKind.ZZX, Coordinates(0,1,0)), (CubeKind.ZXX, Coordinates(0,2,0)),
@@ -86,7 +89,7 @@ bg_cases = [
 cases_shown = [0, 17]
 
 if __name__ == "__main__":
-    for c in range(len(zx_cases)):
+    for c in cases_shown:
         pyzx_graph = generate_ring(vtypes = zx_cases[c])
         zx.draw(pyzx_graph, labels = True)
         graph = AugmentedZxGraph.from_pyzx_graph(pyzx_graph)
@@ -94,7 +97,7 @@ if __name__ == "__main__":
             realise_ring(graph, bg_cases[c])
         for cube in graph.get_cubes():
             print(f"Cube #{cube} : {graph.get_cube_kind(cube)}@{graph.get_cube_position(cube)}")
-        if c in cases_shown:
-            viewer = AugmentedZxGraphViewer(graph, label = f"Case {c}")
-            viewer.display()
+
+        viewer = AugmentedZxGraphViewer(graph, label = f"Case {c}")
+        viewer.display()
     print(f"Total number of cases: {len(zx_cases)}")
