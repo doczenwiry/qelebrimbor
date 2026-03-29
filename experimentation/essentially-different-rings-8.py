@@ -1,8 +1,13 @@
+from itertools import repeat
+
 import pyzx as zx
 from pyzx import VertexType
 
+import networkx as nx
+
 from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
 from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.path import Path
 from qelebrimbor.helpers.spacetime import Spacetime, Step
@@ -40,12 +45,18 @@ def convert_ring(cubes: list[CubeKind], steps: list[Coordinates]):
         ring.append( (cubes[idx+1] , position) )
     return ring
 
+def count_plane_switches(azx: AugmentedZxGraph):
+    return sum(nx.number_connected_components(
+            azx.subgraph(filter(lambda nd: azx.get_node_type(nd) == node_type, azx.nodes()))
+        ) for node_type in [ NodeType.X, NodeType.Z ]
+    )
+
 n = 8
 zx_cases = [
     # Case 0
     [ VertexType.X for _ in range(n) ],
     # Case 1
-    [ VertexType.Z if i in [0] else VertexType.X for i in range(n) ],
+    [ VertexType.Z if i in [1] else VertexType.X for i in range(n) ],
     # Case 2
     [VertexType.Z if i in [0, 1] else VertexType.X for i in range(n)],
     [VertexType.Z if i in [1, 7] else VertexType.X for i in range(n)],
@@ -72,9 +83,25 @@ bg_cases = {
         cubes = [ CubeKind.XZZ for _ in range(n) ],
         steps = [ Step[stp].value for stp in ['YP', 'YP', 'ZP', 'ZP', 'YM', 'YM', 'ZM'] ]
     ),
+    1 : convert_ring(
+        cubes=[ CubeKind[knd] for knd in ['ZZX', 'ZXX', 'ZZX', 'ZZX', 'ZZX', 'ZZX', 'ZZX', 'ZZX'] ],
+        steps=[ Step[stp].value for stp in ['YP', 'YP', 'XP', 'XP', 'YM', 'YM', 'XM'] ]
+    ),
     2 : convert_ring(
         cubes=[ CubeKind[knd] for knd in ['ZXX', 'ZXX', 'ZZX', 'ZZX', 'ZZX', 'ZZX', 'ZZX', 'ZZX'] ],
         steps=[ Step[stp].value for stp in ['YP', 'YP', 'XP', 'YM', 'YM', 'YM', 'XM'] ]
+    ),
+    3 : convert_ring(
+        cubes=[ CubeKind[knd] for knd in ['ZZX', 'ZXX', 'ZZX', 'ZZX', 'ZZX', 'ZZX', 'ZZX', 'XZX'] ],
+        steps=[ Step[stp].value for stp in ['YP', 'YP', 'XP', 'XP', 'YM', 'YM', 'XM'] ]
+    ),
+    4 : convert_ring(
+        cubes=[ CubeKind[knd] for knd in ['XZX', 'ZZX', 'ZZX', 'XZX', 'XZZ', 'XZZ', 'XZZ', 'XZZ'] ],
+        steps=[ Step[stp].value for stp in ['XP', 'YP', 'XM', 'ZP', 'ZP', 'YM', 'ZM'] ]
+    ),
+    5 : convert_ring(
+        cubes=[ CubeKind[knd] for knd in ['XZZ', 'XZZ', 'XZZ', 'XZX', 'XZZ', 'XZZ', 'XZZ', 'XZX'] ],
+        steps=[ Step[stp].value for stp in ['YP', 'YP', 'ZP', 'ZP', 'YM', 'YM', 'ZM'] ]
     ),
     9 : convert_ring(
         cubes=[ CubeKind[knd] for knd in ['ZZX', 'ZZX', 'ZZX', 'XZX', 'ZZX', 'ZXX', 'ZZX', 'XZX'] ],
@@ -94,14 +121,19 @@ bg_cases = {
     )
 }
 
+ignored_cases = range(18)
+
 if __name__ == "__main__":
     for c in range(len(zx_cases)):
         pyzx_graph = generate_ring(vtypes = zx_cases[c])
-        zx.draw(pyzx_graph, labels = True)
         graph = AugmentedZxGraph.from_pyzx_graph(pyzx_graph)
+        zx.draw(pyzx_graph, labels=True)
+        print(f"Case #{c} [PS:{count_plane_switches(graph)}]")
         if c in bg_cases:
             realise_ring(graph, bg_cases[c])
-            viewer = AugmentedZxGraphViewer(graph, label = f"Case {c}")
+            viewer = AugmentedZxGraphViewer(graph, label=f"Case {c}")
             viewer.display()
+        elif c not in ignored_cases:
+            print(f"> Missing realisation.")
 
     print(f"Total number of cases: {len(zx_cases)}")

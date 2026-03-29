@@ -47,9 +47,12 @@ class AugmentedZxGraph(nx.Graph):
     KEY_BG_CUBE_POSITION = 'bg_cube_position'
     KEY_BG_PIPE_TYPE = 'bg_pipe_type'
 
-    def __init__(self, nodes: Iterable[tuple[NodeId, NodeType]], edges: Iterable[tuple[tuple[NodeId, NodeId], EdgeType]]):
+    def __init__(self,
+        nodes: Iterable[tuple[NodeId, NodeType]] = None,
+        edges: Iterable[tuple[tuple[NodeId, NodeId], EdgeType]] = None
+    ):
         # Separate ZX-graph and BG-graph
-        super().__init__()
+        super(AugmentedZxGraph, self).__init__()
         self.__bg_graph = nx.Graph()
 
         # Keeps track of which nodes appear on which qubit-line or layer of the ZX-graph
@@ -60,19 +63,21 @@ class AugmentedZxGraph(nx.Graph):
         self.__zx_node_realisation_order = []
         self.__zx_edge_realisation_order = []
 
-        for node, node_type in nodes:
-            self.add_node(node)
-            nx_node = self.nodes[node]
-            nx_node[AugmentedZxGraph.KEY_ZX_NODE_TYPE] = node_type
-            nx_node[AugmentedZxGraph.KEY_ZX_EDGES_REALISED] = 0
-            nx_node[AugmentedZxGraph.KEY_ZX_BG_CUBE] = -1
+        if nodes is not None:
+            for node, node_type in nodes:
+                self.add_node(node)
+                nx_node = self.nodes[node]
+                nx_node[AugmentedZxGraph.KEY_ZX_NODE_TYPE] = node_type
+                nx_node[AugmentedZxGraph.KEY_ZX_EDGES_REALISED] = 0
+                nx_node[AugmentedZxGraph.KEY_ZX_BG_CUBE] = -1
 
-        for edge, edge_type in edges:
-            source = min(edge)
-            target = max(edge)
-            self.add_edge(source, target)
-            self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_TYPE] = edge_type
-            self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_BG_PATH] = None
+        if edges is not None:
+            for edge, edge_type in edges:
+                source = min(edge)
+                target = max(edge)
+                self.add_edge(source, target)
+                self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_TYPE] = edge_type
+                self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_BG_PATH] = None
 
         self.__next_cube_id = self.number_of_nodes()
 
@@ -82,9 +87,10 @@ class AugmentedZxGraph(nx.Graph):
 
         # TODO: split any spider with more than 4 edges (cfr. graph_manager.py; prep_3d_g)
         # TODO: does the choice of how to split such spiders affect the minimal achievable volume ?
-        _, max_degree = max(self.degree, key=lambda entry: entry[1])
-        if max_degree > 4:
-            raise NotImplemented("Enforcement of no-more-than-four-legs condition not implemented.")
+        if self.number_of_nodes() > 0:
+            _, max_degree = max(self.degree, key=lambda entry: entry[1])
+            if max_degree > 4:
+                raise NotImplemented("Enforcement of no-more-than-four-legs condition not implemented.")
 
     @staticmethod
     def from_pyzx_graph(zx_graph: zx.graph.base.BaseGraph):
