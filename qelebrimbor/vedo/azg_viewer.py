@@ -94,7 +94,10 @@ class AugmentedZxGraphViewer(Plotter):
 
     def __on_key_pressed(self, event):
         # Pass the key press to the BG scene manager
-        self.__bg_scene_manager.on_key_press(event)
+        if event.keypress == "Escape":
+            self.close()
+        else:
+            self.__bg_scene_manager.on_key_press(event)
 
     def __on_mouse_move(self, event):
         if event.object != self.__selected_object:

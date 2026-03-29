@@ -47,6 +47,7 @@ class AugmentedZxGraph(nx.Graph):
     KEY_BG_CUBE_POSITION = 'bg_cube_position'
     KEY_BG_PIPE_TYPE = 'bg_pipe_type'
 
+    # TODO: work around the assumption that the zx-nodes are numbered from 0..n-1
     def __init__(self,
         nodes: Iterable[tuple[NodeId, NodeType]] = None,
         edges: Iterable[tuple[tuple[NodeId, NodeId], EdgeType]] = None
@@ -62,6 +63,9 @@ class AugmentedZxGraph(nx.Graph):
         # Tracks the order in which nodes and edges from the ZX graph were realised into the Blockgraph
         self.__zx_node_realisation_order = []
         self.__zx_edge_realisation_order = []
+
+        # Keeps track of the coordinates in 3D that are occupied by some cube
+        self.occupied: set[Coordinates] = set()
 
         if nodes is not None:
             for node, node_type in nodes:
@@ -80,10 +84,6 @@ class AugmentedZxGraph(nx.Graph):
                 self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_BG_PATH] = None
 
         self.__next_cube_id = self.number_of_nodes()
-
-        # Keeps track of the coordinates in 3D that are occupied by some cube
-        # TODO: replace with efficient data-structure for crowded space (Binary Space Partitioning ?)
-        self.occupied: set[Coordinates] = set()
 
         # TODO: split any spider with more than 4 edges (cfr. graph_manager.py; prep_3d_g)
         # TODO: does the choice of how to split such spiders affect the minimal achievable volume ?

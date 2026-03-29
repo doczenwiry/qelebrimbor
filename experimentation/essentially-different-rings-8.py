@@ -13,19 +13,21 @@ from qelebrimbor.common.path import Path
 from qelebrimbor.helpers.spacetime import Spacetime, Step
 from qelebrimbor.vedo.azg_viewer import AugmentedZxGraphViewer
 
-qubits = [0, 0, 0, 1, 2, 2, 2, 1]
-layers = [0, 1, 2, 2, 2, 1, 0, 0]
+N = 8
+QUBITS = [0, 0, 0, 1, 2, 2, 2, 1]
+LAYERS = [0, 1, 2, 2, 2, 1, 0, 0]
 
-def generate_ring(vtypes : list[VertexType]):
-    graph = zx.Graph()
+def generate_ring(n, zs: list[NodeId]):
+    ring = zx.Graph()
+    vtypes = [ VertexType.Z if i in zs else VertexType.X for i in range(n) ]
 
     for i in range(len(vtypes)):
-        graph.add_vertex(ty = vtypes[i], qubit = qubits[i], row = layers[i])
+        ring.add_vertex(ty = vtypes[i], qubit = QUBITS[i], row = LAYERS[i])
 
-    for i in range(n):
-        graph.add_edge( (i, (i+1) % n) )
+    for i in range(N):
+        ring.add_edge((i, (i+1) % N))
 
-    return graph
+    return ring
 
 def realise_ring(azx: AugmentedZxGraph, cubes: list[tuple[CubeKind, Coordinates]]):
     for i in range(azx.number_of_nodes()):
@@ -51,36 +53,35 @@ def count_plane_switches(azx: AugmentedZxGraph):
         ) for node_type in [ NodeType.X, NodeType.Z ]
     )
 
-n = 8
-zx_cases = [
+zx_rings = [
     # Case 0
-    [ VertexType.X for _ in range(n) ],
+    generate_ring(N, zs = []),
     # Case 1
-    [ VertexType.Z if i in [1] else VertexType.X for i in range(n) ],
+    generate_ring(N, zs = [1]),
     # Case 2
-    [VertexType.Z if i in [0, 1] else VertexType.X for i in range(n)],
-    [VertexType.Z if i in [1, 7] else VertexType.X for i in range(n)],
-    [VertexType.Z if i in [0, 3] else VertexType.X for i in range(n)],
-    [VertexType.Z if i in [3, 7] else VertexType.X for i in range(n)],
+    generate_ring(N, zs = [0, 1]),
+    generate_ring(N, zs = [1, 7]),
+    generate_ring(N, zs = [0, 3]),
+    generate_ring(N, zs = [3, 7]),
     # Case 3
-    [VertexType.Z if i in [0, 1, 2] else VertexType.X for i in range(n)],
-    [VertexType.Z if i in [0, 1, 3] else VertexType.X for i in range(n)],
-    [VertexType.Z if i in [0, 1, 4] else VertexType.X for i in range(n)],
-    [VertexType.Z if i in [3, 5, 7] else VertexType.X for i in range(n)],
-    [VertexType.Z if i in [0, 3, 5] else VertexType.X for i in range(n)],
+    generate_ring(N, zs = [0, 1, 2]),
+    generate_ring(N, zs = [0, 1, 3]),
+    generate_ring(N, zs = [0, 1, 4]),
+    generate_ring(N, zs = [3, 5, 7]),
+    generate_ring(N, zs = [0, 3, 5]),
     # Case 4
-    [VertexType.Z if i in [0, 1, 2, 3] else VertexType.X for i in range(n)],
-    [VertexType.Z if i in [0, 1, 2, 4] else VertexType.X for i in range(n)],
-    [VertexType.Z if i in [0, 1, 2, 5] else VertexType.X for i in range(n)],
-    [VertexType.Z if i in [0, 2, 3, 5] else VertexType.X for i in range(n)],
-    [VertexType.Z if i in [0, 2, 3, 6] else VertexType.X for i in range(n)],
-    [VertexType.Z if i in [0, 1, 4, 5] else VertexType.X for i in range(n)],
-    [VertexType.Z if i in [0, 2, 4, 6] else VertexType.X for i in range(n)]
+    generate_ring(N, zs = [0, 1, 2, 3]),
+    generate_ring(N, zs = [0, 1, 2, 4]),
+    generate_ring(N, zs = [0, 1, 2, 5]),
+    generate_ring(N, zs = [0, 2, 3, 5]),
+    generate_ring(N, zs = [0, 2, 3, 6]),
+    generate_ring(N, zs = [0, 1, 4, 5]),
+    generate_ring(N, zs = [0, 2, 4, 6]),
 ]
 
 bg_cases = {
     0 : convert_ring(
-        cubes = [ CubeKind.XZZ for _ in range(n) ],
+        cubes = [CubeKind.XZZ for _ in range(N)],
         steps = [ Step[stp].value for stp in ['YP', 'YP', 'ZP', 'ZP', 'YM', 'YM', 'ZM'] ]
     ),
     1 : convert_ring(
@@ -124,10 +125,10 @@ bg_cases = {
 ignored_cases = range(18)
 
 if __name__ == "__main__":
-    for c in range(len(zx_cases)):
-        pyzx_graph = generate_ring(vtypes = zx_cases[c])
-        graph = AugmentedZxGraph.from_pyzx_graph(pyzx_graph)
-        zx.draw(pyzx_graph, labels=True)
+    for c in range(len(zx_rings)):
+        pyzx_ring = zx_rings[c]
+        graph = AugmentedZxGraph.from_pyzx_graph(pyzx_ring)
+        zx.draw(pyzx_ring, labels=True)
         print(f"Case #{c} [PS:{count_plane_switches(graph)}]")
         if c in bg_cases:
             realise_ring(graph, bg_cases[c])
@@ -136,4 +137,4 @@ if __name__ == "__main__":
         elif c not in ignored_cases:
             print(f"> Missing realisation.")
 
-    print(f"Total number of cases: {len(zx_cases)}")
+    print(f"Total number of cases: {len(zx_rings)}")
