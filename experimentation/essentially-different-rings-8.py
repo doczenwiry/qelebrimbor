@@ -1,9 +1,7 @@
-from itertools import repeat
-
 import pyzx as zx
 from pyzx import VertexType
-
 import networkx as nx
+import matplotlib.pyplot as plt
 
 from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
 from qelebrimbor.common.components_bg import CubeKind
@@ -116,25 +114,30 @@ bg_cases = {
         cubes = [ CubeKind[knd] for knd in ['XZX', 'ZZX', 'ZXX', 'ZXX', 'ZXZ', 'XXZ', 'XZZ', 'XZZ'] ],
         steps = [ Step[stp].value for stp in [ 'XP', 'YP', 'ZP', 'ZP', 'XM', 'YM', 'ZM' ] ]
     ),
+    16 : convert_ring(
+        cubes = [ CubeKind[knd] for knd in [ 'ZXX', 'ZXX', 'ZXZ', 'ZXZ', 'ZXX', 'ZXX', 'ZXZ', 'ZXZ' ] ],
+        steps = [ Step[stp].value for stp in ['YP', 'ZP', 'ZP', 'ZP', 'YM', 'ZM', 'ZM'] ]
+    ),
     17 : convert_ring(
         cubes = [ CubeKind[knd] for knd in [ 'ZXX', 'ZZX', 'ZXX', 'ZXZ', 'ZXX', 'ZZX', 'ZXX', 'ZXZ' ] ],
         steps = [ Step[stp].value for stp in ['YP', 'YP', 'ZP', 'ZP', 'YM', 'YM', 'ZM'] ]
     )
 }
 
-ignored_cases = range(18)
-
 if __name__ == "__main__":
+    missing = 0
     for c in range(len(zx_rings)):
         pyzx_ring = zx_rings[c]
         graph = AugmentedZxGraph.from_pyzx_graph(pyzx_ring)
-        zx.draw(pyzx_ring, labels=True)
         print(f"Case #{c} [PS:{count_plane_switches(graph)}]")
         if c in bg_cases:
             realise_ring(graph, bg_cases[c])
             viewer = AugmentedZxGraphViewer(graph, label=f"Case {c}")
             viewer.display()
-        elif c not in ignored_cases:
+        else:
+            zx.draw(pyzx_ring, labels=True)
             print(f"> Missing realisation.")
+            missing += 1
 
     print(f"Total number of cases: {len(zx_rings)}")
+    print(f"Missing realisations : {missing}")
