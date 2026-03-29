@@ -15,6 +15,14 @@ class Octant(Enum):
     def __getitem__(self, index):
         return self.value[index]
 
+class Step(Enum):
+    XP = Coordinates(+1,  0,  0)
+    XM = Coordinates(-1,  0,  0)
+    YP = Coordinates( 0, +1,  0)
+    YM = Coordinates( 0, -1,  0)
+    ZP = Coordinates( 0,  0, +1)
+    ZM = Coordinates( 0,  0, -1)
+
 class Spacetime:
     ORIGIN = Coordinates(0, 0, 0)
 
