@@ -133,6 +133,10 @@ bg_cases = {
         cubes=['XZZ', 'XZZ', 'XZZ', 'XZX', 'XZZ', 'XZZ', 'XZZ', 'XZX'],
         steps=['YP', 'YP', 'ZP', 'ZP', 'YM', 'YM', 'ZM']
     ),
+    6 : convert_ring(
+        cubes = ['XXZ', 'XXZ', 'XXZ' , 'ZXZ', 'ZXZ', 'ZXZ', 'ZXZ', 'ZXZ'],
+        positions = [(0,-1,0), (0,0,0), (0,1,0), (1,0,0), (1,0,-1), (0,0,-1), (-1,0,-1), (-1,0,0) ]
+    ),
     9 : convert_ring(
         cubes=['ZZX', 'ZZX', 'ZZX', 'XZX', 'ZZX', 'ZXX', 'ZZX', 'XZX'],
         steps=['YP', 'YP', 'XP', 'XP', 'YM', 'YM', 'XM']
@@ -159,14 +163,19 @@ bg_cases = {
     )
 }
 
+# Represents the displacement of edges to reduce overall volume when needed
 bg_links = {
+    6 : {
+        (0,7) : (1,7),
+        (2,3) : (1,3)
+    },
     13 : {
         (0,7) : (1,7),
         (2,3) : (1,3)
     }
 }
 
-skipped_cases = range(13)
+skipped_cases = [] #range(13)
 
 if __name__ == "__main__":
     missing = 0
