@@ -59,10 +59,6 @@ class AugmentedZxGraph(nx.Graph):
         self.__zx_qubits: dict[QubitId, list[NodeId]] = defaultdict(list)
         self.__zx_layers: dict[LayerId, list[NodeId]] = defaultdict(list)
 
-        # Tracks the order in which nodes and edges from the ZX graph were realised into the Blockgraph
-        self.__zx_node_realisation_order = []
-        self.__zx_edge_realisation_order = []
-
         # Keeps track of the coordinates in 3D that are occupied by some cube
         self.occupied: set[Coordinates] = set()
 
@@ -169,18 +165,6 @@ class AugmentedZxGraph(nx.Graph):
                 for node in ang.__zx_layers[layer]:
                     ang.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_LAYER] = layer
 
-            # Read zx-realisation-orders
-            header = file.readline()
-            if header != "ZX-NODE-REALISATION-ORDER:\n":
-                raise Exception(f"Invalid file format. Header for ZX-NODE-REALISATION-ORDER not found.")
-            current = file.readline().split(" ")
-            ang.__zx_node_realisation_order = list(map(lambda nd: int(nd), current[1:]))
-            header = file.readline()
-            if header != "ZX-EDGE-REALISATION-ORDER:\n":
-                raise Exception(f"Invalid file format. Header for ZX-EDGE-REALISATION-ORDER not found.")
-            current = file.readline().split(" ")
-            ang.__zx_edge_realisation_order = list(map(lambda ed: AugmentedZxGraph.__make_tuple(ed), current[1:-1]))
-
             # Read bg-cubes
             header = file.readline()
             if header != "BG-CUBES:\n":
@@ -261,11 +245,6 @@ class AugmentedZxGraph(nx.Graph):
             for layer in self.get_layers():
                 content = map(str, self.get_nodes(layer=layer))
                 file.write(f">{layer}: {" ".join(content)}\n")
-            # Dump zx-realisation-orders
-            content = map(str, self.__zx_node_realisation_order)
-            file.write(f"ZX-NODE-REALISATION-ORDER:\n> {" ".join(content)}\n")
-            content = map(lambda edge: str(edge[0]) + '-' + str(edge[1]), self.__zx_edge_realisation_order)
-            file.write(f"ZX-EDGE-REALISATION-ORDER:\n> {" ".join(content)}\n")
             # Dump bg-cubes
             file.write(f"BG-CUBES:\n")
             for cube_kind in [ CubeKind.OOO, CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ, CubeKind.YYY ]:
@@ -285,12 +264,6 @@ class AugmentedZxGraph(nx.Graph):
                 self.get_edges()
             )
             file.write(f"ZX-EDGES-BG-PIPES:\n{"\n".join(content)}")
-
-    def get_node_realisation_order(self) -> list[NodeId]:
-        return self.__zx_node_realisation_order
-
-    def get_edge_realisation_order(self) -> list[tuple[NodeId, NodeId]]:
-        return self.__zx_edge_realisation_order
 
     def get_qubits(self):
         return self.__zx_qubits.keys()
@@ -430,7 +403,6 @@ class AugmentedZxGraph(nx.Graph):
         self.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_BG_CUBE] = cube
 
         console.info(f"Realising node #{node} [{self.get_node_type(node)}] as cube #{cube} [{kind}@{position}]")
-        self.__zx_node_realisation_order.append(node)
 
         return cube
 
@@ -522,9 +494,6 @@ class AugmentedZxGraph(nx.Graph):
 
         # Associate the path as a realisation of the edge
         self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH] = pipe_ids
-
-        # One more edge has been realised
-        self.__zx_edge_realisation_order.append( (source, target) )
 
     def place_cube(self, kind: CubeKind, position: Coordinates) -> CubeId:
         if position in self.occupied:
@@ -648,20 +617,6 @@ class AugmentedZxGraph(nx.Graph):
 
             if current_pipe_type == EdgeType.HADAMARD:
                 is_hadamard_path = not is_hadamard_path
-
-        # if self.is_cube_placed(target_cube):
-        #     if proposed_target_kind != self.get_cube_kind(target_cube):
-        #         console.debug(f"> Proposed target kind does not match its existing realisation.")
-        #         return False
-        #     if proposed_target_position != self.get_cube_position(target_cube):
-        #         console.debug(f"> Proposed target position does not match its existing realisation.")
-        #         return False
-        # elif proposed_target_position in self.occupied:
-        #     occupant = self.__identify_cube_at_position(proposed_target_position)
-        #     occupant_kind = self.get_cube_kind(occupant)
-        #     occupant_position = self.get_cube_position(occupant)
-        #     console.debug(f"> Proposed target position is already occupied [{occupant_kind}@{occupant_position}].")
-        #     return False
 
         edge_type = self.get_edge_type(path.source, path.target)
 

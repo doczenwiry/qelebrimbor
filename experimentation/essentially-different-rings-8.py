@@ -9,7 +9,6 @@ from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
 from qelebrimbor.common.components_bg import PipeId, CubeKind
 from qelebrimbor.common.components_zx import NodeId, EdgeId, NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.helpers.spacetime import Spacetime, Step
 from qelebrimbor.vedo.azg_viewer import AugmentedZxGraphViewer
 
@@ -33,27 +32,32 @@ def generate_ring(n, zs: list[NodeId]):
 def realise_ring(
     azx: AugmentedZxGraph,
     cubes: list[tuple[CubeKind, Coordinates]],
-    connections: Iterable[tuple[EdgeId, PipeId]] = None
+    links: dict[EdgeId, EdgeId] = None
 ):
+    if links is None:
+        links = dict()
+
     for i in range(len(cubes)):
         azx.realise_node(i, *cubes[i])
 
-    if connections is None:
-        connections = []
-        for edge in azx.get_edges():
-            pipe = tuple(sorted( (azx.get_cube(edge[0]), azx.get_cube(edge[1])) ))
-            connections.append( (edge , pipe) )
-
-    for edge, pipe in connections:
+    for edge in azx.get_edges():
         source, target = edge
-        source_cube, target_cube = pipe
+        if edge in links:
+            source_cube = azx.get_cube(links[edge][0])
+            target_cube = azx.get_cube(links[edge][1])
+        else:
+            source_cube = azx.get_cube(source)
+            target_cube = azx.get_cube(target)
+        pipe = (source_cube, target_cube)
         azx.connect_pipe(source_cube, target_cube, pipe_type = EdgeType.IDENTITY)
         azx.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH] = [ pipe ]
-        azx.get_edge_realisation_order().append( (source, target) )
 
-def convert_ring(cubes: list[str], steps: list[str] = None, positions: list[tuple[int,int,int]] = None):
+def convert_ring(
+        cubes: list[str],
+        steps: list[str] = None,
+        positions: list[tuple[int,int,int]] = None
+):
     ring = []
-    connections = None
     if steps is not None:
         if len(cubes) != len(steps) + 1:
             raise Exception("Inconsistent path specification.")
@@ -70,9 +74,7 @@ def convert_ring(cubes: list[str], steps: list[str] = None, positions: list[tupl
         for cube, position in zip(cubes, positions):
             ring.append( (CubeKind[cube], Coordinates.from_tuple(position)) )
 
-        connections = []
-
-    return ring, connections
+    return ring
 
 def count_plane_switches(azx: AugmentedZxGraph):
     return sum(nx.number_connected_components(
@@ -140,8 +142,8 @@ bg_cases = {
         steps = ['XP', 'YP', 'YP', 'ZP', 'XM', 'YM', 'YM']
     ),
     13 : convert_ring(
-        cubes = [ 'XXZ', 'XXZ', 'XXZ' ],
-        positions = [ (0,0,0), (0,1,0), (1,1,0) ]
+        cubes = [ 'XXZ', 'XXZ', 'XXZ', 'XZZ', 'XZZ', 'XXZ', 'ZXZ', 'ZXZ' ],
+        positions = [ (0,-1,0), (0,0,0), (-1,0,0), (0,1,0), (0,1,-1), (0,0,-1), (1,0,-1), (1,0,0) ]
     ),
     14 : convert_ring(
         cubes = ['XZX', 'ZZX', 'ZXX', 'ZXX', 'ZXZ', 'XXZ', 'XZZ', 'XZZ'],
@@ -157,6 +159,13 @@ bg_cases = {
     )
 }
 
+bg_links = {
+    13 : {
+        (0,7) : (1,7),
+        (2,3) : (1,3)
+    }
+}
+
 skipped_cases = range(13)
 
 if __name__ == "__main__":
@@ -165,9 +174,12 @@ if __name__ == "__main__":
         pyzx_ring = zx_rings[c]
         graph = AugmentedZxGraph.from_pyzx_graph(pyzx_ring)
         print(f"Case #{c} [PS:{count_plane_switches(graph)}]")
-        if c in bg_cases and c not in skipped_cases:
-            cubes, connections = bg_cases[c]
-            realise_ring(graph, cubes, connections)
+        if c in bg_cases:
+            if c in skipped_cases:
+                continue
+            cubes = bg_cases[c]
+            links = bg_links[c] if c in bg_links else None
+            realise_ring(graph, cubes, links)
             viewer = AugmentedZxGraphViewer(graph, label=f"Case {c}")
             viewer.display()
         else:
