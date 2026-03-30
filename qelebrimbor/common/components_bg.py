@@ -8,6 +8,7 @@ from qelebrimbor.helpers.spacetime import Spacetime
 from qelebrimbor.common.components_zx import NodeType
 
 CubeId = int
+PipeId = tuple[CubeId, CubeId]
 
 class CubeKind(Enum):
     OOO = 0
@@ -90,6 +91,13 @@ class CubeKind(Enum):
 
     def __repr__(self):
         return str(self)
+
+    def __str__(self):
+        return self.name
+
+class PipeKind(Enum):
+    IDENTITY = 0
+    HADAMARD = 1
 
     def __str__(self):
         return self.name

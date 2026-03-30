@@ -5,11 +5,10 @@ from qelebrimbor.common.components_zx import NodeId, EdgeType
 from logging import getLogger
 console = getLogger(__name__)
 
-class Path:
+class PathSpecification:
     def __init__(self,
         source: NodeId, target: NodeId,
-        extras: list[tuple[CubeKind, Coordinates]] = None,
-        pipes: list[EdgeType] = None
+        extras: list[tuple[CubeKind, Coordinates]], pipes: list[EdgeType]
     ):
         self.source = source
         self.target = target

@@ -5,7 +5,7 @@ from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
 from qelebrimbor.common.components_bg import CubeKind
 from qelebrimbor.common.components_zx import EdgeType
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.path import Path
+from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.helpers.spacetime import Spacetime
 from qelebrimbor.vedo.azg_viewer import AugmentedZxGraphViewer
 
@@ -28,7 +28,7 @@ def realise_ring(azx: AugmentedZxGraph, cubes: list[tuple[CubeKind, Coordinates]
         azx.realise_node(i, *cubes[i])
 
     for source, target in azx.edges():
-        azx.realise_edge(source, target, Path(source, target))
+        azx.realise_edge(source, target, PathSpecification(source, target))
 
 n = 4
 zx_cases = [
