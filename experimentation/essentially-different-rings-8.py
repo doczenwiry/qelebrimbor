@@ -1,12 +1,9 @@
-from typing import Iterable
-
 import pyzx as zx
 from pyzx import VertexType
 import networkx as nx
-import matplotlib.pyplot as plt
 
 from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
-from qelebrimbor.common.components_bg import PipeId, CubeKind
+from qelebrimbor.common.components_bg import CubeKind
 from qelebrimbor.common.components_zx import NodeId, EdgeId, NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import Spacetime, Step
@@ -137,6 +134,10 @@ bg_cases = {
         cubes = ['XXZ', 'XXZ', 'XXZ' , 'ZXZ', 'ZXZ', 'ZXZ', 'ZXZ', 'ZXZ'],
         positions = [(0,-1,0), (0,0,0), (0,1,0), (1,0,0), (1,0,-1), (0,0,-1), (-1,0,-1), (-1,0,0) ]
     ),
+    8 : convert_ring(
+        cubes = [ 'XXZ', 'XXZ', 'XZZ', 'XZZ', 'XXZ', 'XZZ', 'XZZ', 'XZZ' ],
+        steps = [ 'YP', 'YP', 'ZM', 'YM', 'YM', 'YM', 'ZP']
+    ),
     9 : convert_ring(
         cubes=['ZZX', 'ZZX', 'ZZX', 'XZX', 'ZZX', 'ZXX', 'ZZX', 'XZX'],
         steps=['YP', 'YP', 'XP', 'XP', 'YM', 'YM', 'XM']
@@ -182,6 +183,7 @@ if __name__ == "__main__":
     for c in range(len(zx_rings)):
         pyzx_ring = zx_rings[c]
         graph = AugmentedZxGraph.from_pyzx_graph(pyzx_ring)
+        zx.draw(pyzx_ring, labels=True)
         print(f"Case #{c} [PS:{count_plane_switches(graph)}]")
         if c in bg_cases:
             if c in skipped_cases:
@@ -192,7 +194,6 @@ if __name__ == "__main__":
             viewer = AugmentedZxGraphViewer(graph, label=f"Case {c}")
             viewer.display()
         else:
-            zx.draw(pyzx_ring, labels=True)
             print(f"> Missing realisation.")
             missing += 1
 

@@ -1,62 +1,121 @@
 import pyzx as zx
 from pyzx import VertexType
 
+import networkx as nx
+
 from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
 from qelebrimbor.common.components_bg import CubeKind
-from qelebrimbor.common.components_zx import EdgeType
+from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeId, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.paths import PathSpecification
-from qelebrimbor.helpers.spacetime import Spacetime
+from qelebrimbor.helpers.spacetime import Spacetime, Step
 from qelebrimbor.vedo.azg_viewer import AugmentedZxGraphViewer
 
-qubits = [0, 0, 1, 1]
-layers = [0, 1, 1, 0]
+N = 4
+QUBITS = [0, 0, 1, 1]
+LAYERS = [0, 1, 1, 0]
 
-def generate_ring(vtypes : list[VertexType]):
-    graph = zx.Graph()
+def generate_ring(n, zs: list[NodeId]):
+    ring = zx.Graph()
+    vtypes = [ VertexType.Z if i in zs else VertexType.X for i in range(n) ]
 
     for i in range(len(vtypes)):
-        graph.add_vertex(ty = vtypes[i], qubit = qubits[i], row = layers[i])
+        ring.add_vertex(ty = vtypes[i], qubit = QUBITS[i], row = LAYERS[i])
 
-    for i in range(n):
-        graph.add_edge( (i, (i+1) % n) )
+    for i in range(N):
+        ring.add_edge((i, (i+1) % N))
 
-    return graph
+    return ring
 
-def realise_ring(azx: AugmentedZxGraph, cubes: list[tuple[CubeKind, Coordinates]]):
-    for i in range(azx.number_of_nodes()):
+# TODO: split into two parameters; cubes and pipes
+def realise_ring(
+    azx: AugmentedZxGraph,
+    cubes: list[tuple[CubeKind, Coordinates]],
+    links: dict[EdgeId, EdgeId] = None
+):
+    if links is None:
+        links = dict()
+
+    for i in range(len(cubes)):
         azx.realise_node(i, *cubes[i])
 
-    for source, target in azx.edges():
-        azx.realise_edge(source, target, PathSpecification(source, target))
+    for edge in azx.get_edges():
+        source, target = edge
+        if edge in links:
+            source_cube = azx.get_cube(links[edge][0])
+            target_cube = azx.get_cube(links[edge][1])
+        else:
+            source_cube = azx.get_cube(source)
+            target_cube = azx.get_cube(target)
+        pipe = (source_cube, target_cube)
+        azx.connect_pipe(source_cube, target_cube, pipe_type = EdgeType.IDENTITY)
+        azx.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH] = [ pipe ]
 
-n = 4
-zx_cases = [
+def convert_ring(
+        cubes: list[str],
+        steps: list[str] = None,
+        positions: list[tuple[int,int,int]] = None
+):
+    ring = []
+    if steps is not None:
+        if len(cubes) != len(steps) + 1:
+            raise Exception("Inconsistent path specification.")
+
+        position = Spacetime.ORIGIN
+        ring.append( (CubeKind[cubes[0]], position) )
+        for idx in range(len(steps)):
+            position += Step[steps[idx]].value
+            ring.append( (CubeKind[cubes[idx+1]] , position) )
+    elif positions is not None:
+        if len(cubes) != len(positions):
+            raise Exception("Inconsistent path realisation.")
+
+        for cube, position in zip(cubes, positions):
+            ring.append( (CubeKind[cube], Coordinates.from_tuple(position)) )
+
+    return ring
+
+def count_plane_switches(azx: AugmentedZxGraph):
+    return sum(nx.number_connected_components(
+            azx.subgraph(filter(lambda nd: azx.get_node_type(nd) == node_type, azx.nodes()))
+        ) for node_type in [ NodeType.X, NodeType.Z ]
+    )
+
+zx_rings = [
     # Case 0
-    [ VertexType.X for _ in range(n) ],
+    generate_ring(N, []),
     # Case 1
-    [ VertexType.Z if i in [0] else VertexType.X for i in range(n) ],
+    generate_ring(N, [0]),
     # Case 2
-    [VertexType.Z if i in [0, 1] else VertexType.X for i in range(n)],
-    [VertexType.Z if i in [0, 2] else VertexType.X for i in range(n)]
+    generate_ring(N, [0,1]),
+    generate_ring(N, [0,2])
 ]
 
-bg_cases = [
-    [ (CubeKind.XZZ, position) for position in [ Coordinates(0,0,0) , Coordinates(0,1,0), Coordinates(0,1,1), Coordinates(0,0,1) ] ],
-    [],
-    [],
-    []
-]
+bg_cases = {
+    0 : convert_ring(
+        cubes = [ 'XZZ' for _ in range(N) ],
+        positions = [ (0,0,0) , (0,1,0) , (0,1,1) , (0,0,1) ]
+    )
+}
+
+# Represents the displacement of edges to reduce overall volume when needed
+bg_links = {}
 
 if __name__ == "__main__":
-    for c in range(len(zx_cases)):
-        pyzx_graph = generate_ring(vtypes = zx_cases[c])
-        zx.draw(pyzx_graph, labels = True)
-        graph = AugmentedZxGraph.from_pyzx_graph(pyzx_graph)
-        if len(bg_cases[c]) > 0:
-            realise_ring(graph, bg_cases[c])
-        for cube in graph.get_cubes():
-            print(f"Cube #{cube} : {graph.get_cube_kind(cube)}@{graph.get_cube_position(cube)}")
-        viewer = AugmentedZxGraphViewer(graph)
-        viewer.display()
-    print(f"Total number of cases: {len(zx_cases)}")
+    missing = 0
+    for c in range(len(zx_rings)):
+        pyzx_ring = zx_rings[c]
+        graph = AugmentedZxGraph.from_pyzx_graph(pyzx_ring)
+        zx.draw(pyzx_ring, labels=True)
+        print(f"Case #{c} [PS:{count_plane_switches(graph)}]")
+        if c in bg_cases:
+            cubes = bg_cases[c]
+            links = bg_links[c] if c in bg_links else None
+            realise_ring(graph, cubes, links)
+            viewer = AugmentedZxGraphViewer(graph, label=f"Case {c}")
+            viewer.display()
+        else:
+            print(f"> Missing realisation.")
+            missing += 1
+
+    print(f"Total number of cases: {len(zx_rings)}")
+    print(f"Missing realisations : {missing}")

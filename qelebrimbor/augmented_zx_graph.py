@@ -84,7 +84,7 @@ class AugmentedZxGraph(nx.Graph):
         if self.number_of_nodes() > 0:
             _, max_degree = max(self.degree, key=lambda entry: entry[1])
             if max_degree > 4:
-                raise NotImplemented("Enforcement of no-more-than-four-legs condition not implemented.")
+                raise NotImplementedError("Enforcement of no-more-than-four-legs condition not implemented.")
 
     @staticmethod
     def from_pyzx_graph(zx_graph: zx.graph.base.BaseGraph):
