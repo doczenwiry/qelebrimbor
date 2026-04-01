@@ -66,7 +66,7 @@ class Spacetime:
         return [step for step in Spacetime.STEPS if reach.dot(step) == 0]
 
     @staticmethod
-    def get_constellation(position: Coordinates, restriction: Coordinates = None) -> list[Coordinates]:
+    def get_constellation(position: Coordinates, restriction: Coordinates | None = None) -> list[Coordinates]:
         constellation = []
         for step in Spacetime.STEPS:
             if restriction is None or restriction.dot(step) == 0:

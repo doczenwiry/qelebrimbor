@@ -10,6 +10,7 @@ from qelebrimbor.common.components_zx import NodeType
 CubeId = int
 PipeId = tuple[CubeId, CubeId]
 
+@total_ordering
 class CubeKind(Enum):
     OOO = 0
     ZZX = 1
@@ -85,7 +86,6 @@ class CubeKind(Enum):
         else:
             raise ValueError(f"Not applicable to cube kind {self.name}")
 
-    @total_ordering
     def __lt__(self, other):
         return self.value.__lt__(other.value)
 

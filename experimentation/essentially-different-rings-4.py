@@ -30,13 +30,13 @@ def generate_ring(n, zs: list[NodeId]):
 def realise_ring(
     azx: AugmentedZxGraph,
     cubes: list[tuple[CubeKind, Coordinates]],
-    links: dict[EdgeId, EdgeId] = None
+    links: dict[EdgeId, EdgeId] | None = None
 ):
     if links is None:
         links = dict()
 
     for i in range(len(cubes)):
-        azx.realise_node(i, *cubes[i])
+        print(f"Realising node {i} as {azx.realise_node(i, *cubes[i])}")
 
     for edge in azx.get_edges():
         source, target = edge
@@ -52,8 +52,8 @@ def realise_ring(
 
 def convert_ring(
         cubes: list[str],
-        steps: list[str] = None,
-        positions: list[tuple[int,int,int]] = None
+        steps: list[str] | None = None,
+        positions: list[tuple[int,int,int]] | None = None
 ):
     ring = []
     if steps is not None:
@@ -98,7 +98,9 @@ bg_cases = {
 }
 
 # Represents the displacement of edges to reduce overall volume when needed
-bg_links = {}
+bg_links: dict[int, dict[EdgeId, EdgeId]] = {
+
+}
 
 if __name__ == "__main__":
     missing = 0

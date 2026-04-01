@@ -6,8 +6,6 @@ if __name__ == "__main__":
     print(list(ang.get_edges()))
     print(list(ang.get_qubits()))
     print(list(ang.get_layers()))
-    print(list(ang.get_node_realisation_order()))
-    print(list(ang.get_edge_realisation_order()))
     print(list(ang.get_cubes()))
     print(list(ang.get_pipes()))
 

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from ast import literal_eval as make_tuple
 
 @dataclass(frozen = True)
+@total_ordering
 class Coordinates:
     x: float
     y: float
@@ -35,7 +36,7 @@ class Coordinates:
     def __mul__(self, scalar):
         if isinstance(scalar, (int, float)):
             return Coordinates(self.x * scalar, self.y * scalar, self.z * scalar)
-        raise NotImplemented("Scalar multiplication requires <int> or <float>.")
+        raise NotImplementedError("Scalar multiplication requires <int> or <float>.")
     __rmul__ = __mul__
 
     def __getitem__(self, index):
@@ -98,7 +99,6 @@ class Coordinates:
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y and self.z == other.z
 
-    @total_ordering
     def __lt__(self, other):
         return self.as_tuple().__lt__(other.as_tuple())
 
