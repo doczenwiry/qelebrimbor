@@ -19,7 +19,7 @@ class BgSceneManager:
         self.__alternative_pipes = dict()
 
         for cube in nx_graph.get_cubes():
-            node = self.__nx_graph.get_node(cube)
+            node = self.__nx_graph.get_realised_nodes(cube)
             kind = self.__nx_graph.get_cube_kind(cube)
             position = self.__nx_graph.get_cube_position(cube)
             bg_cube = BgCube(kind, position, node, cube)

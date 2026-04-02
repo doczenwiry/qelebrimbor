@@ -41,11 +41,11 @@ def realise_ring(
     for edge in azx.get_edges():
         source, target = edge
         if edge in links:
-            source_cube = azx.get_cube(links[edge][0])
-            target_cube = azx.get_cube(links[edge][1])
+            source_cube = azx.get_realising_cubes(links[edge][0])
+            target_cube = azx.get_realising_cubes(links[edge][1])
         else:
-            source_cube = azx.get_cube(source)
-            target_cube = azx.get_cube(target)
+            source_cube = azx.get_realising_cubes(source)
+            target_cube = azx.get_realising_cubes(target)
         pipe = (source_cube, target_cube)
         azx.connect_pipe(source_cube, target_cube, pipe_type = EdgeType.IDENTITY)
         azx.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH] = [ pipe ]
