@@ -1,3 +1,5 @@
+from typing import Iterable
+
 from numpy import array
 from vedo import Assembly, Cube, Box, Text3D
 
@@ -16,7 +18,7 @@ class BgCube(Assembly):
     SMALL_CUBE = LARGE_CUBE * FACTOR_SMALLER
     SMALL_TEXT = LARGE_TEXT * FACTOR_SMALLER
 
-    def __init__(self, kind: CubeKind, position: Coordinates, node: NodeId = -1, cube: CubeId = -1):
+    def __init__(self, cube: CubeId, kind: CubeKind, position: Coordinates, nodes: Iterable[NodeId]):
         super().__init__()
 
         self.bg_cube: CubeId = cube
@@ -27,7 +29,10 @@ class BgCube(Assembly):
         position = GLOBAL_SPACING_FACTOR * position
 
         # Parameters for the label
-        label = str(node) if node != -1 else ""
+        try:
+            label = str(min(nodes))
+        except StopIteration:
+            label = ""
         text_size = BgCube.LARGE_TEXT if kind != CubeKind.OOO else BgCube.SMALL_TEXT
         step_scale = 0.55 if kind != CubeKind.OOO else 0.55 * BgCube.FACTOR_SMALLER
 

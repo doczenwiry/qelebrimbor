@@ -15,14 +15,11 @@ class BgSceneManager:
         self.__cubes = dict()
         self.__pipes = dict()
 
-        self.__alternative_cubes = dict()
-        self.__alternative_pipes = dict()
-
         for cube in nx_graph.get_cubes():
-            node = self.__nx_graph.get_realised_nodes(cube)
-            kind = self.__nx_graph.get_cube_kind(cube)
-            position = self.__nx_graph.get_cube_position(cube)
-            bg_cube = BgCube(kind, position, node, cube)
+            bg_cube = BgCube(kind = self.__nx_graph.get_cube_kind(cube),
+                             position = self.__nx_graph.get_cube_position(cube),
+                             nodes= self.__nx_graph.get_realised_nodes(cube),
+                             cube = cube)
             self.__cubes[cube] = bg_cube
 
         for source, target in nx_graph.get_pipes():
@@ -55,8 +52,6 @@ class BgSceneManager:
     def alter_cube_appearance(self, cube: CubeId, highlight: bool = False):
         if cube in self.__cubes:
             self.__cubes[cube].alter_appearance(highlight = highlight)
-        elif cube in self.__alternative_cubes:
-            self.__alternative_cubes[cube].alter_appearance(highlight=highlight)
         else:
             console.error(f"Cube #{cube} not found in BG-scene.")
 
@@ -64,8 +59,6 @@ class BgSceneManager:
         pipe = tuple(sorted((source, target)))
         if pipe in self.__pipes:
             self.__pipes[pipe].alter_appearance(highlight = highlight)
-        elif pipe in self.__alternative_pipes:
-            self.__alternative_pipes[pipe].alter_appearance(highlight=highlight)
         else:
             console.error(f"Pipe {pipe} not found in BG-scene.")
 

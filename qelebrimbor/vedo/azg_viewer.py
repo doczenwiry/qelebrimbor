@@ -1,4 +1,5 @@
 from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
+from qelebrimbor.common.components_bg import CubeId
 
 from vedo import settings, Plotter
 
@@ -52,9 +53,9 @@ class AugmentedZxGraphViewer(Plotter):
         if isinstance(selected_object, ZxNode):
             # Highlight the zx-node and its corresponding bg-cube
             zx_node = selected_object.zx_node
-            bg_cube = self.__nx_graph.get_realising_cubes(zx_node)
             self.__zx_scene_manager.alter_node_appearance(zx_node, highlight = highlighting)
-            self.__bg_scene_manager.alter_cube_appearance(bg_cube, highlight = highlighting)
+            for bg_cube in self.__nx_graph.get_realising_cubes(zx_node):
+                self.__bg_scene_manager.alter_cube_appearance(bg_cube, highlight = highlighting)
         elif isinstance(selected_object, ZxEdge):
             # Highlight the edge in the ZX-graph
             zx_source = selected_object.zx_source
@@ -63,24 +64,18 @@ class AugmentedZxGraphViewer(Plotter):
             self.__zx_scene_manager.alter_node_appearance(zx_target, highlight = highlighting)
             self.__zx_scene_manager.alter_edge_appearance(zx_source, zx_target, highlight = highlighting)
             # Highlight all the pipes of that path
-            bg_source_cube = self.__nx_graph.get_realising_cubes(zx_source)
-            self.__bg_scene_manager.alter_cube_appearance(bg_source_cube, highlight = highlighting)
-            previous_cube = bg_source_cube
-            for current_pipe in self.__nx_graph.get_edge_realisation(zx_source, zx_target):
-                _, current_cube = current_pipe
+            previous_cube: CubeId = self.__nx_graph.get_edge_realisation(zx_source, zx_target)[0][0]
+            self.__bg_scene_manager.alter_cube_appearance(previous_cube, highlight = highlighting)
+            for _, current_cube in self.__nx_graph.get_edge_realisation(zx_source, zx_target):
                 self.__bg_scene_manager.alter_cube_appearance(current_cube, highlight = highlighting)
                 self.__bg_scene_manager.alter_pipe_appearance(previous_cube, current_cube, highlight = highlighting)
                 previous_cube = current_cube
-            bg_target_cube = self.__nx_graph.get_realising_cubes(zx_target)
-            self.__bg_scene_manager.alter_cube_appearance(bg_target_cube, highlight = highlighting)
-            self.__bg_scene_manager.alter_pipe_appearance(previous_cube, bg_target_cube, highlight = highlighting)
         elif isinstance(selected_object, BgCube):
             # Highlight the bg-cube and its corresponding zx-node if it has one
             bg_cube = selected_object.bg_cube
             console.debug(f"> BgCube #{bg_cube}")
             if self.__min_bg_cube_id <= bg_cube <= self.__max_bg_cube_id:
-                zx_node = self.__nx_graph.get_realised_nodes(bg_cube)
-                if zx_node is not None:
+                for zx_node in self.__nx_graph.get_realised_nodes(bg_cube):
                     self.__zx_scene_manager.alter_node_appearance(zx_node, highlight = highlighting)
             self.__bg_scene_manager.alter_cube_appearance(bg_cube, highlight = highlighting)
         elif isinstance(selected_object, BgPipe):

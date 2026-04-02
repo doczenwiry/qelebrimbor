@@ -1,4 +1,4 @@
-from collections import deque, defaultdict
+from collections import defaultdict
 from enum import Enum
 from typing import Iterable
 
@@ -67,7 +67,7 @@ class AugmentedZxGraph(nx.Graph):
                 self.add_node(node)
                 nx_node = self.nodes[node]
                 nx_node[AugmentedZxGraph.KEY_ZX_NODE_TYPE] = node_type
-                nx_node[AugmentedZxGraph.KEY_ZX_NODE_BG_CUBES] = {}
+                nx_node[AugmentedZxGraph.KEY_ZX_NODE_BG_CUBES] = set()
 
         if edges is not None:
             for edge, edge_type in edges:
@@ -185,7 +185,7 @@ class AugmentedZxGraph(nx.Graph):
                     ang.__bg_graph.add_node(cube)
                     ang.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_KIND] = cube_kind
                     ang.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_POSITION] = position
-                    ang.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_ZX_NODES] = {}
+                    ang.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_ZX_NODES] = set()
 
             # Read bg-pipes
             header = file.readline().split(' ')
@@ -369,7 +369,7 @@ class AugmentedZxGraph(nx.Graph):
         return iter(self.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_BG_CUBES])
 
     def get_realised_nodes(self, cube: CubeId) -> Iterable[NodeId]:
-        zx_nodes = self.__bg_graph.nodes[cube].get(AugmentedZxGraph.KEY_BG_CUBE_ZX_NODES) or {}
+        zx_nodes = self.__bg_graph.nodes[cube].get(AugmentedZxGraph.KEY_BG_CUBE_ZX_NODES) or set()
         return iter(zx_nodes)
 
     def get_node_type(self, node: NodeId) -> NodeType:
@@ -479,7 +479,7 @@ class AugmentedZxGraph(nx.Graph):
 
             # Place the current cube and connect it to the previous cube.
             current_cube = self.place_cube(current_kind, current_position)
-            self.__bg_graph.nodes[current_cube][AugmentedZxGraph.KEY_BG_CUBE_ZX_NODES] = {}
+            self.__bg_graph.nodes[current_cube][AugmentedZxGraph.KEY_BG_CUBE_ZX_NODES] = set()
             self.connect_pipe(previous_cube, current_cube, current_pipe_type)
 
             # Extend the sequence of extra node ids
@@ -502,9 +502,18 @@ class AugmentedZxGraph(nx.Graph):
         # Associate the path as a realisation of the edge
         self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH] = pipe_ids
 
-        # Update realising cubes of source and target.
-        # TODO: search for cubes with identical kinds to the source_cube.
-        # TODO: search for cubes with identical kinds to the target_cube.
+        # Update realising cubes of source node.
+        source_kind = self.get_cube_kind(source_cube)
+        for _, final in pipe_ids:
+            if self.get_cube_kind(final) != source_kind:
+                break
+            self.__bg_graph.nodes[source_cube][AugmentedZxGraph.KEY_ZX_NODE_BG_CUBES].add(final)
+        # Update realising cubes of target node.
+        target_kind = self.get_cube_kind(target_cube)
+        for start, _ in reversed(pipe_ids):
+            if self.get_cube_kind(start) != target_kind:
+                break
+            self.__bg_graph.nodes[target_cube][AugmentedZxGraph.KEY_ZX_NODE_BG_CUBES].add(start)
 
     def place_cube(self, kind: CubeKind, position: Coordinates) -> CubeId:
         if position in self.occupied:
@@ -515,7 +524,7 @@ class AugmentedZxGraph(nx.Graph):
 
         self.__bg_graph.add_node(cube)
 
-        self.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_ZX_NODES] = {}
+        self.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_ZX_NODES] = set()
         self.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_KIND] = kind
         self.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_POSITION] = position
 
@@ -551,10 +560,13 @@ class AugmentedZxGraph(nx.Graph):
     def is_path_valid(self, source: NodeId, target: NodeId, proposal: PathSpecification) -> bool:
         is_hadamard_path = False
 
-        source_cube = self.get_realising_cubes(source)
+        source_cube = proposal.source_cube
 
-        source_kind: CubeKind = self.get_cube_kind(proposal.source_cube)
-        source_position: Coordinates = self.get_cube_position(proposal.source_cube)
+        if source_cube not in self.get_realising_cubes(source):
+            raise Exception(f"Cube #{source_cube} is not realising source {source}.")
+
+        source_kind: CubeKind = self.get_cube_kind(source_cube)
+        source_position: Coordinates = self.get_cube_position(source_cube)
 
         console.info(f"Checking path validity:")
         console.info(f"> Source cube #{source_cube} [{source_kind}@{source_position}]")
@@ -611,6 +623,9 @@ class AugmentedZxGraph(nx.Graph):
             target_cube = proposal.target_cube
             target_kind = self.get_cube_kind(target_cube)
             target_position = self.get_cube_position(target_cube)
+
+            if target_cube not in self.get_realising_cubes(target):
+                raise Exception(f"Cube #{target_cube} is not realising source {target}.")
 
             # Check that the final step taken lies in the reach of the target cube
             step_taken = target_position - previous_position
