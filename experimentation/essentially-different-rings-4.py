@@ -94,7 +94,11 @@ bg_cases = {
     0 : convert_ring(
         cubes = [ 'XZZ' for _ in range(N) ],
         positions = [ (0,0,0) , (0,1,0) , (0,1,1) , (0,0,1) ]
-    )
+    ),
+    # 1 : convert_ring(
+    #     cubes = [ 'XXZ', 'ZXZ', 'ZXZ', 'ZXZ', 'ZXZ' ,'ZXZ' ],
+    #     steps = [ 'XP', 'ZP', 'XM', 'XM', 'ZM' ]
+    # )
 }
 
 # Represents the displacement of edges to reduce overall volume when needed
