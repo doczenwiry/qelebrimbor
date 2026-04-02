@@ -13,15 +13,14 @@ QUBIT_SPACING = 6.0
 LAYER_SPACING = 6.0
 
 class ZxNode(Assembly):
-    def __init__(self, node: NodeId, anx: AugmentedZxGraph):
+    def __init__(self, node: NodeId, anx: AugmentedZxGraph, placement: tuple[int, int]):
         self.zx_node = node
 
         node_type = anx.get_node_type(node)
-        qubit = anx.get_qubit(node)
-        layer = anx.get_node_layer(node)
+        x, y = placement
 
-        disc_position = (LAYER_SPACING * layer, QUBIT_SPACING * qubit, 0.00)
-        text_position = (LAYER_SPACING * layer, QUBIT_SPACING * qubit, 0.05)
+        disc_position = (LAYER_SPACING * x, QUBIT_SPACING * y, 0.00)
+        text_position = (LAYER_SPACING * x, QUBIT_SPACING * y, 0.05)
         radius = 1.0 if node_type != NodeType.O else 0.75
         color = COLOR_NAMES[ node_type.name ]
 
@@ -32,7 +31,6 @@ class ZxNode(Assembly):
 
         super().__init__( [ self.__background, self.__disc, self.__disc_highlight, self.__text ] )
 
-        # self.__highlighted = False
         self.alter_appearance(highlight = False)
 
     def alter_appearance(self, highlight: bool = False):

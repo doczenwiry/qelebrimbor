@@ -9,6 +9,10 @@ from qelebrimbor.vedo.shapes_zx import ZxNode, ZxEdge
 from qelebrimbor.vedo.shapes_bg import BgCube, BgPipe
 
 import logging
+
+from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
+from qelebrimbor.vedo.zx_layout.circuits import CircuitLayout
+
 console = logging.getLogger(__name__)
 logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
 
@@ -24,7 +28,7 @@ settings.enable_default_mouse_callbacks = False
 settings.enable_default_keyboard_callbacks = False
 
 class AugmentedZxGraphViewer(Plotter):
-    def __init__(self, anx: AugmentedZxGraph, label: str = ""):
+    def __init__(self, azx: AugmentedZxGraph, label: str = "", layout: ZxLayout | None = None):
         super().__init__(shape = VIEWPORTS, sharecam = False, title = f"qelebrimbor [{label}]")
 
         # Initialise the camera for the BG Graph
@@ -33,19 +37,23 @@ class AugmentedZxGraphViewer(Plotter):
         zx_camera.SetViewUp(0, 1, 0)
 
         # Store the original AugmentedNxGraph
-        self.__nx_graph = anx
+        self.__graph = azx
 
         # Set the global callbacks
         self.add_callback("key press", self.__on_key_pressed)
-        self.add_callback("mouse move", self.__on_mouse_move)
+        self.add_callback("mouse move", self.__on_mouse_moved)
 
         # Prepare the scene manager for the ZX-graph
-        self.__zx_scene_manager = ZxSceneManager(self.__nx_graph, self.at(ZX_VIEWPORT))
+        self.__zx_scene_manager = ZxSceneManager(
+            azx = self.__graph,
+            plotter = self.at(ZX_VIEWPORT),
+            layout = CircuitLayout(azx) if layout is None else layout
+        )
 
         # Prepare the scene manager for the BG-graph
-        self.__bg_scene_manager = BgSceneManager(self.__nx_graph, self.at(BG_VIEWPORT))
-        self.__min_bg_cube_id = self.__nx_graph.number_of_nodes()
-        self.__max_bg_cube_id = self.__min_bg_cube_id + self.__nx_graph.number_of_cubes() - 1
+        self.__bg_scene_manager = BgSceneManager(self.__graph, self.at(BG_VIEWPORT))
+        self.__min_bg_cube_id = self.__graph.number_of_nodes()
+        self.__max_bg_cube_id = self.__min_bg_cube_id + self.__graph.number_of_cubes() - 1
 
         self.__selected_object = None
 
@@ -54,7 +62,7 @@ class AugmentedZxGraphViewer(Plotter):
             # Highlight the zx-node and its corresponding bg-cube
             zx_node = selected_object.zx_node
             self.__zx_scene_manager.alter_node_appearance(zx_node, highlight = highlighting)
-            for bg_cube in self.__nx_graph.get_realising_cubes(zx_node):
+            for bg_cube in self.__graph.get_realising_cubes(zx_node):
                 self.__bg_scene_manager.alter_cube_appearance(bg_cube, highlight = highlighting)
         elif isinstance(selected_object, ZxEdge):
             # Highlight the edge in the ZX-graph
@@ -64,10 +72,10 @@ class AugmentedZxGraphViewer(Plotter):
             self.__zx_scene_manager.alter_node_appearance(zx_target, highlight = highlighting)
             self.__zx_scene_manager.alter_edge_appearance(zx_source, zx_target, highlight = highlighting)
             # Highlight all the pipes of that path
-            if len(self.__nx_graph.get_edge_realisation(zx_source, zx_target)) > 0:
-                previous_cube: CubeId = self.__nx_graph.get_edge_realisation(zx_source, zx_target)[0][0]
+            if len(self.__graph.get_edge_realisation(zx_source, zx_target)) > 0:
+                previous_cube: CubeId = self.__graph.get_edge_realisation(zx_source, zx_target)[0][0]
                 self.__bg_scene_manager.alter_cube_appearance(previous_cube, highlight = highlighting)
-                for _, current_cube in self.__nx_graph.get_edge_realisation(zx_source, zx_target):
+                for _, current_cube in self.__graph.get_edge_realisation(zx_source, zx_target):
                     self.__bg_scene_manager.alter_cube_appearance(current_cube, highlight = highlighting)
                     self.__bg_scene_manager.alter_pipe_appearance(previous_cube, current_cube, highlight = highlighting)
                     previous_cube = current_cube
@@ -76,7 +84,7 @@ class AugmentedZxGraphViewer(Plotter):
             bg_cube = selected_object.bg_cube
             console.debug(f"> BgCube #{bg_cube}")
             if self.__min_bg_cube_id <= bg_cube <= self.__max_bg_cube_id:
-                for zx_node in self.__nx_graph.get_realised_nodes(bg_cube):
+                for zx_node in self.__graph.get_realised_nodes(bg_cube):
                     self.__zx_scene_manager.alter_node_appearance(zx_node, highlight = highlighting)
             self.__bg_scene_manager.alter_cube_appearance(bg_cube, highlight = highlighting)
         elif isinstance(selected_object, BgPipe):
@@ -95,7 +103,7 @@ class AugmentedZxGraphViewer(Plotter):
         else:
             self.__bg_scene_manager.on_key_press(event)
 
-    def __on_mouse_move(self, event):
+    def __on_mouse_moved(self, event):
         if event.object != self.__selected_object:
             console.debug(f"Entered new object.")
 
