@@ -10,7 +10,7 @@ from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import Spacetime
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 
-from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeType
+from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeId, EdgeType
 from qelebrimbor.common.components_bg import CubeId, CubeKind, PipeId
 from qelebrimbor.common.paths import PathSpecification
 
@@ -62,17 +62,20 @@ class AugmentedZxGraph(nx.Graph):
         # Keeps track of the coordinates in 3D that are occupied by some cube
         self.occupied: set[Coordinates] = set()
 
+        converted_node_ids: dict[NodeId, NodeId] = dict()
         if nodes is not None:
             for node, node_type in nodes:
-                self.add_node(node)
-                nx_node = self.nodes[node]
+                node_id = len(converted_node_ids)
+                converted_node_ids[node] = node_id
+                self.add_node(node_id)
+                nx_node = self.nodes[node_id]
                 nx_node[AugmentedZxGraph.KEY_ZX_NODE_TYPE] = node_type
                 nx_node[AugmentedZxGraph.KEY_ZX_NODE_BG_CUBES] = set()
 
         if edges is not None:
             for edge, edge_type in edges:
-                source = min(edge)
-                target = max(edge)
+                source = converted_node_ids[min(edge)]
+                target = converted_node_ids[max(edge)]
                 self.add_edge(source, target)
                 self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_TYPE] = edge_type
                 self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH] = []
@@ -88,20 +91,30 @@ class AugmentedZxGraph(nx.Graph):
 
     @staticmethod
     def from_pyzx_graph(zx_graph: zx.graph.base.BaseGraph):
-        nodes = zip( zx_graph.vertices(), [ NodeType.convert(zx_graph.type(node)) for node in zx_graph.vertices() ] )
-        edges = zip( zx_graph.edges(), [ EdgeType.convert(zx_graph.edge_type(edge)) for edge in zx_graph.edges() ] )
+        converted_node_ids: dict[NodeId, NodeId] = dict()
+        nodes: list[tuple[NodeId, NodeType]] = []
+        for node in zx_graph.vertices():
+            node_id = len(converted_node_ids)
+            converted_node_ids[node] = node_id
+            nodes.append( (node_id, NodeType.convert(zx_graph.type(node))) )
+
+        edges: list[tuple[EdgeId, EdgeType]] = []
+        for edge in zx_graph.edges():
+            source = converted_node_ids[min(edge)]
+            target = converted_node_ids[max(edge)]
+            edges.append( ( (source,target) , EdgeType.convert(zx_graph.edge_type(edge))) )
 
         ang = AugmentedZxGraph(nodes, edges)
 
         # Add qubit and layer information
-        for node in zx_graph.vertices():
+        for node, node_id in converted_node_ids.items():
             node_qubit = int(zx_graph.qubit(node))
-            ang.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_QUBIT] = node_qubit
-            ang.__zx_qubits[node_qubit].append(node)
+            ang.nodes[node_id][AugmentedZxGraph.KEY_ZX_NODE_QUBIT] = node_qubit
+            ang.__zx_qubits[node_qubit].append(node_id)
 
             node_layer = int(zx_graph.row(node))
-            ang.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_LAYER] = node_layer
-            ang.__zx_layers[node_layer].append(node)
+            ang.nodes[node_id][AugmentedZxGraph.KEY_ZX_NODE_LAYER] = node_layer
+            ang.__zx_layers[node_layer].append(node_id)
 
         return ang
 
