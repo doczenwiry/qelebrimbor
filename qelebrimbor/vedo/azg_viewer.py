@@ -11,7 +11,7 @@ from qelebrimbor.vedo.shapes_bg import BgCube, BgPipe
 import logging
 
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
-from qelebrimbor.vedo.zx_layout.circuits import CircuitLayout
+from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 
 console = logging.getLogger(__name__)
 logging.getLogger('matplotlib').setLevel(logging.CRITICAL)

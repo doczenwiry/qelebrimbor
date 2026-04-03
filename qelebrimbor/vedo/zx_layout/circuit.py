@@ -10,5 +10,5 @@ class CircuitLayout(ZxLayout):
         for node in azx.nodes:
             self.placements.append( (azx.get_qubit(node), azx.get_node_layer(node)) )
 
-    def get_node_placement(self, node: NodeId) -> tuple[int, int]:
+    def get_node_placement(self, node: NodeId) -> tuple[float, float]:
         return self.placements[node]
