@@ -78,7 +78,7 @@ class AugmentedZxGraph(nx.Graph):
                 target = converted_node_ids[max(edge)]
                 self.add_edge(source, target)
                 self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_TYPE] = edge_type
-                self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH] = []
+                self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH] = None
 
         self.__next_cube_id = self.number_of_nodes()
 
@@ -477,8 +477,8 @@ class AugmentedZxGraph(nx.Graph):
         else:
             sequence = ""
             for position, kind in proposal.extras:
-                sequence += f"{kind}@{position}"
-        console.info(f"Realising edge {source}-{target} [type={self.get_edge_type(source,target)}] with extra cubes : {sequence}")
+                sequence += f" {kind}@{position}"
+        console.info(f"Realising edge {source}-{target} [type={self.get_edge_type(source,target)}] with extra cubes :{sequence}")
 
         # Representation of the path that will go into edge_realisations
         pipe_ids = []
@@ -520,13 +520,13 @@ class AugmentedZxGraph(nx.Graph):
         for _, final in pipe_ids:
             if self.get_cube_kind(final) != source_kind:
                 break
-            self.__bg_graph.nodes[source_cube][AugmentedZxGraph.KEY_ZX_NODE_BG_CUBES].add(final)
+            self.nodes[source][AugmentedZxGraph.KEY_ZX_NODE_BG_CUBES].add(final)
         # Update realising cubes of target node.
         target_kind = self.get_cube_kind(target_cube)
         for start, _ in reversed(pipe_ids):
             if self.get_cube_kind(start) != target_kind:
                 break
-            self.__bg_graph.nodes[target_cube][AugmentedZxGraph.KEY_ZX_NODE_BG_CUBES].add(start)
+            self.nodes[target][AugmentedZxGraph.KEY_ZX_NODE_BG_CUBES].add(start)
 
     def place_cube(self, kind: CubeKind, position: Coordinates) -> CubeId:
         if position in self.occupied:
@@ -644,7 +644,7 @@ class AugmentedZxGraph(nx.Graph):
             step_taken = target_position - previous_position
             target_reach = target_kind.get_reach()
             if not Spacetime.contains(target_reach, step_taken):
-                console.debug(f"> Reach of target cube does not contain final step : {Spacetime.contains(target_reach, step_taken)}")
+                console.debug(f"> Reach of target cube does not contain final step : {target_reach} w/ {step_taken} {Spacetime.contains(target_reach, step_taken)}")
                 return False
 
             # Check that the current pipe has a type consistent with what is allowed

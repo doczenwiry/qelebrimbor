@@ -72,13 +72,13 @@ class AugmentedZxGraphViewer(Plotter):
             self.__zx_scene_manager.alter_node_appearance(zx_target, highlight = highlighting)
             self.__zx_scene_manager.alter_edge_appearance(zx_source, zx_target, highlight = highlighting)
             # Highlight all the pipes of that path
-            if len(self.__graph.get_edge_realisation(zx_source, zx_target)) > 0:
-                previous_cube: CubeId = self.__graph.get_edge_realisation(zx_source, zx_target)[0][0]
-                self.__bg_scene_manager.alter_cube_appearance(previous_cube, highlight = highlighting)
-                for _, current_cube in self.__graph.get_edge_realisation(zx_source, zx_target):
-                    self.__bg_scene_manager.alter_cube_appearance(current_cube, highlight = highlighting)
-                    self.__bg_scene_manager.alter_pipe_appearance(previous_cube, current_cube, highlight = highlighting)
-                    previous_cube = current_cube
+            path_cubes: set[CubeId] = set()
+            for source_cube, target_cube in self.__graph.get_edge_realisation(zx_source, zx_target):
+                self.__bg_scene_manager.alter_pipe_appearance(source_cube, target_cube, highlight = highlighting)
+                path_cubes.add(source_cube)
+                path_cubes.add(target_cube)
+            for cube in path_cubes:
+                self.__bg_scene_manager.alter_cube_appearance(cube, highlight = highlighting)
         elif isinstance(selected_object, BgCube):
             # Highlight the bg-cube and its corresponding zx-node if it has one
             bg_cube = selected_object.bg_cube

@@ -5,17 +5,19 @@ import pyzx as zx
 from pyzx import VertexType
 
 from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
-from qelebrimbor.common.components_zx import NodeId, NodeType
+from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeId, EdgeType
+from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.vedo.azg_viewer import AugmentedZxGraphViewer
 
-import logging
-
+from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 from qelebrimbor.vedo.zx_layout.manual import ManualLayout
 
+import logging
 console = logging.getLogger(__name__)
-basicConfig(level=logging.CRITICAL)
-
-logging.getLogger('qelebrimbor.vedo').setLevel(logging.CRITICAL)
+basicConfig(level=logging.INFO)
+logging.getLogger('qelebrimbor').setLevel(logging.DEBUG)
 
 def find_terminal_node(graph: zx.graph.base.BaseGraph, qubit: int) -> int:
     return max(
@@ -42,6 +44,30 @@ def add_steane_chunk(graph: zx.graph.base.BaseGraph, layer: int, target_qubits: 
     graph.add_edge( (previous, final), zx.EdgeType.HADAMARD)
 
     return row
+
+def prepare_layout() -> ZxLayout:
+    placements: dict[NodeId, tuple[float, float]] = {}
+
+    rho = 2.0
+    phi = 0.0
+    step = np.pi / 3.0
+    placements[2]  = (0.0,  0.75)
+    placements[9]  = (0.75,  0.5)
+    placements[5]  = (0.0, -0.75)
+    placements[12] = (-0.75, -0.5)
+    for nd in [1,4,0,7,3,6]:
+        x = rho * np.cos(phi)
+        y = rho * np.sin(phi)
+        placements[nd] = (x,y)
+        neighbouring_boundaries = list(filter(lambda bd: azx.has_edge(nd, bd), azx.get_nodes(node_type=NodeType.O)))
+        if len(neighbouring_boundaries) > 0:
+            boundary = min(neighbouring_boundaries)
+            bx = 1.4 * rho * np.cos(phi)
+            by = 1.4 * rho * np.sin(phi)
+            placements[boundary] = (bx, by)
+        phi += step
+
+    return ManualLayout(placements)
 
 if __name__ == "__main__":
     pyzx_graph = zx.Graph()
@@ -77,28 +103,59 @@ if __name__ == "__main__":
     for edge in azx.edges:
         print(f"{edge}")
 
-    placements: dict[NodeId, tuple[float, float]] = {}
+    node_realisations: dict[NodeId, tuple[CubeKind, Coordinates]] = {
+        0 : (CubeKind.ZXZ, Coordinates(-1,  0,  0)),
+        1 : (CubeKind.ZZX, Coordinates(-1,  1,  1)),
+        2 : (CubeKind.XZZ, Coordinates( 0, -1,  0)),
+        3 : (CubeKind.XZZ, Coordinates( 0,  1,  0)),
+        4 : (CubeKind.ZXX, Coordinates(-1,  0,  1)),
+        5 : (CubeKind.XZX, Coordinates( 0, -1,  1)),
+        6 : (CubeKind.XZX, Coordinates( 0,  1,  1)),
+        7 : (CubeKind.XXZ, Coordinates( 0,  0,  0)),
+        8 : (CubeKind.OOO, Coordinates(-2,  0,  0)),
+        9 : (CubeKind.OOO, Coordinates( 0, -2,  0)),
+        10: (CubeKind.OOO, Coordinates( 0,  2,  0)),
+        11: (CubeKind.OOO, Coordinates(-1,  0,  2)),
+        12: (CubeKind.OOO, Coordinates( 0, -1,  2)),
+        13: (CubeKind.OOO, Coordinates( 0,  1,  2)),
+        14: (CubeKind.OOO, Coordinates( 1,  0,  0)),
+    }
 
-    rho = 2.0
-    phi = 0.0
-    step = np.pi / 3.0
-    placements[2]  = (0.0,  0.75)
-    placements[9]  = (0.75,  0.5)
-    placements[5]  = (0.0, -0.75)
-    placements[12] = (-0.75, -0.5)
-    # placements[9] = (0.7 * np.cos(step), 0.7 * np.sin(step))
-    for node in [1,4,0,7,3,6]:
-        x = rho * np.cos(phi)
-        y = rho * np.sin(phi)
-        placements[node] = (x,y)
-        neighbouring_boundaries = list(filter(lambda bd: azx.has_edge(node, bd), azx.get_nodes(node_type=NodeType.O)))
-        if len(neighbouring_boundaries) > 0:
-            boundary = min(neighbouring_boundaries)
-            bx = 1.4 * rho * np.cos(phi)
-            by = 1.4 * rho * np.sin(phi)
-            placements[boundary] = (bx, by)
-        phi += step
-    hexagon = ManualLayout(placements)
+    for node in azx.nodes:
+        if node in node_realisations:
+            azx.realise_node(node, *node_realisations[node])
 
+    edge_realisations: dict[EdgeId, PathSpecification] = {
+        (1,5) : PathSpecification(
+            source_cube = min(azx.get_realising_cubes(1)),
+            target_cube = min(azx.get_realising_cubes(5)),
+            extras = [
+                (CubeKind.ZZX, Coordinates(-2,  1,  1)),
+                (CubeKind.ZZX, Coordinates(-2,  0,  1)),
+                (CubeKind.ZZX, Coordinates(-2, -1,  1)),
+                (CubeKind.ZZX, Coordinates(-1, -1,  1))
+            ],
+            pipes = [
+                EdgeType.IDENTITY for _ in range(5)
+            ]
+        )
+    }
+
+    for edge in azx.edges:
+        source, target = edge
+        if edge in edge_realisations:
+            azx.realise_edge(source, target, edge_realisations[edge])
+        elif azx.is_node_realised(source) and azx.is_node_realised(target):
+            proposal = PathSpecification(
+                source_cube = min(azx.get_realising_cubes(source)),
+                target_cube = min(azx.get_realising_cubes(target))
+            )
+            print(f"Realising: {source} -> {target}")
+            if azx.is_edge_realised(source, target):
+                print(f"Edge: {source} -> {target} is realised : {azx.get_edge_realisation(source, target)}")
+                raise Exception(f"WTF: {source} -> {target}")
+            azx.realise_edge(source, target, proposal)
+
+    hexagon = prepare_layout()
     viewer = AugmentedZxGraphViewer(azx, "steane-code-7", hexagon)
     viewer.display()

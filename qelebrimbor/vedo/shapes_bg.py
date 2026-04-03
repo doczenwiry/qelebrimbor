@@ -31,7 +31,7 @@ class BgCube(Assembly):
         # Parameters for the label
         try:
             label = str(min(nodes))
-        except StopIteration:
+        except ValueError:
             label = ""
         text_size = BgCube.LARGE_TEXT if kind != CubeKind.OOO else BgCube.SMALL_TEXT
         step_scale = 0.55 if kind != CubeKind.OOO else 0.55 * BgCube.FACTOR_SMALLER

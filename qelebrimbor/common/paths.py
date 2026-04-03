@@ -6,9 +6,9 @@ from logging import getLogger
 console = getLogger(__name__)
 
 class PathSpecification:
-    def __init__(self,
-        source_cube: CubeId, target_cube: CubeId,
-        extras: list[tuple[CubeKind, Coordinates]], pipes: list[EdgeType]
+    def __init__(self, source_cube: CubeId, target_cube: CubeId,
+        extras: list[tuple[CubeKind, Coordinates]] | None = None,
+        pipes: list[EdgeType] | None = None
     ):
         self.source_cube = source_cube
         self.target_cube = target_cube
