@@ -3,7 +3,6 @@ from logging import basicConfig
 import numpy as np
 import pyzx as zx
 from pyzx import VertexType
-from pyzx.basicrules import color_change
 
 from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
 from qelebrimbor.common.components_zx import NodeId, NodeType
@@ -48,47 +47,22 @@ if __name__ == "__main__":
     pyzx_graph = zx.Graph()
 
     layer = 0
-    for q in range(1,8):
-        pyzx_graph.add_vertex(ty = VertexType.X, row = layer, qubit = q)
+    for q in range(4):
+        pyzx_graph.add_vertex(ty = VertexType.X)
 
-    layer += 1
-    layer = add_steane_chunk(pyzx_graph, layer, target_qubits= [1, 2, 3, 4])
-    layer += 1
-    layer = add_steane_chunk(pyzx_graph, layer, target_qubits= [1, 2, 5, 6])
-    layer += 1
-    layer = add_steane_chunk(pyzx_graph, layer, target_qubits= [1, 3, 5, 7])
-    layer += 1
+    for q in range(4):
+        pyzx_graph.add_vertex(ty = VertexType.Z)
 
-    for q in range(1,8):
-        terminal = find_terminal_node(pyzx_graph, q)
-        boundary = pyzx_graph.add_vertex(ty = VertexType.BOUNDARY, row = layer, qubit = q)
-        pyzx_graph.add_edge((terminal, boundary), zx.EdgeType.SIMPLE)
+    for q in range(7):
+        pyzx_graph.add_vertex(ty = VertexType.BOUNDARY)
 
-    zx.draw(pyzx_graph, labels = True)
+    for edge in [(0,4), (0,7), (1,4), (1,5), (1,6), (2, 5), (2, 7), (3, 6), (3, 7), (0,8), (2, 9), (3, 10), (4, 11), (5, 12), (6, 13), (7, 14)]:
+        pyzx_graph.add_edge(edge, zx.EdgeType.SIMPLE)
 
-    # Hadamard color-changes
-    for vt in [ 7, 16, 17, 26, 27, 36]:
-        color_change(pyzx_graph, vt)
-
-    # Spider fusion
-    zx.simplify.spider_simp(pyzx_graph)
-
-    # Identity rule
-    zx.simplify.id_simp(pyzx_graph)
-
-    zx.draw(pyzx_graph, labels = True)
-
-    with open("../assets/zx/steane-code-7.json", 'w') as file:
+    with open("../assets/zx/steane-code-qubits7-volume12.json", 'w') as file:
         file.write(pyzx_graph.to_json())
 
     azx = AugmentedZxGraph.from_pyzx_graph(pyzx_graph)
-    for node in azx.nodes:
-        node_type = azx.get_node_type(node)
-        layer = 0 if node_type == NodeType.X else 1 if node_type == NodeType.Z else 2
-        azx.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_LAYER] = layer
-        if node_type != NodeType.O:
-            boundary = min(filter(lambda nb : azx.get_node_type(nb) == NodeType.O, azx.get_node_neighbours(node)))
-            azx.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_QUBIT] = azx.get_qubit(boundary)
 
     content = ""
     for node in azx.get_nodes(node_type = NodeType.Z):
@@ -108,16 +82,21 @@ if __name__ == "__main__":
     rho = 2.0
     phi = 0.0
     step = np.pi / 3.0
-    placements[1] = (0.0, 0.0)
-    placements[7] = (0.7 * np.cos(step), 0.7 * np.sin(step))
-    for node in [0,2,4,5,6,3]:
+    placements[2]  = (0.0,  0.75)
+    placements[9]  = (0.75,  0.5)
+    placements[5]  = (0.0, -0.75)
+    placements[12] = (-0.75, -0.5)
+    # placements[9] = (0.7 * np.cos(step), 0.7 * np.sin(step))
+    for node in [1,4,0,7,3,6]:
         x = rho * np.cos(phi)
         y = rho * np.sin(phi)
         placements[node] = (x,y)
-        boundary = min(filter(lambda bd: azx.has_edge(node, bd), azx.get_nodes(node_type = NodeType.O)))
-        bx = 1.4 * rho * np.cos(phi)
-        by = 1.4 * rho * np.sin(phi)
-        placements[boundary] = (bx, by)
+        neighbouring_boundaries = list(filter(lambda bd: azx.has_edge(node, bd), azx.get_nodes(node_type=NodeType.O)))
+        if len(neighbouring_boundaries) > 0:
+            boundary = min(neighbouring_boundaries)
+            bx = 1.4 * rho * np.cos(phi)
+            by = 1.4 * rho * np.sin(phi)
+            placements[boundary] = (bx, by)
         phi += step
     hexagon = ManualLayout(placements)
 

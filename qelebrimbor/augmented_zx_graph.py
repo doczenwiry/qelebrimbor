@@ -104,19 +104,19 @@ class AugmentedZxGraph(nx.Graph):
             target = converted_node_ids[max(edge)]
             edges.append( ( (source,target) , EdgeType.convert(zx_graph.edge_type(edge))) )
 
-        ang = AugmentedZxGraph(nodes, edges)
+        azx = AugmentedZxGraph(nodes, edges)
 
         # Add qubit and layer information
         for node, node_id in converted_node_ids.items():
             node_qubit = int(zx_graph.qubit(node))
-            ang.nodes[node_id][AugmentedZxGraph.KEY_ZX_NODE_QUBIT] = node_qubit
-            ang.__zx_qubits[node_qubit].append(node_id)
+            azx.nodes[node_id][AugmentedZxGraph.KEY_ZX_NODE_QUBIT] = node_qubit
+            azx.__zx_qubits[node_qubit].append(node_id)
 
             node_layer = int(zx_graph.row(node))
-            ang.nodes[node_id][AugmentedZxGraph.KEY_ZX_NODE_LAYER] = node_layer
-            ang.__zx_layers[node_layer].append(node_id)
+            azx.nodes[node_id][AugmentedZxGraph.KEY_ZX_NODE_LAYER] = node_layer
+            azx.__zx_layers[node_layer].append(node_id)
 
-        return ang
+        return azx
 
     @staticmethod
     def __make_tuple(tpl: str):
