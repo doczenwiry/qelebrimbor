@@ -21,9 +21,15 @@ class BlockGraphConstructor:
             if edge in specifications:
                 azx.realise_edge(source, target, specifications[edge])
             elif azx.is_node_realised(source) and azx.is_node_realised(target):
+                source_cube = min(azx.get_realising_cubes(source))
+                target_cube = min(azx.get_realising_cubes(target))
+
+                if azx.get_cube_position(source_cube).get_manhattan_distance(azx.get_cube_position(target_cube)) != 1:
+                    continue
+
                 proposal = PathSpecification(
-                    source_cube=min(azx.get_realising_cubes(source)),
-                    target_cube=min(azx.get_realising_cubes(target))
+                    source_cube = source_cube,
+                    target_cube = target_cube
                 )
                 console.debug(f"Realising: {source} -> {target}")
                 if azx.is_edge_realised(source, target):

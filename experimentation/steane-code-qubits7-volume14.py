@@ -4,7 +4,7 @@ import networkx as nx
 
 from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
 from qelebrimbor.common.components_bg import CubeKind
-from qelebrimbor.common.components_zx import NodeId, NodeType
+from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
@@ -105,39 +105,52 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_nodes(azx = azx,
         specifications = {
             0 : (CubeKind.XXZ, Coordinates( 0,  0,  0)),
-            # 1 : (CubeKind.ZZX, Coordinates(-1,  1,  1)),
+            1 : (CubeKind.ZZX, Coordinates( 1,  0,  1)),
             2 : (CubeKind.ZXZ, Coordinates(-1,  0,  0)),
             3 : (CubeKind.XZZ, Coordinates( 0,  1,  0)),
             4 : (CubeKind.ZXX, Coordinates(-1,  0,  1)),
             5 : (CubeKind.ZZX, Coordinates(-1,  1,  1)),
             6 : (CubeKind.XZX, Coordinates( 0,  1,  1)),
-            # 2 : (CubeKind.XZZ, Coordinates( 0, -1,  0)),
-            # 5 : (CubeKind.XZX, Coordinates( 0, -1,  1)),
-            # 8 : (CubeKind.OOO, Coordinates(-2,  0,  0)),
-            # 9 : (CubeKind.OOO, Coordinates( 0, -2,  0)),
-            # 10: (CubeKind.OOO, Coordinates( 0,  2,  0)),
-            # 11: (CubeKind.OOO, Coordinates(-1,  0,  2)),
-            # 12: (CubeKind.OOO, Coordinates( 0, -1,  2)),
-            # 13: (CubeKind.OOO, Coordinates( 0,  1,  2)),
-            # 14: (CubeKind.OOO, Coordinates( 1,  0,  0)),
+            7 : (CubeKind.OOO, Coordinates( 2,  0,  1)),
+            8 : (CubeKind.OOO, Coordinates(-2,  0,  0)),
+            9 : (CubeKind.OOO, Coordinates( 0,  2,  0)),
+            10: (CubeKind.OOO, Coordinates( 1,  0,  0)),
+            11: (CubeKind.OOO, Coordinates(-1,  2,  1)),
+            12: (CubeKind.OOO, Coordinates(-1,  0,  2)),
+            13: (CubeKind.OOO, Coordinates( 0,  1,  2))
         }
     )
 
     BlockGraphConstructor.realise_edges(azx = azx,
         specifications = {
-            # (1,5) : PathSpecification(
-            #     source_cube = min(azx.get_realising_cubes(1)),
-            #     target_cube = min(azx.get_realising_cubes(5)),
-            #     extras = [
-            #         (CubeKind.ZZX, Coordinates(-2,  1,  1)),
-            #         (CubeKind.ZZX, Coordinates(-2,  0,  1)),
-            #         (CubeKind.ZZX, Coordinates(-2, -1,  1)),
-            #         (CubeKind.ZZX, Coordinates(-1, -1,  1))
-            #     ],
-            #     pipes = [
-            #         EdgeType.IDENTITY for _ in range(5)
-            #     ]
-            # )
+            (0, 1) : PathSpecification(
+                source_cube = min(azx.get_realising_cubes(0)),
+                target_cube = min(azx.get_realising_cubes(1)),
+                extras = [
+                    (CubeKind.XXZ, Coordinates( 0, -1,  0)),
+                    (CubeKind.ZXZ, Coordinates( 1, -1,  0)),
+                    (CubeKind.ZXX, Coordinates( 1, -1,  1))
+                ],
+                pipes = [ EdgeType.IDENTITY for _ in range(4) ],
+            ),
+            (1, 4) : PathSpecification(
+                source_cube = min(azx.get_realising_cubes(1)),
+                target_cube = min(azx.get_realising_cubes(4)),
+                extras = [
+                    (CubeKind.ZZX, Coordinates( 0,  0,  1)),
+                    (CubeKind.ZZX, Coordinates( 0, -1,  1)),
+                    (CubeKind.ZZX, Coordinates(-1, -1,  1))
+                ],
+                pipes = [ EdgeType.IDENTITY for _ in range(4) ],
+            ),
+            (1, 6) : PathSpecification(
+                source_cube = min(azx.get_realising_cubes(1)),
+                target_cube = min(azx.get_realising_cubes(6)),
+                extras = [
+                    (CubeKind.ZZX, Coordinates(1,1,1))
+                ],
+                pipes = [ EdgeType.IDENTITY ]
+            )
         }
     )
 
