@@ -1,0 +1,33 @@
+from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
+from qelebrimbor.common.components_zx import NodeId, EdgeId
+from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.common.paths import PathSpecification
+
+import logging
+console = logging.getLogger(__name__)
+
+class BlockGraphConstructor:
+    @staticmethod
+    def realise_nodes(azx: AugmentedZxGraph, specifications: dict[NodeId, tuple[CubeKind, Coordinates]]):
+        for node in azx.nodes:
+            if node in specifications:
+                azx.realise_node(node, *specifications[node])
+
+    @staticmethod
+    def realise_edges(azx: AugmentedZxGraph, specifications: dict[EdgeId, PathSpecification]):
+        for edge in azx.edges:
+            source, target = edge
+            if edge in specifications:
+                azx.realise_edge(source, target, specifications[edge])
+            elif azx.is_node_realised(source) and azx.is_node_realised(target):
+                proposal = PathSpecification(
+                    source_cube=min(azx.get_realising_cubes(source)),
+                    target_cube=min(azx.get_realising_cubes(target))
+                )
+                console.debug(f"Realising: {source} -> {target}")
+                if azx.is_edge_realised(source, target):
+                    console.debug(
+                        f"Edge: {source} -> {target} is realised : {azx.get_edge_realisation(source, target)}")
+                    raise Exception(f"WTF: {source} -> {target}")
+                azx.realise_edge(source, target, proposal)

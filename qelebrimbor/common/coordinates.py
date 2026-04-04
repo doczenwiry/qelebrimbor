@@ -33,7 +33,12 @@ class Coordinates:
     def __sub__(self, other):
         return Coordinates(self.x - other.x, self.y - other.y, self.z - other.z)
 
-    def __mul__(self, scalar):
+    def scale(self, scalar):
+        if isinstance(scalar, (int, float)):
+            return Coordinates(self.x * scalar, self.y * scalar, self.z * scalar)
+        raise NotImplementedError("Scalar multiplication requires <int> or <float>.")
+
+    def __mul__(self, scalar: int):
         if isinstance(scalar, (int, float)):
             return Coordinates(self.x * scalar, self.y * scalar, self.z * scalar)
         raise NotImplementedError("Scalar multiplication requires <int> or <float>.")
@@ -51,10 +56,6 @@ class Coordinates:
 
     def __truediv__(self, scalar: float):
         return Coordinates(self.x / scalar, self.y / scalar, self.z / scalar)
-
-    def dmul(self, other):
-        return Coordinates(self.x * other.x, self.y * other.y, self.z * other.z)
-
 
     def normalized(self):
         return self / sqrt(self.dot(self))

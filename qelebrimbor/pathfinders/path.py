@@ -54,24 +54,24 @@ class Path:
         manhattan = source_position.get_manhattan_distance(target_position)
         relative = target_position - source_position
 
-        if np.sign( np.dot(relative, source_reach) ) == -1:
+        if np.sign( source_reach.dot(relative) ) == -1:
             source_reach *= -1
-        if np.sign( np.dot(relative, target_reach) ) == -1:
+        if np.sign( target_reach.dot(relative) ) == -1:
             target_reach *= -1
 
         # TODO: work out the formalisation and justification of the cases for all the overhead values.
         if source_kind == target_kind:
-            if manhattan >= 1 and relative == manhattan * source_reach:
+            if manhattan >= 1 and relative == source_reach.scale(manhattan):
                 overhead += 2
 
             if manhattan >= 2:
-                if any(relative == (manhattan-1) * source_reach + step
+                if any(relative == source_reach.scale(manhattan - 1) + step
                        for step in Spacetime.get_step_constellation(source_reach)
                 ):
                     overhead += 2
 
             if manhattan >= 3:
-                if any(relative == (manhattan-2) * source_reach + step + source_reach.cross(step)
+                if any(relative == source_reach.scale(manhattan-2) + step + source_reach.cross(step)
                        for step in Spacetime.get_step_constellation(source_reach)
                 ):
                     overhead += 2
@@ -84,7 +84,7 @@ class Path:
                 elif source_reach == target_reach != relative:
                     overhead += 2
             elif manhattan == 2 and source_kind.get_type() != target_kind.get_type():
-                if source_reach == target_reach != relative and np.dot(relative, source_reach) == 0 and np.dot(relative, relative) != 4:
+                if source_reach == target_reach != relative and source_reach.dot(relative) == 0 and relative.dot(relative) != 4:
                     overhead += 2
 
         return overhead

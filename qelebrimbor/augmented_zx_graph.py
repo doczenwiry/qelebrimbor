@@ -78,7 +78,7 @@ class AugmentedZxGraph(nx.Graph):
                 target = converted_node_ids[max(edge)]
                 self.add_edge(source, target)
                 self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_TYPE] = edge_type
-                self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH] = None
+                self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH] = []
 
         self.__next_cube_id = self.number_of_nodes()
 
@@ -450,7 +450,7 @@ class AugmentedZxGraph(nx.Graph):
         return cube
 
     def is_edge_realised(self, source: NodeId, target: NodeId) -> bool:
-        return self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH] is not None
+        return len(self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH]) > 0
 
     def realise_edge(self, source: NodeId, target: NodeId, proposal: PathSpecification):
         if not self.is_node_realised(source):
@@ -664,6 +664,19 @@ class AugmentedZxGraph(nx.Graph):
             return False
         else:
             return True
+
+    def print_summary(self):
+        for node_type in [NodeType.Z, NodeType.X, NodeType.O]:
+            content = ""
+            for node in self.get_nodes(node_type=node_type):
+                node_type = self.get_node_type(node)
+                content += f"{node} "
+            console.info(f"Nodes {node_type.name}: {content}")
+
+        content = ""
+        for edge in self.edges:
+            content += f"{edge} "
+        console.info(f"Edges : {content}")
 
     def __identify_cube_at_position(self, position: Coordinates) -> int:
         for cube in self.get_cubes():

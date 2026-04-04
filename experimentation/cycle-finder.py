@@ -1,12 +1,15 @@
 import random
 import pyzx as zx
-import networkx as nx
 
 from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
+from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
 
 SEED = 42
 QUBITS = 4
 LAYERS = 10
+
+import logging
+logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
     random.seed(SEED)
@@ -16,7 +19,4 @@ if __name__ == "__main__":
     zx.draw(pyzx_graph, labels = True)
     azx = AugmentedZxGraph.from_pyzx_graph(pyzx_graph)
 
-    cycles = [sorted(cycle) for cycle in nx.cycle_basis(azx)]
-    cycles = sorted(cycles, key = len, reverse = True)
-    for cycle in cycles:
-        print(f"> {len(cycle)}/{azx.number_of_nodes()} : {cycle}")
+    CycleAnalyser.analyse(azx)

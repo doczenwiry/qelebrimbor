@@ -1,14 +1,14 @@
-from logging import basicConfig
-
 import numpy as np
 import pyzx as zx
-from pyzx import VertexType
+import networkx as nx
 
 from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
 from qelebrimbor.common.components_bg import CubeKind
 from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeId, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
+from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
+from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
 from qelebrimbor.vedo.azg_viewer import AugmentedZxGraphViewer
 
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
@@ -16,8 +16,8 @@ from qelebrimbor.vedo.zx_layout.manual import ManualLayout
 
 import logging
 console = logging.getLogger(__name__)
-basicConfig(level=logging.INFO)
-logging.getLogger('qelebrimbor').setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
+logging.getLogger('qelebrimbor').setLevel(logging.INFO)
 
 def find_terminal_node(graph: zx.graph.base.BaseGraph, qubit: int) -> int:
     return max(
@@ -26,20 +26,20 @@ def find_terminal_node(graph: zx.graph.base.BaseGraph, qubit: int) -> int:
 
 def add_steane_chunk(graph: zx.graph.base.BaseGraph, layer: int, target_qubits: list[int]):
     row = layer
-    start = graph.add_vertex(ty = VertexType.X, row = row, qubit = 0)
+    start = graph.add_vertex(ty = zx.VertexType.X, row = row, qubit = 0)
     row += 2
     previous = start
     for target_qubit in target_qubits:
         terminal = find_terminal_node(graph, target_qubit)
-        control = graph.add_vertex(ty = VertexType.Z, row = row, qubit = 0)
-        target = graph.add_vertex(ty = VertexType.X, row = row, qubit = target_qubit)
+        control = graph.add_vertex(ty = zx.VertexType.Z, row = row, qubit = 0)
+        target = graph.add_vertex(ty = zx.VertexType.X, row = row, qubit = target_qubit)
         graph.add_edge( (control, target) )
         graph.add_edge((previous, control), zx.EdgeType.HADAMARD if previous == start else zx.EdgeType.SIMPLE)
         graph.add_edge((terminal, target), zx.EdgeType.SIMPLE)
         row += 1
         previous = control
     row += 1
-    final = graph.add_vertex(ty = VertexType.X, row = row, qubit = 0)
+    final = graph.add_vertex(ty = zx.VertexType.X, row = row, qubit = 0)
 
     graph.add_edge( (previous, final), zx.EdgeType.HADAMARD)
 
@@ -74,13 +74,13 @@ if __name__ == "__main__":
 
     layer = 0
     for q in range(4):
-        pyzx_graph.add_vertex(ty = VertexType.X)
+        pyzx_graph.add_vertex(ty = zx.VertexType.X)
 
     for q in range(4):
-        pyzx_graph.add_vertex(ty = VertexType.Z)
+        pyzx_graph.add_vertex(ty = zx.VertexType.Z)
 
     for q in range(7):
-        pyzx_graph.add_vertex(ty = VertexType.BOUNDARY)
+        pyzx_graph.add_vertex(ty = zx.VertexType.BOUNDARY)
 
     for edge in [(0,4), (0,7), (1,4), (1,5), (1,6), (2, 5), (2, 7), (3, 6), (3, 7), (0,8), (2, 9), (3, 10), (4, 11), (5, 12), (6, 13), (7, 14)]:
         pyzx_graph.add_edge(edge, zx.EdgeType.SIMPLE)
@@ -89,72 +89,47 @@ if __name__ == "__main__":
         file.write(pyzx_graph.to_json())
 
     azx = AugmentedZxGraph.from_pyzx_graph(pyzx_graph)
+    azx.print_summary()
 
-    content = ""
-    for node in azx.get_nodes(node_type = NodeType.Z):
-        node_type = azx.get_node_type(node)
-        content += f" {node}:{node_type}"
-    print(f"Nodes-Z: {content}")
-    content = ""
-    for node in azx.get_nodes(node_type = NodeType.X):
-        node_type = azx.get_node_type(node)
-        content += f" {node}:{node_type}"
-    print(f"Nodes-X: {content}")
-    for edge in azx.edges:
-        print(f"{edge}")
+    CycleAnalyser.analyse(azx)
 
-    node_realisations: dict[NodeId, tuple[CubeKind, Coordinates]] = {
-        0 : (CubeKind.ZXZ, Coordinates(-1,  0,  0)),
-        1 : (CubeKind.ZZX, Coordinates(-1,  1,  1)),
-        2 : (CubeKind.XZZ, Coordinates( 0, -1,  0)),
-        3 : (CubeKind.XZZ, Coordinates( 0,  1,  0)),
-        4 : (CubeKind.ZXX, Coordinates(-1,  0,  1)),
-        5 : (CubeKind.XZX, Coordinates( 0, -1,  1)),
-        6 : (CubeKind.XZX, Coordinates( 0,  1,  1)),
-        7 : (CubeKind.XXZ, Coordinates( 0,  0,  0)),
-        8 : (CubeKind.OOO, Coordinates(-2,  0,  0)),
-        9 : (CubeKind.OOO, Coordinates( 0, -2,  0)),
-        10: (CubeKind.OOO, Coordinates( 0,  2,  0)),
-        11: (CubeKind.OOO, Coordinates(-1,  0,  2)),
-        12: (CubeKind.OOO, Coordinates( 0, -1,  2)),
-        13: (CubeKind.OOO, Coordinates( 0,  1,  2)),
-        14: (CubeKind.OOO, Coordinates( 1,  0,  0)),
-    }
+    BlockGraphConstructor.realise_nodes(azx = azx,
+        specifications = {
+            0 : (CubeKind.ZXZ, Coordinates(-1,  0,  0)),
+            1 : (CubeKind.ZZX, Coordinates(-1,  1,  1)),
+            2 : (CubeKind.XZZ, Coordinates( 0, -1,  0)),
+            3 : (CubeKind.XZZ, Coordinates( 0,  1,  0)),
+            4 : (CubeKind.ZXX, Coordinates(-1,  0,  1)),
+            5 : (CubeKind.XZX, Coordinates( 0, -1,  1)),
+            6 : (CubeKind.XZX, Coordinates( 0,  1,  1)),
+            7 : (CubeKind.XXZ, Coordinates( 0,  0,  0)),
+            8 : (CubeKind.OOO, Coordinates(-2,  0,  0)),
+            9 : (CubeKind.OOO, Coordinates( 0, -2,  0)),
+            10: (CubeKind.OOO, Coordinates( 0,  2,  0)),
+            11: (CubeKind.OOO, Coordinates(-1,  0,  2)),
+            12: (CubeKind.OOO, Coordinates( 0, -1,  2)),
+            13: (CubeKind.OOO, Coordinates( 0,  1,  2)),
+            14: (CubeKind.OOO, Coordinates( 1,  0,  0)),
+        }
+    )
 
-    for node in azx.nodes:
-        if node in node_realisations:
-            azx.realise_node(node, *node_realisations[node])
-
-    edge_realisations: dict[EdgeId, PathSpecification] = {
-        (1,5) : PathSpecification(
-            source_cube = min(azx.get_realising_cubes(1)),
-            target_cube = min(azx.get_realising_cubes(5)),
-            extras = [
-                (CubeKind.ZZX, Coordinates(-2,  1,  1)),
-                (CubeKind.ZZX, Coordinates(-2,  0,  1)),
-                (CubeKind.ZZX, Coordinates(-2, -1,  1)),
-                (CubeKind.ZZX, Coordinates(-1, -1,  1))
-            ],
-            pipes = [
-                EdgeType.IDENTITY for _ in range(5)
-            ]
-        )
-    }
-
-    for edge in azx.edges:
-        source, target = edge
-        if edge in edge_realisations:
-            azx.realise_edge(source, target, edge_realisations[edge])
-        elif azx.is_node_realised(source) and azx.is_node_realised(target):
-            proposal = PathSpecification(
-                source_cube = min(azx.get_realising_cubes(source)),
-                target_cube = min(azx.get_realising_cubes(target))
+    BlockGraphConstructor.realise_edges(azx = azx,
+        specifications = {
+            (1, 5): PathSpecification(
+                source_cube=min(azx.get_realising_cubes(1)),
+                target_cube=min(azx.get_realising_cubes(5)),
+                extras=[
+                    (CubeKind.ZZX, Coordinates(-2, 1, 1)),
+                    (CubeKind.ZZX, Coordinates(-2, 0, 1)),
+                    (CubeKind.ZZX, Coordinates(-2, -1, 1)),
+                    (CubeKind.ZZX, Coordinates(-1, -1, 1))
+                ],
+                pipes=[
+                    EdgeType.IDENTITY for _ in range(5)
+                ]
             )
-            print(f"Realising: {source} -> {target}")
-            if azx.is_edge_realised(source, target):
-                print(f"Edge: {source} -> {target} is realised : {azx.get_edge_realisation(source, target)}")
-                raise Exception(f"WTF: {source} -> {target}")
-            azx.realise_edge(source, target, proposal)
+        }
+    )
 
     hexagon = prepare_layout()
     viewer = AugmentedZxGraphViewer(azx, "steane-code-7", hexagon)

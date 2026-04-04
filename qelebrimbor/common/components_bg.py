@@ -82,6 +82,7 @@ class CubeKind(Enum):
         elif self == CubeKind.ZZX or self == CubeKind.XXZ:
             return Spacetime.XY
         elif self == CubeKind.OOO or self == CubeKind.YYY:
+            # TODO: be careful about issues this might cause
             return Spacetime.ORIGIN
         else:
             raise ValueError(f"Not applicable to cube kind {self.name}")
