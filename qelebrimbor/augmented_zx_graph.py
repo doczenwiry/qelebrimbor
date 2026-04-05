@@ -671,12 +671,12 @@ class AugmentedZxGraph(nx.Graph):
             for node in self.get_nodes(node_type=node_type):
                 node_type = self.get_node_type(node)
                 content += f"{node} "
-            console.info(f"Nodes {node_type.name}: {content}")
+            print(f"Nodes {node_type.name}: {content}")
 
         content = ""
         for edge in self.edges:
             content += f"{edge} "
-        console.info(f"Edges : {content}")
+        print(f"Edges  : {content}")
 
     def __identify_cube_at_position(self, position: Coordinates) -> int:
         for cube in self.get_cubes():
