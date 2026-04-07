@@ -55,17 +55,18 @@ class RingFinderBFS:
                 extended.append(next_kind, next_position)
 
                 # Check whether the ring satisfies the specification
-                if length >= n and Spacetime.ORIGIN.get_manhattan_distance(next_position) == 1:
+                console.debug(f"Extended : {extended}")
+                console.debug(f"> {extended.manhattan_length()} <= {n} + {maximal_overhead}?")
+                if length >= n-1 and root_position.get_manhattan_distance(next_position) == 1:
+                    console.debug(f"Target reached : {extended}")
                     step = next_position - root_position
                     reach_condition = Spacetime.contains(root_kind.get_reach(), step) and Spacetime.contains(next_kind.get_reach(), step)
-                    space_condition = Spacetime.ORIGIN.get_manhattan_distance(step) == 1
-                    if reach_condition and space_condition:
-                        if EdgeType.IDENTITY in BlockGraphHelper.infer_pipe_type(root[0], next_kind):
+                    console.debug(f"> {step}? [{reach_condition}]")
+                    if reach_condition:
+                        if EdgeType.IDENTITY in BlockGraphHelper.infer_pipe_type(root_kind, next_kind):
                             rings.append(extended)
 
-                if extended.manhattan_length() <= int(n / 2) + maximal_overhead:
-                    console.debug(f"Extended : {extended} [{extended.has_reached_target()}]")
-                    console.debug(f"> {extended.manhattan_length()} <= {n} + {maximal_overhead}?")
+                if extended.manhattan_length() + extended.manhattan_distance_anchor() <= n + maximal_overhead:
                     queue.append(extended)
 
         return rings

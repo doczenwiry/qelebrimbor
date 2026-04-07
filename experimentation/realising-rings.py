@@ -11,16 +11,16 @@ from qelebrimbor.vedo.zx_layout.cycle import CycleLayout
 import logging
 console = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
-logging.getLogger('qelebrimbor').setLevel(logging.DEBUG)
-logging.getLogger('qelebrimbor.ringfinders').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor').setLevel(logging.CRITICAL)
 
 if __name__ == "__main__":
-    n = 4
+    n = 6
+    mo = 2 if n <= 5 else 1 if n % 2 != 0 else 0
 
     nodes = [ NodeType.X if i % 2 == 0 else NodeType.Z for i in range(n) ]
-    edges = [((s, (s + 1) % n), EdgeType.IDENTITY) for s in range(n)]
+    edges = [ ( (s, (s + 1) % n) , EdgeType.IDENTITY ) for s in range(n) ]
 
-    rings = RingFinderBFS.find_minimal_rings(nodes, maximal_overhead = 3)
+    rings = RingFinderBFS.find_minimal_rings(nodes, number_sought = -1, maximal_overhead = mo)
 
     console.info(f"Found {len(rings)} rings of length {n}")
 
@@ -38,6 +38,7 @@ if __name__ == "__main__":
                 nd: realisation.cubes[nd] for nd in range(ring.number_of_nodes())
             }
         )
+
         BlockGraphConstructor.realise_edges(ring,
             specifications = {
                 (n-1, 0) : PathSpecification(
