@@ -5,6 +5,7 @@ from functools import total_ordering
 from qelebrimbor.pathfinders.metric.color_shufflings import ColorShuffling
 
 @dataclass
+@total_ordering
 class PathWeight:
     shuffle : ColorShuffling = ColorShuffling.identity()
     distance: int = 0
@@ -30,7 +31,6 @@ class PathWeight:
         return PathWeight(self.shuffle.extend(other.shuffle), self.distance + other.distance)
     __rmul__ = __mul__
 
-    @total_ordering
     def __lt__(self, other):
         return self.shuffle == other.shuffle and self.distance < other.distance
 
@@ -41,7 +41,7 @@ class PathWeight:
 class PathWeights:
     weights: list[PathWeight]
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         to_remove: list[PathWeight] = []
 
         for weight in self.weights:

@@ -9,6 +9,14 @@ console = logging.getLogger(__name__)
 
 class BlockGraphConstructor:
     @staticmethod
+    def realise(azx: AugmentedZxGraph,
+                nodes_specifications: dict[NodeId, tuple[CubeKind, Coordinates]],
+                edges_specifications: dict[EdgeId, PathSpecification]
+    ):
+        BlockGraphConstructor.realise_nodes(azx, nodes_specifications)
+        BlockGraphConstructor.realise_edges(azx, edges_specifications)
+
+    @staticmethod
     def realise_nodes(azx: AugmentedZxGraph, specifications: dict[NodeId, tuple[CubeKind, Coordinates]]):
         for node in azx.nodes:
             if node in specifications:

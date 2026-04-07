@@ -1,2 +1,5 @@
 Cycle basis for a graph ?
 Horton's Algorithm (1987) ?
+Yuster-Zwick Algorithm ?
+
+All cycles in blockgraph-spacetime have even length.

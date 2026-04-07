@@ -18,29 +18,26 @@ class PathFinderDFS:
         final: tuple[CubeKind, Coordinates], start: tuple[CubeKind, Coordinates] = (CubeKind.XZZ, Spacetime.ORIGIN),
         maximal_overhead: int = 6
     ) -> tuple[int, list[Path]]:
-        paths = []
+        paths: list[Path] = []
 
         start_kind, start_position = start
         final_kind, final_position = final
 
-        minimal_overhead = None
+        minimal_overhead = -1
         maximal_volume = start_position.get_manhattan_distance(final_position) + maximal_overhead
 
         initial = Path( start , final )
-        queue: PriorityQueue = PriorityQueue()
+        queue: PriorityQueue[Path] = PriorityQueue[Path]()
         queue.put( initial )
 
         console.info(f"Searching for paths from {start_kind}@{start_position} to {final_kind}@{final_position}.")
 
         while not queue.empty():
-            path = queue.get()
+            path: Path = queue.get()
             kind, position = path.cubes[-1]
             console.debug(f"Current : {kind}@{position}")
             for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(kind, position):
-                if path.contains(next_position):
-                    continue
-
-                if next_kind in [ CubeKind.YYY , CubeKind.OOO ]:
+                if path.contains(next_position) or next_kind in [ CubeKind.YYY , CubeKind.OOO ]:
                     continue
 
                 extended: Path = path.copy()
@@ -69,12 +66,12 @@ class PathFinderDFS:
     def find_paths(
             final: tuple[CubeKind, Coordinates],
             start: tuple[CubeKind, Coordinates] = (CubeKind.XZZ, Spacetime.ORIGIN),
-            maximal_overhead: Iterable[int] = None
+            maximal_overheads: Iterable[int] | None = None
     ):
-        if maximal_overhead is None:
-            maximal_overhead = [6]
+        if maximal_overheads is None:
+            maximal_overheads = [6]
 
-        for mo in maximal_overhead:
+        for mo in maximal_overheads:
             paths = PathFinderDFS.__core_find_paths(final, start, mo)
             if len(paths) > 0:
                 return paths

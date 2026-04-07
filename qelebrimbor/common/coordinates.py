@@ -104,4 +104,4 @@ class Coordinates:
         return self.as_tuple().__lt__(other.as_tuple())
 
     def __str__(self):
-        return f"({self.x}, {self.y}, {self.z})"
+        return f"({self.x},{self.y},{self.z})"

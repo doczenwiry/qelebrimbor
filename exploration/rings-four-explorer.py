@@ -32,9 +32,9 @@ def find_complete_rings(
     paths_report  = ""
     paths_report += f"[ R -> A : {format_paths(paths_ra)}] , "
     paths_report += f"[ R -> B : {format_paths(paths_rb)}] , "
-    paths_ac = PathFinderDFS.find_paths(target_c, target_a, maximal_overhead = range(6, 8, 2))
+    paths_ac = PathFinderDFS.find_paths(target_c, target_a, maximal_overheads= range(6, 8, 2))
     paths_report += f"[ A -> C : {format_paths(paths_ac)}]"
-    paths_bc = PathFinderDFS.find_paths(target_c, target_b, maximal_overhead = range(6, 8, 2))
+    paths_bc = PathFinderDFS.find_paths(target_c, target_b, maximal_overheads= range(6, 8, 2))
     paths_report += f"[ B -> C : {format_paths(paths_bc)}]"
 
     console.info(f">> Paths : {paths_report}")
@@ -62,11 +62,11 @@ def find_xxxx_rings():
     minimum_achieved = None
     for kind_a, position_a in four_xs_md1:
         target_a = (x_kinds[kind_a], positions_md_1[position_a])
-        paths_ra = PathFinderDFS.find_paths(target_a, maximal_overhead = range(6, 10, 2))
+        paths_ra = PathFinderDFS.find_paths(target_a, maximal_overheads= range(6, 10, 2))
         for kind_b, position_b in four_xs_md1:
             if kind_a <= kind_b and position_a < position_b:
                 target_b = (x_kinds[kind_b], positions_md_1[position_b])
-                paths_rb = PathFinderDFS.find_paths(target_b, maximal_overhead = range(6, 10, 2))
+                paths_rb = PathFinderDFS.find_paths(target_b, maximal_overheads= range(6, 10, 2))
                 for index_c, position_c in four_xs_md2:
                     if position_a != position_c != position_b:
                         target_c = (x_kinds[index_c], positions_md_2[position_c])
@@ -87,11 +87,11 @@ def find_xzzx_rings():
     minimum_achieved = None
     for kind_a, position_a in four_md1:
         target_a = (z_kinds[kind_a], positions_md_1[position_a])
-        paths_ra = PathFinderDFS.find_paths(target_a, maximal_overhead = range(6, 10, 2))
+        paths_ra = PathFinderDFS.find_paths(target_a, maximal_overheads= range(6, 10, 2))
         for kind_b, position_b in four_md1:
             if kind_a <= kind_b and position_a < position_b:
                 target_b = (z_kinds[kind_b], positions_md_1[position_b])
-                paths_rb = PathFinderDFS.find_paths(target_b, maximal_overhead = range(6, 10, 2))
+                paths_rb = PathFinderDFS.find_paths(target_b, maximal_overheads= range(6, 10, 2))
                 for index_c, position_c in four_md2:
                     if position_a != position_c != position_b:
                         target_c = (x_kinds[index_c], positions_md_2[position_c])
@@ -113,11 +113,11 @@ def find_xzxx_rings():
     total = len(four_md2)**3
     for kind_a, position_a in four_md2:
         target_a = (z_kinds[kind_a], positions_md_2[position_a])
-        paths_ra = PathFinderDFS.find_paths(target_a, maximal_overhead = range(6, 10, 2))
+        paths_ra = PathFinderDFS.find_paths(target_a, maximal_overheads= range(6, 10, 2))
         for kind_b, position_b in four_md2:
             if position_a < position_b:
                 target_b = (x_kinds[kind_b], positions_md_2[position_b])
-                paths_rb = PathFinderDFS.find_paths(target_b, maximal_overhead = range(6, 10, 2))
+                paths_rb = PathFinderDFS.find_paths(target_b, maximal_overheads= range(6, 10, 2))
                 for index_c, position_c in four_md2:
                     if position_a != position_c != position_b:
                         count += 1

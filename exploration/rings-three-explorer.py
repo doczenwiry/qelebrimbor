@@ -73,11 +73,11 @@ if __name__ == "__main__":
 
     for index_a, position_a in three_xs:
         target_a = (x_kinds[index_a], position_a)
-        paths_ra = PathFinderDFS.find_paths(target_a, maximal_overhead = range(6, 10, 2))
+        paths_ra = PathFinderDFS.find_paths(target_a, maximal_overheads= range(6, 10, 2))
         for index_b, position_b in three_xs:
             if index_a <= index_b and position_a != position_b:
                 target_b = (x_kinds[index_b], position_b)
-                paths_rb = PathFinderDFS.find_paths(target_b, maximal_overhead = range(6, 10, 2))
+                paths_rb = PathFinderDFS.find_paths(target_b, maximal_overheads= range(6, 10, 2))
                 find_complete_rings(target_a, paths_ra, target_b, paths_rb)
 
     # Cases w/ 2 X-spiders, 1 Z-spider
@@ -88,9 +88,9 @@ if __name__ == "__main__":
     one_zs = list(product(range(len(z_kinds)), positions))
     for index_a, position_a in two_xs:
         target_a = (x_kinds[index_a], position_a)
-        paths_ra = PathFinderDFS.find_paths(target_a, maximal_overhead = range(6, 10, 2))
+        paths_ra = PathFinderDFS.find_paths(target_a, maximal_overheads= range(6, 10, 2))
         for index_b, position_b in one_zs:
             if position_a != position_b:
                 target_b = (z_kinds[index_b], position_b)
-                paths_rb = PathFinderDFS.find_paths(target_b, maximal_overhead = range(6, 10, 2))
+                paths_rb = PathFinderDFS.find_paths(target_b, maximal_overheads= range(6, 10, 2))
                 find_complete_rings(target_a, paths_ra, target_b, paths_rb)
