@@ -3,31 +3,36 @@ console = logging.getLogger(__name__)
 
 from collections import deque
 
+from qelebrimbor.common.components_zx import NodeType, EdgeType
 from qelebrimbor.common.components_bg import CubeKind
-from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import Spacetime
-
 from qelebrimbor.ringfinders.ring import Ring
 
 
 class RingFinderBFS:
     @staticmethod
-    def find_minimal_alternating_rings(
-        order: int = 2,
-        root: tuple[CubeKind, Coordinates] = (CubeKind.XZZ, Spacetime.ORIGIN),
-        number_sought: int = 1
-    ) -> list[Ring]:
-        n = 2 * order
+    def find_minimal_rings(
+        nodes: list[NodeType],
+        number_sought: int = 1,
+        maximal_overhead: int = 6
+    ):
+        n = len(nodes)
         rings: list[Ring] = []
 
+        root_kind = CubeKind.suitable_kinds(nodes[0])[0]
+        root_position = Spacetime.ORIGIN
+
+        root = (root_kind, root_position)
+
         queue: deque = deque()
-        queue.append( Ring(n,root) )
+        queue.append( Ring(n, root) )
 
         while len(queue) > 0 and len(rings) != number_sought:
             ring = queue.popleft()
+            length = len(ring.cubes)
             kind, position = ring.cubes[-1]
-            console.debug(f"Current: {kind}@{position}")
+            # console.debug(f"Current: {kind}@{position}")
 
             for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(kind, position):
                 # Only consider cubes placed in the PPP octant.
@@ -39,23 +44,36 @@ class RingFinderBFS:
                     continue
 
                 # Skip if next_kind doesn't allow for further connections.
-                if next_kind in [ CubeKind.OOO, CubeKind.YYY ]:
+                if next_kind in [CubeKind.OOO, CubeKind.YYY]:
                     continue
 
-                # Skip if the next_kind is not of the opposite color to the current
-                if kind.get_type() == next_kind.get_type():
+                # Skip if the next_kind is not of the color specified
+                if length < n and next_kind.get_type() != nodes[length]:
                     continue
 
                 extended: Ring = ring.copy()
                 extended.append(next_kind, next_position)
 
-                console.debug(f"> Extended : {extended} [{extended.has_reached_target()}]")
-                console.debug(f">> {extended.manhattan_length()} + {extended.manhattan_distance_anchor()} <= {n} ?")
+                # Check whether the ring satisfies the specification
+                if length >= n and Spacetime.ORIGIN.get_manhattan_distance(next_position) == 1:
+                    step = next_position - root_position
+                    reach_condition = Spacetime.contains(root_kind.get_reach(), step) and Spacetime.contains(next_kind.get_reach(), step)
+                    space_condition = Spacetime.ORIGIN.get_manhattan_distance(step) == 1
+                    if reach_condition and space_condition:
+                        if EdgeType.IDENTITY in BlockGraphHelper.infer_pipe_type(root[0], next_kind):
+                            rings.append(extended)
 
-                if extended.has_reached_target():
-                    rings.append(extended)
-
-                if extended.manhattan_length() + extended.manhattan_distance_anchor() <= n:
+                if extended.manhattan_length() <= int(n / 2) + maximal_overhead:
+                    console.debug(f"Extended : {extended} [{extended.has_reached_target()}]")
+                    console.debug(f"> {extended.manhattan_length()} <= {n} + {maximal_overhead}?")
                     queue.append(extended)
 
         return rings
+
+    @staticmethod
+    def find_minimal_alternating_rings(
+        order: int = 2,
+        number_sought: int = 1
+    ) -> list[Ring]:
+        nodes = [ NodeType.X if i % 2 == 0 else NodeType.Z for i in range(2*order) ]
+        return RingFinderBFS.find_minimal_rings(nodes, number_sought)

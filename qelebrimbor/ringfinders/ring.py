@@ -7,7 +7,7 @@ from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 class Ring:
     def __init__(self, n: int, anchor: tuple[CubeKind, Coordinates]):
         self.anchor = anchor
-        self.cubes = [anchor]
+        self.cubes = [ anchor ]
         self.total_length = n
         self.occupied = { anchor[1] }
 

@@ -26,8 +26,11 @@ class BlockGraphConstructor:
     def realise_edges(azx: AugmentedZxGraph, specifications: dict[EdgeId, PathSpecification]):
         for edge in azx.edges:
             source, target = edge
+            alt = (target, source)
             if edge in specifications:
                 azx.realise_edge(source, target, specifications[edge])
+            elif alt in specifications:
+                azx.realise_edge(target, source, specifications[alt])
             elif azx.is_node_realised(source) and azx.is_node_realised(target):
                 source_cube = min(azx.get_realising_cubes(source))
                 target_cube = min(azx.get_realising_cubes(target))
