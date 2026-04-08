@@ -43,31 +43,32 @@ class PathFinderDFS:
         while not queue.empty():
             path: Path = queue.get()
             current = path.cubes[-1]
-            kind, position = current
-            console.debug(f"Current : {kind}@{position}")
+            console.debug(f"Current path : {path.cubes}")
             types_required: set[NodeType] = {
                 node_type for node_type in (NodeType.X, NodeType.Z)
                 if path.manhattan_length() >= len(type_restrictions) or node_type in type_restrictions
             }
             for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(current, node_types = types_required):
-                if path.occupies(next_position) or next_position in occupied_positions:
-                    continue
-
                 extended: Path = path.copy()
                 extended.append(next_kind, next_position)
 
                 if extended.has_reached_target():
                     manhattan_length = extended.manhattan_length()
                     extended_overhead = extended.overhead()
+
+                    console.info(f"> Target reached : {next_kind}@{next_position} [+{extended_overhead}]")
+                    console.debug(f">> {extended}")
+
                     if manhattan_length < maximal_volume:
                         maximal_volume = manhattan_length
                         minimal_overhead = extended_overhead
                         paths.clear()
 
                     if manhattan_length == maximal_volume:
-                        console.info(f"> Target reached : {next_kind}@{next_position} [+{extended_overhead}]")
-                        console.debug(f">> {extended}")
                         paths.append( extended )
+
+                if path.occupies(next_position) or next_position in occupied_positions:
+                    continue
 
                 if extended.manhattan_length() + extended.manhattan_distance_remaining() < maximal_volume:
                     console.debug(f"> {next_kind}@{next_position}")

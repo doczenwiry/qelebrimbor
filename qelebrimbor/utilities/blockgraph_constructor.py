@@ -19,12 +19,15 @@ class BlockGraphConstructor:
     @staticmethod
     def realise_nodes(azx: AugmentedZxGraph, specifications: dict[NodeId, tuple[CubeKind, Coordinates]]):
         for node in azx.nodes:
-            if node in specifications:
+            if not azx.is_node_realised(node) and node in specifications:
                 azx.realise_node(node, *specifications[node])
 
     @staticmethod
     def realise_edges(azx: AugmentedZxGraph, specifications: dict[EdgeId, PathSpecification]):
         for edge in azx.edges:
+            if azx.is_edge_realised(*edge):
+                continue
+
             source, target = edge
             alt = (target, source)
             if edge in specifications:
