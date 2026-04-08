@@ -15,7 +15,7 @@ class RingFinderBFS:
     def find_minimal_rings(
         nodes: list[NodeType],
         number_sought: int = 1,
-        maximal_overhead: int = 6
+        maximal_overhead: int = 0
     ):
         n = len(nodes)
         rings: list[Ring] = []
@@ -31,16 +31,17 @@ class RingFinderBFS:
         while len(queue) > 0 and len(rings) != number_sought:
             ring = queue.popleft()
             length = len(ring.cubes)
-            kind, position = ring.cubes[-1]
-            # console.debug(f"Current: {kind}@{position}")
+            terminal_cube = ring.cubes[-1]
+            terminal_kind, terminal_position = terminal_cube
+            console.debug(f"Terminal cube: {terminal_kind}@{terminal_position}")
 
-            for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(kind, position):
+            for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(terminal_cube):
                 # Only consider cubes placed in the PPP octant.
                 if not all(c >= 0 for c in next_position):
                     continue
 
                 # Skip if next_position is already occupied.
-                if ring.contains(next_position):
+                if ring.occupies(next_position):
                     continue
 
                 # Skip if next_kind doesn't allow for further connections.
@@ -73,8 +74,9 @@ class RingFinderBFS:
 
     @staticmethod
     def find_minimal_alternating_rings(
-        order: int = 2,
-        number_sought: int = 1
+            order: int = 2,
+            maximal_overhead: int = 0,
+            number_sought: int = 1
     ) -> list[Ring]:
         nodes = [ NodeType.X if i % 2 == 0 else NodeType.Z for i in range(2*order) ]
-        return RingFinderBFS.find_minimal_rings(nodes, number_sought)
+        return RingFinderBFS.find_minimal_rings(nodes, number_sought, maximal_overhead)

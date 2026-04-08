@@ -24,7 +24,7 @@ LENGTH = 2*ORDER
 # TODO: figure out how to realise such rings ...
 
 if __name__ == "__main__":
-    rings = RingFinderBFS.find_minimal_alternating_rings(ORDER, number_sought = -1)
+    rings = RingFinderBFS.find_minimal_alternating_rings(ORDER, maximal_overhead = 0, number_sought = -1)
     console.info(f"Found {len(rings)} rings of length {LENGTH}")
     for realisation in rings:
         console.info(f"> {realisation}")

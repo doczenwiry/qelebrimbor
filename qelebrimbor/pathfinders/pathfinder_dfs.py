@@ -1,4 +1,8 @@
 import logging as lgr
+import queue
+
+from qelebrimbor.common.components_zx import NodeType
+
 console = lgr.getLogger(__name__)
 
 from typing import Iterable
@@ -16,8 +20,12 @@ class PathFinderDFS:
     @staticmethod
     def find_minimal_paths(
         final: tuple[CubeKind, Coordinates], start: tuple[CubeKind, Coordinates] = (CubeKind.XZZ, Spacetime.ORIGIN),
+        type_restrictions: list[NodeType] = [], occupied_positions: set[Coordinates] = set(),
         maximal_overhead: int = 6
     ) -> tuple[int, list[Path]]:
+        if any(tr in {NodeType.O, NodeType.Y} for tr in type_restrictions):
+            raise Exception(f"Path cannot contain cubes of NodeType.O or NodeType.Y.")
+
         paths: list[Path] = []
 
         start_kind, start_position = start
@@ -34,10 +42,15 @@ class PathFinderDFS:
 
         while not queue.empty():
             path: Path = queue.get()
-            kind, position = path.cubes[-1]
+            current = path.cubes[-1]
+            kind, position = current
             console.debug(f"Current : {kind}@{position}")
-            for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(kind, position):
-                if path.contains(next_position) or next_kind in [ CubeKind.YYY , CubeKind.OOO ]:
+            types_required: set[NodeType] = {
+                node_type for node_type in (NodeType.X, NodeType.Z)
+                if path.manhattan_length() >= len(type_restrictions) or node_type in type_restrictions
+            }
+            for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(current, node_types = types_required):
+                if path.occupies(next_position) or next_position in occupied_positions:
                     continue
 
                 extended: Path = path.copy()
@@ -69,12 +82,12 @@ class PathFinderDFS:
             maximal_overheads: Iterable[int] | None = None
     ):
         if maximal_overheads is None:
-            maximal_overheads = [6]
-
-        for mo in maximal_overheads:
-            paths = PathFinderDFS.__core_find_paths(final, start, mo)
-            if len(paths) > 0:
-                return paths
+            return PathFinderDFS.__core_find_paths(final, start)
+        else:
+            for mo in maximal_overheads:
+                paths = PathFinderDFS.__core_find_paths(final, start, mo)
+                if len(paths) > 0:
+                    return paths
 
         return {}
 
@@ -92,17 +105,18 @@ class PathFinderDFS:
         maximal_volume = start_position.get_manhattan_distance(final_position) + maximal_overhead
 
         initial = Path( start , final )
-        queue: PriorityQueue = PriorityQueue()
+        queue: PriorityQueue[Path] = PriorityQueue[Path]()
         queue.put( initial )
 
         console.info(f"Searching for paths from {start_kind}@{start_position} to {final_kind}@{final_position}.")
 
         while not queue.empty():
             path = queue.get()
-            kind, position = path.cubes[-1]
+            current = path.cubes[-1]
+            kind, position = current
             console.debug(f"Current : {kind}@{position}")
-            for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(kind, position):
-                if path.contains(next_position):
+            for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(current):
+                if path.occupies(next_position):
                     continue
 
                 if next_kind in [ CubeKind.YYY , CubeKind.OOO ]:

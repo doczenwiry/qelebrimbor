@@ -21,6 +21,9 @@ class NodeType(Enum):
         else:
             raise ValueError(f"Unsupported vertex type: {vertex_type}")
 
+    def __hash__(self):
+        return hash(self.value)
+
     def __str__(self):
         return self.name
 

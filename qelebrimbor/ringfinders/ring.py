@@ -28,7 +28,7 @@ class Ring:
     def manhattan_length(self):
         return len(self.cubes) - 1
 
-    def contains(self, position: Coordinates):
+    def occupies(self, position: Coordinates):
         return position in self.occupied
 
     def append(self, kind: CubeKind, position: Coordinates):

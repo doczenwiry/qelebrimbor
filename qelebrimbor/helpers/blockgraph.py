@@ -25,29 +25,29 @@ class BlockGraphHelper:
 
     @staticmethod
     def get_candidate_constellation(
-        origin_kind: CubeKind,
-        origin_position: Coordinates = Spacetime.ORIGIN,
+        origin: tuple[CubeKind, Coordinates],
+        node_types: set[NodeType] | None = None,
         pipe_type: EdgeType = EdgeType.IDENTITY
     ) -> list[tuple[CubeKind, Coordinates]]:
+        if node_types is None:
+            considered_node_types = { NodeType.O, NodeType.X, NodeType.Y, NodeType.Z }
+        else:
+            considered_node_types = node_types
+
         constellation = []
 
+        origin_kind, origin_position = origin
         origin_reach = origin_kind.get_reach()
 
         for step in Spacetime.get_step_constellation(origin_reach):
             candidate_position = origin_position + step
 
-            for node_type in [ NodeType.X, NodeType.Z ]:
-                for node_reach in Spacetime.PLANES:
-                    if Spacetime.contains(node_reach, step):
-                        candidate_kind = CubeKind.convert(node_type, node_reach)
+            for node_type in considered_node_types:
+                for candidate_kind in CubeKind.suitable_kinds(node_type):
+                    cube_reach = candidate_kind.get_reach()
+                    if Spacetime.contains(cube_reach, step):
                         if pipe_type in BlockGraphHelper.infer_pipe_type(candidate_kind, origin_kind):
                             constellation.append( (candidate_kind, candidate_position) )
-
-            # A cube can always have an adjacent cube of kind OOO (both IDENTITY and HADAMARD pipes are possible)
-            constellation.append( (CubeKind.OOO, candidate_position) )
-
-            # A cube can always have an adjacent cube of kind OOO (both IDENTITY and HADAMARD pipes are possible)
-            constellation.append( (CubeKind.YYY, candidate_position) )
 
         console.debug(f"Constellation of {len(constellation)} points.")
         for kind, position in constellation:
