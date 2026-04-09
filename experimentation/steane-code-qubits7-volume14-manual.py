@@ -94,7 +94,7 @@ if __name__ == "__main__":
     # Identity rule
     zx.simplify.id_simp(pyzx_graph)
 
-    with open("../assets/zx/steane-code-qubits7-volume14.json", 'w') as file:
+    with open("../assets/pyzx/steane-code-qubits7-volume14.json", 'w') as file:
         file.write(pyzx_graph.to_json())
 
     vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)

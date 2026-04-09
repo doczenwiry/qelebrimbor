@@ -44,7 +44,7 @@ def prepare_layout() -> ManualLayout:
 
 if __name__ == "__main__":
     pyzx_graph = zx.Graph()
-    with open("../assets/zx/steane-code-qubits7-volume14.json", 'r') as file:
+    with open("../assets/pyzx/steane-code-qubits7-volume14.json", 'r') as file:
         pyzx_graph = pyzx_graph.from_json(json.load(file))
 
     vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)

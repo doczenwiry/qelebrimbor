@@ -5,4 +5,4 @@ if __name__ == "__main__":
 
     vzx.print_summary()
 
-    vzx.into_file("../assets/ang/ghz8-alternative.vzx")
+    vzx.into_file("../assets/vzx/ghz8-alternative.vzx")

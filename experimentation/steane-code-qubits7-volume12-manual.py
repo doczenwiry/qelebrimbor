@@ -85,7 +85,7 @@ if __name__ == "__main__":
     for edge in [(0,4), (0,7), (1,4), (1,5), (1,6), (2, 5), (2, 7), (3, 6), (3, 7), (0,8), (2, 9), (3, 10), (4, 11), (5, 12), (6, 13), (7, 14)]:
         pyzx_graph.add_edge(edge, zx.EdgeType.SIMPLE)
 
-    with open("../assets/zx/steane-code-qubits7-volume12.json", 'w') as file:
+    with open("../assets/pyzx/steane-code-qubits7-volume12.json", 'w') as file:
         file.write(pyzx_graph.to_json())
 
     vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)
