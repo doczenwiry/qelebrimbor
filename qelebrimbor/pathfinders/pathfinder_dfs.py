@@ -38,7 +38,7 @@ class PathFinderDFS:
         queue: PriorityQueue[Path] = PriorityQueue[Path]()
         queue.put( initial )
 
-        console.info(f"Searching for paths from {start_kind}@{start_position} to {final_kind}@{final_position}.")
+        console.info(f"Searching for paths from {start_kind}@{start_position} to {final_kind}@{final_position} [{type_restrictions}].")
 
         while not queue.empty():
             path: Path = queue.get()
@@ -46,13 +46,14 @@ class PathFinderDFS:
             console.debug(f"Current path : {path.cubes}")
             types_required: set[NodeType] = {
                 node_type for node_type in (NodeType.X, NodeType.Z)
-                if path.manhattan_length() >= len(type_restrictions) or node_type in type_restrictions
+                if path.manhattan_length() >= len(type_restrictions) or node_type == type_restrictions[path.manhattan_length()]
             }
+            console.debug(f"> Types required : {types_required}")
             for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(current, node_types = types_required):
                 extended: Path = path.copy()
                 extended.append(next_kind, next_position)
 
-                if extended.has_reached_target():
+                if extended.has_reached_target() and extended.manhattan_length() >= len(type_restrictions):
                     manhattan_length = extended.manhattan_length()
                     extended_overhead = extended.overhead()
 

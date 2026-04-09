@@ -14,8 +14,9 @@ from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeId, EdgeType
 from qelebrimbor.common.components_bg import CubeId, CubeKind, PipeId
 from qelebrimbor.common.paths import PathSpecification
 
-from logging import getLogger
-console = getLogger(__name__)
+import logging
+console = logging.getLogger(__name__)
+console.setLevel(logging.INFO)
 
 QubitId = int
 LayerId = int
@@ -581,9 +582,9 @@ class AugmentedZxGraph(nx.Graph):
         source_kind: CubeKind = self.get_cube_kind(source_cube)
         source_position: Coordinates = self.get_cube_position(source_cube)
 
-        console.info(f"Checking path validity:")
-        console.info(f"> Source cube #{source_cube} [{source_kind}@{source_position}]")
-        console.info(f"> Extra cubes: {proposal.extras}")
+        console.debug(f"Checking path validity:")
+        console.debug(f"> Source cube #{source_cube} [{source_kind}@{source_position}]")
+        console.debug(f"> Extra cubes: {proposal.extras}")
 
         previous_kind = source_kind
         previous_position = source_position
@@ -614,8 +615,8 @@ class AugmentedZxGraph(nx.Graph):
             # Check that the step taken lies in both reaches of successive cubes
             step_taken = current_position - previous_position
             if not Spacetime.contains(previous_reach, step_taken) or not Spacetime.contains(current_reach, step_taken):
-                console.debug(f"> Previous reach contains step : {Spacetime.contains(previous_reach, step_taken)}")
-                console.debug(f"> Current reach contains step : {Spacetime.contains(current_reach, step_taken)}")
+                console.debug(f"> Previous reach does not contain step [{step_taken}]: {previous_kind}")
+                console.debug(f"> Current reach does not contain step [{step_taken}]: {current_kind}")
                 return False
 
             # Check that the current pipe has a type consistent with what is allowed
@@ -665,8 +666,21 @@ class AugmentedZxGraph(nx.Graph):
         else:
             return True
 
+    def log_summary(self):
+        for node_type in [NodeType.O, NodeType.X, NodeType.Y, NodeType.Z]:
+            content = ""
+            for node in self.get_nodes(node_type=node_type):
+                node_type = self.get_node_type(node)
+                content += f"{node} "
+            console.info(f"Nodes {node_type.name}: {content}")
+
+        content = ""
+        for edge in self.edges:
+            content += f"{edge} "
+        console.info(f"Edges  : {content}")
+
     def print_summary(self):
-        for node_type in [NodeType.Z, NodeType.X, NodeType.O]:
+        for node_type in [NodeType.O, NodeType.X, NodeType.Y, NodeType.Z]:
             content = ""
             for node in self.get_nodes(node_type=node_type):
                 node_type = self.get_node_type(node)

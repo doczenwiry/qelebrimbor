@@ -2,7 +2,9 @@ import numpy as np
 from functools import total_ordering
 
 from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.components_zx import EdgeType
 from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import Spacetime
 
 @total_ordering
@@ -13,10 +15,11 @@ class Path:
         self.source = source
         self.target = target
 
-    def has_reached_target(self):
-        terminal_kind, terminal_position = self.cubes[-1]
-        target_kind, target_position = self.target
-        return terminal_kind == target_kind and terminal_position == target_position
+    def has_reached_target(self, edge_type: EdgeType = EdgeType.IDENTITY):
+        final_cube = self.cubes[-1]
+        terminal_cube = self.cubes[-2]
+        connectable = BlockGraphHelper.connectable(terminal_cube, self.target, edge_type)
+        return final_cube == self.target and connectable
 
     def overhead(self):
         _, source_position = self.source
@@ -115,7 +118,10 @@ class Path:
         return self.manhattan_distance_remaining() < other.manhattan_distance_remaining()
 
     def __str__(self):
-        return str(self.cubes)
+        if len(self.cubes) == 2:
+            return str(self.source) + " -> " + str(self.target)
+        else:
+            return str(self.source) + " -> " + str(self.cubes[1:-1]) + " -> " + str(self.target)
 
     def __repr__(self):
         return str(self.cubes)

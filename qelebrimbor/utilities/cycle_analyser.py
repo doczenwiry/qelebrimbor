@@ -5,6 +5,7 @@ from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
 
 import logging
 console = logging.getLogger(__name__)
+console.setLevel(logging.INFO)
 
 class CycleAnalyser:
     @staticmethod
@@ -15,4 +16,4 @@ class CycleAnalyser:
 
     @staticmethod
     def decompose(azx: AugmentedZxGraph) -> list[list[NodeId]]:
-        return nx.cycle_basis(azx)
+        return sorted(nx.cycle_basis(azx), key = lambda cycle: len(cycle), reverse = True)

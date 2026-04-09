@@ -24,6 +24,21 @@ class BlockGraphHelper:
         return { EdgeType.IDENTITY } if same_type == same_reach else { EdgeType.HADAMARD }
 
     @staticmethod
+    def connectable(
+            source: tuple[CubeKind, Coordinates],
+            target: tuple[CubeKind, Coordinates],
+            edge_type: EdgeType
+    ) -> bool:
+        source_kind, source_position = source
+        target_kind, target_position = target
+        step = target_position - source_position
+        space_condition = source_position.get_manhattan_distance(target_position) == 1
+        reach_condition = Spacetime.contains(source_kind.get_reach(), step) and Spacetime.contains(target_kind.get_reach(), step)
+        pipe_condition = edge_type in BlockGraphHelper.infer_pipe_type(source_kind, target_kind)
+        console.debug(f"Connectable: {source} - {target} : {space_condition}/{reach_condition}/{pipe_condition}")
+        return space_condition and reach_condition and pipe_condition
+
+    @staticmethod
     def get_candidate_constellation(
         origin: tuple[CubeKind, Coordinates],
         node_types: set[NodeType] | None = None,
