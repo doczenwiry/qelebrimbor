@@ -1,4 +1,4 @@
-from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.components_bg import CubeId
 
 from vedo import settings, Plotter
@@ -27,8 +27,8 @@ VIEWPORTS = [
 settings.enable_default_mouse_callbacks = False
 settings.enable_default_keyboard_callbacks = False
 
-class AugmentedZxGraphViewer(Plotter):
-    def __init__(self, azx: AugmentedZxGraph, label: str = "", layout: ZxLayout | None = None):
+class VolumetricZxGraphViewer(Plotter):
+    def __init__(self, vzx: VolumetricZxGraph, label: str = "", layout: ZxLayout | None = None):
         super().__init__(shape = VIEWPORTS, sharecam = False, title = f"qelebrimbor [{label}]")
 
         # Initialise the camera for the BG Graph
@@ -37,7 +37,7 @@ class AugmentedZxGraphViewer(Plotter):
         zx_camera.SetViewUp(0, 1, 0)
 
         # Store the original AugmentedNxGraph
-        self.__graph = azx
+        self.__graph = vzx
 
         # Set the global callbacks
         self.add_callback("key press", self.__on_key_pressed)
@@ -45,9 +45,9 @@ class AugmentedZxGraphViewer(Plotter):
 
         # Prepare the scene manager for the ZX-graph
         self.__zx_scene_manager = ZxSceneManager(
-            azx = self.__graph,
+            vzx= self.__graph,
             plotter = self.at(ZX_VIEWPORT),
-            layout = CircuitLayout(azx) if layout is None else layout
+            layout = CircuitLayout(vzx) if layout is None else layout
         )
 
         # Prepare the scene manager for the BG-graph
@@ -113,8 +113,7 @@ class AugmentedZxGraphViewer(Plotter):
             self.__selected_object = event.object
             self.__alter_highlighting(self.__selected_object, highlighting = True)
 
-        self.at(ZX_VIEWPORT).render()
-        self.at(BG_VIEWPORT).render()
+        self.render()
 
     def display(self):
         self.at(ZX_VIEWPORT).show()

@@ -1,10 +1,10 @@
-from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeType
 from qelebrimbor.common.components_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
-from qelebrimbor.vedo.azg_viewer import AugmentedZxGraphViewer
+from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.cycle import CycleLayout
 
 import logging
@@ -12,11 +12,11 @@ console = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('qelebrimbor').setLevel(logging.CRITICAL)
 
-def generate_ring(order: int) -> AugmentedZxGraph:
+def generate_ring(order: int) -> VolumetricZxGraph:
     n = 2 * order
     nodes = [ (s, NodeType.X if s % 2 == 0 else NodeType.Z) for s in range(n) ]
     edges = [ ( (s,(s+1) % n), EdgeType.IDENTITY) for s in range(n) ]
-    return AugmentedZxGraph(nodes, edges)
+    return VolumetricZxGraph(nodes, edges)
 
 ORDER = 4
 LENGTH = 2*ORDER
@@ -36,5 +36,5 @@ if __name__ == "__main__":
 
         BlockGraphConstructor.realise(ring, nodes_specifications, {})
 
-        viewer = AugmentedZxGraphViewer(ring, f"alternating ring, n={LENGTH}", CycleLayout(ring))
+        viewer = VolumetricZxGraphViewer(ring, f"alternating ring, n={LENGTH}", CycleLayout(ring))
         viewer.display()

@@ -34,7 +34,7 @@ class LayerTransitionType(Enum):
 # TODO: how do we deal with the phase of a spider ?
 # TODO: benchmarking and timing various parts
 # TODO: construction of animation
-class AugmentedZxGraph(nx.Graph):
+class VolumetricZxGraph(nx.Graph):
     KEY_ZX_NODE_TYPE     = 'zx_node_type'
     KEY_ZX_NODE_QUBIT    = 'zx_node_qubit'
     KEY_ZX_NODE_LAYER    = 'zx_node_layer'
@@ -53,7 +53,7 @@ class AugmentedZxGraph(nx.Graph):
         edges: Iterable[tuple[tuple[NodeId, NodeId], EdgeType]] | None = None
     ):
         # Separate ZX-graph and BG-graph
-        super(AugmentedZxGraph, self).__init__()
+        super(VolumetricZxGraph, self).__init__()
         self.__bg_graph: nx.Graph = nx.Graph()
 
         # Keeps track of which nodes appear on which qubit-line or layer of the ZX-graph
@@ -70,16 +70,16 @@ class AugmentedZxGraph(nx.Graph):
                 converted_node_ids[node] = node_id
                 self.add_node(node_id)
                 nx_node = self.nodes[node_id]
-                nx_node[AugmentedZxGraph.KEY_ZX_NODE_TYPE] = node_type
-                nx_node[AugmentedZxGraph.KEY_ZX_NODE_BG_CUBES] = set()
+                nx_node[VolumetricZxGraph.KEY_ZX_NODE_TYPE] = node_type
+                nx_node[VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES] = set()
 
         if edges is not None:
             for edge, edge_type in edges:
                 source = converted_node_ids[min(edge)]
                 target = converted_node_ids[max(edge)]
                 self.add_edge(source, target)
-                self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_TYPE] = edge_type
-                self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH] = []
+                self.get_edge_data(source, target)[VolumetricZxGraph.KEY_ZX_EDGE_TYPE] = edge_type
+                self.get_edge_data(source, target)[VolumetricZxGraph.KEY_ZX_EDGE_BG_PATH] = []
 
         self.__next_cube_id = self.number_of_nodes()
 
@@ -105,19 +105,19 @@ class AugmentedZxGraph(nx.Graph):
             target = converted_node_ids[max(edge)]
             edges.append( ( (source,target) , EdgeType.convert(zx_graph.edge_type(edge))) )
 
-        azx = AugmentedZxGraph(nodes, edges)
+        vzx = VolumetricZxGraph(nodes, edges)
 
         # Add qubit and layer information
         for node, node_id in converted_node_ids.items():
             node_qubit = int(zx_graph.qubit(node))
-            azx.nodes[node_id][AugmentedZxGraph.KEY_ZX_NODE_QUBIT] = node_qubit
-            azx.__zx_qubits[node_qubit].append(node_id)
+            vzx.nodes[node_id][VolumetricZxGraph.KEY_ZX_NODE_QUBIT] = node_qubit
+            vzx.__zx_qubits[node_qubit].append(node_id)
 
             node_layer = int(zx_graph.row(node))
-            azx.nodes[node_id][AugmentedZxGraph.KEY_ZX_NODE_LAYER] = node_layer
-            azx.__zx_layers[node_layer].append(node_id)
+            vzx.nodes[node_id][VolumetricZxGraph.KEY_ZX_NODE_LAYER] = node_layer
+            vzx.__zx_layers[node_layer].append(node_id)
 
-        return azx
+        return vzx
 
     @staticmethod
     def __make_tuple(tpl: str):
@@ -149,9 +149,9 @@ class AugmentedZxGraph(nx.Graph):
                 if current[0] != f">{edge_type.name}:":
                     raise Exception(f"Invalid file format. Header for {edge_type} not found. [got {current[0]}]")
                 if len(current) > 1 and current[1] != '\n':
-                    edges.extend(map(lambda ed: (AugmentedZxGraph.__make_tuple(ed), edge_type), current[1:]))
+                    edges.extend(map(lambda ed: (VolumetricZxGraph.__make_tuple(ed), edge_type), current[1:]))
 
-            ang = AugmentedZxGraph(nodes, edges)
+            vzx = VolumetricZxGraph(nodes, edges)
 
             # Read the zx-qubits
             header = file.readline().split(" ")
@@ -162,9 +162,9 @@ class AugmentedZxGraph(nx.Graph):
                 current = file.readline().split(" ")
                 if current[0] != f">{qubit}:":
                     raise Exception(f"Invalid file format. Header for qubit {qubit} not found. [got {current[0]}]")
-                ang.__zx_qubits[qubit] = list(map(lambda nd: int(nd), current[1:]))
-                for node in ang.__zx_qubits[qubit]:
-                    ang.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_QUBIT] = qubit
+                vzx.__zx_qubits[qubit] = list(map(lambda nd: int(nd), current[1:]))
+                for node in vzx.__zx_qubits[qubit]:
+                    vzx.nodes[node][VolumetricZxGraph.KEY_ZX_NODE_QUBIT] = qubit
 
             # Read the zx-layers
             header = file.readline().split(" ")
@@ -175,9 +175,9 @@ class AugmentedZxGraph(nx.Graph):
                 current = file.readline().split(" ")
                 if current[0] != f">{layer}:":
                     raise Exception(f"Invalid file format. Header for layer {layer} not found. [got {current[0]}]")
-                ang.__zx_layers[layer] = list(map(lambda nd: int(nd), current[1:]))
-                for node in ang.__zx_layers[layer]:
-                    ang.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_LAYER] = layer
+                vzx.__zx_layers[layer] = list(map(lambda nd: int(nd), current[1:]))
+                for node in vzx.__zx_layers[layer]:
+                    vzx.nodes[node][VolumetricZxGraph.KEY_ZX_NODE_LAYER] = layer
 
             # Read bg-cubes
             header = file.readline().split(' ')
@@ -196,10 +196,10 @@ class AugmentedZxGraph(nx.Graph):
 
                     cube = int(cb_id)
                     position = Coordinates.from_string(cb_position)
-                    ang.__bg_graph.add_node(cube)
-                    ang.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_KIND] = cube_kind
-                    ang.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_POSITION] = position
-                    ang.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_ZX_NODES] = set()
+                    vzx.__bg_graph.add_node(cube)
+                    vzx.__bg_graph.nodes[cube][VolumetricZxGraph.KEY_BG_CUBE_KIND] = cube_kind
+                    vzx.__bg_graph.nodes[cube][VolumetricZxGraph.KEY_BG_CUBE_POSITION] = position
+                    vzx.__bg_graph.nodes[cube][VolumetricZxGraph.KEY_BG_CUBE_ZX_NODES] = set()
 
             # Read bg-pipes
             header = file.readline().split(' ')
@@ -211,8 +211,8 @@ class AugmentedZxGraph(nx.Graph):
                     raise Exception(f"Invalid file format. Header for {pipe_kind} not found.")
                 if len(current) > 1 and current[1] != '\n':
                     for pipe in current[1:]:
-                        source_cube, target_cube = AugmentedZxGraph.__make_tuple(pipe)
-                        ang.connect_pipe(source_cube, target_cube, pipe_kind)
+                        source_cube, target_cube = VolumetricZxGraph.__make_tuple(pipe)
+                        vzx.connect_pipe(source_cube, target_cube, pipe_kind)
 
             # Read zx-nodes-bg-cubes
             header = file.readline().split(' ')
@@ -222,21 +222,21 @@ class AugmentedZxGraph(nx.Graph):
                 nd_id, cb_id = token.split(':')
                 node = int(nd_id)
                 cube = int(cb_id)
-                ang.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_BG_CUBES].add(cube)
-                ang.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_ZX_NODES].add(node)
+                vzx.nodes[node][VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES].add(cube)
+                vzx.__bg_graph.nodes[cube][VolumetricZxGraph.KEY_BG_CUBE_ZX_NODES].add(node)
 
             # Read zx-edges-bg-pipes
             header = file.readline().split(' ')
             if header[0] != "ZX-EDGES-BG-PIPES:\n":
                 raise Exception("Invalid file format. Header for ZX-EDGES-BG-PIPES not found.")
 
-            count = ang.number_of_edges()
+            count = vzx.number_of_edges()
             for _ in range(count):
                 current = file.readline().split(' ')
-                edge = AugmentedZxGraph.__make_tuple(current[0][1:-1])
-                ang.edges[edge][AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH] = list(map(AugmentedZxGraph.__make_tuple, current[1:]))
+                edge = VolumetricZxGraph.__make_tuple(current[0][1:-1])
+                vzx.edges[edge][VolumetricZxGraph.KEY_ZX_EDGE_BG_PATH] = list(map(VolumetricZxGraph.__make_tuple, current[1:]))
 
-            return ang
+            return vzx
 
     def into_file(self, filepath: str):
         with (open(filepath, 'w') as file):
@@ -288,7 +288,7 @@ class AugmentedZxGraph(nx.Graph):
         return self.__zx_qubits.keys()
 
     def get_qubit(self, node) -> QubitId:
-        return self.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_QUBIT]
+        return self.nodes[node][VolumetricZxGraph.KEY_ZX_NODE_QUBIT]
 
     def get_nodes(self, node_type: NodeType | None = None, qubit: QubitId | None = None, layer: LayerId | None = None):
         return filter(
@@ -380,29 +380,29 @@ class AugmentedZxGraph(nx.Graph):
         return cube in self.__bg_graph
 
     def get_realising_cubes(self, node: NodeId) -> Iterable[CubeId]:
-        return iter(self.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_BG_CUBES])
+        return iter(self.nodes[node][VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES])
 
     def get_realised_nodes(self, cube: CubeId) -> Iterable[NodeId]:
-        zx_nodes = self.__bg_graph.nodes[cube].get(AugmentedZxGraph.KEY_BG_CUBE_ZX_NODES) or set()
+        zx_nodes = self.__bg_graph.nodes[cube].get(VolumetricZxGraph.KEY_BG_CUBE_ZX_NODES) or set()
         return iter(zx_nodes)
 
     def get_node_type(self, node: NodeId) -> NodeType:
-        return self.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_TYPE]
+        return self.nodes[node][VolumetricZxGraph.KEY_ZX_NODE_TYPE]
 
     def get_node_layer(self, node: int) -> int:
-        return self.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_LAYER]
+        return self.nodes[node][VolumetricZxGraph.KEY_ZX_NODE_LAYER]
 
     def get_cube_position(self, cube: CubeId) -> Coordinates:
-        return self.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_POSITION]
+        return self.__bg_graph.nodes[cube][VolumetricZxGraph.KEY_BG_CUBE_POSITION]
 
     def get_cube_kind(self, cube: CubeId) -> CubeKind:
-        return self.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_KIND]
+        return self.__bg_graph.nodes[cube][VolumetricZxGraph.KEY_BG_CUBE_KIND]
 
     def get_pipe_kind(self, source_cube: CubeId, target_cube: CubeId) -> EdgeType :
         if not self.__bg_graph.has_edge(source_cube, target_cube):
             raise Exception(f"Block-graph doesn't contain a pipe between {source_cube} and {target_cube}.")
 
-        pipe_kind = self.__bg_graph.get_edge_data(source_cube, target_cube).get(AugmentedZxGraph.KEY_BG_PIPE_TYPE)
+        pipe_kind = self.__bg_graph.get_edge_data(source_cube, target_cube).get(VolumetricZxGraph.KEY_BG_PIPE_TYPE)
 
         if pipe_kind is None:
             raise Exception(f"Pipe {source_cube}-{target_cube} has no associated kind.")
@@ -413,7 +413,7 @@ class AugmentedZxGraph(nx.Graph):
         if not self.has_edge(source, target):
             raise Exception(f"ZX-graph doesn't contain an edge between {source} and {target}.")
 
-        edge_type = self.get_edge_data(source, target).get(AugmentedZxGraph.KEY_ZX_EDGE_TYPE)
+        edge_type = self.get_edge_data(source, target).get(VolumetricZxGraph.KEY_ZX_EDGE_TYPE)
 
         if edge_type is None:
             raise Exception(f"Edge {source}-{target} has no associated type.")
@@ -424,7 +424,7 @@ class AugmentedZxGraph(nx.Graph):
         if not self.has_edge(source, target):
             raise Exception(f"ZX-graph doesn't contain an edge between {source}-{target}.")
 
-        edge_realisation = self.get_edge_data(source, target).get(AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH)
+        edge_realisation = self.get_edge_data(source, target).get(VolumetricZxGraph.KEY_ZX_EDGE_BG_PATH)
 
         if edge_realisation is None:
             raise Exception(f"Edge {source}-{target} has no associated realisation.")
@@ -432,7 +432,7 @@ class AugmentedZxGraph(nx.Graph):
         return edge_realisation
 
     def is_node_realised(self, node: NodeId) -> bool:
-        return len(self.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_BG_CUBES]) > 0
+        return len(self.nodes[node][VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES]) > 0
 
     def realise_node(self, node: NodeId, kind: CubeKind, position: Coordinates) -> CubeId:
         """Realise the node as a cube of the given kind placed at the given coordinates."""
@@ -443,15 +443,15 @@ class AugmentedZxGraph(nx.Graph):
             raise Exception(f"Node #{node} not found in the ZX-graph.")
 
         cube = self.place_cube(kind, position)
-        self.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_ZX_NODES].add(node)
-        self.nodes[node][AugmentedZxGraph.KEY_ZX_NODE_BG_CUBES].add(cube)
+        self.__bg_graph.nodes[cube][VolumetricZxGraph.KEY_BG_CUBE_ZX_NODES].add(node)
+        self.nodes[node][VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES].add(cube)
 
         console.info(f"Realising node #{node} [{self.get_node_type(node)}] as cube #{cube} [{kind}@{position}]")
 
         return cube
 
     def is_edge_realised(self, source: NodeId, target: NodeId) -> bool:
-        return len(self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH]) > 0
+        return len(self.get_edge_data(source, target)[VolumetricZxGraph.KEY_ZX_EDGE_BG_PATH]) > 0
 
     def realise_edge(self, source: NodeId, target: NodeId, proposal: PathSpecification):
         if not self.is_node_realised(source):
@@ -493,7 +493,7 @@ class AugmentedZxGraph(nx.Graph):
 
             # Place the current cube and connect it to the previous cube.
             current_cube = self.place_cube(current_kind, current_position)
-            self.__bg_graph.nodes[current_cube][AugmentedZxGraph.KEY_BG_CUBE_ZX_NODES] = set()
+            self.__bg_graph.nodes[current_cube][VolumetricZxGraph.KEY_BG_CUBE_ZX_NODES] = set()
             self.connect_pipe(previous_cube, current_cube, current_pipe_type)
 
             # Extend the sequence of extra node ids
@@ -514,20 +514,20 @@ class AugmentedZxGraph(nx.Graph):
         pipe_ids.append( pipe )
 
         # Associate the path as a realisation of the edge
-        self.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH] = pipe_ids
+        self.get_edge_data(source, target)[VolumetricZxGraph.KEY_ZX_EDGE_BG_PATH] = pipe_ids
 
         # Update realising cubes of source node.
         source_kind = self.get_cube_kind(source_cube)
         for _, final in pipe_ids:
             if self.get_cube_kind(final) != source_kind:
                 break
-            self.nodes[source][AugmentedZxGraph.KEY_ZX_NODE_BG_CUBES].add(final)
+            self.nodes[source][VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES].add(final)
         # Update realising cubes of target node.
         target_kind = self.get_cube_kind(target_cube)
         for start, _ in reversed(pipe_ids):
             if self.get_cube_kind(start) != target_kind:
                 break
-            self.nodes[target][AugmentedZxGraph.KEY_ZX_NODE_BG_CUBES].add(start)
+            self.nodes[target][VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES].add(start)
 
     def place_cube(self, kind: CubeKind, position: Coordinates) -> CubeId:
         if position in self.occupied:
@@ -538,9 +538,9 @@ class AugmentedZxGraph(nx.Graph):
 
         self.__bg_graph.add_node(cube)
 
-        self.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_ZX_NODES] = set()
-        self.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_KIND] = kind
-        self.__bg_graph.nodes[cube][AugmentedZxGraph.KEY_BG_CUBE_POSITION] = position
+        self.__bg_graph.nodes[cube][VolumetricZxGraph.KEY_BG_CUBE_ZX_NODES] = set()
+        self.__bg_graph.nodes[cube][VolumetricZxGraph.KEY_BG_CUBE_KIND] = kind
+        self.__bg_graph.nodes[cube][VolumetricZxGraph.KEY_BG_CUBE_POSITION] = position
 
         self.occupied.add(position)
 
@@ -569,7 +569,7 @@ class AugmentedZxGraph(nx.Graph):
             raise Exception(f"Cubes #{source_cube}@{source_position} and #{target_cube}@{target_position} are not at adjacent positions.")
 
         self.__bg_graph.add_edge(source_cube, target_cube)
-        self.__bg_graph.get_edge_data(source_cube, target_cube)[AugmentedZxGraph.KEY_BG_PIPE_TYPE] = pipe_type
+        self.__bg_graph.get_edge_data(source_cube, target_cube)[VolumetricZxGraph.KEY_BG_PIPE_TYPE] = pipe_type
 
     def is_path_valid(self, source: NodeId, target: NodeId, proposal: PathSpecification) -> bool:
         is_hadamard_path = False

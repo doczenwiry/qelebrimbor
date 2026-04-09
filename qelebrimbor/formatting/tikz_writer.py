@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.coordinates import Coordinates
 
 from logging import getLogger
@@ -16,9 +16,9 @@ class TikzWriter:
     ROTATION_X = 58
     ROTATION_Z = 112
 
-    def __init__(self, nx_graph: AugmentedZxGraph, label : str = "circuit"):
+    def __init__(self, vzx: VolumetricZxGraph, label : str = "circuit"):
         self.__label = label
-        self.__nx_graph = nx_graph
+        self.__nx_graph = vzx
 
     @staticmethod
     def find_axis(step: Coordinates):

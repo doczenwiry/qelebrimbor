@@ -3,14 +3,14 @@ import json
 import pyzx as zx
 import numpy as np
 
-from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeType
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
 from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
-from qelebrimbor.vedo.azg_viewer import AugmentedZxGraphViewer
+from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.manual import ManualLayout
 
 import logging
@@ -35,7 +35,7 @@ def prepare_layout() -> ManualLayout:
         x = rho * np.cos(phi)
         y = rho * np.sin(phi)
         placements[nd] = (x,y)
-        neighbouring_boundaries = list(filter(lambda bd: azx.has_edge(nd, bd), azx.get_nodes(node_type=NodeType.O)))
+        neighbouring_boundaries = list(filter(lambda bd: vzx.has_edge(nd, bd), vzx.get_nodes(node_type=NodeType.O)))
         if len(neighbouring_boundaries) > 0:
             boundary = min(neighbouring_boundaries)
             bx = 1.4 * rho * np.cos(phi)
@@ -51,52 +51,52 @@ if __name__ == "__main__":
     with open("../assets/zx/" + filename, 'r') as file:
         pyzx_graph = pyzx_graph.from_json(json.load(file))
 
-    azx = AugmentedZxGraph.from_pyzx_graph(pyzx_graph)
+    vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)
 
-    CycleAnalyser.analyse(azx)
+    CycleAnalyser.analyse(vzx)
 
-    cycles = CycleAnalyser.decompose(azx)
+    cycles = CycleAnalyser.decompose(vzx)
     cycle0 = cycles[0]
     n0 = len(cycle0)
 
-    nodes0 = list(map(lambda nd : azx.get_node_type(nd), cycle0))
-    console.info(f"Nodes 0 : {" ".join(map(lambda nd: str(nd) + ':' + str(azx.get_node_type(nd)), cycle0))}")
+    nodes0 = list(map(lambda nd : vzx.get_node_type(nd), cycle0))
+    console.info(f"Nodes 0 : {" ".join(map(lambda nd: str(nd) + ':' + str(vzx.get_node_type(nd)), cycle0))}")
 
     ring0 = RingFinderBFS.find_minimal_rings(nodes0)[0]
     c0 = len(ring0.cubes)
     console.info(f"> Cycle 0 [{c0}]: {ring0.cubes}")
 
-    BlockGraphConstructor.realise_nodes(azx, {cycle0[nd]: ring0.cubes[nd] for nd in range(n0)})
+    BlockGraphConstructor.realise_nodes(vzx, {cycle0[nd]: ring0.cubes[nd] for nd in range(n0)})
 
     start = cycle0[0]
     final = cycle0[n0 - 1]
-    BlockGraphConstructor.realise_edges(azx,
-        {
+    BlockGraphConstructor.realise_edges(vzx,
+                                        {
             (final, start): PathSpecification(
-                source_cube = min(azx.get_realising_cubes(final)),
-                target_cube = min(azx.get_realising_cubes(start)),
+                source_cube = min(vzx.get_realising_cubes(final)),
+                target_cube = min(vzx.get_realising_cubes(start)),
                 extras = ring0.cubes[n0:c0],
                 pipes = [EdgeType.IDENTITY for _ in range(n0)]
             )
         }
-    )
+                                        )
 
     cycle1 = cycles[1]
     n1 = len(cycle1)
-    nodes1 = list(map(lambda nd : azx.get_node_type(nd), cycle1))
-    console.info(f"Nodes 1 : {" ".join(map(lambda nd: str(nd) + ':' + str(azx.get_node_type(nd)), cycle1))}")
+    nodes1 = list(map(lambda nd : vzx.get_node_type(nd), cycle1))
+    console.info(f"Nodes 1 : {" ".join(map(lambda nd: str(nd) + ':' + str(vzx.get_node_type(nd)), cycle1))}")
 
     # Breakdown cycle1
-    start = min(azx.get_realising_cubes(7))
-    final = min(azx.get_realising_cubes(1))
-    start_cube = (azx.get_cube_kind(start), azx.get_cube_position(start))
-    final_cube = (azx.get_cube_kind(final), azx.get_cube_position(final))
+    start = min(vzx.get_realising_cubes(7))
+    final = min(vzx.get_realising_cubes(1))
+    start_cube = (vzx.get_cube_kind(start), vzx.get_cube_position(start))
+    final_cube = (vzx.get_cube_kind(final), vzx.get_cube_position(final))
     console.info(f"Searching completion from 7 #{start} [{start_cube}] to 1 #{final} [{final_cube}]")
     console.info(f"> Passing through : ")
     minimal_overhead, rings1 = PathFinderDFS.find_minimal_paths(
         final_cube, start_cube,
         type_restrictions = [ NodeType.X, NodeType.Z ],
-        occupied_positions = azx.occupied,
+        occupied_positions = vzx.occupied,
         maximal_overhead = 6
     )
 
@@ -104,20 +104,22 @@ if __name__ == "__main__":
     c1 = len(ring1.cubes)
     console.info(f"> Cycle 1 [{minimal_overhead}] : {ring1}")
 
-    BlockGraphConstructor.realise_nodes(azx, {
+    BlockGraphConstructor.realise_nodes(vzx, {
         0 : ring1.cubes[1],
         4 : ring1.cubes[2]
     })
 
-    BlockGraphConstructor.realise_edges(azx, {
+    BlockGraphConstructor.realise_edges(vzx, {
         (1, 4): PathSpecification(
-            source_cube = min(azx.get_realising_cubes(1)),
-            target_cube = min(azx.get_realising_cubes(4)),
+            source_cube = min(vzx.get_realising_cubes(1)),
+            target_cube = min(vzx.get_realising_cubes(4)),
             extras = list(reversed(ring1.cubes[3:c1-1])),
             pipes = [EdgeType.IDENTITY for _ in range(n1)]
         )
     })
 
+    console.info(f"TOTAL VOLUME : {vzx.number_of_cubes()}")
+
     hexagon = prepare_layout()
-    viewer = AugmentedZxGraphViewer(azx, label = filename, layout = hexagon)
+    viewer = VolumetricZxGraphViewer(vzx, label = filename, layout = hexagon)
     viewer.display()

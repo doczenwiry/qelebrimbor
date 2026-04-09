@@ -1,15 +1,15 @@
-from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.components_zx import NodeType, EdgeType
 
 NodeList = list[int]
 EdgeList = list[tuple[int,int]]
 
 class ReportFormatter:
-    def __init__(self, nx_graph: AugmentedZxGraph,
+    def __init__(self, vzx: VolumetricZxGraph,
                  label: str = "circuit"
                  ):
         self.__label = label
-        self.__nx_graph = nx_graph
+        self.__nx_graph = vzx
 
     @staticmethod
     def __flip(node_type: NodeType) -> NodeType:

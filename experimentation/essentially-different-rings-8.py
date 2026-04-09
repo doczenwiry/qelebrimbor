@@ -2,12 +2,12 @@ import pyzx as zx
 from pyzx import VertexType
 import networkx as nx
 
-from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.components_bg import CubeKind
 from qelebrimbor.common.components_zx import NodeId, EdgeId, NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import Spacetime, Step
-from qelebrimbor.vedo.azg_viewer import AugmentedZxGraphViewer
+from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 N = 8
 QUBITS = [0, 0, 0, 1, 2, 2, 2, 1]
@@ -27,7 +27,7 @@ def generate_ring(n, zs: list[NodeId]):
 
 # TODO: split into two parameters; cubes and pipes
 def realise_ring(
-    azx: AugmentedZxGraph,
+    vzx: VolumetricZxGraph,
     cubes: list[tuple[CubeKind, Coordinates]],
     links: dict[EdgeId, EdgeId] = None
 ):
@@ -35,12 +35,12 @@ def realise_ring(
         links = dict()
 
     for i in range(len(cubes)):
-        azx.realise_node(i, *cubes[i])
+        vzx.realise_node(i, *cubes[i])
 
-    for edge in azx.get_edges():
+    for edge in vzx.get_edges():
         source, target = edge
-        source_cube = min(azx.get_realising_cubes(links[edge][0] if edge in links else source))
-        target_cube = min(azx.get_realising_cubes(links[edge][1] if edge in links else target))
+        source_cube = min(vzx.get_realising_cubes(links[edge][0] if edge in links else source))
+        target_cube = min(vzx.get_realising_cubes(links[edge][1] if edge in links else target))
         # if edge in links:
         #     source_cube = azx.get_realising_cubes(links[edge][0])
         #     target_cube = azx.get_realising_cubes(links[edge][1])
@@ -48,8 +48,8 @@ def realise_ring(
         # source_cube = min(azx.get_realising_cubes(source))
         # target_cube = min(azx.get_realising_cubes(target))
         pipe = (source_cube, target_cube)
-        azx.connect_pipe(source_cube, target_cube, pipe_type = EdgeType.IDENTITY)
-        azx.get_edge_data(source, target)[AugmentedZxGraph.KEY_ZX_EDGE_BG_PATH] = [ pipe ]
+        vzx.connect_pipe(source_cube, target_cube, pipe_type = EdgeType.IDENTITY)
+        vzx.get_edge_data(source, target)[VolumetricZxGraph.KEY_ZX_EDGE_BG_PATH] = [pipe]
 
 def convert_ring(
         cubes: list[str],
@@ -75,9 +75,9 @@ def convert_ring(
 
     return ring
 
-def count_plane_switches(azx: AugmentedZxGraph):
+def count_plane_switches(vzx: VolumetricZxGraph):
     return sum(nx.number_connected_components(
-            azx.subgraph(filter(lambda nd: azx.get_node_type(nd) == node_type, azx.nodes()))
+            vzx.subgraph(filter(lambda nd: vzx.get_node_type(nd) == node_type, vzx.nodes()))
         ) for node_type in [ NodeType.X, NodeType.Z ]
     )
 
@@ -184,7 +184,7 @@ if __name__ == "__main__":
     missing = 0
     for c in range(len(zx_rings)):
         pyzx_ring = zx_rings[c]
-        graph = AugmentedZxGraph.from_pyzx_graph(pyzx_ring)
+        graph = VolumetricZxGraph.from_pyzx_graph(pyzx_ring)
         zx.draw(pyzx_ring, labels=True)
         print(f"Case #{c} [PS:{count_plane_switches(graph)}]")
         if c in bg_cases:
@@ -193,7 +193,7 @@ if __name__ == "__main__":
             cubes = bg_cases[c]
             links = bg_links[c] if c in bg_links else None
             realise_ring(graph, cubes, links)
-            viewer = AugmentedZxGraphViewer(graph, label=f"Case {c}")
+            viewer = VolumetricZxGraphViewer(graph, label=f"Case {c}")
             viewer.display()
         else:
             print(f"> Missing realisation.")

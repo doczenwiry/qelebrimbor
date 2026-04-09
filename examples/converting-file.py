@@ -1,15 +1,8 @@
-from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 if __name__ == "__main__":
-    ang = AugmentedZxGraph.from_file("../assets/ang/ghz8.ang")
-    print(list(ang.get_nodes()))
-    print(list(ang.get_edges()))
-    print(list(ang.get_qubits()))
-    print(list(ang.get_layers()))
-    print(list(ang.get_cubes()))
-    print(list(ang.get_pipes()))
+    vzx = VolumetricZxGraph.from_file("../assets/vzx/ghz8.vzx")
 
-    for edge in ang.get_edges():
-        print(f"> {edge} : {ang.get_edge_realisation(*edge)}")
+    vzx.print_summary()
 
-    ang.into_file("../assets/ang/ghz8-alternative.ang")
+    vzx.into_file("../assets/ang/ghz8-alternative.vzx")

@@ -1,7 +1,7 @@
 import random
 import pyzx as zx
 
-from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
 
 SEED = 42
@@ -17,6 +17,6 @@ if __name__ == "__main__":
     zx.draw(pyzx_graph, labels = True)
     zx.full_reduce(pyzx_graph)
     zx.draw(pyzx_graph, labels = True)
-    azx = AugmentedZxGraph.from_pyzx_graph(pyzx_graph)
+    vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)
 
-    CycleAnalyser.analyse(azx)
+    CycleAnalyser.analyse(vzx)

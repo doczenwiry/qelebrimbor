@@ -1,12 +1,12 @@
 import numpy as np
 
 from qelebrimbor.common.components_zx import NodeId
-from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout, Placement
 
 
 class CycleLayout(ZxLayout):
-    def __init__(self, ring: AugmentedZxGraph):
+    def __init__(self, ring: VolumetricZxGraph):
         self.placements: dict[NodeId, Placement] = {}
 
         rho = 2.0

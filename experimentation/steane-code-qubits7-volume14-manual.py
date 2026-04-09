@@ -2,14 +2,14 @@ import numpy as np
 import pyzx as zx
 import networkx as nx
 
-from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.components_bg import CubeKind
 from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
-from qelebrimbor.vedo.azg_viewer import AugmentedZxGraphViewer
+from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 
 from qelebrimbor.vedo.zx_layout.manual import ManualLayout
@@ -57,7 +57,7 @@ def prepare_layout() -> ZxLayout:
         x = rho * np.cos(phi)
         y = rho * np.sin(phi)
         placements[node] = (x,y)
-        boundary = min(filter(lambda bd: azx.has_edge(node, bd), azx.get_nodes(node_type = NodeType.O)))
+        boundary = min(filter(lambda bd: vzx.has_edge(node, bd), vzx.get_nodes(node_type = NodeType.O)))
         bx = 1.4 * rho * np.cos(phi)
         by = 1.4 * rho * np.sin(phi)
         placements[boundary] = (bx, by)
@@ -97,13 +97,13 @@ if __name__ == "__main__":
     with open("../assets/zx/steane-code-qubits7-volume14.json", 'w') as file:
         file.write(pyzx_graph.to_json())
 
-    azx = AugmentedZxGraph.from_pyzx_graph(pyzx_graph)
-    azx.print_summary()
+    vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)
+    vzx.print_summary()
 
-    CycleAnalyser.analyse(azx)
+    CycleAnalyser.analyse(vzx)
 
-    BlockGraphConstructor.realise_nodes(azx = azx,
-        specifications = {
+    BlockGraphConstructor.realise_nodes(vzx= vzx,
+                                        specifications = {
             0 : (CubeKind.XXZ, Coordinates( 0,  0,  0)),
             1 : (CubeKind.ZZX, Coordinates( 1,  0,  1)),
             2 : (CubeKind.ZXZ, Coordinates(-1,  0,  0)),
@@ -119,13 +119,13 @@ if __name__ == "__main__":
             12: (CubeKind.OOO, Coordinates(-1,  0,  2)),
             13: (CubeKind.OOO, Coordinates( 0,  1,  2))
         }
-    )
+                                        )
 
-    BlockGraphConstructor.realise_edges(azx = azx,
-        specifications = {
+    BlockGraphConstructor.realise_edges(vzx= vzx,
+                                        specifications = {
             (0, 1) : PathSpecification(
-                source_cube = min(azx.get_realising_cubes(0)),
-                target_cube = min(azx.get_realising_cubes(1)),
+                source_cube = min(vzx.get_realising_cubes(0)),
+                target_cube = min(vzx.get_realising_cubes(1)),
                 extras = [
                     (CubeKind.XXZ, Coordinates( 0, -1,  0)),
                     (CubeKind.ZXZ, Coordinates( 1, -1,  0)),
@@ -134,8 +134,8 @@ if __name__ == "__main__":
                 pipes = [ EdgeType.IDENTITY for _ in range(4) ],
             ),
             (1, 4) : PathSpecification(
-                source_cube = min(azx.get_realising_cubes(1)),
-                target_cube = min(azx.get_realising_cubes(4)),
+                source_cube = min(vzx.get_realising_cubes(1)),
+                target_cube = min(vzx.get_realising_cubes(4)),
                 extras = [
                     (CubeKind.ZZX, Coordinates( 0,  0,  1)),
                     (CubeKind.ZZX, Coordinates( 0, -1,  1)),
@@ -144,16 +144,16 @@ if __name__ == "__main__":
                 pipes = [ EdgeType.IDENTITY for _ in range(4) ],
             ),
             (1, 6) : PathSpecification(
-                source_cube = min(azx.get_realising_cubes(1)),
-                target_cube = min(azx.get_realising_cubes(6)),
+                source_cube = min(vzx.get_realising_cubes(1)),
+                target_cube = min(vzx.get_realising_cubes(6)),
                 extras = [
                     (CubeKind.ZZX, Coordinates(1,1,1))
                 ],
                 pipes = [ EdgeType.IDENTITY ]
             )
         }
-    )
+                                        )
 
     hexagon = prepare_layout()
-    viewer = AugmentedZxGraphViewer(azx, "steane-code-7", hexagon)
+    viewer = VolumetricZxGraphViewer(vzx, "steane-code-7", hexagon)
     viewer.display()

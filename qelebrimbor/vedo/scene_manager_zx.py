@@ -3,14 +3,14 @@ from vedo.plotter import Plotter
 from qelebrimbor.vedo.shapes_zx import ZxNode, ZxEdge
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 
-from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.components_zx import NodeId
 
 from logging import getLogger
 console = getLogger(__name__)
 
 class ZxSceneManager:
-    def __init__(self, azx: AugmentedZxGraph, plotter: Plotter, layout: ZxLayout):
+    def __init__(self, vzx: VolumetricZxGraph, plotter: Plotter, layout: ZxLayout):
         self.__plotter = plotter
         self.__zx_layout = layout
 
@@ -18,14 +18,14 @@ class ZxSceneManager:
         self.__edges = dict()
 
         # Prepare all the elements for the ZX scene (i.e. nodes and edges)
-        for node in azx.nodes:
-            zx_node = ZxNode(node, azx.get_node_type(node), layout.get_node_placement(node)).z(+0.1)
+        for node in vzx.nodes:
+            zx_node = ZxNode(node, vzx.get_node_type(node), layout.get_node_placement(node)).z(+0.1)
             self.__nodes[ node ] = zx_node
 
-        for source, target in azx.get_edges():
-            zx_edge = ZxEdge(source, target, azx.get_edge_type(source, target),
+        for source, target in vzx.get_edges():
+            zx_edge = ZxEdge(source, target, vzx.get_edge_type(source, target),
                              layout.get_node_placement(source), layout.get_node_placement(target)
-            ).z(-0.1)
+                             ).z(-0.1)
             self.__edges[ source , target ] = zx_edge
 
         self.__plotter.add(list(self.__nodes.values()))

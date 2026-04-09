@@ -1,11 +1,11 @@
-from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeType
 from qelebrimbor.common.components_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
-from qelebrimbor.vedo.azg_viewer import AugmentedZxGraphViewer
+from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.cycle import CycleLayout
 
 import logging
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     for realisation in rings:
         cubes = len(realisation.cubes)
         console.info(f"> Realisation [{cubes}] : {realisation}")
-        ring = AugmentedZxGraph(zip(range(n), nodes), edges)
+        ring = VolumetricZxGraph(zip(range(n), nodes), edges)
 
         nodes_specifications: dict[NodeId, tuple[CubeKind, Coordinates]] = {
             nd: realisation.cubes[nd] for nd in range(ring.number_of_nodes())
@@ -50,5 +50,5 @@ if __name__ == "__main__":
             }
         )
 
-        viewer = AugmentedZxGraphViewer(ring, f"alternating ring, n={n}", CycleLayout(ring))
+        viewer = VolumetricZxGraphViewer(ring, f"alternating ring, n={n}", CycleLayout(ring))
         viewer.display()

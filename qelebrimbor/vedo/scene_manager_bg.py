@@ -1,28 +1,28 @@
 from vedo.plotter.runtime import Plotter
 
 from qelebrimbor.common.components_bg import CubeId
-from qelebrimbor.augmented_zx_graph import AugmentedZxGraph
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.vedo.shapes_bg import BgCube, BgPipe
 
 from logging import getLogger
 console = getLogger(__name__)
 
 class BgSceneManager:
-    def __init__(self, nx_graph: AugmentedZxGraph, plotter: Plotter):
-        self.__nx_graph = nx_graph
+    def __init__(self, vzx: VolumetricZxGraph, plotter: Plotter):
+        self.__nx_graph = vzx
         self.__plotter = plotter
 
         self.__cubes = dict()
         self.__pipes = dict()
 
-        for cube in nx_graph.get_cubes():
+        for cube in vzx.get_cubes():
             bg_cube = BgCube(kind = self.__nx_graph.get_cube_kind(cube),
                              position = self.__nx_graph.get_cube_position(cube),
                              nodes= self.__nx_graph.get_realised_nodes(cube),
                              cube = cube)
             self.__cubes[cube] = bg_cube
 
-        for source, target in nx_graph.get_pipes():
+        for source, target in vzx.get_pipes():
             pipe = tuple(sorted((source, target)))
             source_kind = self.__nx_graph.get_cube_kind(source)
             target_kind = self.__nx_graph.get_cube_kind(target)
