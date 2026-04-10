@@ -26,7 +26,7 @@ class RingFinderBFS:
         root = (root_kind, root_position)
 
         queue: deque = deque()
-        queue.append( Ring(n, root) )
+        queue.append( Ring(root) )
 
         while len(queue) > 0 and len(rings) != number_sought:
             ring = queue.popleft()
@@ -71,12 +71,3 @@ class RingFinderBFS:
                     queue.append(extended)
 
         return rings
-
-    @staticmethod
-    def find_minimal_alternating_rings(
-            order: int = 2,
-            maximal_overhead: int = 0,
-            number_sought: int = 1
-    ) -> list[Ring]:
-        nodes = [ NodeType.X if i % 2 == 0 else NodeType.Z for i in range(2*order) ]
-        return RingFinderBFS.find_minimal_rings(nodes, number_sought, maximal_overhead)

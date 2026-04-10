@@ -5,21 +5,10 @@ from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 
 
 class Ring:
-    def __init__(self, n: int, anchor: tuple[CubeKind, Coordinates]):
+    def __init__(self, anchor: tuple[CubeKind, Coordinates]):
         self.anchor = anchor
         self.cubes = [ anchor ]
-        self.total_length = n
         self.occupied = { anchor[1] }
-
-    def has_reached_target(self):
-        terminal_kind, terminal_position = self.cubes[-1]
-        length_achieved = len(self.cubes) == self.total_length
-        distance_anchor = terminal_position.get_manhattan_distance(self.anchor[1]) == 1
-        identity_connection = EdgeType.IDENTITY in BlockGraphHelper.infer_pipe_type(self.anchor[0], terminal_kind)
-        return length_achieved and distance_anchor and identity_connection
-
-    def manhattan_length_missing(self):
-        return self.total_length - self.manhattan_length()
 
     def manhattan_distance_anchor(self) -> int:
         _, terminal_position = self.cubes[-1]
@@ -36,7 +25,7 @@ class Ring:
         self.occupied.add(position)
 
     def copy(self):
-        cp = Ring(self.total_length, self.anchor)
+        cp = Ring(self.anchor)
         cp.cubes.extend(self.cubes[1:])
         cp.occupied = set(self.occupied)
         return cp

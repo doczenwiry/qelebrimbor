@@ -63,20 +63,17 @@ class VolumetricZxGraph(nx.Graph):
         # Keeps track of the coordinates in 3D that are occupied by some cube
         self.occupied: set[Coordinates] = set()
 
-        converted_node_ids: dict[NodeId, NodeId] = dict()
         if nodes is not None:
             for node, node_type in nodes:
-                node_id = len(converted_node_ids)
-                converted_node_ids[node] = node_id
-                self.add_node(node_id)
-                nx_node = self.nodes[node_id]
+                self.add_node(node)
+                nx_node = self.nodes[node]
                 nx_node[VolumetricZxGraph.KEY_ZX_NODE_TYPE] = node_type
                 nx_node[VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES] = set()
 
         if edges is not None:
             for edge, edge_type in edges:
-                source = converted_node_ids[min(edge)]
-                target = converted_node_ids[max(edge)]
+                source = min(edge)
+                target = max(edge)
                 self.add_edge(source, target)
                 self.get_edge_data(source, target)[VolumetricZxGraph.KEY_ZX_EDGE_TYPE] = edge_type
                 self.get_edge_data(source, target)[VolumetricZxGraph.KEY_ZX_EDGE_BG_PATH] = []
@@ -669,15 +666,19 @@ class VolumetricZxGraph(nx.Graph):
     def log_summary(self):
         for node_type in [NodeType.O, NodeType.X, NodeType.Y, NodeType.Z]:
             content = ""
+            count = 0
             for node in self.get_nodes(node_type=node_type):
                 node_type = self.get_node_type(node)
                 content += f"{node} "
-            console.info(f"Nodes {node_type.name}: {content}")
+                count += 1
+            console.info(f"Nodes {node_type.name} [{count}]: {content}")
 
         content = ""
+        count = 0
         for edge in self.edges:
             content += f"{edge} "
-        console.info(f"Edges  : {content}")
+            count += 1
+        console.info(f"Edges  [{count}]: {content}")
 
     def print_summary(self):
         for node_type in [NodeType.O, NodeType.X, NodeType.Y, NodeType.Z]:
@@ -691,6 +692,12 @@ class VolumetricZxGraph(nx.Graph):
         for edge in self.edges:
             content += f"{edge} "
         print(f"Edges  : {content}")
+
+        for layer in self.get_layers():
+            print(f"Layer {layer}  : {self.get_layer(layer)}")
+
+        for qubit in self.get_qubits():
+            print(f"Qubit {qubit}  : {list(self.get_nodes(qubit = qubit))}")
 
     def __identify_cube_at_position(self, position: Coordinates) -> int:
         for cube in self.get_cubes():
