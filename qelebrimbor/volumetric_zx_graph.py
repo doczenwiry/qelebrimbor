@@ -15,6 +15,9 @@ from qelebrimbor.common.components_bg import CubeId, CubeKind, PipeId
 from qelebrimbor.common.paths import PathSpecification
 
 import logging
+
+from qelebrimbor.utilities.nmtfl_constraint import NoMoreThanFourLegsConstraint
+
 console = logging.getLogger(__name__)
 console.setLevel(logging.INFO)
 
@@ -66,26 +69,28 @@ class VolumetricZxGraph(nx.Graph):
         if nodes is not None:
             for node, node_type in nodes:
                 self.add_node(node)
-                nx_node = self.nodes[node]
-                nx_node[VolumetricZxGraph.KEY_ZX_NODE_TYPE] = node_type
-                nx_node[VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES] = set()
+                zx_node = self.nodes[node]
+                zx_node[VolumetricZxGraph.KEY_ZX_NODE_TYPE] = node_type
+                zx_node[VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES] = set()
 
         if edges is not None:
             for edge, edge_type in edges:
                 source = min(edge)
                 target = max(edge)
                 self.add_edge(source, target)
-                self.get_edge_data(source, target)[VolumetricZxGraph.KEY_ZX_EDGE_TYPE] = edge_type
-                self.get_edge_data(source, target)[VolumetricZxGraph.KEY_ZX_EDGE_BG_PATH] = []
-
-        self.__next_cube_id = self.number_of_nodes()
+                zx_edge = self.edges[source, target]
+                zx_edge[VolumetricZxGraph.KEY_ZX_EDGE_TYPE] = edge_type
+                zx_edge[VolumetricZxGraph.KEY_ZX_EDGE_BG_PATH] = []
 
         # TODO: split any spider with more than 4 edges (cfr. graph_manager.py; prep_3d_g)
         # TODO: does the choice of how to split such spiders affect the minimal achievable volume ?
-        if self.number_of_nodes() > 0:
-            _, max_degree = max(self.degree, key=lambda entry: entry[1])
-            if max_degree > 4:
-                raise NotImplementedError("Enforcement of no-more-than-four-legs condition not implemented.")
+        # if self.number_of_nodes() > 0:
+        #     _, max_degree = max(self.degree, key=lambda entry: entry[1])
+        #     if max_degree > 4:
+        #         raise NotImplementedError("Enforcement of No-More-Than-Four-Legs condition not implemented.")
+        NoMoreThanFourLegsConstraint.enforce(self)
+
+        self.__next_cube_id = self.number_of_nodes()
 
     @staticmethod
     def from_pyzx_graph(zx_graph: zx.graph.base.BaseGraph):
@@ -679,6 +684,12 @@ class VolumetricZxGraph(nx.Graph):
             content += f"{edge} "
             count += 1
         console.info(f"Edges  [{count}]: {content}")
+
+        for layer in self.get_layers():
+            console.info(f"Layer {layer}  : {self.get_layer(layer)}")
+
+        for qubit in self.get_qubits():
+            console.info(f"Qubit {qubit}  : {list(self.get_nodes(qubit = qubit))}")
 
     def print_summary(self):
         for node_type in [NodeType.O, NodeType.X, NodeType.Y, NodeType.Z]:
