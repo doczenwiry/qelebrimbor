@@ -7,9 +7,11 @@ class CircuitLayout(ZxLayout):
     def __init__(self, vzx: VolumetricZxGraph):
         self.placements = dict()
 
+        qubits = len(vzx.get_qubits())
+        layers = len(vzx.get_layers())
         for node in vzx.nodes:
-            qubit = vzx.get_qubit(node) if len(vzx.get_qubits()) > 0 else 0
-            layer = vzx.get_node_layer(node) if len(vzx.get_layers()) > 0 else 0
+            qubit = qubits - vzx.get_qubit(node) if qubits > 0 else 0
+            layer = vzx.get_node_layer(node) if layers > 0 else 0
 
             self.placements[node] = (layer, qubit)
 
