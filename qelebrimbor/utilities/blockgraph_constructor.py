@@ -26,6 +26,7 @@ class BlockGraphConstructor:
     def realise_edges(vzx: VolumetricZxGraph, specifications: dict[EdgeId, PathSpecification]):
         for edge in vzx.edges:
             source, target = edge
+            console.debug(f"Realising edge: {source} -> {target}")
 
             if vzx.is_edge_realised(*edge):
                 console.warning(f"Edge: {source} -> {target} is already realised : {vzx.get_edge_realisation(source, target)}")
@@ -42,6 +43,8 @@ class BlockGraphConstructor:
             else:
                 proposal = None
 
+            console.debug(f"> Proposal considered : {proposal}")
+
             if proposal is not None and vzx.is_path_valid(source, target, proposal):
-                console.debug(f"Realising: {source} -> {target} [{vzx.get_edge_type(source, target)}]")
+                console.debug(f"Realisation: {source} -> {target} [{vzx.get_edge_type(source, target)}]")
                 vzx.realise_edge(source, target, proposal)

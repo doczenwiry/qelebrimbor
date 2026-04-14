@@ -10,24 +10,27 @@ from qelebrimbor.vedo.zx_layout.cycle import CycleLayout
 
 import logging
 console = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logging.getLogger('qelebrimbor').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.DEBUG)
+logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.DEBUG)
 
+LENGTH = 4
+MAX_OVERHEAD = 2 if LENGTH <= 5 else 1 if LENGTH % 2 != 0 else 0
 if __name__ == "__main__":
-    n = 6
-    mo = 2 if n <= 5 else 1 if n % 2 != 0 else 0
+    nodes = [ NodeType.X if i % 2 == 0 else NodeType.Z for i in range(LENGTH) ]
+    edges = [ EdgeType.IDENTITY for s in range(LENGTH)]
 
-    nodes = [ NodeType.X if i % 2 == 0 else NodeType.Z for i in range(n) ]
-    edges = [ ( (s, (s + 1) % n) , EdgeType.IDENTITY ) for s in range(n) ]
+    rings = RingFinderBFS.find_minimal_rings(nodes, edges, number_sought = -1, maximal_overhead = MAX_OVERHEAD + 4)
+    console.info(f"Found {len(rings)} rings of length {LENGTH}")
 
-    rings = RingFinderBFS.find_minimal_rings(nodes, number_sought = -1, maximal_overhead = mo)
-
-    console.info(f"Found {len(rings)} rings of length {n}")
-
-    for realisation in rings:
+    for realisation in rings[:1]:
         cubes = len(realisation.cubes)
         console.info(f"> Realisation [{cubes}] : {realisation}")
-        ring = VolumetricZxGraph(zip(range(n), nodes), edges)
+        ring = VolumetricZxGraph(
+            nodes = zip(range(LENGTH), nodes),
+            edges = zip( ((s, (s + 1) % LENGTH) for s in range(LENGTH)), edges)
+        )
 
         nodes_specifications: dict[NodeId, tuple[CubeKind, Coordinates]] = {
             nd: realisation.cubes[nd] for nd in range(ring.number_of_nodes())
@@ -41,14 +44,14 @@ if __name__ == "__main__":
 
         BlockGraphConstructor.realise_edges(ring,
             specifications = {
-                (n-1, 0) : PathSpecification(
-                    source_cube = min(ring.get_realising_cubes(n-1)),
-                    target_cube = min(ring.get_realising_cubes(0)),
-                    extras = realisation.cubes[n:cubes],
-                    pipes = [ EdgeType.IDENTITY for _ in range(n) ]
+                (0, LENGTH - 1) : PathSpecification(
+                    source_cube = min(ring.get_realising_cubes(0)),
+                    target_cube = min(ring.get_realising_cubes(LENGTH - 1)),
+                    extras = list(reversed(realisation.cubes[LENGTH:cubes])),
+                    pipes = [EdgeType.IDENTITY for _ in range(LENGTH)]
                 )
             }
         )
 
-        viewer = VolumetricZxGraphViewer(ring, f"alternating ring, n={n}", CycleLayout(ring))
+        viewer = VolumetricZxGraphViewer(ring, f"Identity Ring, n={LENGTH}", CycleLayout(ring))
         viewer.display()

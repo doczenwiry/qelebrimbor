@@ -21,9 +21,6 @@ class RingFinderBFS:
         n = len(nodes)
         rings: list[Ring] = []
 
-        if edges is None:
-            edges = [ EdgeType.IDENTITY for _ in range(n) ]
-
         root_kind = CubeKind.suitable_kinds(nodes[0])[0]
         root_position = Spacetime.ORIGIN
 
@@ -34,14 +31,13 @@ class RingFinderBFS:
 
         console.debug(f"Starting at {root}")
 
-        # TODO: make sure we return minimal rings. Could the first one found not be minimal ?
         while len(queue) > 0 and len(rings) != number_sought:
             ring = queue.popleft()
             length = len(ring.cubes)
             terminal_cube = ring.cubes[-1]
             terminal_kind, terminal_position = terminal_cube
             node_types = { nodes[ length ] } if length < n else { NodeType.X , NodeType.Z }
-            pipe_type = edges[ length ] if length < n else EdgeType.IDENTITY
+            pipe_type = edges[ length-1 ] if edges and length <= n else EdgeType.IDENTITY
             console.debug(f"Terminal cube: {terminal_kind}@{terminal_position} [{pipe_type}]")
 
             for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(terminal_cube, node_types = node_types, pipe_type = pipe_type):
@@ -52,10 +48,6 @@ class RingFinderBFS:
 
                 # Skip if next_position is already occupied.
                 if ring.occupies(next_position):
-                    continue
-
-                # Skip if next_kind doesn't allow for further connections.
-                if next_kind in [CubeKind.OOO, CubeKind.YYY]:
                     continue
 
                 # Skip if the next_kind is not of the color specified
@@ -73,9 +65,8 @@ class RingFinderBFS:
                     step = next_position - root_position
                     reach_condition = Spacetime.contains(root_kind.get_reach(), step) and Spacetime.contains(next_kind.get_reach(), step)
                     console.debug(f"> {step}? [{reach_condition}]")
-                    if reach_condition:
-                        if EdgeType.IDENTITY in BlockGraphHelper.infer_pipe_type(root_kind, next_kind):
-                            rings.append(extended)
+                    if reach_condition and pipe_type in BlockGraphHelper.infer_pipe_type(root_kind, next_kind):
+                        rings.append(extended)
 
                 if extended.manhattan_length() + extended.manhattan_distance_anchor() <= n + maximal_overhead:
                     queue.append(extended)
