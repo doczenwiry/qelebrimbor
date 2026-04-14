@@ -1,5 +1,5 @@
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.components_zx import NodeId, EdgeId
+from qelebrimbor.common.components_zx import NodeId, EdgeId, EdgeType
 from qelebrimbor.common.components_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
@@ -25,29 +25,23 @@ class BlockGraphConstructor:
     @staticmethod
     def realise_edges(vzx: VolumetricZxGraph, specifications: dict[EdgeId, PathSpecification]):
         for edge in vzx.edges:
+            source, target = edge
+
             if vzx.is_edge_realised(*edge):
+                console.warning(f"Edge: {source} -> {target} is already realised : {vzx.get_edge_realisation(source, target)}")
                 continue
 
-            source, target = edge
-            alt = (target, source)
             if edge in specifications:
-                vzx.realise_edge(source, target, specifications[edge])
-            elif alt in specifications:
-                vzx.realise_edge(target, source, specifications[alt])
+                proposal = specifications[edge]
             elif vzx.is_node_realised(source) and vzx.is_node_realised(target):
-                source_cube = min(vzx.get_realising_cubes(source))
-                target_cube = min(vzx.get_realising_cubes(target))
-
-                if vzx.get_cube_position(source_cube).get_manhattan_distance(vzx.get_cube_position(target_cube)) != 1:
-                    continue
-
                 proposal = PathSpecification(
-                    source_cube = source_cube,
-                    target_cube = target_cube
+                    source_cube = min(vzx.get_realising_cubes(source)),
+                    target_cube = min(vzx.get_realising_cubes(target)),
+                    pipes = [ vzx.get_edge_type(source, target) ]
                 )
-                console.debug(f"Realising: {source} -> {target}")
-                if vzx.is_edge_realised(source, target):
-                    console.debug(
-                        f"Edge: {source} -> {target} is realised : {vzx.get_edge_realisation(source, target)}")
-                    raise Exception(f"WTF: {source} -> {target}")
+            else:
+                proposal = None
+
+            if proposal is not None and vzx.is_path_valid(source, target, proposal):
+                console.debug(f"Realising: {source} -> {target} [{vzx.get_edge_type(source, target)}]")
                 vzx.realise_edge(source, target, proposal)

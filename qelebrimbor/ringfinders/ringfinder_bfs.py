@@ -14,11 +14,15 @@ class RingFinderBFS:
     @staticmethod
     def find_minimal_rings(
         nodes: list[NodeType],
+        edges: list[EdgeType] | None = None,
         number_sought: int = 1,
         maximal_overhead: int = 0
     ):
         n = len(nodes)
         rings: list[Ring] = []
+
+        if edges is None:
+            edges = [ EdgeType.IDENTITY for _ in range(n) ]
 
         root_kind = CubeKind.suitable_kinds(nodes[0])[0]
         root_position = Spacetime.ORIGIN
@@ -28,14 +32,20 @@ class RingFinderBFS:
         queue: deque = deque()
         queue.append( Ring(root) )
 
+        console.debug(f"Starting at {root}")
+
+        # TODO: make sure we return minimal rings. Could the first one found not be minimal ?
         while len(queue) > 0 and len(rings) != number_sought:
             ring = queue.popleft()
             length = len(ring.cubes)
             terminal_cube = ring.cubes[-1]
             terminal_kind, terminal_position = terminal_cube
-            console.debug(f"Terminal cube: {terminal_kind}@{terminal_position}")
+            node_types = { nodes[ length ] } if length < n else { NodeType.X , NodeType.Z }
+            pipe_type = edges[ length ] if length < n else EdgeType.IDENTITY
+            console.debug(f"Terminal cube: {terminal_kind}@{terminal_position} [{pipe_type}]")
 
-            for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(terminal_cube):
+            for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(terminal_cube, node_types = node_types, pipe_type = pipe_type):
+                console.debug(f"> {next_kind}@{next_position}")
                 # Only consider cubes placed in the PPP octant.
                 if not all(c >= 0 for c in next_position):
                     continue

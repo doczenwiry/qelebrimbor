@@ -481,7 +481,6 @@ class VolumetricZxGraph(nx.Graph):
             sequence = ""
             for position, kind in proposal.extras:
                 sequence += f" {kind}@{position}"
-        console.info(f"Realising edge {source}-{target} [type={self.get_edge_type(source,target)}] with extra cubes :{sequence}")
 
         # Representation of the path that will go into edge_realisations
         pipe_ids = []
@@ -517,6 +516,8 @@ class VolumetricZxGraph(nx.Graph):
 
         # Associate the path as a realisation of the edge
         self.get_edge_data(source, target)[VolumetricZxGraph.KEY_ZX_EDGE_BG_PATH] = pipe_ids
+
+        console.info(f"Realising edge {source}-{target} [type={self.get_edge_type(source,target)}] with pipes : {pipe_ids}")
 
         # Update realising cubes of source node.
         source_kind = self.get_cube_kind(source_cube)
@@ -616,6 +617,10 @@ class VolumetricZxGraph(nx.Graph):
 
             # Check that the step taken lies in both reaches of successive cubes
             step_taken = current_position - previous_position
+            if Spacetime.ORIGIN.get_manhattan_distance(step_taken) != 1:
+                console.debug(f"> Consecutive cubes are not adjacent [{previous_position}-{current_position}]")
+                return False
+
             if not Spacetime.contains(previous_reach, step_taken) or not Spacetime.contains(current_reach, step_taken):
                 console.debug(f"> Previous reach does not contain step [{step_taken}]: {previous_kind}")
                 console.debug(f"> Current reach does not contain step [{step_taken}]: {current_kind}")
@@ -645,6 +650,11 @@ class VolumetricZxGraph(nx.Graph):
 
             # Check that the final step taken lies in the reach of the target cube
             step_taken = target_position - previous_position
+
+            if Spacetime.ORIGIN.get_manhattan_distance(step_taken) != 1:
+                console.debug(f"> Consecutive cubes are not adjacent [{previous_position}-{target_position}]")
+                return False
+
             target_reach = target_kind.get_reach()
             if not Spacetime.contains(target_reach, step_taken):
                 console.debug(f"> Reach of target cube does not contain final step : {target_reach} w/ {step_taken} {Spacetime.contains(target_reach, step_taken)}")
@@ -653,7 +663,7 @@ class VolumetricZxGraph(nx.Graph):
             # Check that the current pipe has a type consistent with what is allowed
             current_pipe_type = proposal.pipes[-1]
             inferred = BlockGraphHelper.infer_pipe_type(previous_kind, target_kind)
-            if not current_pipe_type in inferred:
+            if current_pipe_type not in inferred:
                 console.debug(f"> Final pipe type is not allowed between {previous_kind} and {target_kind} [{current_pipe_type} not in {inferred}].")
                 return False
 

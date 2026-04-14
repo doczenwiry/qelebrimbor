@@ -15,11 +15,11 @@ from qelebrimbor.vedo.zx_layout.manual import ManualLayout
 
 import logging
 console = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logging.getLogger("qelebrimbor").setLevel(logging.CRITICAL)
 # logging.getLogger("qelebrimbor.helpers").setLevel(logging.DEBUG)
 # logging.getLogger("qelebrimbor.pathfinders").setLevel(logging.DEBUG)
-logging.getLogger("qelebrimbor.augmented_zx_graph").setLevel(logging.DEBUG)
+logging.getLogger("qelebrimbor.volumetric_zx_graph").setLevel(logging.CRITICAL)
 
 
 def prepare_layout() -> ManualLayout:
@@ -100,7 +100,7 @@ if __name__ == "__main__":
 
     completion1 = completions1[0]
     c1 = len(completion1.cubes)
-    console.info(f"> Completion 1 [{minimal_overhead}] : {completion1}")
+    console.info(f"> Completion 1 [+{minimal_overhead}] : {completion1}")
 
     BlockGraphConstructor.realise_nodes(vzx, {
         1 : completion1.cubes[1]
