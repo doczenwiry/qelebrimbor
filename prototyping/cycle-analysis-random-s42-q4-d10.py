@@ -1,10 +1,14 @@
 import random
+from collections import defaultdict
+
 import pyzx
 
-from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.components_bg import CubeId, CubeKind
 from qelebrimbor.common.components_zx import NodeId, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
+from qelebrimbor.helpers.blockgraph import BlockGraphHelper
+from qelebrimbor.helpers.spacetime import Spacetime
 from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
 from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
@@ -26,6 +30,8 @@ logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(loggi
 
 # TODO: go beyond assumption that cycle is made of one realised chain and one unrealised chain
 # TODO: figure out which edges are missing if all the nodes are already placed
+# TODO: after placing a ring, try placing the adjacents of the constituents of the ring
+# TODO: only place those constituents if there is only one position for them to be in (i.e. positions determined)
 def breakdown_cycle(graph: VolumetricZxGraph, cycle: list[NodeId]) -> tuple[NodeId, NodeId, list[NodeId]]:
     nc = len(cycle)
 
@@ -50,6 +56,48 @@ def breakdown_cycle(graph: VolumetricZxGraph, cycle: list[NodeId]) -> tuple[Node
         intermediates = list(reversed(intermediates))
 
     return cycle[transition_ru], cycle[transition_ur], intermediates
+
+# TODO: sort the mess that multiple realising_cubes introduce here
+def place_determined(graph: VolumetricZxGraph):
+    for node in graph.nodes:
+        if graph.is_node_realised(node):
+            unrealised_neighbors = list(filter(lambda nb: not graph.is_edge_realised(node, nb), graph.neighbors(node)))
+            if len(unrealised_neighbors) != 1:
+                continue
+
+            open_ports: dict[CubeId, list[Coordinates]] = defaultdict(list)
+            for cube in graph.get_realising_cubes(node):
+                cube_reach = graph.get_cube_kind(cube).get_reach()
+                cube_position = graph.get_cube_position(cube)
+                for port in Spacetime.get_constellation(cube_position, cube_reach):
+                    if port not in graph.occupied:
+                        open_ports[cube].append(port)
+
+            if len(open_ports) == 1 and all(len(ops) == 1 for ops in open_ports.values()):
+                neighbor = unrealised_neighbors[0]
+                edge_type = graph.get_edge_type(node, neighbor)
+                cube, ports = next(iter(open_ports.items()))
+                cube_kind = graph.get_cube_kind(cube)
+                cube_reach = cube_kind.get_reach()
+                cube_position = graph.get_cube_position(cube)
+                port_position = ports[0]
+                console.info(f"Node {node} has an unrealised neighbor {neighbor} that must be placed now at {port_position}.")
+                step_taken = port_position - cube_position
+                console.info(f"> Step taken : {step_taken}")
+                neighbor_type = graph.get_node_type(neighbor)
+                neighbor_reach = next(filter(
+                    lambda cr :
+                        Spacetime.contains(cr, step_taken) and Spacetime.contains(cube_reach, step_taken) and
+                        edge_type in BlockGraphHelper.infer_pipe_type(cube_kind, CubeKind.convert(neighbor_type, cr)),
+                        [ Spacetime.XP, Spacetime.YP, Spacetime.ZP ]
+                ))
+                neighbor_kind = CubeKind.convert(neighbor_type, neighbor_reach)
+                neighbor_cube = graph.realise_node(neighbor, neighbor_kind, port_position)
+                graph.realise_edge(node, neighbor, PathSpecification(cube, neighbor_cube, extras = [], pipes = [ edge_type ]))
+
+def reserve_positions(graph: VolumetricZxGraph):
+    # TODO: identify nodes for which number of open ports == number of unrealised edges and reserve those positions
+    pass
 
 def find_completion(graph: VolumetricZxGraph, cycle: list[NodeId]):
     nc = len(cycle)
@@ -154,21 +202,25 @@ if __name__ == "__main__":
         }
     )
 
+    place_determined(vzx)
+
     cycle1 = cycles[1]
     console.info(f"Cycle 1 : {cycle1}")
     find_completion(vzx, cycle1)
+
+    place_determined(vzx)
 
     cycle2 = cycles[2]
     console.info(f"Cycle 2 : {cycle2}")
     find_completion(vzx, cycle2)
 
-    cycle3 = cycles[3]
-    console.info(f"Cycle 3 : {cycle3}")
-    find_completion(vzx, cycle3)
+    # cycle3 = cycles[3]
+    # console.info(f"Cycle 3 : {cycle3}")
+    # find_completion(vzx, cycle3)
 
-    cycle4 = cycles[4]
-    console.info(f"Cycle 4 : {cycle4}")
-    # find_completion(vzx, cycle4)
+    # cycle4 = cycles[4]
+    # console.info(f"Cycle 4 : {cycle4}")
+    # # find_completion(vzx, cycle4)
 
     viewer = VolumetricZxGraphViewer(vzx, label = circuit)
     viewer.display()
