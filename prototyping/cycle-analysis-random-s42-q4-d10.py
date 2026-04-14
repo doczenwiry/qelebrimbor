@@ -1,0 +1,174 @@
+import random
+import pyzx
+
+from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.components_zx import NodeId, EdgeType
+from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.common.paths import PathSpecification
+from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
+from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
+from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
+from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
+
+SEED = 42
+QUBITS = 4
+LAYERS = 10
+
+import logging
+logging.basicConfig(level=logging.INFO)
+console = logging.getLogger(__name__)
+logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
+logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.CRITICAL)
+
+# TODO: go beyond assumption that cycle is made of one realised chain and one unrealised chain
+# TODO: figure out which edges are missing if all the nodes are already placed
+def breakdown_cycle(graph: VolumetricZxGraph, cycle: list[NodeId]) -> tuple[NodeId, NodeId, list[NodeId]]:
+    nc = len(cycle)
+
+    transition_ur = next(
+        idx for idx in range(nc)
+        if not graph.is_node_realised(cycle[(idx-1) % nc]) and graph.is_node_realised(cycle[idx])
+    )
+
+    transition_ru = next(
+        idx for idx in range(nc)
+        if graph.is_node_realised(cycle[idx]) and not graph.is_node_realised(cycle[(idx + 1) % nc])
+    )
+
+    realised = sum(1 for idx in range(nc) if graph.is_node_realised(cycle[idx]))
+
+    intermediates: list[NodeId] = [
+        cycle[(transition_ru + 1 + idx) % nc] for idx in range(nc - realised)
+    ]
+
+    if cycle[transition_ur] < cycle[transition_ru]:
+        transition_ur, transition_ru = transition_ru, transition_ur
+        intermediates = list(reversed(intermediates))
+
+    return cycle[transition_ru], cycle[transition_ur], intermediates
+
+def find_completion(graph: VolumetricZxGraph, cycle: list[NodeId]):
+    nc = len(cycle)
+    start, final, extras = breakdown_cycle(graph, cycle)
+
+    console.info(f"Breakdown of {cycle} : {start} - {extras} - {final}")
+
+    nodes1 = list(map(lambda nd : graph.get_node_type(nd), extras))
+    edges1 = [(cycle[i], cycle[(i + 1) % len(cycle)]) for i in range(1, len(extras) + 1)]
+    pipes1 = list(map(lambda ed : graph.get_edge_type(*ed), edges1))
+
+    # # Breakdown cycle1
+    # TODO: deal with case where multiple cubes realise the start of the final
+    start_cube_id = min(graph.get_realising_cubes(start))
+    final_cube_id = min(graph.get_realising_cubes(final))
+    start_cube = (graph.get_cube_kind(start_cube_id), graph.get_cube_position(start_cube_id))
+    final_cube = (graph.get_cube_kind(final_cube_id), graph.get_cube_position(final_cube_id))
+    console.info(f"Searching completion from {start}#{start_cube_id} [{start_cube}] to {final}#{final_cube_id} [{final_cube}]")
+    console.info(f"> Nodes : {nodes1}")
+    console.info(f"> Pipes : {pipes1}")
+    minimal_overhead, rings = PathFinderDFS.find_minimal_paths(
+        start = start_cube, final = final_cube,
+        node_types = nodes1,
+        edge_types = pipes1,
+        occupied_positions = graph.occupied,
+        maximal_overhead = 10
+    )
+
+    console.info(f"Found {len(rings)} realisations for cycle.")
+
+    ring = rings[0]
+    nr = len(ring.cubes)
+    console.info(f"Realisation 1 : {ring.cubes}")
+
+    BlockGraphConstructor.realise_nodes(graph, {
+        extras[idx] : ring.cubes[idx+1] for idx in range(len(extras))
+    })
+
+    terminal_cube_id = extras[-1]
+    source, target = final, terminal_cube_id
+    extra_cubes: list[tuple[CubeKind, Coordinates]]
+    if final > terminal_cube_id:
+        source, target = target, source
+        extra_cubes = ring.cubes[len(extras)+1:nr - 1]
+    else:
+        extra_cubes = list(reversed(ring.cubes[len(extras)+1:nr - 1]))
+
+    BlockGraphConstructor.realise_edges(graph, {
+        (source, target): PathSpecification(
+            source_cube = min(graph.get_realising_cubes(source)),
+            target_cube = min(graph.get_realising_cubes(target)),
+            extras = extra_cubes,
+            pipes = [ pipes1[-1] if i == 0 else EdgeType.IDENTITY for i in range(nc)]
+        )
+    })
+
+random.seed(SEED)
+if __name__ == "__main__":
+    circuit = f"random-s{SEED}-q{QUBITS}-d{LAYERS}"
+    zx = pyzx.generate.cnots(qubits = QUBITS, depth = LAYERS)
+    # pyzx.draw(zx, labels = True)
+
+    with open(f"../assets/pyzx/{circuit}.json", 'w') as file:
+        file.write(zx.to_json())
+
+    vzx = VolumetricZxGraph.from_pyzx_graph(zx)
+
+    CycleAnalyser.analyse(vzx)
+
+    cycles = CycleAnalyser.decompose(vzx)
+    cycle0 = cycles[0]
+    edges0 = [ (cycle0[i], cycle0[(i+1) % len(cycle0)]) for i in range(len(cycle0)) ]
+    n0 = len(cycle0)
+
+    console.info(f"Cycle 0 : {cycle0}")
+    nodes0 = list(map(lambda nd : vzx.get_node_type(nd), cycle0))
+    pipes0 = list(map(lambda ed : vzx.get_edge_type(*ed), edges0))
+    console.info(f"Nodes 0 : {" ".join(map(lambda nd: str(nd) + ':' + str(vzx.get_node_type(nd)), cycle0))}")
+    console.info(f"Edges 0 : {" ".join(map(lambda ed: str(vzx.get_edge_type(*ed))[0] + str(ed).replace(' ',''), edges0))}")
+
+    realisations0 = RingFinderBFS.find_minimal_rings(nodes0, pipes0, maximal_overhead = 2)
+    ring0 = realisations0[0]
+
+    console.info(f"Realisation 0 [{len(ring0.cubes)}] : {ring0}")
+
+    BlockGraphConstructor.realise_nodes(vzx, {cycle0[nd]: ring0.cubes[nd] for nd in range(n0)})
+
+    cycle0 = cycles[0]
+    start = cycle0[0]
+    final = cycle0[n0 - 1]
+    if final < start:
+        start, final = final, start
+    c0 = len(ring0.cubes)
+    BlockGraphConstructor.realise_edges(vzx,
+        specifications = {
+            (start, final): PathSpecification(
+                source_cube = min(vzx.get_realising_cubes(start)),
+                target_cube = min(vzx.get_realising_cubes(final)),
+                extras = list(reversed(ring0.cubes[n0:c0])),
+                pipes = pipes0
+            )
+        }
+    )
+
+    cycle1 = cycles[1]
+    console.info(f"Cycle 1 : {cycle1}")
+    find_completion(vzx, cycle1)
+
+    cycle2 = cycles[2]
+    console.info(f"Cycle 2 : {cycle2}")
+    find_completion(vzx, cycle2)
+
+    cycle3 = cycles[3]
+    console.info(f"Cycle 3 : {cycle3}")
+    find_completion(vzx, cycle3)
+
+    cycle4 = cycles[4]
+    console.info(f"Cycle 4 : {cycle4}")
+    # find_completion(vzx, cycle4)
+
+    viewer = VolumetricZxGraphViewer(vzx, label = circuit)
+    viewer.display()

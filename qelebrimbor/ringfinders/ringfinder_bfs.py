@@ -19,6 +19,7 @@ class RingFinderBFS:
         maximal_overhead: int = 0
     ):
         n = len(nodes)
+        e = len(edges) if edges else 0
         rings: list[Ring] = []
 
         root_kind = CubeKind.suitable_kinds(nodes[0])[0]
@@ -37,16 +38,16 @@ class RingFinderBFS:
             terminal_cube = ring.cubes[-1]
             terminal_kind, terminal_position = terminal_cube
             node_types = { nodes[ length ] } if length < n else { NodeType.X , NodeType.Z }
-            pipe_type = edges[ length-1 ] if edges and length <= n else EdgeType.IDENTITY
+            pipe_type = edges[ length-1 ] if edges and length <= e else EdgeType.IDENTITY
             console.debug(f"Terminal cube: {terminal_kind}@{terminal_position} [{pipe_type}]")
 
             for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(terminal_cube, node_types = node_types, pipe_type = pipe_type):
                 console.debug(f"> {next_kind}@{next_position}")
-                # Only consider cubes placed in the PPP octant.
+                # Only consider cubes placed in the PPP octant
                 if not all(c >= 0 for c in next_position):
                     continue
 
-                # Skip if next_position is already occupied.
+                # Skip if the next_position is already occupied
                 if ring.occupies(next_position):
                     continue
 
@@ -64,7 +65,7 @@ class RingFinderBFS:
                     console.debug(f"Target reached : {extended}")
                     step = next_position - root_position
                     reach_condition = Spacetime.contains(root_kind.get_reach(), step) and Spacetime.contains(next_kind.get_reach(), step)
-                    console.debug(f"> {step}? [{reach_condition}]")
+                    console.debug(f"> {step} ? [{reach_condition}]")
                     if reach_condition and pipe_type in BlockGraphHelper.infer_pipe_type(root_kind, next_kind):
                         rings.append(extended)
 

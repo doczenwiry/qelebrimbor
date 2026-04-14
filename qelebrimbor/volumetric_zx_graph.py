@@ -656,7 +656,7 @@ class VolumetricZxGraph(nx.Graph):
                 return False
 
             target_reach = target_kind.get_reach()
-            if not Spacetime.contains(target_reach, step_taken):
+            if not Spacetime.contains(previous_reach, step_taken) or not Spacetime.contains(target_reach, step_taken):
                 console.debug(f"> Reach of target cube does not contain final step : {target_reach} w/ {step_taken} {Spacetime.contains(target_reach, step_taken)}")
                 return False
 

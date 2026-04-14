@@ -39,7 +39,9 @@ class PathFinderDFS:
         final_kind, final_position = final
 
         minimal_overhead = -1
-        maximal_volume = start_position.get_manhattan_distance(final_position) + maximal_overhead
+        minimal_number_of_cubes = nt if nt % 2 == 0 else nt + 1
+        maximal_volume = max(start_position.get_manhattan_distance(final_position), minimal_number_of_cubes) + maximal_overhead + 2
+        console.info(f"Maximal volume considered : {maximal_volume}")
 
         initial = Path( start , final )
         queue: PriorityQueue[Path] = PriorityQueue[Path]()
@@ -52,8 +54,8 @@ class PathFinderDFS:
             current = path.cubes[-1]
             length = len(path.cubes)
             console.debug(f"Current path : {path.cubes}")
-            node_type_required = { node_type_restrictions[length-1] } if length-1 < nt else { NodeType.X, NodeType.Z }
-            pipe_type_required =   edge_type_restrictions[length-1]   if length-1 < et else EdgeType.IDENTITY
+            node_type_required = { node_type_restrictions[length-1] } if length <= nt else { NodeType.X, NodeType.Z }
+            pipe_type_required =   edge_type_restrictions[length-1]   if length <= et else EdgeType.IDENTITY
             console.debug(f"> Types required : {node_type_required}")
             for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(current, node_types = node_type_required, pipe_type = pipe_type_required):
                 extended: Path = path.copy()
