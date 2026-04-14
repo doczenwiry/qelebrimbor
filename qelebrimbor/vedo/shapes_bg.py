@@ -87,14 +87,24 @@ class BgCube(Assembly):
         return stringed
 
 class BgPipe(Assembly):
-    LENGTH = GLOBAL_SPACING_FACTOR * 0.205
-    DIAMETER = 0.25
+    PIPE_RING_LENGTH = 0.25
+    HALF_PIPE_LENGTH = (GLOBAL_SPACING_FACTOR - BgCube.LARGE_CUBE) / 2.0 - (PIPE_RING_LENGTH / 2.0)
+    DIAMETER = BgCube.LARGE_CUBE * 0.75
 
-    def __compute_pipe_colors(self):
-        if self.pipe_type == EdgeType.IDENTITY:
-            pass
-        else:
-            pass
+    @staticmethod
+    def __prepare_pipe_colors(kind: CubeKind, other_kind: CubeKind, distances: Coordinates):
+        # cellcolors are for faces (+X, -X, +Y, -Y, +Z, -Z)
+        colors = []
+        distances = distances.as_tuple()
+        for c in range(3):
+            if distances[c] == 0 and (
+                    kind not in [CubeKind.OOO, CubeKind.YYY] or other_kind not in [CubeKind.OOO, CubeKind.YYY]):
+                color = kind.name[c] if kind not in [CubeKind.OOO, CubeKind.YYY] else other_kind.name[c]
+            else:
+                color = 'U'
+            colors.append(COLOR_RGBS[color])
+            colors.append(COLOR_RGBS[color])
+        return colors
 
     def __init__(self,
         source_kind: CubeKind, source_position: Coordinates,
@@ -106,52 +116,52 @@ class BgPipe(Assembly):
 
         self.bg_source: CubeId = source
         self.bg_target: CubeId = target
-        self.pipe_type: EdgeType = pipe_type
 
-        # Determine the position where the pipe will be placed
         distances = target_position - source_position
-        position = GLOBAL_SPACING_FACTOR * (source_position + distances / 2.0)
-        # Compute the measurements of this pipe (i.e. length, width, height) according to its direction
-        measures = [
-            GLOBAL_SPACING_FACTOR * (BgPipe.LENGTH if d != 0 else BgPipe.DIAMETER)
-            for d in distances
-        ]
 
-        self.__pipe = Box(position, size = measures)
-        self.__pipe.lighting('off')
-        self.add(self.__pipe)
+        if pipe_type == EdgeType.IDENTITY:
+            # Construct the pipe
+            self.__pipe = Box(
+                pos = GLOBAL_SPACING_FACTOR * (source_position + distances / 2.0),
+                size = [2.2 * BgPipe.HALF_PIPE_LENGTH if d != 0 else BgPipe.DIAMETER for d in distances]
+            )
+            self.add(self.__pipe)
+            self.__pipe.cellcolors = BgPipe.__prepare_pipe_colors(source_kind, target_kind, distances)
+        else:  # pipe_type == EdgeType.HADAMARD
+            # Construct the pipe on the side of the source
+            self.__pipe_source = Box(
+                pos = GLOBAL_SPACING_FACTOR * (source_position + distances / 4.0) + (BgPipe.HALF_PIPE_LENGTH / 4.0) * distances,
+                size = [BgPipe.HALF_PIPE_LENGTH if d != 0 else BgPipe.DIAMETER for d in distances]
+            )
+            self.__pipe_source.cellcolors = BgPipe.__prepare_pipe_colors(source_kind, target_kind, distances)
+            self.add(self.__pipe_source)
+            # Construct the pipe on the side of the target
+            self.__pipe_target = Box(
+                pos = GLOBAL_SPACING_FACTOR * (target_position - distances / 4.0) - (BgPipe.HALF_PIPE_LENGTH / 4.0) * distances,
+                size = [BgPipe.HALF_PIPE_LENGTH if d != 0 else BgPipe.DIAMETER for d in distances]
+            )
+            self.__pipe_target.cellcolors = BgPipe.__prepare_pipe_colors(target_kind, source_kind, distances)
+            self.add(self.__pipe_target)
+            # Construct the ring representing the HADAMARD type of the pipe
+            self.__pipe_type_ring = Box(
+                pos = GLOBAL_SPACING_FACTOR * (source_position + distances / 2.0),
+                size = [0.8 * BgPipe.PIPE_RING_LENGTH if d != 0 else BgPipe.DIAMETER for d in distances],
+                c = 'y'
+            )
+            self.add(self.__pipe_type_ring)
 
-        colors = []
-        distances = distances.as_tuple()
-        for c in range(3):
-            if distances[c] == 0:
-                source_color = source_kind.name[c]
-                target_color = target_kind.name[c]
-                if source_color != 'O' and target_color != 'O' and source_color != target_color:
-                    raise Exception(f"Incompatible cubes [{source_kind}/{target_kind}] [{distances}].")
-                if source_color != 'O':
-                    color = source_color
-                elif target_color != 'O':
-                    color = target_color
-                else:
-                    color = 'U'
-            else:
-                color = 'O'
-            colors.append(COLOR_RGBS[color])
-            colors.append(COLOR_RGBS[color])
-
-        self.__pipe.cellcolors = colors
-
-        self.__pipe.linecolor('k')
-        self.__pipe.linewidth(3)
+        for mesh in self.objects:
+            mesh.lighting('off')
+            mesh.linecolor('k')
+            mesh.linewidth(3)
 
     def alter_appearance(self, highlight: bool = False):
-        if highlight:
-            self.__pipe.linecolor('k5')
-            self.__pipe.linewidth(6)
-        else:
-            self.__pipe.linecolor('k')
-            self.__pipe.linewidth(3)
+        color = 'k5' if highlight else 'k'
+        width = 6 if highlight else 3
+
+        for mesh in self.objects:
+            mesh.linecolor(color)
+            mesh.linewidth(width)
 
     def __repr__(self):
         return str(self)
