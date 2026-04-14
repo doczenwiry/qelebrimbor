@@ -94,8 +94,8 @@ if __name__ == "__main__":
     console.info(f"Searching completion from 7 #{start} [{start_cube}] to 1 #{final} [{final_cube}]")
     console.info(f"> Passing through : ")
     minimal_overhead, rings1 = PathFinderDFS.find_minimal_paths(
-        final_cube, start_cube,
-        type_restrictions = [ NodeType.X, NodeType.Z ],
+        start = start_cube, final = final_cube,
+        node_types= [NodeType.X, NodeType.Z],
         occupied_positions = vzx.occupied,
         maximal_overhead = 6
     )

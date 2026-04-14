@@ -102,7 +102,7 @@ if __name__ == "__main__":
     console.info(f"Searching completion from 1 #{start} [{start_cube}] to 6 #{final} [{final_cube}]")
     console.info(f"> Passing through : []")
     minimal_overhead, completions1 = PathFinderDFS.find_minimal_paths(
-        final_cube, start_cube,
+        final = final_cube, start = start_cube,
         occupied_positions = vzx.occupied,
         maximal_overhead = 6
     )
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     final_cube = (vzx.get_cube_kind(final), vzx.get_cube_position(final))
     console.info(f"Searching completion from 0 #{start} [{start_cube}] to 1 #{final} [{final_cube}]")
     minimal_overhead, completions2 = PathFinderDFS.find_minimal_paths(
-        final_cube, start_cube,
+        final = final_cube, start = start_cube,
         occupied_positions = vzx.occupied,
         maximal_overhead = 6
     )

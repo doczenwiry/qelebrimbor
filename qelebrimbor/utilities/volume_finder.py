@@ -11,7 +11,7 @@ class VolumeFinder:
 
     @staticmethod
     def get_path_overhead(target: tuple[CubeKind, Coordinates]):
-        minimal_volume, discovered_paths = PathFinderDFS.find_minimal_paths(target, VolumeFinder.SOURCE, maximal_overhead= 12)
+        minimal_volume, discovered_paths = PathFinderDFS.find_minimal_paths(final = target, start = VolumeFinder.SOURCE, maximal_overhead= 12)
         _, target_position = target
         manhattan_distance = Spacetime.ORIGIN.get_manhattan_distance(target_position)
         differential = minimal_volume - manhattan_distance

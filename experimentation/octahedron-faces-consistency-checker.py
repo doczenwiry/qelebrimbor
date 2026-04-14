@@ -145,7 +145,7 @@ def check_consistency(kinds: Iterable[CubeKind], faces: Iterable[Octant], manhat
             positions = sorted(OctahedronHelper.get_face_positions(manhattan_distance, target_face), key = SORTING_FUNCTIONS[target_face])
             for target_position in positions:
                 target = (target_kind, target_position)
-                explored_overhead, paths = PathFinderDFS.find_minimal_paths(final = target, start = source, maximal_overhead = 8)
+                explored_overhead, paths = PathFinderDFS.find_minimal_paths(start = source, final = target, maximal_overhead = 8)
                 statistics[explored_overhead] += 1
                 explored_overheads[target_position] = explored_overhead
                 computed_overheads[target_position] = Path.minimal_overhead_possible(source, target)

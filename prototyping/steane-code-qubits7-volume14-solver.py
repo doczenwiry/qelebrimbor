@@ -92,8 +92,8 @@ if __name__ == "__main__":
     type_restrictions = [ NodeType.X ]
     console.info(f"> Passing through : {type_restrictions}")
     minimal_overhead, completions1 = PathFinderDFS.find_minimal_paths(
-        final_cube, start_cube,
-        type_restrictions = type_restrictions,
+        final = final_cube, start = start_cube,
+        node_types= type_restrictions,
         occupied_positions = vzx.occupied,
         maximal_overhead = 6
     )
@@ -129,8 +129,8 @@ if __name__ == "__main__":
     type_restrictions = []
     console.info(f"> Type restrictions : {type_restrictions}")
     minimal_overhead, completions2 = PathFinderDFS.find_minimal_paths(
-        final_cube, start_cube,
-        type_restrictions = type_restrictions,
+        final = final_cube, start = start_cube,
+        node_types= type_restrictions,
         occupied_positions = vzx.occupied,
         maximal_overhead = 6
     )
@@ -147,6 +147,8 @@ if __name__ == "__main__":
             pipes = [EdgeType.IDENTITY for _ in range(n2+2)]
         )
     })
+
+    console.info(f"TOTAL VOLUME : {vzx.number_of_cubes()}")
 
     hexagon = prepare_layout()
     viewer = VolumetricZxGraphViewer(vzx, label ="steane-code", layout = hexagon)

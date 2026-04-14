@@ -1,7 +1,7 @@
 import logging as lgr
 import queue
 
-from qelebrimbor.common.components_zx import NodeType
+from qelebrimbor.common.components_zx import NodeType, EdgeType
 
 console = lgr.getLogger(__name__)
 
@@ -19,12 +19,19 @@ from qelebrimbor.pathfinders.path import Path
 class PathFinderDFS:
     @staticmethod
     def find_minimal_paths(
-        final: tuple[CubeKind, Coordinates], start: tuple[CubeKind, Coordinates] = (CubeKind.XZZ, Spacetime.ORIGIN),
-        type_restrictions: list[NodeType] = [], occupied_positions: set[Coordinates] = set(),
-        maximal_overhead: int = 6
+        start: tuple[CubeKind, Coordinates], final: tuple[CubeKind, Coordinates],
+        node_types: list[NodeType] | None = None, edge_types: list[EdgeType] | None = None,
+        occupied_positions: set[Coordinates] = set(),
+            maximal_overhead: int = 6
     ) -> tuple[int, list[Path]]:
-        if any(tr in {NodeType.O, NodeType.Y} for tr in type_restrictions):
+        node_type_restrictions: list[NodeType] = node_types if node_types else []
+        edge_type_restrictions: list[EdgeType] = edge_types if edge_types else []
+
+        if any(tr in {NodeType.O, NodeType.Y} for tr in node_type_restrictions):
             raise Exception(f"Path cannot contain cubes of NodeType.O or NodeType.Y.")
+
+        nt = len(node_type_restrictions)
+        et = len(edge_type_restrictions)
 
         paths: list[Path] = []
 
@@ -38,22 +45,21 @@ class PathFinderDFS:
         queue: PriorityQueue[Path] = PriorityQueue[Path]()
         queue.put( initial )
 
-        console.info(f"Searching for paths from {start_kind}@{start_position} to {final_kind}@{final_position} [{type_restrictions}].")
+        console.info(f"Searching for paths from {start_kind}@{start_position} to {final_kind}@{final_position} [{node_types}].")
 
         while not queue.empty():
             path: Path = queue.get()
             current = path.cubes[-1]
+            length = len(path.cubes)
             console.debug(f"Current path : {path.cubes}")
-            types_required: set[NodeType] = {
-                node_type for node_type in (NodeType.X, NodeType.Z)
-                if path.manhattan_length() >= len(type_restrictions) or node_type == type_restrictions[path.manhattan_length()]
-            }
-            console.debug(f"> Types required : {types_required}")
-            for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(current, node_types = types_required):
+            node_type_required = { node_type_restrictions[length-1] } if length-1 < nt else { NodeType.X, NodeType.Z }
+            pipe_type_required =   edge_type_restrictions[length-1]   if length-1 < et else EdgeType.IDENTITY
+            console.debug(f"> Types required : {node_type_required}")
+            for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(current, node_types = node_type_required, pipe_type = pipe_type_required):
                 extended: Path = path.copy()
                 extended.append(next_kind, next_position)
 
-                if extended.has_reached_target() and extended.manhattan_length() >= len(type_restrictions):
+                if extended.has_reached_target() and extended.manhattan_length() >= nt:
                     manhattan_length = extended.manhattan_length()
                     extended_overhead = extended.overhead()
 

@@ -30,7 +30,7 @@ def compute_ring_volume(
     total_volume = (Path.minimal_volume_possible(target_a, target_b, count_endpoints = False)
                     + Path.minimal_volume_possible(target_a, target_c, count_endpoints = False)
                     + 2)
-    _, paths = PathFinderDFS.find_minimal_paths(target_b, target_c, maximal_overhead = 8)
+    _, paths = PathFinderDFS.find_minimal_paths(start = target_c, final = target_b, maximal_overhead = 8)
     total_volume += paths[0].manhattan_length()
     console.info(f">>>>>> Total volume required : {total_volume}\n")
 
