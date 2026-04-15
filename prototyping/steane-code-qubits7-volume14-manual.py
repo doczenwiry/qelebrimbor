@@ -8,7 +8,7 @@ from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
-from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
+from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)
     vzx.print_summary()
 
-    CycleAnalyser.analyse(vzx)
+    CycleBasisAnalyser.analyse(vzx)
 
     BlockGraphConstructor.realise_nodes(vzx= vzx,
                                         specifications = {

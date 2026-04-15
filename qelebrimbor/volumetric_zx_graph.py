@@ -71,7 +71,7 @@ class VolumetricZxGraph(nx.Graph):
                 self.add_node(node)
                 zx_node = self.nodes[node]
                 zx_node[VolumetricZxGraph.KEY_ZX_NODE_TYPE] = node_type
-                zx_node[VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES] = set()
+                zx_node[VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES] = list()
 
         if edges is not None:
             for edge, edge_type in edges:
@@ -224,7 +224,7 @@ class VolumetricZxGraph(nx.Graph):
                 nd_id, cb_id = token.split(':')
                 node = int(nd_id)
                 cube = int(cb_id)
-                vzx.nodes[node][VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES].add(cube)
+                vzx.nodes[node][VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES].append(cube)
                 vzx.__bg_graph.nodes[cube][VolumetricZxGraph.KEY_BG_CUBE_ZX_NODES].add(node)
 
             # Read zx-edges-bg-pipes
@@ -446,7 +446,7 @@ class VolumetricZxGraph(nx.Graph):
 
         cube = self.place_cube(kind, position)
         self.__bg_graph.nodes[cube][VolumetricZxGraph.KEY_BG_CUBE_ZX_NODES].add(node)
-        self.nodes[node][VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES].add(cube)
+        self.nodes[node][VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES].append(cube)
 
         console.info(f"Realising node #{node} [{self.get_node_type(node)}] as cube #{cube} [{kind}@{position}]")
 
@@ -524,13 +524,13 @@ class VolumetricZxGraph(nx.Graph):
         for _, final in pipe_ids:
             if self.get_cube_kind(final) != source_kind:
                 break
-            self.nodes[source][VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES].add(final)
+            self.nodes[source][VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES].append(final)
         # Update realising cubes of target node.
         target_kind = self.get_cube_kind(target_cube)
         for start, _ in reversed(pipe_ids):
             if self.get_cube_kind(start) != target_kind:
                 break
-            self.nodes[target][VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES].add(start)
+            self.nodes[target][VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES].append(start)
 
     def place_cube(self, kind: CubeKind, position: Coordinates) -> CubeId:
         if position in self.occupied:

@@ -9,7 +9,7 @@ from typing import Iterable
 from queue import PriorityQueue
 from collections import defaultdict
 
-from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.components_bg import CubeId, CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import Spacetime
@@ -21,8 +21,8 @@ class PathFinderDFS:
     def find_minimal_paths(
         start: tuple[CubeKind, Coordinates], final: tuple[CubeKind, Coordinates],
         node_types: list[NodeType] | None = None, edge_types: list[EdgeType] | None = None,
-        occupied_positions: set[Coordinates] = set(),
-            maximal_overhead: int = 6
+        occupied_positions: set[Coordinates] = set(), reserved_positions: dict[Coordinates, CubeId] = dict(),
+        maximal_overhead: int = 6
     ) -> tuple[int, list[Path]]:
         node_type_restrictions: list[NodeType] = node_types if node_types else []
         edge_type_restrictions: list[EdgeType] = edge_types if edge_types else []
@@ -48,6 +48,8 @@ class PathFinderDFS:
         queue.put( initial )
 
         console.info(f"Searching for paths from {start_kind}@{start_position} to {final_kind}@{final_position} [{node_types}].")
+        console.info(f"> Occupied : {occupied_positions}")
+        console.info(f"> Reserved : {reserved_positions}")
 
         while not queue.empty():
             path: Path = queue.get()
@@ -76,7 +78,7 @@ class PathFinderDFS:
                     if manhattan_length == maximal_volume:
                         paths.append( extended )
 
-                if path.occupies(next_position) or next_position in occupied_positions:
+                if path.occupies(next_position) or next_position in occupied_positions or next_position in reserved_positions:
                     continue
 
                 if extended.manhattan_length() + extended.manhattan_distance_remaining() < maximal_volume:

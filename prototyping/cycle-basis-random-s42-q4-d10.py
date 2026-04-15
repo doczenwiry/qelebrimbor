@@ -14,7 +14,7 @@ from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
+from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
 
 SEED = 42
 QUBITS = 4
@@ -23,8 +23,8 @@ LAYERS = 10
 import logging
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger(__name__)
-logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
-logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.DEBUG)
 logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.CRITICAL)
 
@@ -73,7 +73,7 @@ def place_determined(graph: VolumetricZxGraph):
                     if port not in graph.occupied:
                         open_ports[cube].append(port)
 
-            if len(open_ports) == 1 and all(len(ops) == 1 for ops in open_ports.values()):
+            if sum(len(pts) for pts in open_ports.values()) == 1:
                 neighbor = unrealised_neighbors[0]
                 edge_type = graph.get_edge_type(node, neighbor)
                 cube, ports = next(iter(open_ports.items()))
@@ -95,11 +95,48 @@ def place_determined(graph: VolumetricZxGraph):
                 neighbor_cube = graph.realise_node(neighbor, neighbor_kind, port_position)
                 graph.realise_edge(node, neighbor, PathSpecification(cube, neighbor_cube, extras = [], pipes = [ edge_type ]))
 
-def reserve_positions(graph: VolumetricZxGraph):
-    # TODO: identify nodes for which number of open ports == number of unrealised edges and reserve those positions
-    pass
+# TODO: sort the mess that multiple realising_cubes introduce here
+def reserve_positions(graph: VolumetricZxGraph, reservations: dict[Coordinates, CubeId]):
+    for node in graph.nodes:
+        if graph.is_node_realised(node):
+            unrealised_neighbors = list(filter(lambda nb: not graph.is_edge_realised(node, nb), graph.neighbors(node)))
+            open_ports: dict[Coordinates, CubeId] = dict()
+            for cube in graph.get_realising_cubes(node):
+                cube_reach = graph.get_cube_kind(cube).get_reach()
+                cube_position = graph.get_cube_position(cube)
+                for port in Spacetime.get_constellation(cube_position, cube_reach):
+                    if port not in graph.occupied:
+                        if port in open_ports and port in reservations and cube != reservations[port]:
+                            console.warning(f"Multiple cubes [{open_ports[port]},{cube}] realising the same node have the a port in common. Overwriting.")
+                        open_ports[port] = cube
 
-def find_completion(graph: VolumetricZxGraph, cycle: list[NodeId]):
+            if len(unrealised_neighbors) == len(open_ports) > 1:
+                for port, cube in open_ports.items():
+                    if port in reservations and cube != reservations[port]:
+                        console.error(f"Port {port} is already reserved by cube #{cube}.")
+                    else:
+                        console.info(f"Reserving port {port} for cube #{cube} [{node}].")
+                        reservations[port] = cube
+
+def find_completion_edges(
+        graph: VolumetricZxGraph, cycle: list[NodeId],
+        maximal_overhead: int = 10,
+        reservations: dict[Coordinates, CubeId] | None = None
+):
+    reserved = reservations if reservations else dict()
+
+    nc = len(cycle)
+    start, final, extras = breakdown_cycle(graph, cycle)
+
+    console.info(f"Breakdown of {cycle} : {start} - {extras} - {final}")
+
+def find_completion(
+        graph: VolumetricZxGraph, cycle: list[NodeId],
+        maximal_overhead: int = 10,
+        reservations: dict[Coordinates, CubeId] | None = None
+):
+    reserved = reservations if reservations else dict()
+
     nc = len(cycle)
     start, final, extras = breakdown_cycle(graph, cycle)
 
@@ -111,8 +148,8 @@ def find_completion(graph: VolumetricZxGraph, cycle: list[NodeId]):
 
     # # Breakdown cycle1
     # TODO: deal with case where multiple cubes realise the start of the final
-    start_cube_id = min(graph.get_realising_cubes(start))
-    final_cube_id = min(graph.get_realising_cubes(final))
+    start_cube_id = next(iter(graph.get_realising_cubes(start)))
+    final_cube_id = next(iter(graph.get_realising_cubes(final)))
     start_cube = (graph.get_cube_kind(start_cube_id), graph.get_cube_position(start_cube_id))
     final_cube = (graph.get_cube_kind(final_cube_id), graph.get_cube_position(final_cube_id))
     console.info(f"Searching completion from {start}#{start_cube_id} [{start_cube}] to {final}#{final_cube_id} [{final_cube}]")
@@ -123,10 +160,14 @@ def find_completion(graph: VolumetricZxGraph, cycle: list[NodeId]):
         node_types = nodes1,
         edge_types = pipes1,
         occupied_positions = graph.occupied,
-        maximal_overhead = 10
+        reserved_positions = reserved,
+        maximal_overhead = maximal_overhead
     )
 
     console.info(f"Found {len(rings)} realisations for cycle.")
+
+    if len(rings) == 0:
+        return False
 
     ring = rings[0]
     nr = len(ring.cubes)
@@ -154,6 +195,8 @@ def find_completion(graph: VolumetricZxGraph, cycle: list[NodeId]):
         )
     })
 
+    return True
+
 random.seed(SEED)
 if __name__ == "__main__":
     circuit = f"random-s{SEED}-q{QUBITS}-d{LAYERS}"
@@ -165,9 +208,9 @@ if __name__ == "__main__":
 
     vzx = VolumetricZxGraph.from_pyzx_graph(zx)
 
-    CycleAnalyser.analyse(vzx)
+    CycleBasisAnalyser.analyse(vzx)
 
-    cycles = CycleAnalyser.decompose(vzx)
+    cycles = CycleBasisAnalyser.decompose(vzx)
     cycle0 = cycles[0]
     edges0 = [ (cycle0[i], cycle0[(i+1) % len(cycle0)]) for i in range(len(cycle0)) ]
     n0 = len(cycle0)
@@ -202,25 +245,36 @@ if __name__ == "__main__":
         }
     )
 
+    reservations: dict[Coordinates, CubeId] = dict()
+
     place_determined(vzx)
+    reserve_positions(vzx, reservations)
 
     cycle1 = cycles[1]
     console.info(f"Cycle 1 : {cycle1}")
-    find_completion(vzx, cycle1)
+    find_completion(graph = vzx, cycle = cycle1, reservations = reservations)
 
     place_determined(vzx)
+    reserve_positions(vzx, reservations)
 
     cycle2 = cycles[2]
     console.info(f"Cycle 2 : {cycle2}")
-    find_completion(vzx, cycle2)
+    find_completion(graph = vzx, cycle = cycle2, reservations = reservations)
 
-    # cycle3 = cycles[3]
-    # console.info(f"Cycle 3 : {cycle3}")
-    # find_completion(vzx, cycle3)
+    place_determined(vzx)
+    reserve_positions(vzx, reservations)
 
-    # cycle4 = cycles[4]
-    # console.info(f"Cycle 4 : {cycle4}")
-    # # find_completion(vzx, cycle4)
+    cycle3 = cycles[3]
+    console.info(f"Cycle 3 : {cycle3}")
+    find_completion(graph = vzx, cycle = cycle3, reservations = reservations)
 
+    place_determined(vzx)
+    reserve_positions(vzx, reservations)
+
+    cycle4 = cycles[4]
+    console.info(f"Cycle 4 : {cycle4}")
+    # find_completion(vzx, cycle4)
+
+    console.info(f"Total volume : {vzx.number_of_cubes()}")
     viewer = VolumetricZxGraphViewer(vzx, label = circuit)
     viewer.display()

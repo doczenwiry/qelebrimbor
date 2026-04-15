@@ -1,7 +1,7 @@
 import random
 import pyzx as zx
 
-from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
+from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     zx.full_reduce(pyzx_graph)
     vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)
 
-    CycleAnalyser.analyse(vzx)
+    CycleBasisAnalyser.analyse(vzx)
 
     viewer = VolumetricZxGraphViewer(vzx, label = f"random-s{SEED}-q{QUBITS}-d{LAYERS}")
     viewer.display()

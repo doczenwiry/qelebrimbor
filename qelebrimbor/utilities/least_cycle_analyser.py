@@ -7,13 +7,13 @@ import logging
 console = logging.getLogger(__name__)
 console.setLevel(logging.INFO)
 
-class CycleAnalyser:
+class MinimalCycleBasisAnalyser:
     @staticmethod
     def analyse(vzx: VolumetricZxGraph):
-        console.info(f"Cycle basis :")
-        for cycle in CycleAnalyser.decompose(vzx):
+        console.info(f"Minimal cycle-basis :")
+        for cycle in MinimalCycleBasisAnalyser.decompose(vzx):
             console.info(f"> {cycle}")
 
     @staticmethod
     def decompose(vzx: VolumetricZxGraph) -> list[list[NodeId]]:
-        return sorted(nx.cycle_basis(vzx), key = lambda cycle: len(cycle), reverse = True)
+        return sorted(nx.minimum_cycle_basis(vzx), key = lambda cycle: len(cycle), reverse = True)

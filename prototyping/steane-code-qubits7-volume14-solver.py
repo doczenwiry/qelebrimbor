@@ -9,7 +9,7 @@ from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
 from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
-from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
+from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.manual import ManualLayout
 
@@ -50,9 +50,9 @@ if __name__ == "__main__":
     vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)
     vzx.log_summary()
 
-    CycleAnalyser.analyse(vzx)
+    CycleBasisAnalyser.analyse(vzx)
 
-    cycles = CycleAnalyser.decompose(vzx)
+    cycles = CycleBasisAnalyser.decompose(vzx)
     cycle0 = cycles[0]
     n0 = len(cycle0)
 
