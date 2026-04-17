@@ -9,8 +9,7 @@ from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
 from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
-from qelebrimbor.utilities.ring_making import place_determined, reserve_positions, find_completion, \
-    identify_unrealised_edges, find_completion_edge
+from qelebrimbor.utilities.ring_making import find_completion, extend_unrealised
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -22,7 +21,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger(__name__)
 logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.INFO)
 logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
@@ -80,6 +79,10 @@ if __name__ == "__main__":
         cycle = cycles[cycle_order[index]]
         console.info(f"Cycle {index+1} : {cycle}")
         find_completion(graph = vzx, cycle = cycle)
+
+    extend_unrealised(vzx)
+    extend_unrealised(vzx)
+    extend_unrealised(vzx)
 
     console.info(f"Unrealised spiders    : {list(filter(lambda nd : not vzx.is_node_realised(nd) and vzx.is_spider(nd), vzx.nodes))}")
     console.info(f"Unrealised boundaries : {list(filter(lambda nd : not vzx.is_node_realised(nd) and vzx.is_boundary(nd), vzx.nodes))}")
