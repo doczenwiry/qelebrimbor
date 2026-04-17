@@ -12,7 +12,6 @@ from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
 from qelebrimbor.utilities.ring_making import place_determined, reserve_positions, find_completion, identify_unrealised_edges
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
 
 SEED = 42
 QUBITS = 4
@@ -21,7 +20,8 @@ LAYERS = 10
 import logging
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger(__name__)
-logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
+logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
@@ -49,13 +49,13 @@ if __name__ == "__main__":
     console.info(f"Cycle 0 : {cycle0}")
     nodes0 = list(map(lambda nd : vzx.get_node_type(nd), cycle0))
     pipes0 = list(map(lambda ed : vzx.get_edge_type(*ed), edges0))
-    console.info(f"Nodes 0 : {" ".join(map(lambda nd: str(nd) + ':' + str(vzx.get_node_type(nd)), cycle0))}")
-    console.info(f"Edges 0 : {" ".join(map(lambda ed: str(vzx.get_edge_type(*ed))[0] + str(ed).replace(' ',''), edges0))}")
+    console.debug(f"Nodes 0 : {" ".join(map(lambda nd: str(nd) + ':' + str(vzx.get_node_type(nd)), cycle0))}")
+    console.debug(f"Edges 0 : {" ".join(map(lambda ed: str(vzx.get_edge_type(*ed))[0] + str(ed).replace(' ',''), edges0))}")
 
     realisations0 = RingFinderBFS.find_minimal_rings(nodes0, pipes0, maximal_overhead = 2)
     ring0 = realisations0[0]
 
-    console.info(f"Realisation 0 [{len(ring0.cubes)}] : {ring0}")
+    console.debug(f"Realisation 0 [{len(ring0.cubes)}] : {ring0}")
 
     BlockGraphConstructor.realise_nodes(vzx, {cycle0[nd]: ring0.cubes[nd] for nd in range(n0)})
 
@@ -106,9 +106,9 @@ if __name__ == "__main__":
     console.info(f"Cycle 4 : {cycle4}")
 
     edges = identify_unrealised_edges(vzx, cycle4)
-    console.info(f"Chains [{len(edges)}]")
+    console.debug(f"Chains [{len(edges)}]")
     for edge in edges:
-        console.info(f"> {edge}")
+        console.debug(f"> {edge}")
         start, final = edge
         if start > final:
             start, final = final, start
@@ -117,8 +117,7 @@ if __name__ == "__main__":
         start_cube = (vzx.get_cube_kind(start_cube_id), vzx.get_cube_position(start_cube_id))
         final_cube = (vzx.get_cube_kind(final_cube_id), vzx.get_cube_position(final_cube_id))
         pipes4 = [ vzx.get_edge_type(start, final) ]
-        console.info(
-            f"Searching completion from {start}#{start_cube_id} [{start_cube}] to {final}#{final_cube_id} [{final_cube}]")
+        console.debug(f"Searching completion from {start}#{start_cube_id} [{start_cube}] to {final}#{final_cube_id} [{final_cube}]")
         minimal_overhead, rings = PathFinderDFS.find_minimal_paths(
             start = start_cube, final = final_cube,
             edge_types = pipes4,
@@ -127,12 +126,12 @@ if __name__ == "__main__":
             maximal_overhead = 6
         )
 
-        console.info(f"Found {len(rings)} realisations for cycle.")
+        console.debug(f"Found {len(rings)} realisations for cycle.")
 
         if len(rings) != 0:
             ring = rings[0]
             nr = len(ring.cubes)
-            console.info(f"Realisation 1 : {ring.cubes}")
+            console.debug(f"Realisation 1 : {ring.cubes}")
 
             extras = ring.cubes[1:-1]
             BlockGraphConstructor.realise_edges(vzx, {
@@ -152,9 +151,9 @@ if __name__ == "__main__":
     console.info(f"Cycle 6 : {cycle6}")
 
     edges = identify_unrealised_edges(vzx, cycle6)
-    console.info(f"Chains [{len(edges)}]")
+    console.debug(f"Chains [{len(edges)}]")
     for edge in edges:
-        console.info(f"> {edge}")
+        console.debug(f"> {edge}")
         start, final = edge
         if start > final:
             start, final = final, start
@@ -163,8 +162,7 @@ if __name__ == "__main__":
         start_cube = (vzx.get_cube_kind(start_cube_id), vzx.get_cube_position(start_cube_id))
         final_cube = (vzx.get_cube_kind(final_cube_id), vzx.get_cube_position(final_cube_id))
         pipes6 = [ vzx.get_edge_type(start, final) ]
-        console.info(
-            f"Searching completion from {start}#{start_cube_id} [{start_cube}] to {final}#{final_cube_id} [{final_cube}]")
+        console.debug(f"Searching completion from {start}#{start_cube_id} [{start_cube}] to {final}#{final_cube_id} [{final_cube}]")
         minimal_overhead, rings = PathFinderDFS.find_minimal_paths(
             start = start_cube, final = final_cube,
             edge_types = pipes6,
@@ -173,12 +171,12 @@ if __name__ == "__main__":
             maximal_overhead = 6
         )
 
-        console.info(f"Found {len(rings)} realisations for cycle.")
+        console.debug(f"Found {len(rings)} realisations for cycle.")
 
         if len(rings) != 0:
             ring = rings[0]
             nr = len(ring.cubes)
-            console.info(f"Realisation 1 : {ring.cubes}")
+            console.debug(f"Realisation 1 : {ring.cubes}")
 
             extras = ring.cubes[1:-1]
             BlockGraphConstructor.realise_edges(vzx, {

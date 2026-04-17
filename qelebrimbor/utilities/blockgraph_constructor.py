@@ -39,10 +39,6 @@ class BlockGraphConstructor:
                 try:
                     source_cube = next(iter(vzx.get_realising_cubes(source)))
                     target_cube = next(iter(vzx.get_realising_cubes(target)))
-                    # next(filter(
-                    #     lambda cc: vzx.get_cube_position(cc[0]).get_manhattan_distance(vzx.get_cube_position(cc[1])) == 1,
-                    #     product(list(vzx.get_realising_cubes(source)), list(vzx.get_realising_cubes(target)))
-                    # ))
                     proposal = PathSpecification(
                         source_cube, target_cube, pipes = [ vzx.get_edge_type(source, target) ]
                     )

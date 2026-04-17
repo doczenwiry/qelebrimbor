@@ -20,7 +20,7 @@ class NoMoreThanFourLegsConstraint:
             neighbors = graph.neighbors(node)
             degree = graph.degree[node]
             node_type = graph.get_node_type(node)
-            node_qubit = graph.get_qubit(node)
+            node_qubit = graph.get_node_qubit(node)
             node_layer = graph.get_node_layer(node)
 
             remaining_neighbors = degree - 3

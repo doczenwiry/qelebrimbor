@@ -289,13 +289,13 @@ class VolumetricZxGraph(nx.Graph):
     def get_qubits(self):
         return self.__zx_qubits.keys()
 
-    def get_qubit(self, node) -> QubitId:
+    def get_node_qubit(self, node) -> QubitId:
         return self.nodes[node][VolumetricZxGraph.KEY_ZX_NODE_QUBIT]
 
     def get_nodes(self, node_type: NodeType | None = None, qubit: QubitId | None = None, layer: LayerId | None = None):
         return filter(
             lambda node : (node_type is None or self.get_node_type(node) == node_type) and
-                          (qubit is None or self.get_qubit(node) == qubit) and
+                          (qubit is None or self.get_node_qubit(node) == qubit) and
                           (layer is None or self.get_node_layer(node) == layer),
             self.nodes()
         )

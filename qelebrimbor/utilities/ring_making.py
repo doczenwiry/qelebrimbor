@@ -177,8 +177,46 @@ def find_completion(
             source_cube = next(iter(graph.get_realising_cubes(source))),
             target_cube = next(iter(graph.get_realising_cubes(target))),
             extras = extra_cubes,
-            pipes = [ pipes1[-1] if i == 0 else EdgeType.IDENTITY for i in range(nc)]
+            pipes = [ pipes1[-1] if i == 0 else EdgeType.IDENTITY for i in range(nr)]
         )
     })
 
     return True
+
+def find_completion_edge(graph: VolumetricZxGraph, cycle: list[NodeId]):
+    edges = identify_unrealised_edges(graph, cycle)
+    console.debug(f"Chains [{len(edges)}]")
+    for edge in edges:
+        console.debug(f"> {edge}")
+        start, final = edge
+        if start > final:
+            start, final = final, start
+        start_cube_id = next(iter(graph.get_realising_cubes(start)))
+        final_cube_id = next(iter(graph.get_realising_cubes(final)))
+        start_cube = (graph.get_cube_kind(start_cube_id), graph.get_cube_position(start_cube_id))
+        final_cube = (graph.get_cube_kind(final_cube_id), graph.get_cube_position(final_cube_id))
+        pipes = [graph.get_edge_type(start, final)]
+        console.debug(f"Searching completion from {start}#{start_cube_id} [{start_cube}] to {final}#{final_cube_id} [{final_cube}]")
+        minimal_overhead, rings = PathFinderDFS.find_minimal_paths(
+            start = start_cube, final = final_cube,
+            edge_types = pipes,
+            occupied_positions = graph.occupied,
+            maximal_overhead = 6
+        )
+
+        console.debug(f"Found {len(rings)} realisations for cycle.")
+
+        if len(rings) != 0:
+            ring = rings[0]
+            nr = len(ring.cubes)
+            console.debug(f"Realisation [{len(ring.cubes)}] : {ring.cubes}")
+
+            extras = ring.cubes[1:-1]
+            BlockGraphConstructor.realise_edges(graph, {
+                (start, final): PathSpecification(
+                    source_cube = next(iter(graph.get_realising_cubes(start))),
+                    target_cube = next(iter(graph.get_realising_cubes(final))),
+                    extras = extras,
+                    pipes = [ pipes[-1] if i == 0 else EdgeType.IDENTITY for i in range(nr) ]
+                )
+            })
