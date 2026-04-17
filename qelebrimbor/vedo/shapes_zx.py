@@ -55,7 +55,7 @@ class ZxEdge(Assembly):
         console.debug(f"ZxEdge {source}L{source_placement}@{source_position} - {target}L{target_placement}@{target_position}")
 
         # Create the background of this edge for highlighting
-        self.__background = Line(p0 = source_position, p1 = target_position, lw = 10, c = 'white', alpha = 0.0)
+        self.__background = Line(p0 = source_position, p1 = target_position, lw = 8, c = 'white')
         self.alter_appearance(highlight = False)
 
         super().__init__( self.__background, self.__edge )

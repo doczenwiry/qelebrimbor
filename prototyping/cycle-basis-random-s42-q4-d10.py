@@ -4,7 +4,7 @@ from collections import defaultdict
 import pyzx
 
 from qelebrimbor.common.components_bg import CubeId, CubeKind
-from qelebrimbor.common.components_zx import NodeId, EdgeType
+from qelebrimbor.common.components_zx import NodeId, EdgeId, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
@@ -276,6 +276,17 @@ if __name__ == "__main__":
     cycle4 = cycles[4]
     console.info(f"Cycle 4 : {cycle4}")
     # find_completion(vzx, cycle4)
+
+    excess_volume: dict[EdgeId, int] = dict()
+    for edge in vzx.edges:
+        if vzx.is_edge_realised(*edge):
+            count = len(vzx.get_edge_realisation(*edge)) - 1
+            if count > 0:
+                excess_volume[edge] = count
+
+    console.info(f"Excess volume :")
+    for edge in excess_volume:
+        console.info(f"> {edge} : +{excess_volume[edge]}")
 
     console.info(f"Total volume : {vzx.number_of_cubes()}")
     viewer = VolumetricZxGraphViewer(vzx, label = circuit)

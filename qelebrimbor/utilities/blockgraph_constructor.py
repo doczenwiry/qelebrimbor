@@ -1,5 +1,6 @@
 from itertools import product
 
+from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.components_zx import NodeId, EdgeId, EdgeType
 from qelebrimbor.common.components_bg import CubeKind
@@ -36,14 +37,17 @@ class BlockGraphConstructor:
             if edge in specifications:
                 proposal = specifications[edge]
             elif vzx.is_node_realised(source) and vzx.is_node_realised(target):
-                try:
-                    source_cube = vzx.get_realising_cube(source)
-                    target_cube = vzx.get_realising_cube(target)
-                    proposal = PathSpecification(
-                        source_cube, target_cube, pipes = [ vzx.get_edge_type(source, target) ]
-                    )
-                except StopIteration:
-                    proposal = None
+                source_cube = vzx.get_realising_cube(source)
+                start_cube = (vzx.get_cube_kind(source_cube), vzx.get_cube_position(source_cube))
+                target_cube = vzx.get_realising_cube(target)
+                final_cube = (vzx.get_cube_kind(target_cube), vzx.get_cube_position(target_cube))
+                minimal_overhead, paths = PathFinderDFS.find_minimal_paths(start_cube, final_cube, occupied_positions = vzx.occupied)
+                path = paths[0]
+                proposal = PathSpecification(
+                    source_cube, target_cube,
+                    extras = path.cubes[1:-1],
+                    pipes = [ vzx.get_edge_type(source, target) for _ in range(len(path.cubes) - 1) ]
+                )
             else:
                 proposal = None
 
