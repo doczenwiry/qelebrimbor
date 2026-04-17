@@ -5,6 +5,7 @@ from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import Spacetime
 from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
+from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -13,6 +14,41 @@ from qelebrimbor.common.components_bg import CubeId, CubeKind
 
 import logging
 console = logging.getLogger(__name__)
+
+def find_realisation(graph: VolumetricZxGraph, cycle: list[NodeId]):
+    nc = len(cycle)
+
+    nodes = list(map(lambda nd : graph.get_node_type(nd), cycle))
+    edges = [(cycle[i], cycle[(i + 1) % nc]) for i in range(nc)]
+    pipes = list(map(lambda ed : graph.get_edge_type(*ed), edges))
+    console.debug(f"> Nodes : {" ".join(map(lambda nd: str(nd) + ':' + str(graph.get_node_type(nd)), cycle))}")
+    console.debug(f"> Edges : {" ".join(map(lambda ed: str(graph.get_edge_type(*ed))[0] + str(ed).replace(' ', ''), edges))}")
+
+    realisations = RingFinderBFS.find_minimal_rings(nodes, pipes, maximal_overhead = 2)
+    ring = realisations[0]
+
+    console.debug(f"Found {len(realisations)} realisations for cycle : {cycle}")
+    console.debug(f"> Realisation [{len(ring.cubes)}] : {ring}")
+
+    BlockGraphConstructor.realise_nodes(graph, {cycle[nd]: ring.cubes[nd] for nd in range(nc)})
+
+    start = cycle[0]
+    final = cycle[nc - 1]
+    nr = len(ring.cubes)
+    extras = list(reversed(ring.cubes[nc:nr]))
+    if final < start:
+        start, final = final, start
+        extras = list(reversed(extras))
+    BlockGraphConstructor.realise_edges(graph,
+        specifications = {
+            (start, final): PathSpecification(
+                source_cube = graph.get_realising_cube(start),
+                target_cube = graph.get_realising_cube(final),
+                extras = extras,
+                pipes = pipes
+            )
+        }
+    )
 
 # TODO: go beyond assumption that cycle is made of one realised chain and one unrealised chain
 # TODO: figure out which edges are missing if all the nodes are already placed
@@ -61,8 +97,8 @@ def find_completion(
 
     # # Breakdown cycle1
     # TODO: deal with case where multiple cubes realise the start of the final
-    start_cube_id = next(iter(graph.get_realising_cubes(start)))
-    final_cube_id = next(iter(graph.get_realising_cubes(final)))
+    start_cube_id = graph.get_realising_cube(start)
+    final_cube_id = graph.get_realising_cube(final)
     start_cube = (graph.get_cube_kind(start_cube_id), graph.get_cube_position(start_cube_id))
     final_cube = (graph.get_cube_kind(final_cube_id), graph.get_cube_position(final_cube_id))
     console.info(f"Searching completion from {start}#{start_cube_id} [{start_cube}] to {final}#{final_cube_id} [{final_cube}]")
@@ -101,8 +137,8 @@ def find_completion(
 
     BlockGraphConstructor.realise_edges(graph, {
         (source, target): PathSpecification(
-            source_cube = next(iter(graph.get_realising_cubes(source))),
-            target_cube = next(iter(graph.get_realising_cubes(target))),
+            source_cube = graph.get_realising_cube(source),
+            target_cube = graph.get_realising_cube(target),
             extras = extra_cubes,
             pipes = [ pipes1[-1] if i == 0 else EdgeType.IDENTITY for i in range(nr)]
         )
@@ -117,8 +153,8 @@ def extend_unrealised(graph: VolumetricZxGraph):
             schedule[node].append( neighbor )
 
     for node, neighbors in schedule.items():
-        node_kind = graph.get_cube_kind(next(iter(graph.get_realising_cubes(node))))
-        cube = next(iter(graph.get_realising_cubes(node)))
+        node_kind = graph.get_cube_kind(graph.get_realising_cube(node))
+        cube = graph.get_realising_cube(node)
         cube_position = graph.get_cube_position(cube)
         cube_reach = graph.get_cube_kind(cube).get_reach()
         for neighbor in neighbors:
@@ -134,7 +170,6 @@ def extend_unrealised(graph: VolumetricZxGraph):
                 if Spacetime.contains(kind.get_reach(), step_taken) and Spacetime.contains(cube_reach, step_taken) and
                    edge_type in BlockGraphHelper.infer_pipe_type(node_kind, kind)
             ]
-            console.info(f"{node} - {neighbor} : {neighbor_kinds}")
             neighbor_kind = neighbor_kinds[0]
             graph.realise_node(neighbor, neighbor_kind, neighbor_position)
 

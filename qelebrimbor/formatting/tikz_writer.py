@@ -54,7 +54,7 @@ class TikzWriter:
             else:
                 cube_visibility = 'ghost'
 
-            cube_label = self.__nx_graph.get_realised_nodes(cube)
+            cube_label = self.__nx_graph.get_realised_node(cube)
             if cube_label is None:
                 cube_label = ''
 
@@ -107,7 +107,7 @@ class TikzWriter:
 
         if len(node_realisation_order) > 0:
             root = node_realisation_order[0]
-            plain_cubes.add(self.__nx_graph.get_realising_cubes(root))
+            plain_cubes.add(self.__nx_graph.get_realising_cube(root))
             self.write_frame(output, plain_cubes, plain_pipes, faint_cubes, faint_pipes)
 
         if len(edge_realisation_order) > 0:
@@ -117,8 +117,8 @@ class TikzWriter:
                 plain_cubes.clear()
                 plain_pipes.clear()
                 (source, target) = next_edge
-                source_cube = self.__nx_graph.get_realising_cubes(source)
-                target_cube = self.__nx_graph.get_realising_cubes(target)
+                source_cube = self.__nx_graph.get_realising_cube(source)
+                target_cube = self.__nx_graph.get_realising_cube(target)
                 plain_cubes.add(source_cube)
                 plain_cubes.add(target_cube)
                 current = source_cube

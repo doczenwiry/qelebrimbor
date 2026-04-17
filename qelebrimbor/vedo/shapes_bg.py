@@ -18,7 +18,7 @@ class BgCube(Assembly):
     SMALL_CUBE = LARGE_CUBE * FACTOR_SMALLER
     SMALL_TEXT = LARGE_TEXT * FACTOR_SMALLER
 
-    def __init__(self, cube: CubeId, kind: CubeKind, position: Coordinates, nodes: Iterable[NodeId]):
+    def __init__(self, cube: CubeId, kind: CubeKind, position: Coordinates, realised_node: NodeId):
         super().__init__()
 
         self.bg_cube: CubeId = cube
@@ -29,10 +29,7 @@ class BgCube(Assembly):
         position = GLOBAL_SPACING_FACTOR * position
 
         # Parameters for the label
-        try:
-            label = str(min(nodes))
-        except ValueError:
-            label = ""
+        label = str(realised_node) if realised_node != -1 else ''
         text_size = BgCube.LARGE_TEXT if kind != CubeKind.OOO else BgCube.SMALL_TEXT
         step_scale = 0.55 if kind != CubeKind.OOO else 0.55 * BgCube.FACTOR_SMALLER
 

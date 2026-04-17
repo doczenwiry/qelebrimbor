@@ -62,7 +62,8 @@ class VolumetricZxGraphViewer(Plotter):
             # Highlight the zx-node and its corresponding bg-cube
             zx_node = selected_object.zx_node
             self.__zx_scene_manager.alter_node_appearance(zx_node, highlight = highlighting)
-            for bg_cube in self.__graph.get_realising_cubes(zx_node):
+            bg_cube = self.__graph.get_realising_cube(zx_node)
+            if bg_cube != -1:
                 self.__bg_scene_manager.alter_cube_appearance(bg_cube, highlight = highlighting)
         elif isinstance(selected_object, ZxEdge):
             # Highlight the edge in the ZX-graph
@@ -84,7 +85,8 @@ class VolumetricZxGraphViewer(Plotter):
             bg_cube = selected_object.bg_cube
             console.debug(f"> BgCube #{bg_cube}")
             if self.__min_bg_cube_id <= bg_cube <= self.__max_bg_cube_id:
-                for zx_node in self.__graph.get_realised_nodes(bg_cube):
+                zx_node = self.__graph.get_realised_node(bg_cube)
+                if zx_node != -1:
                     self.__zx_scene_manager.alter_node_appearance(zx_node, highlight = highlighting)
             self.__bg_scene_manager.alter_cube_appearance(bg_cube, highlight = highlighting)
         elif isinstance(selected_object, BgPipe):

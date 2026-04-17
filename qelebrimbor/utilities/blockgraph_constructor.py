@@ -37,8 +37,8 @@ class BlockGraphConstructor:
                 proposal = specifications[edge]
             elif vzx.is_node_realised(source) and vzx.is_node_realised(target):
                 try:
-                    source_cube = next(iter(vzx.get_realising_cubes(source)))
-                    target_cube = next(iter(vzx.get_realising_cubes(target)))
+                    source_cube = vzx.get_realising_cube(source)
+                    target_cube = vzx.get_realising_cube(target)
                     proposal = PathSpecification(
                         source_cube, target_cube, pipes = [ vzx.get_edge_type(source, target) ]
                     )

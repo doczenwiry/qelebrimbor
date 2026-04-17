@@ -34,7 +34,7 @@ class NoMoreThanFourLegsConstraint:
                 extra_node[vzx.VolumetricZxGraph.KEY_ZX_NODE_TYPE] = node_type
                 extra_node[vzx.VolumetricZxGraph.KEY_ZX_NODE_QUBIT] = node_qubit
                 extra_node[vzx.VolumetricZxGraph.KEY_ZX_NODE_LAYER] = node_layer
-                extra_node[vzx.VolumetricZxGraph.KEY_ZX_NODE_BG_CUBES] = set()
+                extra_node[vzx.VolumetricZxGraph.KEY_ZX_NODE_BG_CUBE] = -1
 
                 # Make zx-edge between previous node of chain and new extra_node
                 graph.add_edge(previous, extra_node_id)

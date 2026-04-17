@@ -39,8 +39,8 @@ def realise_ring(
 
     for edge in vzx.get_edges():
         source, target = edge
-        source_cube = min(vzx.get_realising_cubes(links[edge][0] if edge in links else source))
-        target_cube = min(vzx.get_realising_cubes(links[edge][1] if edge in links else target))
+        source_cube = vzx.get_realising_cube(links[edge][0] if edge in links else source)
+        target_cube = vzx.get_realising_cube(links[edge][1] if edge in links else target)
         # if edge in links:
         #     source_cube = azx.get_realising_cubes(links[edge][0])
         #     target_cube = azx.get_realising_cubes(links[edge][1])

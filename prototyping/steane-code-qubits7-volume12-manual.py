@@ -116,8 +116,8 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_edges(vzx= vzx,
                                         specifications = {
             (1, 5): PathSpecification(
-                source_cube=min(vzx.get_realising_cubes(1)),
-                target_cube=min(vzx.get_realising_cubes(5)),
+                source_cube=vzx.get_realising_cube(1),
+                target_cube=vzx.get_realising_cube(5),
                 extras=[
                     (CubeKind.ZZX, Coordinates(-2, 1, 1)),
                     (CubeKind.ZZX, Coordinates(-2, 0, 1)),

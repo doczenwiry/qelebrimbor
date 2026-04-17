@@ -39,7 +39,7 @@ class ReportFormatter:
 
 
     def old_path_format(self, source, target):
-        source_cube = self.__nx_graph.get_realising_cubes(source)
+        source_cube = self.__nx_graph.get_realising_cube(source)
         source_kind = self.__nx_graph.get_cube_kind(source_cube)
         source_position = self.__nx_graph.get_cube_position(source_cube)
         old_format = [(source_position.as_tuple(), source_kind.name.lower())]
@@ -59,7 +59,7 @@ class ReportFormatter:
             previous_kind = current_kind
             previous_position = current_position
 
-        target_cube = self.__nx_graph.get_realising_cubes(target)
+        target_cube = self.__nx_graph.get_realising_cube(target)
         current_kind = self.__nx_graph.get_cube_kind(target_cube)
         current_position = self.__nx_graph.get_cube_position(target_cube)
 
@@ -97,14 +97,14 @@ class ReportFormatter:
 
         report += "LATTICE SURGERY (Graph)\n"
         for node in self.__nx_graph.get_node_realisation_order():
-            cube = self.__nx_graph.get_realising_cubes(node)
+            cube = self.__nx_graph.get_realising_cube(node)
             report += f"Node ID: {node}. Info: ({self.__nx_graph.get_cube_position(cube)}, '{self.__nx_graph.get_cube_kind(cube).name.lower()}')\n"
 
         if append_cube_report:
             report += "\n__________________________\n"
             report += "CUBES (BG-Graph)\n"
             for cube in self.__nx_graph.get_cubes():
-                node = self.__nx_graph.get_realised_nodes(cube)
+                node = self.__nx_graph.get_realised_node(cube)
                 label = str(node) if node is not None else '-'
                 report += f"Cube #{cube} [ZX:{label}] : {self.__nx_graph.get_cube_kind(cube)}@{self.__nx_graph.get_cube_position(cube)}\n"
 

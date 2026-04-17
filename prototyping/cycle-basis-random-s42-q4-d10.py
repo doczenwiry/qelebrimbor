@@ -66,7 +66,8 @@ def place_determined(graph: VolumetricZxGraph):
                 continue
 
             open_ports: dict[CubeId, list[Coordinates]] = defaultdict(list)
-            for cube in graph.get_realising_cubes(node):
+            cube = graph.get_realising_cube(node)
+            if cube != -1:
                 cube_reach = graph.get_cube_kind(cube).get_reach()
                 cube_position = graph.get_cube_position(cube)
                 for port in Spacetime.get_constellation(cube_position, cube_reach):
@@ -101,7 +102,8 @@ def reserve_positions(graph: VolumetricZxGraph, reservations: dict[Coordinates, 
         if graph.is_node_realised(node):
             unrealised_neighbors = list(filter(lambda nb: not graph.is_edge_realised(node, nb), graph.neighbors(node)))
             open_ports: dict[Coordinates, CubeId] = dict()
-            for cube in graph.get_realising_cubes(node):
+            cube = graph.get_realising_cube(node)
+            if cube != -1:
                 cube_reach = graph.get_cube_kind(cube).get_reach()
                 cube_position = graph.get_cube_position(cube)
                 for port in Spacetime.get_constellation(cube_position, cube_reach):
@@ -148,8 +150,8 @@ def find_completion(
 
     # # Breakdown cycle1
     # TODO: deal with case where multiple cubes realise the start of the final
-    start_cube_id = next(iter(graph.get_realising_cubes(start)))
-    final_cube_id = next(iter(graph.get_realising_cubes(final)))
+    start_cube_id = graph.get_realising_cube(start)
+    final_cube_id = graph.get_realising_cube(final)
     start_cube = (graph.get_cube_kind(start_cube_id), graph.get_cube_position(start_cube_id))
     final_cube = (graph.get_cube_kind(final_cube_id), graph.get_cube_position(final_cube_id))
     console.info(f"Searching completion from {start}#{start_cube_id} [{start_cube}] to {final}#{final_cube_id} [{final_cube}]")
@@ -188,8 +190,8 @@ def find_completion(
 
     BlockGraphConstructor.realise_edges(graph, {
         (source, target): PathSpecification(
-            source_cube = min(graph.get_realising_cubes(source)),
-            target_cube = min(graph.get_realising_cubes(target)),
+            source_cube = graph.get_realising_cube(source),
+            target_cube = graph.get_realising_cube(target),
             extras = extra_cubes,
             pipes = [ pipes1[-1] if i == 0 else EdgeType.IDENTITY for i in range(nc)]
         )
@@ -237,8 +239,8 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_edges(vzx,
         specifications = {
             (start, final): PathSpecification(
-                source_cube = min(vzx.get_realising_cubes(start)),
-                target_cube = min(vzx.get_realising_cubes(final)),
+                source_cube = vzx.get_realising_cube(start),
+                target_cube = vzx.get_realising_cube(final),
                 extras = list(reversed(ring0.cubes[n0:c0])),
                 pipes = pipes0
             )

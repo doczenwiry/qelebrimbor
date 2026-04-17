@@ -18,7 +18,7 @@ class BgSceneManager:
         for cube in vzx.get_cubes():
             bg_cube = BgCube(kind = self.__nx_graph.get_cube_kind(cube),
                              position = self.__nx_graph.get_cube_position(cube),
-                             nodes= self.__nx_graph.get_realised_nodes(cube),
+                             realised_node= self.__nx_graph.get_realised_node(cube),
                              cube = cube)
             self.__cubes[cube] = bg_cube
 

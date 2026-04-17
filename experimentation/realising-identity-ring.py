@@ -45,8 +45,8 @@ if __name__ == "__main__":
         BlockGraphConstructor.realise_edges(ring,
             specifications = {
                 (0, LENGTH - 1) : PathSpecification(
-                    source_cube = min(ring.get_realising_cubes(0)),
-                    target_cube = min(ring.get_realising_cubes(LENGTH - 1)),
+                    source_cube = ring.get_realising_cube(0),
+                    target_cube = ring.get_realising_cube(LENGTH - 1),
                     extras = list(reversed(realisation.cubes[LENGTH:cubes])),
                     pipes = [EdgeType.IDENTITY for _ in range(LENGTH)]
                 )

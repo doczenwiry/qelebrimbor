@@ -40,8 +40,8 @@ def realise_ring(
 
     for edge in vzx.get_edges():
         source, target = links[edge] if edge in links else edge
-        source_cube = next(iter(vzx.get_realising_cubes(source)))
-        target_cube = next(iter(vzx.get_realising_cubes(target)))
+        source_cube = vzx.get_realising_cube(source)
+        target_cube = vzx.get_realising_cube(target)
         pipe = (source_cube, target_cube)
         vzx.connect_pipe(source_cube, target_cube, pipe_type = EdgeType.IDENTITY)
         vzx.get_edge_data(source, target)[VolumetricZxGraph.KEY_ZX_EDGE_BG_PATH] = [pipe]

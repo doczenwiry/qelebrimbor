@@ -70,8 +70,8 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_edges(vzx,
                                         {
             (final, start): PathSpecification(
-                source_cube = min(vzx.get_realising_cubes(final)),
-                target_cube = min(vzx.get_realising_cubes(start)),
+                source_cube = vzx.get_realising_cube(final),
+                target_cube = vzx.get_realising_cube(start),
                 extras = ring0.cubes[n0:c0],
                 pipes = [EdgeType.IDENTITY for _ in range(n0)]
             )
@@ -95,8 +95,8 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_edges(vzx, {})
 
     # Breakdown cycle1
-    start = min(vzx.get_realising_cubes(1))
-    final = min(vzx.get_realising_cubes(6))
+    start = vzx.get_realising_cube(1)
+    final = vzx.get_realising_cube(6)
     start_cube = (vzx.get_cube_kind(start), vzx.get_cube_position(start))
     final_cube = (vzx.get_cube_kind(final), vzx.get_cube_position(final))
     console.info(f"Searching completion from 1 #{start} [{start_cube}] to 6 #{final} [{final_cube}]")
@@ -113,8 +113,8 @@ if __name__ == "__main__":
 
     BlockGraphConstructor.realise_edges(vzx, {
         (1, 6): PathSpecification(
-            source_cube = min(vzx.get_realising_cubes(1)),
-            target_cube = min(vzx.get_realising_cubes(6)),
+            source_cube = vzx.get_realising_cube(1),
+            target_cube = vzx.get_realising_cube(6),
             extras = completion1.cubes[1:c1 - 1],
             pipes = [EdgeType.IDENTITY for _ in range(n1)]
         )
@@ -141,8 +141,8 @@ if __name__ == "__main__":
     #         console.info(f"> Completion 2 [inf] : n/a")
 
     final_cube_idx = 3
-    start = min(vzx.get_realising_cubes(0))
-    final = list(vzx.get_realising_cubes(1))[final_cube_idx]
+    start = vzx.get_realising_cube(0)
+    final = vzx.get_realising_cube(1)
     start_cube = (vzx.get_cube_kind(start), vzx.get_cube_position(start))
     final_cube = (vzx.get_cube_kind(final), vzx.get_cube_position(final))
     console.info(f"Searching completion from 0 #{start} [{start_cube}] to 1 #{final} [{final_cube}]")
@@ -158,8 +158,8 @@ if __name__ == "__main__":
 
     BlockGraphConstructor.realise_edges(vzx, {
         (0, 1): PathSpecification(
-            source_cube = min(vzx.get_realising_cubes(0)),
-            target_cube = list(vzx.get_realising_cubes(1))[final_cube_idx],
+            source_cube = vzx.get_realising_cube(0),
+            target_cube = vzx.get_realising_cube(1),
             extras = completion2.cubes[1:c2 - 1],
             pipes = [EdgeType.IDENTITY for _ in range(n2+2)]
         )
