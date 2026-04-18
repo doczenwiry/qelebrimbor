@@ -37,8 +37,10 @@ def realise_ring(
     for i in range(len(cubes)):
         vzx.realise_zx_node(i, *cubes[i])
 
-    for edge in vzx.get_edges():
-        source, target = edge
+    for zx_edge in vzx.get_zx_edges():
+        source = zx_edge.source
+        target = zx_edge.target
+        edge = (source, target)
         source_cube = vzx.get_zx_node(links[edge][0] if edge in links else source).realising_cube
         target_cube = vzx.get_zx_node(links[edge][1] if edge in links else target).realising_cube
         pipe = (source_cube, target_cube)

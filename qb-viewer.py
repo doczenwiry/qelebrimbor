@@ -25,9 +25,9 @@ if __name__ == '__main__':
             console.info(f"Edge {edge} [+v={volume}] : {vzx.get_zx_edge(*edge).realisation}")
         excess_volume += volume
 
-    boundaries = len(list(vzx.get_cubes(kind= CubeKind.OOO)))
+    boundaries = len(list(vzx.get_bg_cubes(kind= CubeKind.OOO)))
     console.info(f"Total volume : {vzx.number_of_cubes() - boundaries}")
-    console.info(f"Excess volume: {excess_volume}")
+    console.info(f"Excess volume: +{excess_volume}")
 
     viewer = VolumetricZxGraphViewer(vzx, label = filepath)
     viewer.display()

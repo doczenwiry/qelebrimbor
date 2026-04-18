@@ -242,14 +242,13 @@ class VolumetricZxGraph(nx.Graph):
             )
 
     def get_zx_nodes(self, node_type: NodeType | None = None, qubit: QubitId | None = None, layer: LayerId | None = None):
-        return map( lambda nd: self.get_zx_node(nd), self.get_nodes(node_type, qubit, layer) )
-
-    def get_nodes(self, node_type: NodeType | None = None, qubit: QubitId | None = None, layer: LayerId | None = None):
-        return filter(
-            lambda node : (node_type is None or self.get_zx_node(node).type == node_type) and
-                          (qubit is None or self.get_zx_node(node).qubit == qubit) and
-                          (layer is None or self.get_zx_node(node).layer == layer),
-            self.nodes
+        return map(lambda nd: self.get_zx_node(nd),
+            filter(
+                lambda node: (node_type is None or self.get_zx_node(node).type == node_type) and
+                             (qubit is None or self.get_zx_node(node).qubit == qubit) and
+                             (layer is None or self.get_zx_node(node).layer == layer),
+                self.nodes
+            )
         )
 
     def get_qubits(self):
@@ -261,19 +260,18 @@ class VolumetricZxGraph(nx.Graph):
     def get_layer_density(self, layer: int) -> tuple[int,int]:
         number_of_nodes = 0
         number_of_edges = 0
-        for node in self.get_nodes(layer = layer):
-            number_of_edges += sum(1 for _ in self.get_node_neighbours(node, transition = LayerTransitionType.INTRA))
+        for node in self.get_zx_nodes(layer = layer):
+            number_of_edges += sum(1 for _ in self.get_node_neighbours(node.id, transition = LayerTransitionType.INTRA))
             number_of_nodes += 1
         number_of_edges = number_of_edges // 2
         return number_of_nodes, number_of_edges
 
     def get_zx_edges(self, edge_type: EdgeType | None = None):
-        return map(lambda edge: self.get_zx_edge(*edge), self.get_edges(edge_type = edge_type))
-
-    def get_edges(self, edge_type: EdgeType | None = None):
-        return filter(
-            lambda eg: edge_type is None or self.get_zx_edge(*eg).type == edge_type,
-            self.edges
+        return map(lambda edge: self.get_zx_edge(*edge),
+            filter(
+                lambda eg: edge_type is None or self.get_zx_edge(*eg).type == edge_type,
+                self.edges
+            )
         )
 
     def get_layered_edges(self, layer: int, transition: LayerTransitionType = LayerTransitionType.EVERY):
@@ -297,20 +295,18 @@ class VolumetricZxGraph(nx.Graph):
         return self.__bg_graph.number_of_edges()
 
     def get_bg_cubes(self, kind: CubeKind | None = None):
-        return map(lambda cb: self.get_bg_cube(cb), self.get_cubes(kind= kind))
-
-    def get_cubes(self, kind: CubeKind | None = None):
-        return filter(
-            lambda cb: (kind is None or self.get_bg_cube(cb).kind == kind), self.__bg_graph.nodes()
+        return map(lambda cb: self.get_bg_cube(cb),
+            filter(
+                lambda cb: (kind is None or self.get_bg_cube(cb).kind == kind), self.__bg_graph.nodes()
+            )
         )
 
     def get_bg_pipes(self, pipe_type: EdgeType | None = None):
-        return map(lambda pp: self.get_bg_pipe(*pp), self.get_pipes(pipe_type = pipe_type))
-
-    def get_pipes(self, pipe_type: EdgeType | None = None):
-        return filter(
-            lambda pp: (pipe_type is None or self.get_bg_pipe(*pp).type == pipe_type),
-            self.__bg_graph.edges()
+        return map(lambda pp: self.get_bg_pipe(*pp),
+            filter(
+                lambda pp: (pipe_type is None or self.get_bg_pipe(*pp).type == pipe_type),
+                self.__bg_graph.edges()
+            )
         )
 
     def get_node_neighbours(self, node: NodeId, transition: LayerTransitionType = LayerTransitionType.EVERY):
@@ -568,14 +564,13 @@ class VolumetricZxGraph(nx.Graph):
         else:
             return True
 
-    def log_summary(self, nodes: bool = False, edges: bool = False, layers: bool = False, qubits: bool = False, cubes: bool = False, pipes: bool = False):
+    def log_summary(self, nodes: bool = True, edges: bool = True, layers: bool = True, qubits: bool = True, cubes: bool = True, pipes: bool = True):
         if nodes:
             for node_type in [NodeType.O, NodeType.X, NodeType.Y, NodeType.Z]:
                 content = ""
                 count = 0
-                for node in self.get_nodes(node_type=node_type):
-                    node_type = self.get_zx_node(node).type
-                    content += f"{node} "
+                for node in self.get_zx_nodes(node_type = node_type):
+                    content += f"{node.id} "
                     count += 1
                 console.info(f"Nodes {node_type.name} [{count}]: {content}")
 
@@ -589,27 +584,25 @@ class VolumetricZxGraph(nx.Graph):
 
         if layers:
             for layer in self.get_layers():
-                console.info(f"Layer {layer}  : {list(self.get_nodes(layer = layer))}")
+                console.info(f"Layer {layer}  : {list(map(lambda zn: zn.id, self.get_zx_nodes(layer = layer)))}")
 
         if qubits:
             for qubit in self.get_qubits():
-                console.info(f"Qubit {qubit}  : {list(self.get_nodes(qubit = qubit))}")
+                console.info(f"Qubit {qubit}  : {list(map(lambda zn: zn.id, self.get_zx_nodes(qubit = qubit)))}")
 
         if cubes:
-            for cube in self.get_cubes():
-                realised_node = self.get_bg_cube(cube).realised_node
-                console.info(f"Cube {cube}  : {self.get_bg_cube(cube).kind}@{self.get_bg_cube(cube).position} {realised_node}")
+            for cube in self.get_bg_cubes():
+                console.info(f"Cube {cube.id}  : {cube.kind}@{cube.position} {cube.realised_node}")
 
         if pipes:
-            for pipe in self.get_pipes():
-                console.info(f"Pipe {pipe}  : {self.get_bg_pipe(*pipe).type}")
+            for pipe in self.get_bg_pipes():
+                console.info(f"Pipe {pipe.source}-{pipe.target}  : {pipe.type}")
 
     def print_summary(self):
         for node_type in [NodeType.O, NodeType.X, NodeType.Y, NodeType.Z]:
             content = ""
-            for node in self.get_nodes(node_type=node_type):
-                node_type = self.get_zx_node(node).type
-                content += f"{node} "
+            for node in self.get_zx_nodes(node_type=node_type):
+                content += f"{node.id} "
             print(f"Nodes {node_type.name}: {content}")
 
         content = ""
@@ -618,27 +611,21 @@ class VolumetricZxGraph(nx.Graph):
         print(f"Edges  : {content}")
 
         for layer in self.get_layers():
-            print(f"Layer {layer}  : {list(self.get_nodes(layer = layer))}")
+            print(f"Layer {layer}  : {list(map(lambda zn: zn.id, self.get_zx_nodes(layer = layer)))}")
 
         for qubit in self.get_qubits():
-            print(f"Qubit {qubit}  : {list(self.get_nodes(qubit = qubit))}")
+            print(f"Qubit {qubit}  : {list(map(lambda zn: zn.id, self.get_zx_nodes(qubit = qubit)))}")
 
-        for layer in self.get_layers():
-            print(f"Layer {layer}  : {list(self.get_nodes(layer = layer))}")
-
-        for qubit in self.get_qubits():
-            print(f"Qubit {qubit}  : {list(self.get_nodes(qubit = qubit))}")
-
-        for cube in self.get_cubes():
+        for cube in self.get_bg_cubes():
             realised_node = self.get_bg_cube(cube).realised_node
-            print(f"Cube {cube}  : {self.get_bg_cube(cube).kind}@{self.get_bg_cube(cube).position} {realised_node}")
+            print(f"Cube #{cube.id}  : {cube.kind}@{self.get_bg_cube(cube).position} {realised_node}")
 
-        for pipe in self.get_pipes():
-            print(f"Pipe {pipe}  : {self.get_bg_pipe(*pipe).type}")
+        for pipe in self.get_bg_pipes():
+            print(f"Pipe {pipe.source}-{pipe.target} : {pipe.type.name}")
 
     def __identify_cube_at_position(self, position: Coordinates) -> int:
-        for cube in self.get_cubes():
-            if self.get_bg_cube(cube).position == position:
+        for cube in self.get_bg_cubes():
+            if cube.position == position:
                 return cube
 
         return -1

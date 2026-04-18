@@ -59,7 +59,10 @@ def prepare_layout() -> ZxLayout:
         x = rho * np.cos(phi)
         y = rho * np.sin(phi)
         placements[nd] = (x,y)
-        neighbouring_boundaries = list(filter(lambda bd: vzx.has_edge(nd, bd), vzx.get_nodes(node_type=NodeType.O)))
+        neighbouring_boundaries = list(
+            map(lambda bd: bd.id,
+                filter(lambda bd: vzx.has_edge(nd, bd.id), vzx.get_zx_nodes(node_type=NodeType.O)))
+        )
         if len(neighbouring_boundaries) > 0:
             boundary = min(neighbouring_boundaries)
             bx = 1.4 * rho * np.cos(phi)

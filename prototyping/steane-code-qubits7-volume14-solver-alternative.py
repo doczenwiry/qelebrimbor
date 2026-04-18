@@ -34,7 +34,10 @@ def prepare_layout() -> ManualLayout:
         x = rho * np.cos(phi)
         y = rho * np.sin(phi)
         placements[node] = (x,y)
-        boundary = min(filter(lambda bd: vzx.has_edge(node, bd), vzx.get_nodes(node_type = NodeType.O)))
+        boundary = min(
+            map(lambda bd: bd.id,
+                filter(lambda bd: vzx.has_edge(node, bd.id), vzx.get_zx_nodes(node_type=NodeType.O)))
+        )
         bx = 1.4 * rho * np.cos(phi)
         by = 1.4 * rho * np.sin(phi)
         placements[boundary] = (bx, by)
