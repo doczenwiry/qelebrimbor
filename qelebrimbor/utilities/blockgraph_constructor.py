@@ -24,7 +24,7 @@ class BlockGraphConstructor:
                 vzx.realise_zx_node(node, *specifications[node])
 
     @staticmethod
-    def realise_edges(vzx: VolumetricZxGraph, specifications: dict[EdgeId, PathSpecification]):
+    def realise_edges(vzx: VolumetricZxGraph, specifications: dict[EdgeId, PathSpecification | None]):
         for edge in vzx.edges:
             source, target = edge
 

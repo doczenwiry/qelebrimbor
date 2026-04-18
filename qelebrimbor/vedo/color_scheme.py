@@ -1,4 +1,4 @@
-from vedo import get_color
+from vedo import get_color  # type: ignore[import-untyped]
 
 COLOR_NAMES = {
     'highlighted' : 'k7',

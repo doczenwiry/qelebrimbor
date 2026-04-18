@@ -1,7 +1,5 @@
-from typing import Iterable
-
 from numpy import array
-from vedo import Assembly, Cube, Box, Text3D
+from vedo import Assembly, Cube, Box, Text3D  # type: ignore[import-untyped]
 
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.helpers.spacetime import Spacetime

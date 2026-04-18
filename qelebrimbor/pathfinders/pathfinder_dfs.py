@@ -2,6 +2,7 @@ import logging as lgr
 import queue
 
 from qelebrimbor.common.attributes_zx import NodeType, EdgeType
+from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 console = lgr.getLogger(__name__)
 

@@ -15,7 +15,7 @@ from qelebrimbor.common.attributes_bg import CubeId, CubeKind
 import logging
 console = logging.getLogger(__name__)
 
-def find_realisation(graph: VolumetricZxGraph, cycle: list[NodeId]):
+def find_realisation(graph: VolumetricZxGraph, cycle: list[NodeId], maximal_overhead: int = 0):
     nc = len(cycle)
 
     nodes = list(map(lambda nd : graph.get_zx_node(nd).type, cycle))
@@ -24,11 +24,11 @@ def find_realisation(graph: VolumetricZxGraph, cycle: list[NodeId]):
     console.debug(f"> Nodes : {" ".join(map(lambda nd: str(nd) + ':' + str(graph.get_zx_node(nd).type), cycle))}")
     console.debug(f"> Edges : {" ".join(map(lambda ed: str(graph.get_zx_edge(*ed).type)[0] + str(ed).replace(' ', ''), edges))}")
 
-    realisations = RingFinderBFS.find_minimal_rings(nodes, pipes, maximal_overhead = 2)
+    realisations = RingFinderBFS.find_minimal_rings(nodes, pipes, maximal_overhead = maximal_overhead)
     ring = realisations[0]
 
-    console.debug(f"Found {len(realisations)} realisations for cycle : {cycle}")
-    console.debug(f"> Realisation [{len(ring.cubes)}] : {ring}")
+    console.info(f"Found {len(realisations)} realisations for cycle : {cycle}")
+    console.info(f"> Realisation [{len(ring.cubes)}] : {ring}")
 
     BlockGraphConstructor.realise_nodes(graph, {cycle[nd]: ring.cubes[nd] for nd in range(nc)})
 
