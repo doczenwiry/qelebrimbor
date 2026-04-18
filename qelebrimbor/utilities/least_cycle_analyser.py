@@ -1,6 +1,6 @@
 import networkx as nx
 
-from qelebrimbor.common.components_zx import NodeId
+from qelebrimbor.common.attributes_zx import NodeId
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 import logging

@@ -1,6 +1,6 @@
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeType
-from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType
+from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
@@ -45,8 +45,8 @@ if __name__ == "__main__":
         BlockGraphConstructor.realise_edges(ring,
             specifications = {
                 (0, LENGTH - 1) : PathSpecification(
-                    source_cube = ring.get_realising_cube(0),
-                    target_cube = ring.get_realising_cube(LENGTH - 1),
+                    source_cube = ring.get_zx_node(0).realising_cube,
+                    target_cube = ring.get_zx_node(LENGTH - 1).realising_cube,
                     extras = list(reversed(realisation.cubes[LENGTH:cubes])),
                     pipes = [EdgeType.IDENTITY for _ in range(LENGTH)]
                 )

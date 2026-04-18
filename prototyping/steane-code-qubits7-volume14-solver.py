@@ -4,7 +4,7 @@ import pyzx as zx
 import numpy as np
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeType
+from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
 from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
@@ -56,8 +56,8 @@ if __name__ == "__main__":
     cycle0 = cycles[0]
     n0 = len(cycle0)
 
-    nodes0 = list(map(lambda nd : vzx.get_node_type(nd), cycle0))
-    console.info(f"Nodes 0 : {" ".join(map(lambda nd: str(nd) + ':' + str(vzx.get_node_type(nd)), cycle0))}")
+    nodes0 = list(map(lambda nd : vzx.get_zx_node(nd).type, cycle0))
+    console.info(f"Nodes 0 : {" ".join(map(lambda nd: str(nd) + ':' + str(vzx.get_zx_node(nd).type), cycle0))}")
 
     ring0 = RingFinderBFS.find_minimal_rings(nodes0, maximal_overhead = 4)[0]
     c0 = len(ring0.cubes)
@@ -70,8 +70,8 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_edges(vzx,
                                         {
             (final, start): PathSpecification(
-                source_cube = vzx.get_realising_cube(final),
-                target_cube = vzx.get_realising_cube(start),
+                source_cube = vzx.get_zx_node(final).realising_cube,
+                target_cube = vzx.get_zx_node(start).realising_cube,
                 extras = ring0.cubes[n0:c0],
                 pipes = [EdgeType.IDENTITY for _ in range(n0)]
             )
@@ -80,14 +80,14 @@ if __name__ == "__main__":
 
     cycle1 = cycles[1]
     n1 = len(cycle1)
-    nodes1 = list(map(lambda nd : vzx.get_node_type(nd), cycle1))
-    console.info(f"Nodes 1 : {" ".join(map(lambda nd: str(nd) + ':' + str(vzx.get_node_type(nd)), cycle1))}")
+    nodes1 = list(map(lambda nd : vzx.get_zx_node(nd).type, cycle1))
+    console.info(f"Nodes 1 : {" ".join(map(lambda nd: str(nd) + ':' + str(vzx.get_zx_node(nd).type), cycle1))}")
 
     # Breakdown cycle1
-    start = vzx.get_realising_cube(4)
-    final = vzx.get_realising_cube(6)
-    start_cube = (vzx.get_cube_kind(start), vzx.get_cube_position(start))
-    final_cube = (vzx.get_cube_kind(final), vzx.get_cube_position(final))
+    start = vzx.get_zx_node(4).realising_cube
+    final = vzx.get_zx_node(6).realising_cube
+    start_cube = (vzx.get_bg_cube(start).kind, vzx.get_bg_cube(start).position)
+    final_cube = (vzx.get_bg_cube(final).kind, vzx.get_bg_cube(final).position)
     console.info(f"Searching completion from 4 #{start} [{start_cube}] to 6 #{final} [{final_cube}]")
     type_restrictions = [ NodeType.X ]
     console.info(f"> Passing through : {type_restrictions}")
@@ -108,8 +108,8 @@ if __name__ == "__main__":
 
     BlockGraphConstructor.realise_edges(vzx, {
         (1, 6): PathSpecification(
-            source_cube = vzx.get_realising_cube(1),
-            target_cube = vzx.get_realising_cube(6),
+            source_cube = vzx.get_zx_node(1).realising_cube,
+            target_cube = vzx.get_zx_node(6).realising_cube,
             extras = completion1.cubes[2:c1 - 1],
             pipes = [EdgeType.IDENTITY for _ in range(n1)]
         )
@@ -117,14 +117,14 @@ if __name__ == "__main__":
 
     cycle2 = cycles[2]
     n2 = len(cycle2)
-    nodes3 = list(map(lambda nd : vzx.get_node_type(nd), cycle2))
-    console.info(f"Nodes 2 : {" ".join(map(lambda nd: str(nd) + ':' + str(vzx.get_node_type(nd)), cycle2))}")
+    nodes3 = list(map(lambda nd : vzx.get_zx_node(nd).type, cycle2))
+    console.info(f"Nodes 2 : {" ".join(map(lambda nd: str(nd) + ':' + str(vzx.get_zx_node(nd).type), cycle2))}")
 
     # Breakdown cycle2
-    start = vzx.get_realising_cube(0)
-    final = vzx.get_realising_cube(1)
-    start_cube = (vzx.get_cube_kind(start), vzx.get_cube_position(start))
-    final_cube = (vzx.get_cube_kind(final), vzx.get_cube_position(final))
+    start = vzx.get_zx_node(0).realising_cube
+    final = vzx.get_zx_node(1).realising_cube
+    start_cube = (vzx.get_bg_cube(start).kind, vzx.get_bg_cube(start).position)
+    final_cube = (vzx.get_bg_cube(final).kind, vzx.get_bg_cube(final).position)
     console.info(f"Searching completion from 0 #{start} [{start_cube}] to 1 #{final} [{final_cube}]")
     type_restrictions = []
     console.info(f"> Type restrictions : {type_restrictions}")
@@ -141,8 +141,8 @@ if __name__ == "__main__":
 
     BlockGraphConstructor.realise_edges(vzx, {
         (0, 1): PathSpecification(
-            source_cube = vzx.get_realising_cube(0),
-            target_cube = vzx.get_realising_cube(1),
+            source_cube = vzx.get_zx_node(0).realising_cube,
+            target_cube = vzx.get_zx_node(1).realising_cube,
             extras = completion2.cubes[1:c2 - 1],
             pipes = [EdgeType.IDENTITY for _ in range(n2+2)]
         )

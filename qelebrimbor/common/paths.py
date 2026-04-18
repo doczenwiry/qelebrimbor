@@ -1,6 +1,6 @@
-from qelebrimbor.common.components_bg import CubeId, CubeKind
+from qelebrimbor.common.attributes_bg import CubeId, CubeKind
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.components_zx import NodeId, EdgeType
+from qelebrimbor.common.attributes_zx import NodeId, EdgeType
 
 from logging import getLogger
 console = getLogger(__name__)

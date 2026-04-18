@@ -1,4 +1,4 @@
-from qelebrimbor.common.components_zx import NodeId
+from qelebrimbor.common.attributes_zx import NodeId
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 
 

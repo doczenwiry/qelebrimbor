@@ -1,5 +1,3 @@
-from typing import NamedTuple
-
 import numpy as np
 
 from enum import Enum
@@ -7,14 +5,10 @@ from functools import total_ordering
 
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import Spacetime
-from qelebrimbor.common.components_zx import NodeType
+from qelebrimbor.common.attributes_zx import NodeType
 
 CubeId = int
 PipeId = tuple[CubeId, CubeId]
-
-class Cube(NamedTuple):
-    kind: CubeKind
-    position: Coordinates
 
 @total_ordering
 class CubeKind(Enum):
@@ -102,7 +96,7 @@ class CubeKind(Enum):
     def __str__(self):
         return self.name
 
-class PipeKind(Enum):
+class PipeType(Enum):
     IDENTITY = 0
     HADAMARD = 1
 

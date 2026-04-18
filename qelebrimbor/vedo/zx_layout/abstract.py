@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from qelebrimbor.common.components_zx import NodeId
+from qelebrimbor.common.attributes_zx import NodeId
 
 Placement = tuple[float, float]
 

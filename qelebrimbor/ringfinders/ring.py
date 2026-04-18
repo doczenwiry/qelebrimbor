@@ -1,5 +1,5 @@
-from qelebrimbor.common.components_bg import CubeKind
-from qelebrimbor.common.components_zx import EdgeType
+from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.common.attributes_zx import EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 

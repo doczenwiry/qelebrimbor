@@ -4,7 +4,7 @@ from qelebrimbor.vedo.shapes_zx import ZxNode, ZxEdge
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.components_zx import NodeId
+from qelebrimbor.common.attributes_zx import NodeId
 
 from logging import getLogger
 console = getLogger(__name__)
@@ -19,11 +19,11 @@ class ZxSceneManager:
 
         # Prepare all the elements for the ZX scene (i.e. nodes and edges)
         for node in vzx.nodes:
-            zx_node = ZxNode(node, vzx.get_node_type(node), layout.get_node_placement(node)).z(+0.1)
+            zx_node = ZxNode(node, vzx.get_zx_node(node).type, layout.get_node_placement(node)).z(+0.1)
             self.__nodes[ node ] = zx_node
 
         for source, target in vzx.get_edges():
-            zx_edge = ZxEdge(source, target, vzx.get_edge_type(source, target),
+            zx_edge = ZxEdge(source, target, vzx.get_zx_edge(source, target).type,
                              layout.get_node_placement(source), layout.get_node_placement(target)
                              ).z(-0.1)
             self.__edges[ source , target ] = zx_edge

@@ -7,7 +7,7 @@ console = logging.getLogger(__name__)
 from functools import cmp_to_key
 from collections import defaultdict
 
-from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import Spacetime, Octant
 from qelebrimbor.helpers.octahedron import OctahedronHelper

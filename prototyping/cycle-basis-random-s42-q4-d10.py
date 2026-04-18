@@ -3,8 +3,8 @@ from collections import defaultdict
 
 import pyzx
 
-from qelebrimbor.common.components_bg import CubeId, CubeKind
-from qelebrimbor.common.components_zx import NodeId, EdgeId, EdgeType
+from qelebrimbor.common.attributes_bg import CubeId, CubeKind
+from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
@@ -37,15 +37,15 @@ def breakdown_cycle(graph: VolumetricZxGraph, cycle: list[NodeId]) -> tuple[Node
 
     transition_ur = next(
         idx for idx in range(nc)
-        if not graph.is_node_realised(cycle[(idx-1) % nc]) and graph.is_node_realised(cycle[idx])
+        if not graph.is_zx_node_realised(cycle[(idx - 1) % nc]) and graph.is_zx_node_realised(cycle[idx])
     )
 
     transition_ru = next(
         idx for idx in range(nc)
-        if graph.is_node_realised(cycle[idx]) and not graph.is_node_realised(cycle[(idx + 1) % nc])
+        if graph.is_zx_node_realised(cycle[idx]) and not graph.is_zx_node_realised(cycle[(idx + 1) % nc])
     )
 
-    realised = sum(1 for idx in range(nc) if graph.is_node_realised(cycle[idx]))
+    realised = sum(1 for idx in range(nc) if graph.is_zx_node_realised(cycle[idx]))
 
     intermediates: list[NodeId] = [
         cycle[(transition_ru + 1 + idx) % nc] for idx in range(nc - realised)
@@ -60,32 +60,32 @@ def breakdown_cycle(graph: VolumetricZxGraph, cycle: list[NodeId]) -> tuple[Node
 # TODO: sort the mess that multiple realising_cubes introduce here
 def place_determined(graph: VolumetricZxGraph):
     for node in graph.nodes:
-        if graph.is_node_realised(node):
-            unrealised_neighbors = list(filter(lambda nb: not graph.is_edge_realised(node, nb), graph.neighbors(node)))
+        if graph.is_zx_node_realised(node):
+            unrealised_neighbors = list(filter(lambda nb: not graph.is_zx_edge_realised(node, nb), graph.neighbors(node)))
             if len(unrealised_neighbors) != 1:
                 continue
 
             open_ports: dict[CubeId, list[Coordinates]] = defaultdict(list)
-            cube = graph.get_realising_cube(node)
+            cube = graph.get_zx_node(node).realising_cube
             if cube != -1:
-                cube_reach = graph.get_cube_kind(cube).get_reach()
-                cube_position = graph.get_cube_position(cube)
+                cube_reach = graph.get_bg_cube(cube).kind.get_reach()
+                cube_position = graph.get_bg_cube(cube).position
                 for port in Spacetime.get_constellation(cube_position, cube_reach):
                     if port not in graph.occupied:
                         open_ports[cube].append(port)
 
             if sum(len(pts) for pts in open_ports.values()) == 1:
                 neighbor = unrealised_neighbors[0]
-                edge_type = graph.get_edge_type(node, neighbor)
+                edge_type = graph.get_zx_edge(node, neighbor).type
                 cube, ports = next(iter(open_ports.items()))
-                cube_kind = graph.get_cube_kind(cube)
+                cube_kind = graph.get_bg_cube(cube).kind
                 cube_reach = cube_kind.get_reach()
-                cube_position = graph.get_cube_position(cube)
+                cube_position = graph.get_bg_cube(cube).position
                 port_position = ports[0]
                 console.info(f"Node {node} has an unrealised neighbor {neighbor} that must be placed now at {port_position}.")
                 step_taken = port_position - cube_position
                 console.info(f"> Step taken : {step_taken}")
-                neighbor_type = graph.get_node_type(neighbor)
+                neighbor_type = graph.get_zx_node(neighbor).type
                 neighbor_reach = next(filter(
                     lambda cr :
                         Spacetime.contains(cr, step_taken) and Spacetime.contains(cube_reach, step_taken) and
@@ -93,19 +93,19 @@ def place_determined(graph: VolumetricZxGraph):
                         [ Spacetime.XP, Spacetime.YP, Spacetime.ZP ]
                 ))
                 neighbor_kind = CubeKind.convert(neighbor_type, neighbor_reach)
-                neighbor_cube = graph.realise_node(neighbor, neighbor_kind, port_position)
-                graph.realise_edge(node, neighbor, PathSpecification(cube, neighbor_cube, extras = [], pipes = [ edge_type ]))
+                neighbor_cube = graph.realise_zx_node(neighbor, neighbor_kind, port_position)
+                graph.realise_zx_edge(node, neighbor, PathSpecification(cube, neighbor_cube, extras = [], pipes = [edge_type]))
 
 # TODO: sort the mess that multiple realising_cubes introduce here
 def reserve_positions(graph: VolumetricZxGraph, reservations: dict[Coordinates, CubeId]):
     for node in graph.nodes:
-        if graph.is_node_realised(node):
-            unrealised_neighbors = list(filter(lambda nb: not graph.is_edge_realised(node, nb), graph.neighbors(node)))
+        if graph.is_zx_node_realised(node):
+            unrealised_neighbors = list(filter(lambda nb: not graph.is_zx_edge_realised(node, nb), graph.neighbors(node)))
             open_ports: dict[Coordinates, CubeId] = dict()
-            cube = graph.get_realising_cube(node)
+            cube = graph.get_zx_node(node).realising_cube
             if cube != -1:
-                cube_reach = graph.get_cube_kind(cube).get_reach()
-                cube_position = graph.get_cube_position(cube)
+                cube_reach = graph.get_bg_cube(cube).kind.get_reach()
+                cube_position = graph.get_bg_cube(cube).position
                 for port in Spacetime.get_constellation(cube_position, cube_reach):
                     if port not in graph.occupied:
                         if port in open_ports and port in reservations and cube != reservations[port]:
@@ -144,16 +144,16 @@ def find_completion(
 
     console.info(f"Breakdown of {cycle} : {start} - {extras} - {final}")
 
-    nodes1 = list(map(lambda nd : graph.get_node_type(nd), extras))
+    nodes1 = list(map(lambda nd : graph.get_zx_node(nd).type, extras))
     edges1 = [(cycle[i], cycle[(i + 1) % len(cycle)]) for i in range(1, len(extras) + 1)]
-    pipes1 = list(map(lambda ed : graph.get_edge_type(*ed), edges1))
+    pipes1 = list(map(lambda ed : graph.get_zx_edge(*ed).type, edges1))
 
     # # Breakdown cycle1
     # TODO: deal with case where multiple cubes realise the start of the final
-    start_cube_id = graph.get_realising_cube(start)
-    final_cube_id = graph.get_realising_cube(final)
-    start_cube = (graph.get_cube_kind(start_cube_id), graph.get_cube_position(start_cube_id))
-    final_cube = (graph.get_cube_kind(final_cube_id), graph.get_cube_position(final_cube_id))
+    start_cube_id = graph.get_zx_node(start).realising_cube
+    final_cube_id = graph.get_zx_node(final).realising_cube
+    start_cube = (graph.get_bg_cube(start_cube_id).kind, graph.get_bg_cube(start_cube_id).position)
+    final_cube = (graph.get_bg_cube(final_cube_id).kind, graph.get_bg_cube(final_cube_id).position)
     console.info(f"Searching completion from {start}#{start_cube_id} [{start_cube}] to {final}#{final_cube_id} [{final_cube}]")
     console.info(f"> Nodes : {nodes1}")
     console.info(f"> Pipes : {pipes1}")
@@ -190,8 +190,8 @@ def find_completion(
 
     BlockGraphConstructor.realise_edges(graph, {
         (source, target): PathSpecification(
-            source_cube = graph.get_realising_cube(source),
-            target_cube = graph.get_realising_cube(target),
+            source_cube = graph.get_zx_node(source).realising_cube,
+            target_cube = graph.get_zx_node(target).realising_cube,
             extras = extra_cubes,
             pipes = [ pipes1[-1] if i == 0 else EdgeType.IDENTITY for i in range(nc)]
         )
@@ -218,10 +218,10 @@ if __name__ == "__main__":
     n0 = len(cycle0)
 
     console.info(f"Cycle 0 : {cycle0}")
-    nodes0 = list(map(lambda nd : vzx.get_node_type(nd), cycle0))
-    pipes0 = list(map(lambda ed : vzx.get_edge_type(*ed), edges0))
-    console.info(f"Nodes 0 : {" ".join(map(lambda nd: str(nd) + ':' + str(vzx.get_node_type(nd)), cycle0))}")
-    console.info(f"Edges 0 : {" ".join(map(lambda ed: str(vzx.get_edge_type(*ed))[0] + str(ed).replace(' ',''), edges0))}")
+    nodes0 = list(map(lambda nd : vzx.get_zx_node(nd).type, cycle0))
+    pipes0 = list(map(lambda ed : vzx.get_zx_edge(*ed).type, edges0))
+    console.info(f"Nodes 0 : {" ".join(map(lambda nd: str(nd) + ':' + str(vzx.get_zx_node(nd).type), cycle0))}")
+    console.info(f"Edges 0 : {" ".join(map(lambda ed: str(vzx.get_zx_edge(*ed).type)[0] + str(ed).replace(' ',''), edges0))}")
 
     realisations0 = RingFinderBFS.find_minimal_rings(nodes0, pipes0, maximal_overhead = 2)
     ring0 = realisations0[0]
@@ -239,8 +239,8 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_edges(vzx,
         specifications = {
             (start, final): PathSpecification(
-                source_cube = vzx.get_realising_cube(start),
-                target_cube = vzx.get_realising_cube(final),
+                source_cube = vzx.get_zx_node(start).realising_cube,
+                target_cube = vzx.get_zx_node(final).realising_cube,
                 extras = list(reversed(ring0.cubes[n0:c0])),
                 pipes = pipes0
             )
@@ -279,8 +279,8 @@ if __name__ == "__main__":
 
     excess_volume: dict[EdgeId, int] = dict()
     for edge in vzx.edges:
-        if vzx.is_edge_realised(*edge):
-            count = len(vzx.get_edge_realisation(*edge)) - 1
+        if vzx.is_zx_edge_realised(*edge):
+            count = len(vzx.get_zx_edge(*edge).realisation) - 1
             if count > 0:
                 excess_volume[edge] = count
 

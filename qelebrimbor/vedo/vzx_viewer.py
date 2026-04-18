@@ -1,5 +1,5 @@
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.components_bg import CubeId
+from qelebrimbor.common.attributes_bg import CubeId
 
 from vedo import settings, Plotter
 
@@ -62,7 +62,7 @@ class VolumetricZxGraphViewer(Plotter):
             # Highlight the zx-node and its corresponding bg-cube
             zx_node = selected_object.zx_node
             self.__zx_scene_manager.alter_node_appearance(zx_node, highlight = highlighting)
-            bg_cube = self.__graph.get_realising_cube(zx_node)
+            bg_cube = self.__graph.get_zx_node(zx_node).realising_cube
             if bg_cube != -1:
                 self.__bg_scene_manager.alter_cube_appearance(bg_cube, highlight = highlighting)
         elif isinstance(selected_object, ZxEdge):
@@ -74,7 +74,7 @@ class VolumetricZxGraphViewer(Plotter):
             self.__zx_scene_manager.alter_edge_appearance(zx_source, zx_target, highlight = highlighting)
             # Highlight all the pipes of that path
             path_cubes: set[CubeId] = set()
-            for source_cube, target_cube in self.__graph.get_edge_realisation(zx_source, zx_target):
+            for source_cube, target_cube in self.__graph.get_zx_edge(zx_source, zx_target).realisation:
                 self.__bg_scene_manager.alter_pipe_appearance(source_cube, target_cube, highlight = highlighting)
                 path_cubes.add(source_cube)
                 path_cubes.add(target_cube)
@@ -85,7 +85,7 @@ class VolumetricZxGraphViewer(Plotter):
             bg_cube = selected_object.bg_cube
             console.debug(f"> BgCube #{bg_cube}")
             if self.__min_bg_cube_id <= bg_cube <= self.__max_bg_cube_id:
-                zx_node = self.__graph.get_realised_node(bg_cube)
+                zx_node = self.__graph.get_bg_cube(bg_cube).realised_node
                 if zx_node != -1:
                     self.__zx_scene_manager.alter_node_appearance(zx_node, highlight = highlighting)
             self.__bg_scene_manager.alter_cube_appearance(bg_cube, highlight = highlighting)

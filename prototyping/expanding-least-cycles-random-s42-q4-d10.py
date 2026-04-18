@@ -1,8 +1,8 @@
 import random
 import pyzx
 
-from qelebrimbor.common.components_zx import EdgeId
-from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.attributes_zx import EdgeId
+from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
@@ -82,13 +82,13 @@ if __name__ == "__main__":
 
     vzx.log_summary(cubes = True)
 
-    console.info(f"Realised nodes : {sum(1 for node in vzx.nodes if vzx.is_node_realised(node))} of {vzx.number_of_nodes()}")
+    console.info(f"Realised nodes : {sum(1 for node in vzx.nodes if vzx.is_zx_node_realised(node))} of {vzx.number_of_nodes()}")
     console.info(f"Overall volume : {vzx.number_of_cubes()}")
 
     excess_volume: dict[EdgeId, int] = dict()
     for edge in vzx.edges:
-        if vzx.is_edge_realised(*edge):
-            count = len(vzx.get_edge_realisation(*edge)) - 1
+        if vzx.is_zx_edge_realised(*edge):
+            count = len(vzx.get_zx_edge(*edge).realisation) - 1
             if count > 0:
                 excess_volume[edge] = count
 

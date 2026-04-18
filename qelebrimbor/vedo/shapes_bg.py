@@ -4,8 +4,8 @@ from numpy import array
 from vedo import Assembly, Cube, Box, Text3D
 
 from qelebrimbor.helpers.spacetime import Spacetime
-from qelebrimbor.common.components_bg import CubeId, CubeKind
-from qelebrimbor.common.components_zx import NodeId, EdgeType
+from qelebrimbor.common.attributes_bg import CubeId, CubeKind
+from qelebrimbor.common.attributes_zx import NodeId, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.vedo.color_scheme import COLOR_RGBS
 

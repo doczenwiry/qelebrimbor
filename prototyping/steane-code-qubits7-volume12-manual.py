@@ -3,8 +3,8 @@ import pyzx as zx
 import networkx as nx
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.components_bg import CubeKind
-from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeId, EdgeType
+from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeId, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
@@ -116,8 +116,8 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_edges(vzx= vzx,
                                         specifications = {
             (1, 5): PathSpecification(
-                source_cube=vzx.get_realising_cube(1),
-                target_cube=vzx.get_realising_cube(5),
+                source_cube=vzx.get_zx_node(1).realising_cube,
+                target_cube=vzx.get_zx_node(5).realising_cube,
                 extras=[
                     (CubeKind.ZZX, Coordinates(-2, 1, 1)),
                     (CubeKind.ZZX, Coordinates(-2, 0, 1)),

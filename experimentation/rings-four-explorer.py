@@ -6,7 +6,7 @@ from functools import reduce
 from itertools import product
 from collections import defaultdict
 
-from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import Spacetime, Octant
 

@@ -3,8 +3,8 @@ console = logging.getLogger(__name__)
 
 from collections import deque
 
-from qelebrimbor.common.components_zx import NodeType, EdgeType
-from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.attributes_zx import NodeType, EdgeType
+from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import Spacetime
 from qelebrimbor.ringfinders.ring import Ring

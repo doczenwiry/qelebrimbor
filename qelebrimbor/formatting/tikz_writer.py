@@ -38,14 +38,14 @@ class TikzWriter:
         output.write("{\n")
 
         for cube in self.__nx_graph.get_cubes():
-            cube_type = self.__nx_graph.get_cube_kind(cube).get_type()
-            cube_reach = self.__nx_graph.get_cube_kind(cube).get_reach().as_tuple()
+            cube_type = self.__nx_graph.get_bg_cube(cube).kind.get_type()
+            cube_reach = self.__nx_graph.get_bg_cube(cube).kind.get_reach().as_tuple()
             cube_plane = 'U'
             for index in range(3):
                 if cube_reach[index] != 0:
                     cube_plane = TikzWriter.AXES[index]
 
-            cube_position = self.__nx_graph.get_cube_position(cube)
+            cube_position = self.__nx_graph.get_bg_cube(cube).position
 
             if cube in plain_cubes:
                 cube_visibility = 'plain'
@@ -54,9 +54,7 @@ class TikzWriter:
             else:
                 cube_visibility = 'ghost'
 
-            cube_label = self.__nx_graph.get_realised_node(cube)
-            if cube_label is None:
-                cube_label = ''
+            cube_label = self.__nx_graph.get_bg_cube(cube).realised_node or ''
 
             line = f"\t\t\\Node[visibility={cube_visibility}, type={cube_type}, plane={cube_plane}, label={cube_label}, identifier=N{cube}]"
             line += "{" + str(cube_position) + "}\n"
@@ -65,10 +63,10 @@ class TikzWriter:
 
         for pipe in self.__nx_graph.get_pipes():
             (source_cube, target_cube) = pipe
-            source_position = self.__nx_graph.get_cube_position(source_cube)
-            target_position = self.__nx_graph.get_cube_position(target_cube)
+            source_position = self.__nx_graph.get_bg_cube(source_cube).position
+            target_position = self.__nx_graph.get_bg_cube(target_cube).position
 
-            pipe_type = self.__nx_graph.get_pipe_kind(source_cube, target_cube).name.lower()
+            pipe_type = self.__nx_graph.get_bg_pipe(source_cube, target_cube).type.name.lower()
 
             if pipe in plain_pipes:
                 pipe_visibility = 'plain'
@@ -107,7 +105,7 @@ class TikzWriter:
 
         if len(node_realisation_order) > 0:
             root = node_realisation_order[0]
-            plain_cubes.add(self.__nx_graph.get_realising_cube(root))
+            plain_cubes.add(self.__nx_graph.get_zx_node(root).realising_cube)
             self.write_frame(output, plain_cubes, plain_pipes, faint_cubes, faint_pipes)
 
         if len(edge_realisation_order) > 0:
@@ -117,12 +115,12 @@ class TikzWriter:
                 plain_cubes.clear()
                 plain_pipes.clear()
                 (source, target) = next_edge
-                source_cube = self.__nx_graph.get_realising_cube(source)
-                target_cube = self.__nx_graph.get_realising_cube(target)
+                source_cube = self.__nx_graph.get_zx_node(source).realising_cube
+                target_cube = self.__nx_graph.get_zx_node(target).realising_cube
                 plain_cubes.add(source_cube)
                 plain_cubes.add(target_cube)
                 current = source_cube
-                extra_cubes = self.__nx_graph.get_edge_realisation(source, target).get_extra_cubes()
+                extra_cubes = self.__nx_graph.get_zx_edge(source, target).realisation.get_extra_cubes()
                 for extra_cube in extra_cubes:
                     plain_cubes.add(extra_cube)
                     pipe = (current, extra_cube) if current < extra_cube else (extra_cube, current)

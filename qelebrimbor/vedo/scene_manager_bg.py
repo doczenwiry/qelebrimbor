@@ -1,6 +1,6 @@
 from vedo.plotter.runtime import Plotter
 
-from qelebrimbor.common.components_bg import CubeId
+from qelebrimbor.common.attributes_bg import CubeId
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.vedo.shapes_bg import BgCube, BgPipe
 
@@ -16,19 +16,19 @@ class BgSceneManager:
         self.__pipes = dict()
 
         for cube in vzx.get_cubes():
-            bg_cube = BgCube(kind = self.__nx_graph.get_cube_kind(cube),
-                             position = self.__nx_graph.get_cube_position(cube),
-                             realised_node= self.__nx_graph.get_realised_node(cube),
+            bg_cube = BgCube(kind = self.__nx_graph.get_bg_cube(cube).kind,
+                             position = self.__nx_graph.get_bg_cube(cube).position,
+                             realised_node= self.__nx_graph.get_bg_cube(cube).realised_node,
                              cube = cube)
             self.__cubes[cube] = bg_cube
 
         for source, target in vzx.get_pipes():
             pipe = tuple(sorted((source, target)))
-            source_kind = self.__nx_graph.get_cube_kind(source)
-            target_kind = self.__nx_graph.get_cube_kind(target)
-            source_position = self.__nx_graph.get_cube_position(source)
-            target_position = self.__nx_graph.get_cube_position(target)
-            pipe_type = self.__nx_graph.get_pipe_kind(source, target)
+            source_kind = self.__nx_graph.get_bg_cube(source).kind
+            target_kind = self.__nx_graph.get_bg_cube(target).kind
+            source_position = self.__nx_graph.get_bg_cube(source).position
+            target_position = self.__nx_graph.get_bg_cube(target).position
+            pipe_type = self.__nx_graph.get_bg_pipe(source, target).type
             bg_pipe = BgPipe(source_kind, source_position, target_kind, target_position, pipe_type, source, target)
             self.__pipes[pipe] = bg_pipe
 

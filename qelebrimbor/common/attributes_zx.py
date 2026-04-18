@@ -1,8 +1,11 @@
 from enum import Enum
-import pyzx as zx
+
+import pyzx
 
 NodeId = int
 EdgeId = tuple[NodeId, NodeId]
+QubitId = int
+LayerId = int
 
 class NodeType(Enum):
     O = 0 # Boundary
@@ -11,12 +14,12 @@ class NodeType(Enum):
     Z = 3 # Z-Spider
 
     @staticmethod
-    def convert(vertex_type: zx.VertexType):
-        if vertex_type == zx.VertexType.Z:
+    def convert(vertex_type: pyzx.VertexType):
+        if vertex_type == pyzx.VertexType.Z:
             return NodeType.Z
-        elif vertex_type == zx.VertexType.X:
+        elif vertex_type == pyzx.VertexType.X:
             return NodeType.X
-        elif vertex_type == zx.VertexType.BOUNDARY:
+        elif vertex_type == pyzx.VertexType.BOUNDARY:
             return NodeType.O
         else:
             raise ValueError(f"Unsupported vertex type: {vertex_type}")
@@ -33,10 +36,10 @@ class EdgeType(Enum):
     HADAMARD = 1
 
     @staticmethod
-    def convert(edge_type: zx.EdgeType):
-        if edge_type == zx.EdgeType.SIMPLE:
+    def convert(edge_type: pyzx.EdgeType):
+        if edge_type == pyzx.EdgeType.SIMPLE:
             return EdgeType.IDENTITY
-        elif edge_type == zx.EdgeType.HADAMARD:
+        elif edge_type == pyzx.EdgeType.HADAMARD:
             return EdgeType.HADAMARD
         else:
             raise ValueError(f"Unsupported edge type: {edge_type}")

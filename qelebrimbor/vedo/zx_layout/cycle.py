@@ -1,6 +1,6 @@
 import numpy as np
 
-from qelebrimbor.common.components_zx import NodeId
+from qelebrimbor.common.attributes_zx import NodeId
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout, Placement
 

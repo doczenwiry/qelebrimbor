@@ -1,6 +1,6 @@
 from vedo import Assembly, Disc, Line, Text3D, Box
 
-from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeType
+from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 
 from qelebrimbor.vedo.color_scheme import COLOR_NAMES

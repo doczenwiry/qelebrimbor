@@ -3,8 +3,8 @@ import pyzx as zx
 import networkx as nx
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.components_bg import CubeKind
-from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeType
+from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
@@ -124,8 +124,8 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_edges(vzx= vzx,
                                         specifications = {
             (0, 1) : PathSpecification(
-                source_cube = vzx.get_realising_cube(0),
-                target_cube = vzx.get_realising_cube(1),
+                source_cube = vzx.get_zx_node(0).realising_cube,
+                target_cube = vzx.get_zx_node(1).realising_cube,
                 extras = [
                     (CubeKind.XXZ, Coordinates( 0, -1,  0)),
                     (CubeKind.ZXZ, Coordinates( 1, -1,  0)),
@@ -134,8 +134,8 @@ if __name__ == "__main__":
                 pipes = [ EdgeType.IDENTITY for _ in range(4) ],
             ),
             (1, 4) : PathSpecification(
-                source_cube = vzx.get_realising_cube(1),
-                target_cube = vzx.get_realising_cube(4),
+                source_cube = vzx.get_zx_node(1).realising_cube,
+                target_cube = vzx.get_zx_node(4).realising_cube,
                 extras = [
                     (CubeKind.ZZX, Coordinates( 0,  0,  1)),
                     (CubeKind.ZZX, Coordinates( 0, -1,  1)),
@@ -144,8 +144,8 @@ if __name__ == "__main__":
                 pipes = [ EdgeType.IDENTITY for _ in range(4) ],
             ),
             (1, 6) : PathSpecification(
-                source_cube = vzx.get_realising_cube(1),
-                target_cube = vzx.get_realising_cube(6),
+                source_cube = vzx.get_zx_node(1).realising_cube,
+                target_cube = vzx.get_zx_node(6).realising_cube,
                 extras = [
                     (CubeKind.ZZX, Coordinates(1,1,1))
                 ],

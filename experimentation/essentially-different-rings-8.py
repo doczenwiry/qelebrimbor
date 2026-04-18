@@ -3,8 +3,8 @@ from pyzx import VertexType
 import networkx as nx
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.components_bg import CubeKind
-from qelebrimbor.common.components_zx import NodeId, EdgeId, NodeType, EdgeType
+from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.common.attributes_zx import NodeId, EdgeId, NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import Spacetime, Step
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
@@ -29,34 +29,28 @@ def generate_ring(n, zs: list[NodeId]):
 def realise_ring(
     vzx: VolumetricZxGraph,
     cubes: list[tuple[CubeKind, Coordinates]],
-    links: dict[EdgeId, EdgeId] = None
+    links: dict[EdgeId, EdgeId] | None = None
 ):
     if links is None:
         links = dict()
 
     for i in range(len(cubes)):
-        vzx.realise_node(i, *cubes[i])
+        vzx.realise_zx_node(i, *cubes[i])
 
     for edge in vzx.get_edges():
         source, target = edge
-        source_cube = vzx.get_realising_cube(links[edge][0] if edge in links else source)
-        target_cube = vzx.get_realising_cube(links[edge][1] if edge in links else target)
-        # if edge in links:
-        #     source_cube = azx.get_realising_cubes(links[edge][0])
-        #     target_cube = azx.get_realising_cubes(links[edge][1])
-        # else:
-        # source_cube = min(azx.get_realising_cubes(source))
-        # target_cube = min(azx.get_realising_cubes(target))
+        source_cube = vzx.get_zx_node(links[edge][0] if edge in links else source).realising_cube
+        target_cube = vzx.get_zx_node(links[edge][1] if edge in links else target).realising_cube
         pipe = (source_cube, target_cube)
         vzx.connect_pipe(source_cube, target_cube, pipe_type = EdgeType.IDENTITY)
-        vzx.get_edge_data(source, target)[VolumetricZxGraph.KEY_ZX_EDGE_BG_PATH] = [pipe]
+        vzx.get_zx_edge(source, target).realisation = [pipe]
 
 def convert_ring(
         cubes: list[str],
-        steps: list[str] = None,
-        positions: list[tuple[int,int,int]] = None
-):
-    ring = []
+        steps: list[str] | None = None,
+        positions: list[tuple[int,int,int]] | None = None
+) -> list[tuple[CubeKind, Coordinates]]:
+    ring: list[tuple[CubeKind, Coordinates]] = []
     if steps is not None:
         if len(cubes) != len(steps) + 1:
             raise Exception("Inconsistent path specification.")
@@ -70,14 +64,14 @@ def convert_ring(
         if len(cubes) != len(positions):
             raise Exception("Inconsistent path realisation.")
 
-        for cube, position in zip(cubes, positions):
-            ring.append( (CubeKind[cube], Coordinates.from_tuple(position)) )
+        for cube, pos in zip(cubes, positions):
+            ring.append( (CubeKind[cube], Coordinates.from_tuple(pos)) )
 
     return ring
 
 def count_plane_switches(vzx: VolumetricZxGraph):
     return sum(nx.number_connected_components(
-            vzx.subgraph(filter(lambda nd: vzx.get_node_type(nd) == node_type, vzx.nodes()))
+            vzx.subgraph(filter(lambda nd: vzx.get_zx_node(nd).type == node_type, vzx.nodes()))
         ) for node_type in [ NodeType.X, NodeType.Z ]
     )
 
@@ -178,7 +172,7 @@ bg_links = {
     }
 }
 
-skipped_cases = [] #range(13)
+skipped_cases: list[int] = [] #range(13)
 
 if __name__ == "__main__":
     missing = 0

@@ -4,8 +4,8 @@ from pyzx import VertexType
 import networkx as nx
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.components_bg import CubeKind
-from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeId, EdgeType
+from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeId, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import Spacetime, Step
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
@@ -36,21 +36,21 @@ def realise_ring(
         links = dict()
 
     for i in range(len(cubes)):
-        vzx.realise_node(i, *cubes[i])
+        vzx.realise_zx_node(i, *cubes[i])
 
     for edge in vzx.get_edges():
         source, target = links[edge] if edge in links else edge
-        source_cube = vzx.get_realising_cube(source)
-        target_cube = vzx.get_realising_cube(target)
+        source_cube = vzx.get_zx_node(source).realising_cube
+        target_cube = vzx.get_zx_node(target).realising_cube
         pipe = (source_cube, target_cube)
         vzx.connect_pipe(source_cube, target_cube, pipe_type = EdgeType.IDENTITY)
-        vzx.get_edge_data(source, target)[VolumetricZxGraph.KEY_ZX_EDGE_BG_PATH] = [pipe]
+        vzx.get_zx_edge(source, target).realisation = [pipe]
 
 def convert_ring(
         cubes: list[str],
         steps: list[str] | None = None,
         positions: list[tuple[int,int,int]] | None = None
-):
+) -> list[tuple[CubeKind, Coordinates]]:
     ring = []
     if steps is not None:
         if len(cubes) != len(steps) + 1:
@@ -65,14 +65,14 @@ def convert_ring(
         if len(cubes) != len(positions):
             raise Exception("Inconsistent path realisation.")
 
-        for cube, position in zip(cubes, positions):
-            ring.append( (CubeKind[cube], Coordinates.from_tuple(position)) )
+        for cube, pos in zip(cubes, positions):
+            ring.append( (CubeKind[cube], Coordinates.from_tuple(pos)) )
 
     return ring
 
 def count_plane_switches(azx: VolumetricZxGraph):
     return sum(nx.number_connected_components(
-            azx.subgraph(filter(lambda nd: azx.get_node_type(nd) == node_type, azx.nodes()))
+            azx.subgraph(filter(lambda nd: azx.get_zx_node(nd).type == node_type, azx.nodes()))
         ) for node_type in [ NodeType.X, NodeType.Z ]
     )
 

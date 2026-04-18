@@ -1,7 +1,7 @@
 import logging as lgr
 import queue
 
-from qelebrimbor.common.components_zx import NodeType, EdgeType
+from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 
 console = lgr.getLogger(__name__)
 
@@ -9,7 +9,7 @@ from typing import Iterable
 from queue import PriorityQueue
 from collections import defaultdict
 
-from qelebrimbor.common.components_bg import CubeId, CubeKind
+from qelebrimbor.common.attributes_bg import CubeId, CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import Spacetime

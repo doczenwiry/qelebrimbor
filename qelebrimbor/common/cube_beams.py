@@ -1,7 +1,7 @@
 from qelebrimbor.helpers.spacetime import Spacetime
 from qelebrimbor.common.coordinates import Coordinates
 
-from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.attributes_bg import CubeKind
 
 from logging import getLogger
 console = getLogger(__name__)

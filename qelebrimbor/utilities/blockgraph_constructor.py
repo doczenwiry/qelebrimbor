@@ -2,8 +2,8 @@ from itertools import product
 
 from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.components_zx import NodeId, EdgeId, EdgeType
-from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
+from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 
@@ -22,31 +22,31 @@ class BlockGraphConstructor:
     @staticmethod
     def realise_nodes(vzx: VolumetricZxGraph, specifications: dict[NodeId, tuple[CubeKind, Coordinates]]):
         for node in vzx.nodes:
-            if not vzx.is_node_realised(node) and node in specifications:
-                vzx.realise_node(node, *specifications[node])
+            if not vzx.is_zx_node_realised(node) and node in specifications:
+                vzx.realise_zx_node(node, *specifications[node])
 
     @staticmethod
     def realise_edges(vzx: VolumetricZxGraph, specifications: dict[EdgeId, PathSpecification]):
         for edge in vzx.edges:
             source, target = edge
 
-            if vzx.is_edge_realised(*edge):
-                console.warning(f"Edge: {source} -> {target} is already realised : {vzx.get_edge_realisation(source, target)}")
+            if vzx.is_zx_edge_realised(*edge):
+                console.warning(f"Edge: {source} -> {target} is already realised : {vzx.get_zx_edge(source, target).realisation}")
                 continue
 
             if edge in specifications:
                 proposal = specifications[edge]
-            elif vzx.is_node_realised(source) and vzx.is_node_realised(target):
-                source_cube = vzx.get_realising_cube(source)
-                start_cube = (vzx.get_cube_kind(source_cube), vzx.get_cube_position(source_cube))
-                target_cube = vzx.get_realising_cube(target)
-                final_cube = (vzx.get_cube_kind(target_cube), vzx.get_cube_position(target_cube))
+            elif vzx.is_zx_node_realised(source) and vzx.is_zx_node_realised(target):
+                source_cube = vzx.get_zx_node(source).realising_cube
+                start_cube = (vzx.get_bg_cube(source_cube).kind, vzx.get_bg_cube(source_cube).position)
+                target_cube = vzx.get_zx_node(target).realising_cube
+                final_cube = (vzx.get_bg_cube(target_cube).kind, vzx.get_bg_cube(target_cube).position)
                 minimal_overhead, paths = PathFinderDFS.find_minimal_paths(start_cube, final_cube, occupied_positions = vzx.occupied)
                 path = paths[0]
                 proposal = PathSpecification(
                     source_cube, target_cube,
                     extras = path.cubes[1:-1],
-                    pipes = [ vzx.get_edge_type(source, target) for _ in range(len(path.cubes) - 1) ]
+                    pipes = [ vzx.get_zx_edge(source, target).type for _ in range(len(path.cubes) - 1) ]
                 )
             else:
                 proposal = None
@@ -55,7 +55,7 @@ class BlockGraphConstructor:
 
             if proposal is not None:
                 if vzx.is_path_valid(source, target, proposal):
-                    console.debug(f"Realisation: {source} -> {target} [{vzx.get_edge_type(source, target)}]")
-                    vzx.realise_edge(source, target, proposal)
+                    console.debug(f"Realisation: {source} -> {target} [{vzx.get_zx_edge(source, target).type}]")
+                    vzx.realise_zx_edge(source, target, proposal)
                 else:
-                    console.error(f"Proposal {source}{vzx.get_edge_type(source,target).name[0]}{target} is invalid : {proposal.extras}")
+                    console.error(f"Proposal {source}{vzx.get_zx_edge(source,target).type.name[0]}{target} is invalid : {proposal.extras}")

@@ -553,6 +553,8 @@ dependencies = [
     { name = "networkx" },
     { name = "numpy" },
     { name = "pyzx" },
+    { name = "recordclass" },
+    { name = "types-networkx" },
     { name = "vedo" },
 ]
 
@@ -562,8 +564,16 @@ requires-dist = [
     { name = "networkx", specifier = "==3.6.1" },
     { name = "numpy", specifier = "==2.4.3" },
     { name = "pyzx", specifier = "==0.9.0" },
+    { name = "recordclass", specifier = "==0.24" },
+    { name = "types-networkx", specifier = "==3.6.1.20260408" },
     { name = "vedo", specifier = "==2026.6.1" },
 ]
+
+[[package]]
+name = "recordclass"
+version = "0.24"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b6/a0/a51274e80e2a796c19fa00e64fc33b90a2b707e495ccb7c2c799de152bd6/recordclass-0.24.tar.gz", hash = "sha256:dc6e46aec90d5b185576fce40ffc875488b04692a9259265c965fac150630d06", size = 1340150, upload-time = "2026-01-05T18:56:16.428Z" }
 
 [[package]]
 name = "six"
@@ -607,6 +617,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/eb/79/72064e6a701c2183016abbbfedaba506d81e30e232a68c9f0d6f6fcd1574/traitlets-5.14.3.tar.gz", hash = "sha256:9ed0579d3502c94b4b3732ac120375cda96f923114522847de4b3bb98b96b6b7", size = 161621, upload-time = "2024-04-19T11:11:49.746Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/00/c0/8f5d070730d7836adc9c9b6408dec68c6ced86b304a9b26a14df072a6e8c/traitlets-5.14.3-py3-none-any.whl", hash = "sha256:b74e89e397b1ed28cc831db7aea759ba6640cb3de13090ca145426688ff1ac4f", size = 85359, upload-time = "2024-04-19T11:11:46.763Z" },
+]
+
+[[package]]
+name = "types-networkx"
+version = "3.6.1.20260408"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a9/06/fe448df6a42cc938d36fa6e88cb0c6a269059cd4ce05347ec52da306e007/types_networkx-3.6.1.20260408.tar.gz", hash = "sha256:63f94902b2d99d6d4f448eb1bc23b8a327d4022f5098bc0d22d42b13003b106e", size = 73828, upload-time = "2026-04-08T04:34:38.471Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/60/1d/870a15630dc37a85aa0364bf623fad6ef9ef7cad14be62a0bab7541839f5/types_networkx-3.6.1.20260408-py3-none-any.whl", hash = "sha256:dc957f12bc9ffe7cab6704ccb719722fc5e508a491273c49b45c8786162a6f08", size = 162537, upload-time = "2026-04-08T04:34:37.385Z" },
 ]
 
 [[package]]

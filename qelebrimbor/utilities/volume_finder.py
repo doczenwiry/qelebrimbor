@@ -2,7 +2,7 @@ from logging import getLogger
 console = getLogger(__name__)
 
 from qelebrimbor.helpers.spacetime import Spacetime, Coordinates
-from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.attributes_bg import CubeKind
 
 from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
 

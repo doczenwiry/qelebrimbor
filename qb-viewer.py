@@ -1,6 +1,6 @@
 import sys
 
-from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
@@ -20,9 +20,9 @@ if __name__ == '__main__':
 
     excess_volume = 0
     for edge in vzx.edges:
-        volume = len(vzx.get_edge_realisation(*edge)) - 1
+        volume = len(vzx.get_zx_edge(*edge).realisation) - 1
         if volume > 0:
-            console.info(f"Edge {edge} [+v={volume}] : {vzx.get_edge_realisation(*edge)}")
+            console.info(f"Edge {edge} [+v={volume}] : {vzx.get_zx_edge(*edge).realisation}")
         excess_volume += volume
 
     boundaries = len(list(vzx.get_cubes(cube_kind = CubeKind.OOO)))
