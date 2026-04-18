@@ -388,37 +388,7 @@ class VolumetricZxGraph(nx.Graph):
         if not self.is_path_valid(source, target, proposal):
             raise Exception(f"Proposed path to realise edge {source}-{target} is invalid.")
 
-        # Representation of the path that will go into edge_realisations
-        pipe_ids = []
-
-        # Add all the extra cubes and pipes of the path to the BlockGraph
-        previous_cube: int = source_cube
-
-        for index in range(len(proposal.extras)):
-            current_kind, current_position = proposal.extras[index]
-            current_pipe_type = proposal.pipes[index]
-
-            # Place the current cube and connect it to the previous cube.
-            current_cube = self.place_cube(current_kind, current_position)
-            # self.__bg_graph.nodes[current_cube][VolumetricZxGraph.KEY_BG_CUBE].realised_node = -1
-            self.connect_pipe(previous_cube, current_cube, current_pipe_type)
-
-            # Extend the sequence of extra node ids
-            pipe = tuple(sorted((previous_cube, current_cube)))
-            pipe_ids.append( pipe )
-
-            # Prepare for the next iteration
-            previous_cube = current_cube
-
-        # Make the final connection
-        if target_cube != self.get_zx_node(target).realising_cube:
-            raise Exception(f"Target cube is not realising target node.")
-
-        final_pipe_type = proposal.pipes[-1]
-        self.connect_pipe(previous_cube, target_cube, final_pipe_type)
-
-        pipe = tuple(sorted((previous_cube, target_cube)))
-        pipe_ids.append( pipe )
+        pipe_ids = self.connect_path(proposal)
 
         # Associate the path as a realisation of the edge
         self.edges[source, target][VolumetricZxGraph.KEY_ZX_EDGE].realisation = pipe_ids
@@ -438,6 +408,44 @@ class VolumetricZxGraph(nx.Graph):
         self.occupied.add(position)
 
         return cube_id
+
+    def connect_path(self, proposal: PathSpecification) -> list[PipeId]:
+        source_cube = proposal.source_cube
+        target_cube = proposal.target_cube
+        # Representation of the path that will go into edge_realisations
+        pipe_ids: list[PipeId] = []
+
+        # Add all the extra cubes and pipes of the path to the BlockGraph
+        previous_cube: int = source_cube
+
+        for index in range(len(proposal.extras)):
+            current_kind, current_position = proposal.extras[index]
+            current_pipe_type = proposal.pipes[index]
+
+            # Place the current cube and connect it to the previous cube.
+            current_cube = self.place_cube(current_kind, current_position)
+            # self.__bg_graph.nodes[current_cube][VolumetricZxGraph.KEY_BG_CUBE].realised_node = -1
+            self.connect_pipe(previous_cube, current_cube, current_pipe_type)
+
+            # Extend the sequence of extra node ids
+            pipe = (previous_cube, current_cube) if previous_cube < current_cube else (current_cube, previous_cube)
+            pipe_ids.append( pipe )
+
+            # Prepare for the next iteration
+            previous_cube = current_cube
+
+        # TODO: make sure this is checked elsewhere !
+        # # Make the final connection
+        # if target_cube != self.get_zx_node(target).realising_cube:
+        #     raise Exception(f"Target cube is not realising target node.")
+
+        final_pipe_type = proposal.pipes[-1]
+        self.connect_pipe(previous_cube, target_cube, final_pipe_type)
+
+        pipe = (previous_cube, target_cube) if previous_cube < target_cube else (target_cube, previous_cube)
+        pipe_ids.append( pipe )
+
+        return pipe_ids
 
     def connect_pipe(self, source_cube: CubeId, target_cube: CubeId, pipe_type : EdgeType):
         if not self.__bg_graph.has_node(source_cube):

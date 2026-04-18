@@ -9,7 +9,7 @@ from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
-from qelebrimbor.common.attributes_zx import NodeId, EdgeType
+from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
 from qelebrimbor.common.attributes_bg import CubeId, CubeKind
 
 import logging
@@ -146,7 +146,7 @@ def find_completion(
 
     return True
 
-def extend_unrealised(graph: VolumetricZxGraph):
+def extend_unrealised(graph: VolumetricZxGraph, edge_specifications: dict[EdgeId, PathSpecification | None] | None = None):
     schedule: dict[NodeId, list[NodeId]] = defaultdict(list)
     for node in filter(lambda nd : graph.is_zx_node_realised(nd), graph.nodes):
         for neighbor in filter(lambda nd : not graph.is_zx_node_realised(nd), graph.neighbors(node)):
@@ -173,4 +173,4 @@ def extend_unrealised(graph: VolumetricZxGraph):
             neighbor_kind = neighbor_kinds[0]
             graph.realise_zx_node(neighbor, neighbor_kind, neighbor_position)
 
-    BlockGraphConstructor.realise_edges(graph, {})
+    BlockGraphConstructor.realise_edges(graph, edge_specifications or dict())

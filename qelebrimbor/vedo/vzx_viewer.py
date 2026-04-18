@@ -59,12 +59,16 @@ class VolumetricZxGraphViewer(Plotter):
         if isinstance(selected_object, VdNode):
             # Highlight the zx-node and its corresponding bg-cube
             zx_node = selected_object.zx_node
+            if highlighting:
+                console.info(f"ZxNode : {zx_node}")
             self.__zx_scene_manager.alter_node_appearance(zx_node.id, highlight = highlighting)
             if zx_node.realising_cube != -1:
                 self.__bg_scene_manager.alter_cube_appearance(zx_node.realising_cube, highlight = highlighting)
         elif isinstance(selected_object, VdEdge):
             # Highlight the edge in the ZX-graph
             zx_edge = selected_object.zx_edge
+            if highlighting:
+                console.info(f"ZxEdge : {zx_edge}")
             self.__zx_scene_manager.alter_node_appearance(zx_edge.source, highlight = highlighting)
             self.__zx_scene_manager.alter_node_appearance(zx_edge.target, highlight = highlighting)
             self.__zx_scene_manager.alter_edge_appearance(zx_edge, highlight = highlighting)
@@ -79,14 +83,16 @@ class VolumetricZxGraphViewer(Plotter):
         elif isinstance(selected_object, VdCube):
             # Highlight the bg-cube and its corresponding zx-node if it has one
             bg_cube = selected_object.bg_cube
-            console.debug(f"> BgCube : {bg_cube}")
+            if highlighting:
+                console.info(f"BgCube : {bg_cube}")
             if bg_cube.realised_node != -1:
                 self.__zx_scene_manager.alter_node_appearance(bg_cube.realised_node, highlight = highlighting)
             self.__bg_scene_manager.alter_cube_appearance(bg_cube.id, highlight = highlighting)
         elif isinstance(selected_object, VdPipe):
             bg_source_cube = selected_object.bg_source
             bg_target_cube = selected_object.bg_target
-            console.debug(f"> BgPipe #{bg_source_cube.id}-#{bg_target_cube.id}")
+            if highlighting:
+                console.info(f"BgCube : {bg_source_cube}-{bg_target_cube}")
             self.__bg_scene_manager.alter_cube_appearance(bg_source_cube.id, highlight = highlighting)
             self.__bg_scene_manager.alter_cube_appearance(bg_target_cube.id, highlight = highlighting)
             self.__bg_scene_manager.alter_pipe_appearance(bg_source_cube.id, bg_target_cube.id, highlight = highlighting)

@@ -20,8 +20,9 @@ import logging
 console = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
+logging.getLogger('qelebrimbor.helpers.blockgraph').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.vedo').setLevel(logging.DEBUG)
+logging.getLogger('qelebrimbor.vedo').setLevel(logging.INFO)
 
 def find_terminal_node(graph: pyzx.graph.base.BaseGraph, qubit: int) -> int:
     return max(
@@ -120,27 +121,20 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_nodes(
         vzx = vzx,
         specifications = {
-            1 : (CubeKind.ZZX, Coordinates(0,1,1))
+            1 : (CubeKind.ZZX, Coordinates(1,2,1))
         }
     )
     BlockGraphConstructor.realise_edges(vzx, {
         (0,1) : None
     })
 
-    start = vzx.get_bg_cube(14)
-    final = vzx.get_bg_cube(23)
-    completions = PathFinderDFS.find_minimal_paths(start = (start.kind, start.position), final = (final.kind, final.position), occupied_positions = vzx.occupied)
-    console.info(f"Completions : {len(completions)}")
-    for completion in completions:
-        console.info(f"> {completion}")
+    BlockGraphConstructor.connect_cubes(vzx, [(14, 23)])
 
     index = 2
     cycle = cycles[index]
     console.info(f"Cycle {index} : {cycle}")
 
-    # find_completion(vzx, cycle)
-
-    # extend_unrealised(vzx)
+    extend_unrealised(vzx, edge_specifications = { (0,1) : None })
 
     vzx.log_report()
 
