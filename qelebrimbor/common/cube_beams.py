@@ -9,8 +9,8 @@ console = getLogger(__name__)
 class CubeBeams:
     def __init__(self,
         cube_kind: CubeKind, cube_position: Coordinates,
-        extras: list[tuple[CubeKind, Coordinates]] = None,
-        occupied: set[Coordinates] = None
+        extras: list[tuple[CubeKind, Coordinates]] | None = None,
+        occupied: set[Coordinates] | None = None
     ):
         cube_reach = cube_kind.get_reach()
 
