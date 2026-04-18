@@ -56,7 +56,7 @@ class PathFinderDFS:
             current = path.cubes[-1]
             length = len(path.cubes)
             console.debug(f"Current path : {path.cubes}")
-            node_type_required = { node_type_restrictions[length-1] } if length <= nt else { NodeType.X, NodeType.Z }
+            node_type_required = { node_type_restrictions[length-1] } if length <= nt else { NodeType.X, NodeType.Y, NodeType.Z, NodeType.O }
             pipe_type_required =   edge_type_restrictions[length-1]   if length <= et else EdgeType.IDENTITY
             console.debug(f"> Types required : {node_type_required}")
             for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(current, node_types = node_type_required, pipe_type = pipe_type_required):
@@ -77,6 +77,9 @@ class PathFinderDFS:
 
                     if manhattan_length == maximal_volume:
                         paths.append( extended )
+
+                if next_kind in [ CubeKind.YYY, CubeKind.OOO ]:
+                    continue
 
                 if path.occupies(next_position) or next_position in occupied_positions or next_position in reserved_positions:
                     continue

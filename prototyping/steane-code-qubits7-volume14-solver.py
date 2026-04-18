@@ -1,28 +1,53 @@
-import json
-
-import pyzx as zx
+import pyzx
 import numpy as np
 
+from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
+from qelebrimbor.utilities.ring_making import find_realisation, find_completion, extend_unrealised
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType
+from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
-from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
-from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
+from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
+
 from qelebrimbor.vedo.zx_layout.manual import ManualLayout
 
 import logging
 console = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-logging.getLogger("qelebrimbor").setLevel(logging.CRITICAL)
-# logging.getLogger("qelebrimbor.helpers").setLevel(logging.DEBUG)
-# logging.getLogger("qelebrimbor.pathfinders").setLevel(logging.DEBUG)
-logging.getLogger("qelebrimbor.volumetric_zx_graph").setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
+logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
 
+def find_terminal_node(graph: pyzx.graph.base.BaseGraph, qubit: int) -> int:
+    return max(
+        filter(lambda vt: graph.qubit(vt) == qubit , graph.vertices())
+    )
 
-def prepare_layout() -> ManualLayout:
+def add_steane_chunk(graph: pyzx.graph.base.BaseGraph, layer: int, target_qubits: list[int]):
+    row = layer
+    start = graph.add_vertex(ty = pyzx.VertexType.X, row = row, qubit = 0)
+    row += 2
+    previous = start
+    for target_qubit in target_qubits:
+        terminal = find_terminal_node(graph, target_qubit)
+        control = graph.add_vertex(ty = pyzx.VertexType.Z, row = row, qubit = 0)
+        target = graph.add_vertex(ty = pyzx.VertexType.X, row = row, qubit = target_qubit)
+        graph.add_edge( (control, target) )
+        graph.add_edge((previous, control), pyzx.EdgeType.HADAMARD if previous == start else pyzx.EdgeType.SIMPLE)
+        graph.add_edge((terminal, target), pyzx.EdgeType.SIMPLE)
+        row += 1
+        previous = control
+    row += 1
+    final = graph.add_vertex(ty = pyzx.VertexType.X, row = row, qubit = 0)
+
+    graph.add_edge((previous, final), pyzx.EdgeType.HADAMARD)
+
+    return row
+
+def prepare_layout() -> ZxLayout:
     placements: dict[NodeId, tuple[float, float]] = {}
 
     rho = 2.0
@@ -42,117 +67,65 @@ def prepare_layout() -> ManualLayout:
         by = 1.4 * rho * np.sin(phi)
         placements[boundary] = (bx, by)
         phi += step
-
     return ManualLayout(placements)
 
 if __name__ == "__main__":
-    pyzx_graph = zx.Graph()
-    with open("../assets/pyzx/steane-code-qubits7-volume14.json", 'r') as file:
-        pyzx_graph = pyzx_graph.from_json(json.load(file))
+    pyzx_graph = pyzx.Graph()
+
+    layer = 0
+    for q in range(1,8):
+        pyzx_graph.add_vertex(ty = pyzx.VertexType.X, row = layer, qubit = q)
+
+    layer += 1
+    layer = add_steane_chunk(pyzx_graph, layer, target_qubits= [1, 2, 3, 4])
+    layer += 1
+    layer = add_steane_chunk(pyzx_graph, layer, target_qubits= [1, 2, 5, 6])
+    layer += 1
+    layer = add_steane_chunk(pyzx_graph, layer, target_qubits= [1, 3, 5, 7])
+    layer += 1
+
+    for q in range(1,8):
+        terminal = find_terminal_node(pyzx_graph, q)
+        boundary = pyzx_graph.add_vertex(ty = pyzx.VertexType.BOUNDARY, row = layer, qubit = q)
+        pyzx_graph.add_edge((terminal, boundary), pyzx.EdgeType.SIMPLE)
+
+    # Hadamard color-changes
+    for vt in [ 7, 16, 17, 26, 27, 36]:
+        pyzx.basicrules.color_change(pyzx_graph, vt)
+
+    # Spider fusion
+    pyzx.simplify.spider_simp(pyzx_graph)
+
+    # Identity rule
+    pyzx.simplify.id_simp(pyzx_graph)
+
+    with open("../assets/pyzx/steane-code-qubits7-volume14.json", 'w') as file:
+        file.write(pyzx_graph.to_json())
 
     vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)
-    vzx.log_summary()
 
-    CycleBasisAnalyser.analyse(vzx)
+    MinimalCycleBasisAnalyser.analyse(vzx)
+    cycles = MinimalCycleBasisAnalyser.decompose(vzx)
 
-    cycles = CycleBasisAnalyser.decompose(vzx)
-    cycle0 = cycles[0]
-    n0 = len(cycle0)
+    index = 0
+    cycle = cycles[index]
+    console.info(f"Cycle {index} : {cycle}")
+    find_realisation(vzx, cycle)
 
-    nodes0 = list(map(lambda nd : vzx.get_zx_node(nd).type, cycle0))
-    console.info(f"Nodes 0 : {" ".join(map(lambda nd: str(nd) + ':' + str(vzx.get_zx_node(nd).type), cycle0))}")
+    index = 1
+    cycle = cycles[index]
+    console.info(f"Cycle {index} : {cycle}")
+    find_completion(vzx, cycle)
 
-    ring0 = RingFinderBFS.find_minimal_rings(nodes0, maximal_overhead = 4)[0]
-    c0 = len(ring0.cubes)
-    console.info(f"> Cycle 0 [{c0}]: {ring0.cubes}")
+    index = 2
+    cycle = cycles[index]
+    console.info(f"Cycle {index} : {cycle}")
+    find_completion(vzx, cycle)
 
-    BlockGraphConstructor.realise_nodes(vzx, {cycle0[nd]: ring0.cubes[nd] for nd in range(n0)})
+    # extend_unrealised(vzx)
 
-    start = cycle0[0]
-    final = cycle0[n0 - 1]
-    BlockGraphConstructor.realise_edges(vzx,
-                                        {
-            (final, start): PathSpecification(
-                source_cube = vzx.get_zx_node(final).realising_cube,
-                target_cube = vzx.get_zx_node(start).realising_cube,
-                extras = ring0.cubes[n0:c0],
-                pipes = [EdgeType.IDENTITY for _ in range(n0)]
-            )
-        }
-                                        )
-
-    cycle1 = cycles[1]
-    n1 = len(cycle1)
-    nodes1 = list(map(lambda nd : vzx.get_zx_node(nd).type, cycle1))
-    console.info(f"Nodes 1 : {" ".join(map(lambda nd: str(nd) + ':' + str(vzx.get_zx_node(nd).type), cycle1))}")
-
-    # Breakdown cycle1
-    start = vzx.get_zx_node(4).realising_cube
-    final = vzx.get_zx_node(6).realising_cube
-    start_cube = (vzx.get_bg_cube(start).kind, vzx.get_bg_cube(start).position)
-    final_cube = (vzx.get_bg_cube(final).kind, vzx.get_bg_cube(final).position)
-    console.info(f"Searching completion from 4 #{start} [{start_cube}] to 6 #{final} [{final_cube}]")
-    type_restrictions = [ NodeType.X ]
-    console.info(f"> Passing through : {type_restrictions}")
-    minimal_overhead, completions1 = PathFinderDFS.find_minimal_paths(
-        final = final_cube, start = start_cube,
-        node_types= type_restrictions,
-        occupied_positions = vzx.occupied,
-        maximal_overhead = 6
-    )
-
-    completion1 = completions1[0]
-    c1 = len(completion1.cubes)
-    console.info(f"> Completion 1 [+{minimal_overhead}] : {completion1}")
-
-    BlockGraphConstructor.realise_nodes(vzx, {
-        1 : completion1.cubes[1]
-    })
-
-    BlockGraphConstructor.realise_edges(vzx, {
-        (1, 6): PathSpecification(
-            source_cube = vzx.get_zx_node(1).realising_cube,
-            target_cube = vzx.get_zx_node(6).realising_cube,
-            extras = completion1.cubes[2:c1 - 1],
-            pipes = [EdgeType.IDENTITY for _ in range(n1)]
-        )
-    })
-
-    cycle2 = cycles[2]
-    n2 = len(cycle2)
-    nodes3 = list(map(lambda nd : vzx.get_zx_node(nd).type, cycle2))
-    console.info(f"Nodes 2 : {" ".join(map(lambda nd: str(nd) + ':' + str(vzx.get_zx_node(nd).type), cycle2))}")
-
-    # Breakdown cycle2
-    start = vzx.get_zx_node(0).realising_cube
-    final = vzx.get_zx_node(1).realising_cube
-    start_cube = (vzx.get_bg_cube(start).kind, vzx.get_bg_cube(start).position)
-    final_cube = (vzx.get_bg_cube(final).kind, vzx.get_bg_cube(final).position)
-    console.info(f"Searching completion from 0 #{start} [{start_cube}] to 1 #{final} [{final_cube}]")
-    type_restrictions = []
-    console.info(f"> Type restrictions : {type_restrictions}")
-    minimal_overhead, completions2 = PathFinderDFS.find_minimal_paths(
-        final = final_cube, start = start_cube,
-        node_types= type_restrictions,
-        occupied_positions = vzx.occupied,
-        maximal_overhead = 6
-    )
-
-    completion2 = completions2[0]
-    c2 = len(completion2.cubes)
-    console.info(f"> Completion 2 [{minimal_overhead}] : {completion2}")
-
-    BlockGraphConstructor.realise_edges(vzx, {
-        (0, 1): PathSpecification(
-            source_cube = vzx.get_zx_node(0).realising_cube,
-            target_cube = vzx.get_zx_node(1).realising_cube,
-            extras = completion2.cubes[1:c2 - 1],
-            pipes = [EdgeType.IDENTITY for _ in range(n2+2)]
-        )
-    })
-
-    console.info(f"TOTAL VOLUME : {vzx.number_of_cubes()}")
+    vzx.log_report()
 
     hexagon = prepare_layout()
-    viewer = VolumetricZxGraphViewer(vzx, label ="steane-code", layout = hexagon)
+    viewer = VolumetricZxGraphViewer(vzx = vzx, label = "steane-code-7", layout = hexagon)
     viewer.display()

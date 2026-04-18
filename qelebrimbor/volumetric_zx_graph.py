@@ -290,6 +290,9 @@ class VolumetricZxGraph(nx.Graph):
 
         return filter(filtering, self.edges())
 
+    def total_volume(self) -> int:
+        return sum(1 for cube in self.get_bg_cubes() if cube.kind not in [ CubeKind.OOO, CubeKind.YYY ])
+
     def number_of_cubes(self) -> int:
         return self.__bg_graph.number_of_nodes()
 
@@ -624,6 +627,21 @@ class VolumetricZxGraph(nx.Graph):
 
         for pipe in self.get_bg_pipes():
             print(f"Pipe {pipe.source}-{pipe.target} : {pipe.type.name}")
+
+    def log_report(self):
+        console.info(f"Realised nodes : {sum(1 for node in self.nodes if self.is_zx_node_realised(node))} of {self.number_of_nodes()}")
+        console.info(f"Overall volume : {self.total_volume()}")
+
+        excess_volume: dict[EdgeId, int] = dict()
+        for edge in self.edges:
+            if self.is_zx_edge_realised(*edge):
+                count = len(self.get_zx_edge(*edge).realisation) - 1
+                if count > 0:
+                    excess_volume[edge] = count
+
+        console.info(f"Excess volume : +{sum(excess_volume.values())}")
+        for edge in excess_volume:
+            console.info(f"> {edge} : +{excess_volume[edge]}")
 
     def __identify_cube_at_position(self, position: Coordinates) -> int:
         for cube in self.get_bg_cubes():

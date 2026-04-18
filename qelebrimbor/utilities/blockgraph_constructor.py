@@ -1,5 +1,3 @@
-from itertools import product
-
 from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
@@ -37,16 +35,20 @@ class BlockGraphConstructor:
             if edge in specifications:
                 proposal = specifications[edge]
             elif vzx.is_zx_node_realised(source) and vzx.is_zx_node_realised(target):
-                source_cube = vzx.get_zx_node(source).realising_cube
-                start_cube = (vzx.get_bg_cube(source_cube).kind, vzx.get_bg_cube(source_cube).position)
-                target_cube = vzx.get_zx_node(target).realising_cube
-                final_cube = (vzx.get_bg_cube(target_cube).kind, vzx.get_bg_cube(target_cube).position)
-                minimal_overhead, paths = PathFinderDFS.find_minimal_paths(start_cube, final_cube, occupied_positions = vzx.occupied)
+                source_cube = vzx.get_bg_cube(vzx.get_zx_node(source).realising_cube)
+                target_cube = vzx.get_bg_cube(vzx.get_zx_node(target).realising_cube)
+                if source_cube.kind in [ CubeKind.OOO, CubeKind.YYY ]:
+                    start = (target_cube.kind, target_cube.position)
+                    final = (source_cube.kind, source_cube.position)
+                else:
+                    start = (source_cube.kind, source_cube.position)
+                    final = (target_cube.kind, target_cube.position)
+                minimal_overhead, paths = PathFinderDFS.find_minimal_paths(start, final, occupied_positions = vzx.occupied)
                 path = paths[0]
                 proposal = PathSpecification(
-                    source_cube, target_cube,
+                    source_cube.id, target_cube.id,
                     extras = path.cubes[1:-1],
-                    pipes = [ vzx.get_zx_edge(source, target).type for _ in range(len(path.cubes) - 1) ]
+                    pipes = [ vzx.get_zx_edge(source_cube.realised_node, target_cube.realised_node).type for _ in range(len(path.cubes) - 1) ]
                 )
             else:
                 proposal = None
