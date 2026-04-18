@@ -5,8 +5,8 @@ from vedo import settings, Plotter
 
 from qelebrimbor.vedo.scene_manager_bg import BgSceneManager
 from qelebrimbor.vedo.scene_manager_zx import ZxSceneManager
-from qelebrimbor.vedo.shapes_zx import ZxNode, ZxEdge
-from qelebrimbor.vedo.shapes_bg import BgCube, BgPipe
+from qelebrimbor.vedo.shapes_zx import VdNode, VdEdge
+from qelebrimbor.vedo.shapes_bg import VdCube, VdPipe
 
 import logging
 
@@ -52,50 +52,44 @@ class VolumetricZxGraphViewer(Plotter):
 
         # Prepare the scene manager for the BG-graph
         self.__bg_scene_manager = BgSceneManager(self.__graph, self.at(BG_VIEWPORT))
-        self.__min_bg_cube_id = self.__graph.number_of_nodes()
-        self.__max_bg_cube_id = self.__min_bg_cube_id + self.__graph.number_of_cubes() - 1
 
         self.__selected_object = None
 
     def __alter_highlighting(self, selected_object, highlighting: bool = True):
-        if isinstance(selected_object, ZxNode):
+        if isinstance(selected_object, VdNode):
             # Highlight the zx-node and its corresponding bg-cube
             zx_node = selected_object.zx_node
-            self.__zx_scene_manager.alter_node_appearance(zx_node, highlight = highlighting)
-            bg_cube = self.__graph.get_zx_node(zx_node).realising_cube
-            if bg_cube != -1:
-                self.__bg_scene_manager.alter_cube_appearance(bg_cube, highlight = highlighting)
-        elif isinstance(selected_object, ZxEdge):
+            self.__zx_scene_manager.alter_node_appearance(zx_node.id, highlight = highlighting)
+            if zx_node.realising_cube != -1:
+                self.__bg_scene_manager.alter_cube_appearance(zx_node.realising_cube, highlight = highlighting)
+        elif isinstance(selected_object, VdEdge):
             # Highlight the edge in the ZX-graph
-            zx_source = selected_object.zx_source
-            zx_target = selected_object.zx_target
-            self.__zx_scene_manager.alter_node_appearance(zx_source, highlight = highlighting)
-            self.__zx_scene_manager.alter_node_appearance(zx_target, highlight = highlighting)
-            self.__zx_scene_manager.alter_edge_appearance(zx_source, zx_target, highlight = highlighting)
+            zx_edge = selected_object.zx_edge
+            self.__zx_scene_manager.alter_node_appearance(zx_edge.source, highlight = highlighting)
+            self.__zx_scene_manager.alter_node_appearance(zx_edge.target, highlight = highlighting)
+            self.__zx_scene_manager.alter_edge_appearance(zx_edge, highlight = highlighting)
             # Highlight all the pipes of that path
             path_cubes: set[CubeId] = set()
-            for source_cube, target_cube in self.__graph.get_zx_edge(zx_source, zx_target).realisation:
+            for source_cube, target_cube in zx_edge.realisation:
                 self.__bg_scene_manager.alter_pipe_appearance(source_cube, target_cube, highlight = highlighting)
                 path_cubes.add(source_cube)
                 path_cubes.add(target_cube)
             for cube in path_cubes:
                 self.__bg_scene_manager.alter_cube_appearance(cube, highlight = highlighting)
-        elif isinstance(selected_object, BgCube):
+        elif isinstance(selected_object, VdCube):
             # Highlight the bg-cube and its corresponding zx-node if it has one
             bg_cube = selected_object.bg_cube
-            console.debug(f"> BgCube #{bg_cube}")
-            if self.__min_bg_cube_id <= bg_cube <= self.__max_bg_cube_id:
-                zx_node = self.__graph.get_bg_cube(bg_cube).realised_node
-                if zx_node != -1:
-                    self.__zx_scene_manager.alter_node_appearance(zx_node, highlight = highlighting)
-            self.__bg_scene_manager.alter_cube_appearance(bg_cube, highlight = highlighting)
-        elif isinstance(selected_object, BgPipe):
+            console.debug(f"> BgCube : {bg_cube}")
+            if bg_cube.realised_node != -1:
+                self.__zx_scene_manager.alter_node_appearance(bg_cube.realised_node, highlight = highlighting)
+            self.__bg_scene_manager.alter_cube_appearance(bg_cube.id, highlight = highlighting)
+        elif isinstance(selected_object, VdPipe):
             bg_source_cube = selected_object.bg_source
             bg_target_cube = selected_object.bg_target
-            console.debug(f"> BgPipe #{bg_source_cube}-#{bg_target_cube}")
-            self.__bg_scene_manager.alter_cube_appearance(bg_source_cube, highlight = highlighting)
-            self.__bg_scene_manager.alter_cube_appearance(bg_target_cube, highlight = highlighting)
-            self.__bg_scene_manager.alter_pipe_appearance(bg_source_cube, bg_target_cube, highlight = highlighting)
+            console.debug(f"> BgPipe #{bg_source_cube.id}-#{bg_target_cube.id}")
+            self.__bg_scene_manager.alter_cube_appearance(bg_source_cube.id, highlight = highlighting)
+            self.__bg_scene_manager.alter_cube_appearance(bg_target_cube.id, highlight = highlighting)
+            self.__bg_scene_manager.alter_pipe_appearance(bg_source_cube.id, bg_target_cube.id, highlight = highlighting)
             # Show the highlighting for the entire path this pipe belongs to
 
     def __on_key_pressed(self, event):

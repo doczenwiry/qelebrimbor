@@ -2,41 +2,29 @@ from vedo.plotter.runtime import Plotter
 
 from qelebrimbor.common.attributes_bg import CubeId
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.vedo.shapes_bg import BgCube, BgPipe
+from qelebrimbor.vedo.shapes_bg import VdCube, VdPipe
 
 from logging import getLogger
 console = getLogger(__name__)
 
 class BgSceneManager:
     def __init__(self, vzx: VolumetricZxGraph, plotter: Plotter):
-        self.__nx_graph = vzx
         self.__plotter = plotter
 
         self.__cubes = dict()
         self.__pipes = dict()
 
-        for cube in vzx.get_cubes():
-            bg_cube = BgCube(kind = self.__nx_graph.get_bg_cube(cube).kind,
-                             position = self.__nx_graph.get_bg_cube(cube).position,
-                             realised_node= self.__nx_graph.get_bg_cube(cube).realised_node,
-                             cube = cube)
-            self.__cubes[cube] = bg_cube
+        for cube in vzx.get_bg_cubes():
+            vd_cube = VdCube(cube = cube)
+            self.__cubes[ cube.id ] = vd_cube
+            self.__plotter.add( vd_cube )
 
-        for source, target in vzx.get_pipes():
-            pipe = tuple(sorted((source, target)))
-            source_kind = self.__nx_graph.get_bg_cube(source).kind
-            target_kind = self.__nx_graph.get_bg_cube(target).kind
-            source_position = self.__nx_graph.get_bg_cube(source).position
-            target_position = self.__nx_graph.get_bg_cube(target).position
-            pipe_type = self.__nx_graph.get_bg_pipe(source, target).type
-            bg_pipe = BgPipe(source_kind, source_position, target_kind, target_position, pipe_type, source, target)
-            self.__pipes[pipe] = bg_pipe
-
-        for _, bg_cube in self.__cubes.items():
-            self.__plotter.add(bg_cube)
-
-        for _, bg_pipe in self.__pipes.items():
-            self.__plotter.add(bg_pipe)
+        for bg_pipe in vzx.get_bg_pipes():
+            source_cube = vzx.get_bg_cube(bg_pipe.source)
+            target_cube = vzx.get_bg_cube(bg_pipe.target)
+            vd_pipe = VdPipe(source_cube, target_cube, bg_pipe.type)
+            self.__pipes[ source_cube.id, target_cube.id ] = vd_pipe
+            self.__plotter.add( vd_pipe )
 
         # Prepare the first frame
         console.info(f"> {len(self.__cubes)} cubes, {len(self.__pipes)} pipes.")
@@ -58,7 +46,7 @@ class BgSceneManager:
     def alter_pipe_appearance(self, source: CubeId, target: CubeId, highlight: bool = False):
         pipe = tuple(sorted((source, target)))
         if pipe in self.__pipes:
-            self.__pipes[pipe].alter_appearance(highlight = highlight)
+            self.__pipes[ *pipe ].alter_appearance(highlight = highlight)
         else:
             console.error(f"Pipe {pipe} not found in BG-scene.")
 

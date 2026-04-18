@@ -9,11 +9,11 @@ class CircuitLayout(ZxLayout):
 
         qubits = len(vzx.get_qubits())
         layers = len(vzx.get_layers())
-        for node in vzx.nodes:
-            qubit = qubits - vzx.get_zx_node(node).qubit if qubits > 0 else 0
-            layer = vzx.get_zx_node(node).layer if layers > 0 else 0
+        for zx_node in vzx.get_zx_nodes():
+            qubit = qubits - zx_node.qubit if qubits > 0 else 0
+            layer = zx_node.layer if layers > 0 else 0
 
-            self.placements[node] = (layer, qubit)
+            self.placements[zx_node.id] = (layer, qubit)
 
     def get_node_placement(self, node: NodeId) -> tuple[float, float]:
         return self.placements[node]

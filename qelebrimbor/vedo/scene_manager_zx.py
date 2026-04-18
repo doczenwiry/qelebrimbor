@@ -1,10 +1,11 @@
-from vedo.plotter import Plotter
+from vedo.plotter import Plotter  # type: ignore[import-untyped]
 
-from qelebrimbor.vedo.shapes_zx import ZxNode, ZxEdge
+from qelebrimbor.common.attributes_zx import NodeId
+from qelebrimbor.common.components import ZxEdge
+from qelebrimbor.vedo.shapes_zx import VdNode, VdEdge
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.attributes_zx import NodeId
 
 from logging import getLogger
 console = getLogger(__name__)
@@ -18,26 +19,25 @@ class ZxSceneManager:
         self.__edges = dict()
 
         # Prepare all the elements for the ZX scene (i.e. nodes and edges)
-        for node in vzx.nodes:
-            zx_node = ZxNode(node, vzx.get_zx_node(node).type, layout.get_node_placement(node)).z(+0.1)
-            self.__nodes[ node ] = zx_node
+        for node in vzx.get_zx_nodes():
+            vd_node = VdNode(node, layout.get_node_placement(node.id)).z(+0.1)
+            self.__nodes[ node.id ] = vd_node
+            self.__plotter.add( vd_node )
 
-        for source, target in vzx.get_edges():
-            zx_edge = ZxEdge(source, target, vzx.get_zx_edge(source, target).type,
-                             layout.get_node_placement(source), layout.get_node_placement(target)
-                             ).z(-0.1)
-            self.__edges[ source , target ] = zx_edge
-
-        self.__plotter.add(list(self.__nodes.values()))
-        self.__plotter.add(list(self.__edges.values()))
+        for edge in vzx.get_zx_edges():
+            vd_edge = VdEdge(
+                edge, layout.get_node_placement(edge.source), layout.get_node_placement(edge.target)
+            ).z(-0.1)
+            self.__edges[ edge.source , edge.target ] = vd_edge
+            self.__plotter.add( vd_edge )
 
         self.__selected_object = None
 
     def alter_node_appearance(self, node: NodeId, highlight: bool = False):
         self.__nodes[ node ].alter_appearance(highlight = highlight)
 
-    def alter_edge_appearance(self, source: NodeId, target: NodeId, highlight: bool = False):
-        self.__edges[ source , target ].alter_appearance(highlight = highlight)
+    def alter_edge_appearance(self, edge: ZxEdge, highlight: bool = False):
+        self.__edges[ edge.source, edge.target ].alter_appearance(highlight = highlight)
 
     # def on_left_click(self, event):
     #     if isinstance(event.object, ZxNode):

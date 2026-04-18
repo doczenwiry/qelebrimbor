@@ -1,5 +1,6 @@
-from vedo import Assembly, Disc, Line, Text3D, Box
+from vedo import Assembly, Disc, Line, Text3D, Box  # type: ignore[import-untyped]
 
+from qelebrimbor.common.components import ZxNode, ZxEdge
 from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 
@@ -11,18 +12,18 @@ console = getLogger(__name__)
 SPACING_X = 6.0
 SPACING_Y = 6.0
 
-class ZxNode(Assembly):
-    def __init__(self, node: NodeId, node_type: NodeType, placement: tuple[float, float]):
-        self.zx_node = node
+class VdNode(Assembly):
+    def __init__(self, node: ZxNode, placement: tuple[float, float]):
+        self.zx_node: ZxNode = node
 
         disc_position = (SPACING_X * placement[0], SPACING_Y * placement[1], 0.00)
         text_position = (SPACING_X * placement[0], SPACING_Y * placement[1], 0.05)
-        radius = 1.0 if node_type != NodeType.O else 0.75
-        color = COLOR_NAMES[ node_type.name ]
+        radius = 1.0 if node.type != NodeType.O else 0.75
+        color = COLOR_NAMES[ node.type.name ]
 
         self.__disc = Disc(pos = disc_position, r1 = 0.0, r2 = radius, c = color)
         self.__background = Disc(pos = disc_position, r1 = 0.0, r2 = 1.15 * radius, c = 'white')
-        self.__text = Text3D(str(node), pos = text_position, font = 'Calco', justify = 'centered', c = 'white')
+        self.__text = Text3D(str(node.id), pos = text_position, font = 'Calco', justify = 'centered', c = 'white')
 
         super().__init__( [ self.__background, self.__disc, self.__text ] )
 
@@ -32,19 +33,16 @@ class ZxNode(Assembly):
         color = 'k5' if highlight else 'w'
         self.__background.color(color)
 
-class ZxEdge(Assembly):
+class VdEdge(Assembly):
     LENGTH = 3.00
     DIAMETER = 0.50
 
     def __init__(self,
-            source: NodeId, target: NodeId, edge_type: EdgeType,
-            source_placement: tuple[float, float], target_placement: tuple[float, float]
+            edge: ZxEdge, source_placement: tuple[float, float], target_placement: tuple[float, float]
     ):
-        self.zx_source: NodeId = source
-        self.zx_target: NodeId = target
-        self.edge_type = edge_type
+        self.zx_edge: ZxEdge = edge
 
-        color = 'k' if edge_type == EdgeType.IDENTITY else 'y4'
+        color = 'k' if edge.type == EdgeType.IDENTITY else 'y4'
 
         source_position = Coordinates(SPACING_X * source_placement[0], SPACING_Y * source_placement[1],  0.05)
         target_position = Coordinates(SPACING_X * target_placement[0], SPACING_Y * target_placement[1], -0.05)
@@ -52,7 +50,7 @@ class ZxEdge(Assembly):
         # Create the line of this edge
         self.__edge = Line(p0 = source_position, p1 = target_position, lw = 5, c = color)
 
-        console.debug(f"ZxEdge {source}L{source_placement}@{source_position} - {target}L{target_placement}@{target_position}")
+        console.debug(f"ZxEdge {edge.source}L{source_placement}@{source_position} - {edge.target}L{target_placement}@{target_position}")
 
         # Create the background of this edge for highlighting
         self.__background = Line(p0 = source_position, p1 = target_position, lw = 8, c = 'white')
@@ -61,5 +59,5 @@ class ZxEdge(Assembly):
         super().__init__( self.__background, self.__edge )
 
     def alter_appearance(self, highlight: bool = False):
-        color = 'k5' if highlight else 'w' if self.edge_type == EdgeType.IDENTITY else 'y4'
+        color = 'k5' if highlight else 'w' if self.zx_edge.type == EdgeType.IDENTITY else 'y4'
         self.__background.linecolor(color)

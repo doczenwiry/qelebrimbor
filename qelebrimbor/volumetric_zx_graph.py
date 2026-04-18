@@ -4,6 +4,7 @@ from typing import Iterable
 
 import pyzx as zx
 import networkx as nx
+from vedo import Cube
 
 from qelebrimbor.common.coordinates import Coordinates
 
@@ -251,7 +252,8 @@ class VolumetricZxGraph(nx.Graph):
             # Dump bg-cubes
             file.write(f"BG-CUBES:\n")
             for cube_kind in [ CubeKind.OOO, CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ, CubeKind.YYY ]:
-                content = map(lambda cb : str(cb) + '@' + str(self.get_bg_cube(cb).position).replace(" ", ""), self.get_cubes(cube_kind = cube_kind))
+                content = map(lambda cb : str(cb) + '@' + str(self.get_bg_cube(cb).position).replace(" ", ""), self.get_cubes(
+                    kind= cube_kind))
                 file.write(f">{cube_kind.name}: {" ".join(content)}\n")
             # Dump bg-pipes
             file.write(f"BG-PIPES:\n")
@@ -272,6 +274,9 @@ class VolumetricZxGraph(nx.Graph):
                 self.get_edges()
             )
             file.write(f"ZX-EDGES-BG-PIPES:\n{"\n".join(content)}")
+
+    def get_zx_nodes(self, node_type: NodeType | None = None, qubit: QubitId | None = None, layer: LayerId | None = None):
+        return map( lambda nd: self.get_zx_node(nd), self.get_nodes(node_type, qubit, layer) )
 
     def get_nodes(self, node_type: NodeType | None = None, qubit: QubitId | None = None, layer: LayerId | None = None):
         return filter(
@@ -295,6 +300,9 @@ class VolumetricZxGraph(nx.Graph):
             number_of_nodes += 1
         number_of_edges = number_of_edges // 2
         return number_of_nodes, number_of_edges
+
+    def get_zx_edges(self, edge_type: EdgeType | None = None):
+        return map(lambda edge: self.get_zx_edge(*edge), self.get_edges(edge_type = edge_type))
 
     def get_edges(self, edge_type: EdgeType | None = None):
         return filter(
@@ -322,10 +330,16 @@ class VolumetricZxGraph(nx.Graph):
     def number_of_pipes(self) -> int:
         return self.__bg_graph.number_of_edges()
 
-    def get_cubes(self, cube_kind: CubeKind | None = None):
+    def get_bg_cubes(self, kind: CubeKind | None = None):
+        return map(lambda cb: self.get_bg_cube(cb), self.get_cubes(kind= kind))
+
+    def get_cubes(self, kind: CubeKind | None = None):
         return filter(
-            lambda cb: (cube_kind is None or self.get_bg_cube(cb).kind == cube_kind), self.__bg_graph.nodes()
+            lambda cb: (kind is None or self.get_bg_cube(cb).kind == kind), self.__bg_graph.nodes()
         )
+
+    def get_bg_pipes(self, pipe_type: EdgeType | None = None):
+        return map(lambda pp: self.get_bg_pipe(*pp), self.get_pipes(pipe_type = pipe_type))
 
     def get_pipes(self, pipe_type: EdgeType | None = None):
         return filter(
