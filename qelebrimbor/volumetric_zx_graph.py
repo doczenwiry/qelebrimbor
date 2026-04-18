@@ -141,6 +141,8 @@ class VolumetricZxGraph(nx.Graph):
                         qubit = int(qubit), layer = int(layer),
                         realising_cube = int(realising_cube)
                     )
+                    vzx.__zx_qubits[int(qubit)].append(node)
+                    vzx.__zx_layers[int(layer)].append(node)
                 current_line = file.readline()
 
             # Read the edges header
