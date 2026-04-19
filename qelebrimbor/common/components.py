@@ -13,13 +13,19 @@ class ZxNode(RecordClass):
     realising_cube: CubeId = -1
 
     def __str__(self):
-        return f"{self.id}[{self.type.name}]"
+        return f"N{self.id}:{self.type}"
+
+    def __repr__(self):
+        return str(self)
 
 class ZxEdge(RecordClass):
     source: NodeId
     target: NodeId
     type: EdgeType
     realisation: list[PipeId] = []
+
+    def __str__(self):
+        return f"N{self.source}-{self.type.name[0]}-N{self.target}"
 
 class BgCube(RecordClass):
     kind: CubeKind
@@ -30,10 +36,10 @@ class BgCube(RecordClass):
     def __str__(self):
         content = ""
         if self.id != -1:
-            content += f"#{self.id}"
-        content += f"{self.kind}@{self.position}"
+            content += f"#{self.id}:"
         if self.realised_node != -1:
-            content += f"[N{self.realised_node}]"
+            content += f"N{self.realised_node}:"
+        content += f"{self.kind}@{self.position}"
         return content
 
     def __repr__(self):

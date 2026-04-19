@@ -145,7 +145,8 @@ def check_consistency(kinds: Iterable[CubeKind], faces: Iterable[Octant], manhat
             positions = sorted(OctahedronHelper.get_face_positions(manhattan_distance, target_face), key = SORTING_FUNCTIONS[target_face])
             for target_position in positions:
                 target = BgCube(target_kind, target_position)
-                explored_overhead, paths = PathFinderDFS.find_minimal_paths(start = source, final = target, maximal_overhead = 8)
+                paths = PathFinderDFS.find_minimal_paths(start = source, final = target, maximal_overhead = 8)
+                explored_overhead = paths[0].overhead()
                 statistics[explored_overhead] += 1
                 explored_overheads[target_position] = explored_overhead
                 computed_overheads[target_position] = Path.minimal_overhead_possible(source, target)
@@ -159,9 +160,9 @@ def check_consistency(kinds: Iterable[CubeKind], faces: Iterable[Octant], manhat
                     explored = explored_overheads[target_position]
                     computed = computed_overheads[target_position]
                     if explored != computed:
-                        console.info(f"Inconsistency : {target_position} [relative:{target_position - source_position}]")
+                        console.info(f"Inconsistency : {target_position} [relative:{target_position - source.position}]")
                         console.info(f"> Target relative octant : {target_face.value}")
-                        console.info(f"> Source reach : {source_kind.get_reach()}")
+                        console.info(f"> Source reach : {source.kind.get_reach()}")
                         console.info(f"> Explored : {explored_overheads[target_position]}")
                         console.info(f"> Computed : {computed_overheads[target_position]}")
                 inconsistencies += 1

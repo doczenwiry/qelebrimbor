@@ -22,6 +22,7 @@ class BlockGraphConstructor:
     def realise_nodes(vzx: VolumetricZxGraph, specifications: dict[NodeId, BgCube]):
         for node in vzx.nodes:
             if not vzx.is_zx_node_realised(node) and node in specifications:
+                console.info(f"Node: {node} -> {specifications[node]}")
                 vzx.realise_zx_node(node, specifications[node])
 
     @staticmethod
@@ -29,12 +30,12 @@ class BlockGraphConstructor:
         for source, target in endpoints:
             start = vzx.get_bg_cube(source)
             final = vzx.get_bg_cube(target)
-            minimal_overhead, paths = PathFinderDFS.find_minimal_paths(start, final, occupied_positions = vzx.occupied)
+            paths = PathFinderDFS.find_minimal_paths(start, final, unavailable_positions= vzx.occupied)
             path = paths[0]
             proposal = PathSpecification(
                 start.id, final.id,
-                extras = path.cubes[1:-1],
-                pipes = [ EdgeType.IDENTITY for _ in range(len(path.cubes) - 1) ]
+                extras = path.extras,
+                pipes = [EdgeType.IDENTITY for _ in range(len(path.extras) + 1)]
             )
 
             # if vzx.is_path_valid(source, target, proposal):
@@ -46,7 +47,7 @@ class BlockGraphConstructor:
             source, target = edge
 
             if vzx.is_zx_edge_realised(*edge):
-                console.warning(f"Edge: {source} -> {target} is already realised : {vzx.get_zx_edge(source, target).realisation}")
+                console.debug(f"Edge: {source} -> {target} is already realised : {vzx.get_zx_edge(source, target).realisation}")
                 continue
 
             if edge in specifications:
@@ -61,12 +62,10 @@ class BlockGraphConstructor:
                 else:
                     start = source_cube
                     final = target_cube
-                minimal_overhead, paths = PathFinderDFS.find_minimal_paths(start, final, occupied_positions = vzx.occupied)
-                path = paths[0]
+
                 proposal = PathSpecification(
                     start.id, final.id,
-                    extras = path.cubes[1:-1],
-                    pipes = [ vzx.get_zx_edge(source_cube.realised_node, target_cube.realised_node).type for _ in range(len(path.cubes) - 1) ]
+                    pipes = [ vzx.get_zx_edge(source, target).type ]
                 )
             else:
                 proposal = None

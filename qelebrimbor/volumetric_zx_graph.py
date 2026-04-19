@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, deque
 from enum import Enum
 from typing import Iterable
 
@@ -352,7 +352,7 @@ class VolumetricZxGraph(nx.Graph):
     def realise_zx_node(self, node: NodeId, cube: BgCube) -> CubeId:
         """Realise the node as a cube of the given kind placed at the given coordinates."""
         if cube.kind not in CubeKind.suitable_kinds(self.get_zx_node(node).type):
-            raise Exception(f"Requested {cube.kind} is not compatible with {self.get_zx_node(node).type}")
+            raise Exception(f"Proposed cube {cube} is not compatible with {self.get_zx_node(node).type}")
 
         if not self.has_node(node):
             raise Exception(f"Node #{node} not found in the ZX-graph.")
@@ -461,6 +461,22 @@ class VolumetricZxGraph(nx.Graph):
         bg_pipe = BgPipe(source = source.id, target = target.id, type = pipe_type)
         self.__bg_graph.edges[source.id, target.id][VolumetricZxGraph.KEY_BG_PIPE] = bg_pipe
 
+    def __is_alternative_realising_cube(self, node: NodeId, cube: BgCube):
+        visited: set[CubeId] = { cube.id }
+        queue: deque[BgCube] = deque([cube])
+        while queue:
+            current = queue.popleft()
+            for nb in self.get_cube_neighbours(current.id):
+                neighbor = self.get_bg_cube(nb)
+                if neighbor.kind == cube.kind:
+                    if neighbor.realised_node == node:
+                        return True
+
+                    visited.add(nb)
+                    if nb not in visited:
+                        queue.append(neighbor)
+        return False
+
     def is_path_valid(self, source: NodeId, target: NodeId, proposal: PathSpecification) -> bool:
         is_hadamard_path = False
 
@@ -468,7 +484,10 @@ class VolumetricZxGraph(nx.Graph):
         final = self.get_bg_cube(proposal.target_cube)
 
         if start.id != self.get_zx_node(source).realising_cube:
-            raise Exception(f"Cube #{start} is not realising source {source}.")
+            if self.__is_alternative_realising_cube(source, start):
+                console.debug(f"Start {start} is an alternative realising cube of node {source}.")
+            else:
+                raise Exception(f"Start {start} is not realising source node {source}.")
 
         console.debug(f"Checking path validity:")
         console.debug(f"> Start cube : {start}")
@@ -486,35 +505,35 @@ class VolumetricZxGraph(nx.Graph):
 
             # Check that the cube type is either X or Z (Y and boundaries must be leaves)
             if current.kind in [ CubeKind.OOO, CubeKind.YYY ]:
-                console.debug(f"> CubeKind.OOO and CubeKind.YYY can only appear at the ends of a path : {current}.")
+                console.warning(f"> CubeKind.OOO and CubeKind.YYY can only appear at the ends of a path : {current}.")
                 return False
 
             # Check that the current_position is not already occupied
             if current.position in self.occupied:
-                console.debug(f"> Current position is already occupied : {current}")
+                console.warning(f"> Current position is already occupied : {current}")
                 return False
 
             # Check that the current_position is not already occupied by an extra cube
             if current.position in extra_positions:
-                console.debug(f"> Current position is already in path : {current}")
+                console.warning(f"> Current position is already in path : {current}")
                 return False
             extra_positions.add(current.position)
 
             # Check that the step taken lies in both reaches of successive cubes
             step_taken = current.position - previous.position
             if Spacetime.ORIGIN.get_manhattan_distance(step_taken) != 1:
-                console.debug(f"> Consecutive cubes are not adjacent [{previous}-{current}]")
+                console.warning(f"> Consecutive cubes are not adjacent [{previous}-{current}]")
                 return False
 
             if not Spacetime.contains(previous_reach, step_taken) or not Spacetime.contains(current_reach, step_taken):
-                console.debug(f"> Reaches do not contain step [{step_taken}]: {previous} {current}")
+                console.warning(f"> Reaches do not contain step [{step_taken}]: {previous} {current}")
                 return False
 
             # Check that the current pipe has a type consistent with what is allowed
             current_pipe_type = proposal.pipes[index]
             inferred = BlockGraphHelper.infer_pipe_type(previous.kind, current.kind)
             if not current_pipe_type in inferred:
-                console.debug(f"> Pipe type is not allowed between {previous} and {current} [{current_pipe_type} not in {inferred}].")
+                console.warning(f"> Pipe type is not allowed between {previous} and {current} [{current_pipe_type} not in {inferred}].")
                 return False
 
             if current_pipe_type == EdgeType.HADAMARD:
@@ -526,6 +545,12 @@ class VolumetricZxGraph(nx.Graph):
         if self.is_zx_node_realised(target):
             if final.id != self.get_zx_node(target).realising_cube:
                 raise Exception(f"Cube #{final} is not realising target {target}.")
+
+            if final.id != self.get_zx_node(target).realising_cube:
+                if self.__is_alternative_realising_cube(target, final):
+                    console.debug(f"Final {final} is an alternative realising cube of node {target}.")
+                else:
+                    raise Exception(f"Final {final} is not realising target node {target}.")
 
             # Check that the final step taken lies in the reach of the target cube
             step_taken = final.position - previous.position
@@ -617,7 +642,12 @@ class VolumetricZxGraph(nx.Graph):
             print(f"Pipe {pipe.source}-{pipe.target} : {pipe.type.name}")
 
     def log_report(self):
-        console.info(f"Realised nodes : {sum(1 for node in self.nodes if self.is_zx_node_realised(node))} of {self.number_of_nodes()}")
+        number_of_spiders = sum(1 for node in self.get_zx_nodes() if node.type in { NodeType.X , NodeType.Z })
+        number_of_realised_spiders = sum(1 for node in self.get_zx_nodes() if node.type in { NodeType.X, NodeType.Z } and self.is_zx_node_realised(node.id))
+        console.info(f"Realised spiders : {number_of_realised_spiders} of {number_of_spiders}")
+        number_of_boundaries = sum(1 for node in self.get_zx_nodes() if node.type in { NodeType.O , NodeType.Y })
+        number_of_realised_boundaries = sum(1 for node in self.get_zx_nodes() if node.type in { NodeType.O, NodeType.Y } and self.is_zx_node_realised(node.id))
+        console.info(f"Realised boundaries : {number_of_realised_boundaries} of {number_of_boundaries}")
         console.info(f"Overall volume : {self.total_volume()}")
 
         excess_volume: dict[EdgeId, int] = dict()

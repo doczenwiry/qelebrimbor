@@ -23,6 +23,7 @@ logging.basicConfig(level=logging.INFO)
 logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
 logging.getLogger('qelebrimbor.helpers.blockgraph').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.vedo').setLevel(logging.INFO)
 
 def find_terminal_node(graph: pyzx.graph.base.BaseGraph, qubit: int) -> int:
@@ -116,28 +117,21 @@ if __name__ == "__main__":
     console.info(f"Cycle {index} : {cycle}")
     find_realisation(vzx, cycle, maximal_overhead = 2)
 
-    index = 1
-    cycle = cycles[index]
-    console.info(f"Cycle {index} : {cycle}")
-    BlockGraphConstructor.realise_nodes(
-        vzx = vzx,
-        specifications = {
-            1 : BgCube(CubeKind.ZZX, Coordinates(1,2,1))
-        }
-    )
-    BlockGraphConstructor.realise_edges(vzx, {
-        (0,1) : None
-    })
-
-    BlockGraphConstructor.connect_cubes(vzx, [(14, 23)])
+    # index = 1
+    # cycle = cycles[index]
+    # console.info(f"Cycle {index} : {cycle}")
+    # BlockGraphConstructor.realise_nodes(
+    #     vzx = vzx, specifications = { 1 : BgCube(CubeKind.ZZX, Coordinates(0,1,1)) }
+    # )
+    # BlockGraphConstructor.connect_cubes(
+    #     vzx = vzx, endpoints = [ (17, 20), (19, 20), (14, 24) ]
+    # )
 
     index = 2
     cycle = cycles[index]
     console.info(f"Cycle {index} : {cycle}")
 
-    extend_unrealised(vzx, edge_specifications = { (0,1) : None })
-
-    vzx.log_report()
+    # extend_unrealised(vzx)
 
     hexagon = prepare_layout()
     viewer = VolumetricZxGraphViewer(vzx = vzx, label = "steane-code-7", layout = hexagon)

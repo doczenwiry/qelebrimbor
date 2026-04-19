@@ -18,8 +18,9 @@ from qelebrimbor.vedo.zx_layout.manual import ManualLayout
 import logging
 console = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
+logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
 
 def find_terminal_node(graph: zx.graph.base.BaseGraph, qubit: int) -> int:
     return max(
@@ -94,7 +95,6 @@ if __name__ == "__main__":
         file.write(pyzx_graph.to_json())
 
     vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)
-    vzx.print_summary()
 
     MinimalCycleBasisAnalyser.analyse(vzx)
     cycles = MinimalCycleBasisAnalyser.decompose(vzx)
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     index = 0
     cycle = cycles[index]
     console.info(f"Cycle {index} : {cycle}")
-    find_realisation(vzx, cycle)
+    find_realisation(vzx, cycle, maximal_overhead = 2)
 
     index = 1
     cycle = cycles[index]

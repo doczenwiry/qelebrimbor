@@ -28,7 +28,7 @@ class ZxSceneManager:
             vd_edge = VdEdge(
                 edge, layout.get_node_placement(edge.source), layout.get_node_placement(edge.target)
             ).z(-0.1)
-            self.__edges[ edge.source , edge.target ] = vd_edge
+            self.__edges[ edge.source , edge.target] = vd_edge
             self.__plotter.add( vd_edge )
 
         self.__selected_object = None

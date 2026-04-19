@@ -11,8 +11,9 @@ class MinimalCycleBasisAnalyser:
     @staticmethod
     def analyse(vzx: VolumetricZxGraph):
         console.info(f"Minimal cycle-basis :")
-        for cycle in MinimalCycleBasisAnalyser.decompose(vzx):
-            console.info(f"> {cycle}")
+        cycles = MinimalCycleBasisAnalyser.decompose(vzx)
+        for index in range(len(cycles)):
+            console.info(f"Index {index} : {cycles[index]}")
 
     @staticmethod
     def decompose(vzx: VolumetricZxGraph) -> list[list[NodeId]]:

@@ -5,22 +5,24 @@ from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import EdgeType
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import Spacetime
 
 @total_ordering
 class Path:
     def __init__(self, source: BgCube, target: BgCube):
-        self.cubes = [ source ]
-        self.occupied = { source.position }
         self.source = source
         self.target = target
+        self.extras: list[BgCube] = []
+        self.occupied = { source.position }
+
+    def get_terminal(self):
+        return self.extras[-1] if len(self.extras) > 0 else self.source
 
     def has_reached_target(self, edge_type: EdgeType = EdgeType.IDENTITY):
-        final = self.cubes[-1]
-        terminal = self.cubes[-2]
-        connectable = BlockGraphHelper.connectable(terminal, self.target, edge_type)
-        return final.kind == self.target.kind and final.position == self.target.position and connectable
+        terminal = self.get_terminal()
+        return BlockGraphHelper.connectable(terminal, self.target, edge_type)
 
     def overhead(self):
         return self.manhattan_length() - self.source.position.get_manhattan_distance(self.target.position)
@@ -82,33 +84,46 @@ class Path:
         return overhead
 
     def manhattan_distance_remaining(self) -> int:
-        terminal = self.cubes[-1]
+        terminal = self.extras[-1]
         return terminal.position.get_manhattan_distance(self.target.position)
 
     def manhattan_length(self):
-        return len(self.cubes) - 1
+        return len(self.extras)
 
     def occupies(self, position: Coordinates):
         return position in self.occupied
 
     def append(self, cube: BgCube):
-        self.cubes.append(cube)
+        self.extras.append(cube)
         self.occupied.add(cube.position)
 
     def copy(self):
         cp = Path(self.source, self.target)
-        cp.cubes.extend(self.cubes[1:])
+        cp.extras.extend(self.extras)
         cp.occupied = set(self.occupied)
         return cp
+
+    def to_specification(self) -> PathSpecification:
+        pipes = []
+        previous = self.source
+        for current in self.extras:
+            pipes.append( next(iter(BlockGraphHelper.infer_pipe_type(previous.kind, current.kind))) )
+            previous = current
+        pipes.append( next(iter(BlockGraphHelper.infer_pipe_type(previous.kind, self.target.kind))) )
+        return PathSpecification(
+            source_cube= self.source.id, target_cube= self.target.id,
+            extras = self.extras, pipes = pipes
+        )
+
 
     def __lt__(self, other):
         return self.manhattan_distance_remaining() < other.manhattan_distance_remaining()
 
     def __str__(self):
-        if len(self.cubes) == 2:
+        if len(self.extras) == 2:
             return str(self.source) + " -> " + str(self.target)
         else:
-            return str(self.source) + " -> " + str(self.cubes[1:-1]) + " -> " + str(self.target)
+            return str(self.source) + " -> " + str(self.extras[1:-1]) + " -> " + str(self.target)
 
     def __repr__(self):
-        return str(self.cubes)
+        return str(self.extras)

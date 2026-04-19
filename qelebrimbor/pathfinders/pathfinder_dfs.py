@@ -21,11 +21,13 @@ class PathFinderDFS:
     def find_minimal_paths(
         start: BgCube, final: BgCube,
         node_types: list[NodeType] | None = None, edge_types: list[EdgeType] | None = None,
-        occupied_positions: set[Coordinates] = set(), reserved_positions: dict[Coordinates, CubeId] = dict(),
+        unavailable_positions: set[Coordinates] | None = None,
         maximal_overhead: int = 6
-    ) -> tuple[int, list[Path]]:
+    ) -> list[Path]:
         node_type_restrictions: list[NodeType] = node_types if node_types else []
         edge_type_restrictions: list[EdgeType] = edge_types if edge_types else []
+
+        unavailable = unavailable_positions or set()
 
         if any(tr in {NodeType.O, NodeType.Y} for tr in node_type_restrictions):
             raise Exception(f"Path cannot contain cubes of NodeType.O or NodeType.Y.")
@@ -35,7 +37,6 @@ class PathFinderDFS:
 
         paths: list[Path] = []
 
-        minimal_overhead = -1
         minimal_number_of_cubes = nt if nt % 2 == 0 else nt + 1
         maximal_volume = max(start.position.get_manhattan_distance(final.position), minimal_number_of_cubes) + maximal_overhead + 2
         console.info(f"Maximal volume considered : {maximal_volume}")
@@ -45,47 +46,45 @@ class PathFinderDFS:
         queue.put( initial )
 
         console.info(f"Searching for paths from {start} to {final} [{node_types}].")
-        console.info(f"> Occupied : {occupied_positions}")
-        console.info(f"> Reserved : {reserved_positions}")
+        console.info(f"> Unavailable positions : {unavailable}")
 
         while not queue.empty():
             path: Path = queue.get()
-            current = path.cubes[-1]
-            length = len(path.cubes)
-            console.debug(f"Current path : {path.cubes}")
+            terminal = path.get_terminal()
+            length = len(path.extras) + 1
+            console.debug(f"Current path : {path.extras}")
             node_type_required = { node_type_restrictions[length-1] } if length <= nt else { NodeType.X, NodeType.Y, NodeType.Z, NodeType.O }
             pipe_type_required =   edge_type_restrictions[length-1]   if length <= et else EdgeType.IDENTITY
             console.debug(f"> Types required : {node_type_required}")
-            for next_cube in BlockGraphHelper.get_candidate_constellation(current, node_types = node_type_required, pipe_type = pipe_type_required):
-                extended: Path = path.copy()
-                extended.append(next_cube)
+            for candidate in BlockGraphHelper.get_candidate_constellation(terminal, node_types = node_type_required, pipe_type = pipe_type_required):
+                if path.has_reached_target() and path.manhattan_length() >= nt:
+                    manhattan_length = path.manhattan_length()
+                    path_overhead = path.overhead()
 
-                if extended.has_reached_target() and extended.manhattan_length() >= nt:
-                    manhattan_length = extended.manhattan_length()
-                    extended_overhead = extended.overhead()
-
-                    console.info(f"> Target reached : {next_cube} [+{extended_overhead}]")
-                    console.debug(f">> {extended}")
+                    console.info(f"> Target reached : {candidate} [+{path_overhead}]")
+                    console.debug(f">> {path}")
 
                     if manhattan_length < maximal_volume:
                         maximal_volume = manhattan_length
-                        minimal_overhead = extended_overhead
                         paths.clear()
 
                     if manhattan_length == maximal_volume:
-                        paths.append( extended )
+                        paths.append( path )
 
-                if next_cube.kind in [ CubeKind.YYY, CubeKind.OOO ]:
+                if candidate.kind in [ CubeKind.YYY, CubeKind.OOO ]:
                     continue
 
-                if path.occupies(next_cube.position) or next_cube.position in occupied_positions or next_cube.position in reserved_positions:
+                if path.occupies(candidate.position) or candidate.position in unavailable:
                     continue
+
+                extended: Path = path.copy()
+                extended.append(candidate)
 
                 if extended.manhattan_length() + extended.manhattan_distance_remaining() < maximal_volume:
-                    console.debug(f"> {next_cube}")
+                    console.debug(f"> {candidate}")
                     queue.put( extended )
 
-        return minimal_overhead, paths
+        return paths
 
     @staticmethod
     def find_paths(
@@ -124,7 +123,7 @@ class PathFinderDFS:
 
         while not queue.empty():
             path = queue.get()
-            current = path.cubes[-1]
+            current = path.extras[-1]
             kind, position = current
             console.debug(f"Current : {kind}@{position}")
             for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(current):

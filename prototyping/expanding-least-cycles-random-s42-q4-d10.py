@@ -18,12 +18,12 @@ LAYERS = 10
 import logging
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger(__name__)
-logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
-logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.DEBUG)
+logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.INFO)
 logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.DEBUG)
-logging.getLogger('qelebrimbor.vedo').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.vedo').setLevel(logging.INFO)
 
 random.seed(SEED)
 if __name__ == "__main__":
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     cycles = MinimalCycleBasisAnalyser.decompose(vzx)
 
     index = 0
-    cycle = cycles[index] [6:] + cycles[index][:6]
+    cycle = cycles[index]
     console.info(f"Cycle {index} : {cycle}")
     find_realisation(vzx, cycle, maximal_overhead = 2)
 
@@ -50,38 +50,39 @@ if __name__ == "__main__":
     index = 4
     cycle = cycles[index]
     console.info(f"Cycle {index} : {cycle}")
-    BlockGraphConstructor.realise_nodes(vzx,
-        specifications = {
-            22 : BgCube(CubeKind.XXZ, Coordinates( 2, 0, 0)),
-        }
-    )
-    BlockGraphConstructor.realise_edges(vzx, {})
-
-    index = 6
-    cycle = cycles[index]
-    console.info(f"Cycle {index} : {cycle}")
     find_completion(vzx, cycle)
+    # BlockGraphConstructor.realise_nodes(vzx,
+    #     specifications = {
+    #         22 : BgCube(CubeKind.XXZ, Coordinates( 2, 0, 0)),
+    #     }
+    # )
+    # BlockGraphConstructor.realise_edges(vzx, {})
 
-    index = 5
-    cycle = cycles[index]
-    console.info(f"Cycle {index} : {cycle}")
-    find_completion(vzx, cycle)
-
-    index = 3
-    cycle = cycles[index]
-    console.info(f"Cycle {index} : {cycle}")
-    find_completion(vzx, cycle)
-
-    index = 2
-    cycle = cycles[index]
-    console.info(f"Cycle {index} : {cycle}")
-    find_completion(vzx, cycle)
+    # index = 6
+    # cycle = cycles[index]
+    # console.info(f"Cycle {index} : {cycle}")
+    # find_completion(vzx, cycle)
+    #
+    # index = 5
+    # cycle = cycles[index]
+    # console.info(f"Cycle {index} : {cycle}")
+    # find_completion(vzx, cycle)
+    #
+    # index = 3
+    # cycle = cycles[index]
+    # console.info(f"Cycle {index} : {cycle}")
+    # find_completion(vzx, cycle)
+    #
+    # index = 2
+    # cycle = cycles[index]
+    # console.info(f"Cycle {index} : {cycle}")
+    # find_completion(vzx, cycle)
 
     # extend_unrealised(vzx)
     # extend_unrealised(vzx)
     # extend_unrealised(vzx)
 
-    vzx.log_summary(cubes = True)
+    # vzx.log_summary(cubes = True)
 
     console.info(f"Realised nodes : {sum(1 for node in vzx.nodes if vzx.is_zx_node_realised(node))} of {vzx.number_of_nodes()}")
     console.info(f"Overall volume : {vzx.number_of_cubes()}")
