@@ -1,17 +1,17 @@
-from qelebrimbor.common.attributes_bg import CubeId, CubeKind
-from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.attributes_zx import NodeId, EdgeType
+from qelebrimbor.common.attributes_bg import CubeId
+from qelebrimbor.common.components import BgCube
+from qelebrimbor.common.attributes_zx import EdgeType
 
 from logging import getLogger
 console = getLogger(__name__)
 
 class PathSpecification:
-    def __init__(self, source_cube: CubeId, target_cube: CubeId,
-        extras: list[tuple[CubeKind, Coordinates]] | None = None,
+    def __init__(self, source: CubeId, target: CubeId,
+        extras: list[BgCube] | None = None,
         pipes: list[EdgeType] | None = None
     ):
-        self.source_cube = source_cube
-        self.target_cube = target_cube
+        self.source_cube = source
+        self.target_cube = target
         self.extras = extras if extras is not None else []
         self.pipes = pipes if pipes is not None else [ EdgeType.IDENTITY ]
 

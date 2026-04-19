@@ -22,13 +22,22 @@ class ZxEdge(RecordClass):
     realisation: list[PipeId] = []
 
 class BgCube(RecordClass):
-    id: CubeId
     kind: CubeKind
     position: Coordinates
+    id: CubeId = -1
     realised_node: NodeId = -1
 
     def __str__(self):
-        return f"#{self.id}:{self.kind}@{self.position}"
+        content = ""
+        if self.id != -1:
+            content += f"#{self.id}"
+        content += f"{self.kind}@{self.position}"
+        if self.realised_node != -1:
+            content += f"[N{self.realised_node}]"
+        return content
+
+    def __repr__(self):
+        return str(self)
 
 class BgPipe(RecordClass):
     source: CubeId

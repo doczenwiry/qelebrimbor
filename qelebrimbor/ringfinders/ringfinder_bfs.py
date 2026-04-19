@@ -1,4 +1,7 @@
 import logging
+
+from qelebrimbor.common.components import BgCube
+
 console = logging.getLogger(__name__)
 
 from collections import deque
@@ -22,54 +25,54 @@ class RingFinderBFS:
         e = len(edges) if edges else 0
         rings: list[Ring] = []
 
-        root_kind = CubeKind.suitable_kinds(nodes[0])[0]
-        root_position = Spacetime.ORIGIN
-
-        root = (root_kind, root_position)
+        root = BgCube(kind = CubeKind.suitable_kinds(nodes[0])[0], position = Spacetime.ORIGIN)
 
         queue: deque = deque()
         queue.append( Ring(root) )
 
-        console.debug(f"Starting at {root}")
+        console.info(f"Starting at {root} [n={n}, e={e}]")
 
         while len(queue) > 0 and len(rings) != number_sought:
             ring = queue.popleft()
             length = len(ring.cubes)
-            terminal_cube = ring.cubes[-1]
-            terminal_kind, terminal_position = terminal_cube
+            terminal: BgCube = ring.cubes[-1]
             node_types = { nodes[ length ] } if length < n else { NodeType.X , NodeType.Z }
             pipe_type = edges[ length-1 ] if edges and length <= e else EdgeType.IDENTITY
-            console.debug(f"Terminal cube: {terminal_kind}@{terminal_position} [{pipe_type}]")
+            console.info(f"Terminal cube: {terminal} [{pipe_type}]")
 
-            for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(terminal_cube, node_types = node_types, pipe_type = pipe_type):
-                console.debug(f"> {next_kind}@{next_position}")
+            for candidate in BlockGraphHelper.get_candidate_constellation(terminal, node_types = node_types, pipe_type = pipe_type):
+                console.debug(f"> {candidate}")
                 # Only consider cubes placed in the PPP octant
-                if not all(c >= 0 for c in next_position):
+                if not all(c >= 0 for c in candidate.position):
                     continue
 
                 # Skip if the next_position is already occupied
-                if ring.occupies(next_position):
+                if ring.occupies(candidate.position):
+                    console.info(f"> Candidate position already occupied [{candidate}]")
                     continue
 
                 # Skip if the next_kind is not of the color specified
-                if length < n and next_kind.get_type() != nodes[length]:
+                if length < n and candidate.kind.get_type() != nodes[length]:
+                    console.info(f"> Candidate doesn't have requested node type [{candidate}]")
                     continue
 
                 extended: Ring = ring.copy()
-                extended.append(next_kind, next_position)
+                extended.append(candidate)
 
                 # Check whether the ring satisfies the specification
-                console.debug(f"Extended : {extended}")
+                console.info(f"Extended : {extended}")
                 console.debug(f"> {extended.manhattan_length()} <= {n} + {maximal_overhead}?")
-                if length >= n-1 and root_position.get_manhattan_distance(next_position) == 1:
-                    console.debug(f"Target reached : {extended}")
-                    step = next_position - root_position
-                    reach_condition = Spacetime.contains(root_kind.get_reach(), step) and Spacetime.contains(next_kind.get_reach(), step)
+                if length >= n-1 and root.position.get_manhattan_distance(candidate.position) == 1:
+                    console.info(f"Target reached : {extended}")
+                    step = candidate.position - root.position
+                    reach_condition = Spacetime.contains(root.kind.get_reach(), step) and Spacetime.contains(candidate.kind.get_reach(), step)
                     console.debug(f"> {step} ? [{reach_condition}]")
-                    if reach_condition and pipe_type in BlockGraphHelper.infer_pipe_type(root_kind, next_kind):
+                    if reach_condition and pipe_type in BlockGraphHelper.infer_pipe_type(root.kind, candidate.kind):
                         rings.append(extended)
 
                 if extended.manhattan_length() + extended.manhattan_distance_anchor() <= n + maximal_overhead:
                     queue.append(extended)
+                else:
+                    console.info(f"> Candidate is too far away [{candidate}]")
 
         return rings

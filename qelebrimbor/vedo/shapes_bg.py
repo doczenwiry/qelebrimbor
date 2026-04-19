@@ -131,7 +131,7 @@ class VdPipe(Assembly):
                 pos =GLOBAL_SPACING_FACTOR * (target.position - distances / 4.0) - (VdPipe.HALF_PIPE_LENGTH / 4.0) * distances,
                 size = [VdPipe.HALF_PIPE_LENGTH if d != 0 else VdPipe.DIAMETER for d in distances]
             )
-            self.__pipe_target.cellcolors = VdPipe.__prepare_pipe_colors(target.kind, source.kind, distances)
+            self.__pipe_target.cellcolors = VdPipe.__prepare_pipe_colors(target, source, distances)
             self.add(self.__pipe_target)
             # Construct the ring representing the HADAMARD type of the pipe
             self.__pipe_type_ring = Box(

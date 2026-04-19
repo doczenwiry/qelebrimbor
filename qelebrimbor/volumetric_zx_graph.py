@@ -349,19 +349,19 @@ class VolumetricZxGraph(nx.Graph):
     def is_zx_node_realised(self, node: NodeId) -> bool:
         return self.get_zx_node(node).realising_cube != -1
 
-    def realise_zx_node(self, node: NodeId, kind: CubeKind, position: Coordinates) -> CubeId:
+    def realise_zx_node(self, node: NodeId, cube: BgCube) -> CubeId:
         """Realise the node as a cube of the given kind placed at the given coordinates."""
-        if kind not in CubeKind.suitable_kinds(self.get_zx_node(node).type):
-            raise Exception(f"Requested {kind} is not compatible with {self.get_zx_node(node).type}")
+        if cube.kind not in CubeKind.suitable_kinds(self.get_zx_node(node).type):
+            raise Exception(f"Requested {cube.kind} is not compatible with {self.get_zx_node(node).type}")
 
         if not self.has_node(node):
             raise Exception(f"Node #{node} not found in the ZX-graph.")
 
-        cube = self.place_cube(kind, position)
-        self.__bg_graph.nodes[cube][VolumetricZxGraph.KEY_BG_CUBE].realised_node = node
-        self.nodes[node][VolumetricZxGraph.KEY_ZX_NODE].realising_cube = cube
+        cube_id = self.place_cube(cube)
+        self.__bg_graph.nodes[cube_id][VolumetricZxGraph.KEY_BG_CUBE].realised_node = node
+        self.nodes[node][VolumetricZxGraph.KEY_ZX_NODE].realising_cube = cube_id
 
-        console.info(f"Realising node #{node} [{self.get_zx_node(node).type}] as cube #{cube} [{kind}@{position}]")
+        console.info(f"Realising node #{node} [{self.get_zx_node(node).type}] as cube {cube}")
 
         return cube
 
@@ -381,9 +381,6 @@ class VolumetricZxGraph(nx.Graph):
         if self.is_zx_edge_realised(source, target):
             raise Exception(f"{source}-{target} is already realized by a path.")
 
-        source_cube = proposal.source_cube
-        target_cube = proposal.target_cube
-
         # Reject path if it is invalid.
         if not self.is_path_valid(source, target, proposal):
             raise Exception(f"Proposed path to realise edge {source}-{target} is invalid.")
@@ -395,175 +392,158 @@ class VolumetricZxGraph(nx.Graph):
 
         console.info(f"Realising edge {source}-{target} [type={self.get_zx_edge(source,target).type}] with pipes : {pipe_ids}")
 
-    def place_cube(self, kind: CubeKind, position: Coordinates) -> CubeId:
-        if position in self.occupied:
-            raise Exception(f"Proposed position for {kind}@{position} is already occupied by another cube.")
+    def place_cube(self, cube: BgCube) -> CubeId:
+        if cube.position in self.occupied:
+            raise Exception(f"Proposed position for {cube} is already occupied by another cube.")
 
-        cube_id = self.__next_cube_id
+        cube.id = self.__next_cube_id
         self.__next_cube_id += 1
 
-        self.__bg_graph.add_node(cube_id)
-        self.__bg_graph.nodes[cube_id][VolumetricZxGraph.KEY_BG_CUBE] = BgCube(id = cube_id, kind = kind, position = position)
+        self.__bg_graph.add_node(cube.id)
+        self.__bg_graph.nodes[cube.id][VolumetricZxGraph.KEY_BG_CUBE] = cube
 
-        self.occupied.add(position)
+        self.occupied.add(cube.position)
 
-        return cube_id
+        return cube.id
 
     def connect_path(self, proposal: PathSpecification) -> list[PipeId]:
-        source_cube = proposal.source_cube
-        target_cube = proposal.target_cube
+        source_cube = self.get_bg_cube(proposal.source_cube)
+        target_cube = self.get_bg_cube(proposal.target_cube)
         # Representation of the path that will go into edge_realisations
         pipe_ids: list[PipeId] = []
 
         # Add all the extra cubes and pipes of the path to the BlockGraph
-        previous_cube: int = source_cube
+        previous_cube: BgCube = source_cube
 
         for index in range(len(proposal.extras)):
-            current_kind, current_position = proposal.extras[index]
-            current_pipe_type = proposal.pipes[index]
+            extra_cube = proposal.extras[index]
+            extra_pipe_type = proposal.pipes[index]
 
             # Place the current cube and connect it to the previous cube.
-            current_cube = self.place_cube(current_kind, current_position)
-            # self.__bg_graph.nodes[current_cube][VolumetricZxGraph.KEY_BG_CUBE].realised_node = -1
-            self.connect_pipe(previous_cube, current_cube, current_pipe_type)
+            extra_cube_id = self.place_cube(extra_cube)
+            self.connect_pipe(previous_cube, extra_cube, extra_pipe_type)
 
             # Extend the sequence of extra node ids
-            pipe = (previous_cube, current_cube) if previous_cube < current_cube else (current_cube, previous_cube)
+            pipe = (previous_cube.id, extra_cube_id) if previous_cube.id < extra_cube_id else (extra_cube_id, previous_cube.id)
             pipe_ids.append( pipe )
 
             # Prepare for the next iteration
-            previous_cube = current_cube
+            previous_cube = extra_cube
 
-        # TODO: make sure this is checked elsewhere !
-        # # Make the final connection
-        # if target_cube != self.get_zx_node(target).realising_cube:
-        #     raise Exception(f"Target cube is not realising target node.")
-
+        # Make the final connection
         final_pipe_type = proposal.pipes[-1]
         self.connect_pipe(previous_cube, target_cube, final_pipe_type)
 
-        pipe = (previous_cube, target_cube) if previous_cube < target_cube else (target_cube, previous_cube)
+        pipe = (previous_cube.id, target_cube.id) if previous_cube.id < target_cube.id else (target_cube.id, previous_cube.id)
         pipe_ids.append( pipe )
 
         return pipe_ids
 
-    def connect_pipe(self, source_cube: CubeId, target_cube: CubeId, pipe_type : EdgeType):
-        if not self.__bg_graph.has_node(source_cube):
-            raise Exception(f"Cube #{source_cube} not found in the BG-graph.")
+    def connect_pipe(self, source: BgCube, target: BgCube, pipe_type : EdgeType):
+        if not self.__bg_graph.has_node(source.id):
+            raise Exception(f"Cube {source} not found in the BG-graph.")
 
-        if not self.__bg_graph.has_node(target_cube):
-            raise Exception(f"Cube #{target_cube} not found in the BG-graph.")
+        if not self.__bg_graph.has_node(target.id):
+            raise Exception(f"Cube {target} not found in the BG-graph.")
 
-        if self.__bg_graph.has_edge(source_cube, target_cube):
-            raise Exception(f"Cubes #{source_cube} and #{target_cube} are already connected by a pipe.")
+        if self.__bg_graph.has_edge(source.id, target.id):
+            raise Exception(f"Cubes {source} and {target} are already connected by a pipe.")
 
-        source_kind = self.get_bg_cube(source_cube).kind
-        target_kind = self.get_bg_cube(target_cube).kind
-        if not pipe_type in BlockGraphHelper.infer_pipe_type(source_kind, target_kind):
-            raise Exception(f"Pipe type {pipe_type} is incompatible with source and target kinds [{source_kind}-{target_kind}].")
+        if not pipe_type in BlockGraphHelper.infer_pipe_type(source.kind, target.kind):
+            raise Exception(f"Pipe type {pipe_type} is incompatible with source and target kinds [{source.kind}-{target.kind}].")
 
         # TODO: validate with respect to inferred pipe type between source and target cubes
 
-        source_position = self.get_bg_cube(source_cube).position
-        target_position = self.get_bg_cube(target_cube).position
-        if source_position.get_manhattan_distance(target_position) != 1:
-            raise Exception(f"Cubes #{source_cube}@{source_position} and #{target_cube}@{target_position} are not at adjacent positions.")
+        if source.position.get_manhattan_distance(target.position) != 1:
+            raise Exception(f"Cubes {source} and {target} are not at adjacent positions.")
 
-        self.__bg_graph.add_edge(source_cube, target_cube)
-        bg_pipe = BgPipe(source = source_cube, target = target_cube, type = pipe_type)
-        self.__bg_graph.edges[source_cube, target_cube][VolumetricZxGraph.KEY_BG_PIPE] = bg_pipe
+        self.__bg_graph.add_edge(source.id, target.id)
+        bg_pipe = BgPipe(source = source.id, target = target.id, type = pipe_type)
+        self.__bg_graph.edges[source.id, target.id][VolumetricZxGraph.KEY_BG_PIPE] = bg_pipe
 
     def is_path_valid(self, source: NodeId, target: NodeId, proposal: PathSpecification) -> bool:
         is_hadamard_path = False
 
-        source_cube = proposal.source_cube
+        start = self.get_bg_cube(proposal.source_cube)
+        final = self.get_bg_cube(proposal.target_cube)
 
-        if source_cube != self.get_zx_node(source).realising_cube:
-            raise Exception(f"Cube #{source_cube} is not realising source {source}.")
-
-        source_kind: CubeKind = self.get_bg_cube(source_cube).kind
-        source_position: Coordinates = self.get_bg_cube(source_cube).position
+        if start.id != self.get_zx_node(source).realising_cube:
+            raise Exception(f"Cube #{start} is not realising source {source}.")
 
         console.debug(f"Checking path validity:")
-        console.debug(f"> Source cube #{source_cube} [{source_kind}@{source_position}]")
+        console.debug(f"> Start cube : {start}")
+        console.debug(f"> Final cube : {final}")
         console.debug(f"> Extra cubes: {proposal.extras}")
 
-        previous_kind = source_kind
-        previous_position = source_position
-        previous_reach: Coordinates = source_kind.get_reach()
+        previous: BgCube = start
+        previous_reach = start.kind.get_reach()
 
         extra_positions = set()
 
         for index in range(len(proposal.extras)):
-            current_kind, current_position = proposal.extras[index]
-            current_reach = current_kind.get_reach()
+            current: BgCube = proposal.extras[index]
+            current_reach = current.kind.get_reach()
 
             # Check that the cube type is either X or Z (Y and boundaries must be leaves)
-            if current_kind in [ CubeKind.OOO, CubeKind.YYY ]:
-                console.debug(f"> CubeKind.OOO and CubeKind.YYY can only appear at the ends of a path : {current_kind}.")
+            if current.kind in [ CubeKind.OOO, CubeKind.YYY ]:
+                console.debug(f"> CubeKind.OOO and CubeKind.YYY can only appear at the ends of a path : {current}.")
                 return False
 
             # Check that the current_position is not already occupied
-            if current_position in self.occupied:
-                console.debug(f"> Current position is already occupied : {current_kind}@{current_position}")
+            if current.position in self.occupied:
+                console.debug(f"> Current position is already occupied : {current}")
                 return False
 
             # Check that the current_position is not already occupied by an extra cube
-            if current_position in extra_positions:
-                console.debug(f"> Current position is already in path : {current_kind}@{current_position}")
+            if current.position in extra_positions:
+                console.debug(f"> Current position is already in path : {current}")
                 return False
-            extra_positions.add(current_position)
+            extra_positions.add(current.position)
 
             # Check that the step taken lies in both reaches of successive cubes
-            step_taken = current_position - previous_position
+            step_taken = current.position - previous.position
             if Spacetime.ORIGIN.get_manhattan_distance(step_taken) != 1:
-                console.debug(f"> Consecutive cubes are not adjacent [{previous_position}-{current_position}]")
+                console.debug(f"> Consecutive cubes are not adjacent [{previous}-{current}]")
                 return False
 
             if not Spacetime.contains(previous_reach, step_taken) or not Spacetime.contains(current_reach, step_taken):
-                console.debug(f"> Previous reach does not contain step [{step_taken}]: {previous_kind}")
-                console.debug(f"> Current reach does not contain step [{step_taken}]: {current_kind}")
+                console.debug(f"> Reaches do not contain step [{step_taken}]: {previous} {current}")
                 return False
 
             # Check that the current pipe has a type consistent with what is allowed
             current_pipe_type = proposal.pipes[index]
-            inferred = BlockGraphHelper.infer_pipe_type(previous_kind, current_kind)
+            inferred = BlockGraphHelper.infer_pipe_type(previous.kind, current.kind)
             if not current_pipe_type in inferred:
-                console.debug(f"> Current pipe type is not allowed between {previous_kind} and {current_kind} [{current_pipe_type} not in {inferred}].")
+                console.debug(f"> Pipe type is not allowed between {previous} and {current} [{current_pipe_type} not in {inferred}].")
                 return False
 
             if current_pipe_type == EdgeType.HADAMARD:
                 is_hadamard_path = not is_hadamard_path
 
-            previous_position = current_position
-            previous_kind = current_kind
+            previous = current
             previous_reach = current_reach
 
         if self.is_zx_node_realised(target):
-            target_cube = proposal.target_cube
-            target_kind = self.get_bg_cube(target_cube).kind
-            target_position = self.get_bg_cube(target_cube).position
-
-            if target_cube != self.get_zx_node(target).realising_cube:
-                raise Exception(f"Cube #{target_cube} is not realising source {target}.")
+            if final.id != self.get_zx_node(target).realising_cube:
+                raise Exception(f"Cube #{final} is not realising target {target}.")
 
             # Check that the final step taken lies in the reach of the target cube
-            step_taken = target_position - previous_position
+            step_taken = final.position - previous.position
 
             if Spacetime.ORIGIN.get_manhattan_distance(step_taken) != 1:
-                console.debug(f"> Consecutive cubes are not adjacent [{previous_position}-{target_position}]")
+                console.debug(f"> Consecutive cubes are not adjacent [{previous.position}-{final.position}]")
                 return False
 
-            target_reach = target_kind.get_reach()
-            if not Spacetime.contains(previous_reach, step_taken) or not Spacetime.contains(target_reach, step_taken):
-                console.debug(f"> Reach of target cube does not contain final step : {target_reach} w/ {step_taken} {Spacetime.contains(target_reach, step_taken)}")
+            final_reach = final.kind.get_reach()
+            if not Spacetime.contains(previous_reach, step_taken) or not Spacetime.contains(final_reach, step_taken):
+                console.debug(f"> Reaches do not contain step [{step_taken}]: {previous} {final}")
                 return False
 
             # Check that the current pipe has a type consistent with what is allowed
             current_pipe_type = proposal.pipes[-1]
-            inferred = BlockGraphHelper.infer_pipe_type(previous_kind, target_kind)
+            inferred = BlockGraphHelper.infer_pipe_type(previous.kind, final.kind)
             if current_pipe_type not in inferred:
-                console.debug(f"> Final pipe type is not allowed between {previous_kind} and {target_kind} [{current_pipe_type} not in {inferred}].")
+                console.debug(f"> Pipe type is not allowed between {previous} and {final} [{current_pipe_type} not in {inferred}].")
                 return False
 
             if current_pipe_type == EdgeType.HADAMARD:

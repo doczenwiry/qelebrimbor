@@ -1,4 +1,7 @@
 from logging import basicConfig, getLogger, INFO, CRITICAL
+
+from qelebrimbor.common.components import BgCube
+
 basicConfig(level=INFO)
 console = getLogger(__name__)
 getLogger('qelebrimbor.helpers').setLevel(CRITICAL)
@@ -97,10 +100,8 @@ if __name__ == "__main__":
     kinds = [ CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ ]
     sides = [ "PP", "MP", "MM", "PM" ]
 
-    source_kind = CubeKind.XZZ
-    source_position = Spacetime.ORIGIN
-    source = (source_kind, source_position)
-    console.info(f"Source kind : {source_kind}@{source_position}")
+    source = BgCube(CubeKind.XZZ, Spacetime.ORIGIN)
+    console.info(f"Source kind : {source}")
     console.info(f"> Manhattan Distance : {manhattan_distance}")
 
     for target_kind in kinds:
@@ -112,11 +113,11 @@ if __name__ == "__main__":
             overheads: defaultdict[Coordinates, int] = defaultdict(int)
             target_faces = SIDE[target_side]
             target_face_p, target_face_m = target_faces
-            positions = set()
+            positions: set[Coordinates] = set()
             positions.update(OctahedronHelper.get_face_positions(manhattan_distance, target_face_p))
             positions.update(OctahedronHelper.get_face_positions(manhattan_distance, target_face_m))
             for target_position in positions:
-                target = (target_kind, target_position)
+                target = BgCube(target_kind, target_position)
                 minimal_overhead = Path.minimal_overhead_possible(source, target)
                 statistics[minimal_overhead] += 1
                 overheads[target_position] = minimal_overhead

@@ -14,6 +14,7 @@ logging.basicConfig(level=logging.INFO)
 logging.getLogger('qelebrimbor').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.DEBUG)
 logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.DEBUG)
+logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.DEBUG)
 
 LENGTH = 4
 MAX_OVERHEAD = 2 if LENGTH <= 5 else 1 if LENGTH % 2 != 0 else 0
@@ -45,8 +46,8 @@ if __name__ == "__main__":
         BlockGraphConstructor.realise_edges(ring,
             specifications = {
                 (0, LENGTH - 1) : PathSpecification(
-                    source_cube = ring.get_zx_node(0).realising_cube,
-                    target_cube = ring.get_zx_node(LENGTH - 1).realising_cube,
+                    source = ring.get_zx_node(0).realising_cube,
+                    target = ring.get_zx_node(LENGTH - 1).realising_cube,
                     extras = list(reversed(realisation.cubes[LENGTH:cubes])),
                     pipes = [EdgeType.IDENTITY for _ in range(LENGTH)]
                 )

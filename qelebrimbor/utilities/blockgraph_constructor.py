@@ -1,3 +1,4 @@
+from qelebrimbor.common.components import BgCube
 from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
@@ -11,29 +12,27 @@ console = logging.getLogger(__name__)
 class BlockGraphConstructor:
     @staticmethod
     def realise(vzx: VolumetricZxGraph,
-                nodes_specifications: dict[NodeId, tuple[CubeKind, Coordinates]],
+                nodes_specifications: dict[NodeId, BgCube],
                 edges_specifications: dict[EdgeId, PathSpecification | None]
                 ):
         BlockGraphConstructor.realise_nodes(vzx, nodes_specifications)
         BlockGraphConstructor.realise_edges(vzx, edges_specifications)
 
     @staticmethod
-    def realise_nodes(vzx: VolumetricZxGraph, specifications: dict[NodeId, tuple[CubeKind, Coordinates]]):
+    def realise_nodes(vzx: VolumetricZxGraph, specifications: dict[NodeId, BgCube]):
         for node in vzx.nodes:
             if not vzx.is_zx_node_realised(node) and node in specifications:
-                vzx.realise_zx_node(node, *specifications[node])
+                vzx.realise_zx_node(node, specifications[node])
 
     @staticmethod
     def connect_cubes(vzx: VolumetricZxGraph, endpoints: list[tuple[CubeId, CubeId]]):
         for source, target in endpoints:
-            start_cube = vzx.get_bg_cube(source)
-            final_cube = vzx.get_bg_cube(target)
-            start = (start_cube.kind, start_cube.position)
-            final = (final_cube.kind, final_cube.position)
+            start = vzx.get_bg_cube(source)
+            final = vzx.get_bg_cube(target)
             minimal_overhead, paths = PathFinderDFS.find_minimal_paths(start, final, occupied_positions = vzx.occupied)
             path = paths[0]
             proposal = PathSpecification(
-                start_cube.id, final_cube.id,
+                start, final,
                 extras = path.cubes[1:-1],
                 pipes = [ EdgeType.IDENTITY for _ in range(len(path.cubes) - 1) ]
             )
@@ -55,16 +54,17 @@ class BlockGraphConstructor:
             elif vzx.is_zx_node_realised(source) and vzx.is_zx_node_realised(target):
                 source_cube = vzx.get_bg_cube(vzx.get_zx_node(source).realising_cube)
                 target_cube = vzx.get_bg_cube(vzx.get_zx_node(target).realising_cube)
+
                 if source_cube.kind in [ CubeKind.OOO, CubeKind.YYY ]:
-                    start = (target_cube.kind, target_cube.position)
-                    final = (source_cube.kind, source_cube.position)
+                    start = target_cube
+                    final = source_cube
                 else:
-                    start = (source_cube.kind, source_cube.position)
-                    final = (target_cube.kind, target_cube.position)
+                    start = source_cube
+                    final = target_cube
                 minimal_overhead, paths = PathFinderDFS.find_minimal_paths(start, final, occupied_positions = vzx.occupied)
                 path = paths[0]
                 proposal = PathSpecification(
-                    source_cube.id, target_cube.id,
+                    start.id, final.id,
                     extras = path.cubes[1:-1],
                     pipes = [ vzx.get_zx_edge(source_cube.realised_node, target_cube.realised_node).type for _ in range(len(path.cubes) - 1) ]
                 )

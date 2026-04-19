@@ -5,6 +5,7 @@ import pyzx
 
 from qelebrimbor.common.attributes_bg import CubeId, CubeKind
 from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
+from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
@@ -92,9 +93,9 @@ def place_determined(graph: VolumetricZxGraph):
                         edge_type in BlockGraphHelper.infer_pipe_type(cube_kind, CubeKind.convert(neighbor_type, cr)),
                         [ Spacetime.XP, Spacetime.YP, Spacetime.ZP ]
                 ))
-                neighbor_kind = CubeKind.convert(neighbor_type, neighbor_reach)
-                neighbor_cube = graph.realise_zx_node(neighbor, neighbor_kind, port_position)
-                graph.realise_zx_edge(node, neighbor, PathSpecification(cube, neighbor_cube, extras = [], pipes = [edge_type]))
+                neighbor_cube = BgCube(CubeKind.convert(neighbor_type, neighbor_reach), port_position)
+                neighbor_cube_id = graph.realise_zx_node(neighbor, neighbor_cube)
+                graph.realise_zx_edge(node, neighbor, PathSpecification(cube, neighbor_cube_id, extras = [], pipes = [edge_type]))
 
 # TODO: sort the mess that multiple realising_cubes introduce here
 def reserve_positions(graph: VolumetricZxGraph, reservations: dict[Coordinates, CubeId]):
@@ -239,8 +240,8 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_edges(vzx,
         specifications = {
             (start, final): PathSpecification(
-                source_cube = vzx.get_zx_node(start).realising_cube,
-                target_cube = vzx.get_zx_node(final).realising_cube,
+                source = vzx.get_zx_node(start).realising_cube,
+                target = vzx.get_zx_node(final).realising_cube,
                 extras = list(reversed(ring0.cubes[n0:c0])),
                 pipes = pipes0
             )

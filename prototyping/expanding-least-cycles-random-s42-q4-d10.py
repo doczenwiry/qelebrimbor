@@ -3,6 +3,7 @@ import pyzx
 
 from qelebrimbor.common.attributes_zx import EdgeId
 from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
@@ -21,7 +22,7 @@ logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
 logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.DEBUG)
 logging.getLogger('qelebrimbor.vedo').setLevel(logging.CRITICAL)
 
 random.seed(SEED)
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     index = 0
     cycle = cycles[index] [6:] + cycles[index][:6]
     console.info(f"Cycle {index} : {cycle}")
-    find_realisation(vzx, cycle)
+    find_realisation(vzx, cycle, maximal_overhead = 2)
 
     index = 1
     cycle = cycles[index]
@@ -51,7 +52,7 @@ if __name__ == "__main__":
     console.info(f"Cycle {index} : {cycle}")
     BlockGraphConstructor.realise_nodes(vzx,
         specifications = {
-            22 : (CubeKind.XXZ, Coordinates( 2, 0, 0)),
+            22 : BgCube(CubeKind.XXZ, Coordinates( 2, 0, 0)),
         }
     )
     BlockGraphConstructor.realise_edges(vzx, {})

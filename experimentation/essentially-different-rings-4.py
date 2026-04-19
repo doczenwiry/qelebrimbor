@@ -3,6 +3,7 @@ from pyzx import VertexType
 
 import networkx as nx
 
+from qelebrimbor.common.components import BgCube
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeId, EdgeType
@@ -36,14 +37,14 @@ def realise_ring(
         links = dict()
 
     for i in range(len(cubes)):
-        vzx.realise_zx_node(i, *cubes[i])
+        vzx.realise_zx_node(i, BgCube(*cubes[i]))
 
     for zx_edge in vzx.get_zx_edges():
         edge = (zx_edge.source, zx_edge.target)
         source, target = links[edge] if edge in links else edge
-        source_cube = vzx.get_zx_node(source).realising_cube
-        target_cube = vzx.get_zx_node(target).realising_cube
-        pipe = (source_cube, target_cube)
+        source_cube = vzx.get_bg_cube(vzx.get_zx_node(source).realising_cube)
+        target_cube = vzx.get_bg_cube(vzx.get_zx_node(target).realising_cube)
+        pipe = (source_cube.id, target_cube.id)
         vzx.connect_pipe(source_cube, target_cube, pipe_type = EdgeType.IDENTITY)
         vzx.get_zx_edge(source, target).realisation = [pipe]
 

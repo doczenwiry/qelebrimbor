@@ -1,6 +1,8 @@
 import logging
 from typing import Iterable
 
+from qelebrimbor.common.components import BgCube
+
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger(__name__)
 
@@ -123,16 +125,14 @@ def check_consistency(kinds: Iterable[CubeKind], faces: Iterable[Octant], manhat
     # The following seem to follow from symmetry relative to the source Cube
     # > Conjecture 1 : CubeKind.ZZX yields the same outcomes as CubeKind.ZXZ up to symmetry
     # > Conjecture 2 : CubeKind.XXZ yields the same outcomes as CubeKind.XZX up to symmetry
-    source_kind = CubeKind.XZZ
-    source_position = Spacetime.ORIGIN
-    source = (source_kind, source_position)
+    source = BgCube(CubeKind.XZZ, Spacetime.ORIGIN)
 
     inconsistencies = 0
 
     target_kinds = list(kinds)
     target_faces = list(faces)
 
-    console.info(f"Source : {source_kind}@{source_position}")
+    console.info(f"Source : {source}")
     console.info(f"Manhattan Distance: {manhattan_distance}")
     for target_kind in target_kinds:
         console.info(f"Target kind : {target_kind} [Overheads: explored vs. computed]")
@@ -144,7 +144,7 @@ def check_consistency(kinds: Iterable[CubeKind], faces: Iterable[Octant], manhat
             computed_overheads: defaultdict[Coordinates, int] = defaultdict(int)
             positions = sorted(OctahedronHelper.get_face_positions(manhattan_distance, target_face), key = SORTING_FUNCTIONS[target_face])
             for target_position in positions:
-                target = (target_kind, target_position)
+                target = BgCube(target_kind, target_position)
                 explored_overhead, paths = PathFinderDFS.find_minimal_paths(start = source, final = target, maximal_overhead = 8)
                 statistics[explored_overhead] += 1
                 explored_overheads[target_position] = explored_overhead

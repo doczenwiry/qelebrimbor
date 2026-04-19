@@ -1,3 +1,4 @@
+from qelebrimbor.common.components import BgCube
 from qelebrimbor.helpers.spacetime import Spacetime
 from qelebrimbor.common.coordinates import Coordinates
 
@@ -25,47 +26,42 @@ class BlockGraphHelper:
 
     @staticmethod
     def connectable(
-            source: tuple[CubeKind, Coordinates],
-            target: tuple[CubeKind, Coordinates],
+            source: BgCube,
+            target: BgCube,
             edge_type: EdgeType
     ) -> bool:
-        source_kind, source_position = source
-        target_kind, target_position = target
-        step = target_position - source_position
-        space_condition = source_position.get_manhattan_distance(target_position) == 1
-        reach_condition = Spacetime.contains(source_kind.get_reach(), step) and Spacetime.contains(target_kind.get_reach(), step)
-        pipe_condition = edge_type in BlockGraphHelper.infer_pipe_type(source_kind, target_kind)
+        step = target.position - source.position
+        space_condition = source.position.get_manhattan_distance(target.position) == 1
+        reach_condition = Spacetime.contains(source.kind.get_reach(), step) and Spacetime.contains(target.kind.get_reach(), step)
+        pipe_condition = edge_type in BlockGraphHelper.infer_pipe_type(source.kind, target.kind)
         console.debug(f"Connectable: {source} - {target} : {space_condition}/{reach_condition}/{pipe_condition}")
         return space_condition and reach_condition and pipe_condition
 
     @staticmethod
     def get_candidate_constellation(
-        origin: tuple[CubeKind, Coordinates],
+        origin: BgCube,
         node_types: set[NodeType] | None = None,
         pipe_type: EdgeType = EdgeType.IDENTITY
-    ) -> list[tuple[CubeKind, Coordinates]]:
-        if node_types is None:
-            considered_node_types = { NodeType.O, NodeType.X, NodeType.Y, NodeType.Z }
-        else:
-            considered_node_types = node_types
+    ) -> list[BgCube]:
+        considered_node_types = node_types or { NodeType.O, NodeType.X, NodeType.Y, NodeType.Z }
 
         constellation = []
 
-        origin_kind, origin_position = origin
-        origin_reach = origin_kind.get_reach()
-
-        for step in Spacetime.get_step_constellation(origin_reach):
-            candidate_position = origin_position + step
+        for step in Spacetime.get_step_constellation(origin.kind.get_reach()):
+            candidate_position = origin.position + step
 
             for node_type in considered_node_types:
                 for candidate_kind in CubeKind.suitable_kinds(node_type):
                     cube_reach = candidate_kind.get_reach()
                     if Spacetime.contains(cube_reach, step):
-                        if pipe_type in BlockGraphHelper.infer_pipe_type(candidate_kind, origin_kind):
-                            constellation.append( (candidate_kind, candidate_position) )
+                        if pipe_type in BlockGraphHelper.infer_pipe_type(candidate_kind, origin.kind):
+                            constellation.append( BgCube(kind = candidate_kind, position = candidate_position) )
+
+        testing = BgCube()
+        console.debug(f"Testing: {testing}")
 
         console.debug(f"Constellation of {len(constellation)} points.")
-        for kind, position in constellation:
-            console.debug(f"> {kind}@{position}")
+        for cube in constellation:
+            console.debug(f"> {cube}")
 
         return constellation

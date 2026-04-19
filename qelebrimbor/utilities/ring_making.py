@@ -1,5 +1,6 @@
 from collections import defaultdict
 
+from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
@@ -42,8 +43,8 @@ def find_realisation(graph: VolumetricZxGraph, cycle: list[NodeId], maximal_over
     BlockGraphConstructor.realise_edges(graph,
         specifications = {
             (start, final): PathSpecification(
-                source_cube = graph.get_zx_node(start).realising_cube,
-                target_cube = graph.get_zx_node(final).realising_cube,
+                source = graph.get_zx_node(start).realising_cube,
+                target = graph.get_zx_node(final).realising_cube,
                 extras = extras,
                 pipes = pipes
             )
@@ -95,13 +96,11 @@ def find_completion(
     edges1 = [(cycle[i], cycle[(i + 1) % len(cycle)]) for i in range(1, len(extras) + 1)]
     pipes1 = list(map(lambda ed : graph.get_zx_edge(*ed).type, edges1))
 
-    # # Breakdown cycle1
+    # Breakdown cycle1
     # TODO: deal with case where multiple cubes realise the start of the final
-    start_cube_id = graph.get_zx_node(start).realising_cube
-    final_cube_id = graph.get_zx_node(final).realising_cube
-    start_cube = (graph.get_bg_cube(start_cube_id).kind, graph.get_bg_cube(start_cube_id).position)
-    final_cube = (graph.get_bg_cube(final_cube_id).kind, graph.get_bg_cube(final_cube_id).position)
-    console.info(f"Searching completion from {start}#{start_cube_id} [{start_cube}] to {final}#{final_cube_id} [{final_cube}]")
+    start_cube = graph.get_bg_cube(graph.get_zx_node(start).realising_cube)
+    final_cube = graph.get_bg_cube(graph.get_zx_node(final).realising_cube)
+    console.info(f"Searching completion from {start_cube} to {final_cube}.")
     console.info(f"> Nodes : {nodes1}")
     console.info(f"> Pipes : {pipes1}")
     minimal_overhead, rings = PathFinderDFS.find_minimal_paths(
@@ -128,7 +127,7 @@ def find_completion(
 
     terminal_cube_id = extras[-1]
     source, target = final, terminal_cube_id
-    extra_cubes: list[tuple[CubeKind, Coordinates]]
+    extra_cubes: list[BgCube]
     if final > terminal_cube_id:
         source, target = target, source
         extra_cubes = ring.cubes[len(extras)+1:nr - 1]
@@ -137,8 +136,8 @@ def find_completion(
 
     BlockGraphConstructor.realise_edges(graph, {
         (source, target): PathSpecification(
-            source_cube = graph.get_zx_node(source).realising_cube,
-            target_cube = graph.get_zx_node(target).realising_cube,
+            source = graph.get_zx_node(source).realising_cube,
+            target = graph.get_zx_node(target).realising_cube,
             extras = extra_cubes,
             pipes = [ pipes1[-1] if i == 0 else EdgeType.IDENTITY for i in range(nr)]
         )

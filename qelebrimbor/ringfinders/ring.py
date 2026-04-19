@@ -1,18 +1,17 @@
-from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import EdgeType
+from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 
 
 class Ring:
-    def __init__(self, anchor: tuple[CubeKind, Coordinates]):
+    def __init__(self, anchor: BgCube):
         self.anchor = anchor
         self.cubes = [ anchor ]
         self.occupied = { anchor[1] }
 
     def manhattan_distance_anchor(self) -> int:
-        _, terminal_position = self.cubes[-1]
-        return terminal_position.get_manhattan_distance(self.anchor[1])
+        terminal = self.cubes[-1]
+        return terminal.position.get_manhattan_distance(self.anchor.position)
 
     def manhattan_length(self):
         return len(self.cubes) - 1
@@ -20,9 +19,9 @@ class Ring:
     def occupies(self, position: Coordinates):
         return position in self.occupied
 
-    def append(self, kind: CubeKind, position: Coordinates):
-        self.cubes.append( (kind, position) )
-        self.occupied.add(position)
+    def append(self, cube: BgCube):
+        self.cubes.append( cube )
+        self.occupied.add(cube.position)
 
     def copy(self):
         cp = Ring(self.anchor)
