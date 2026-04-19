@@ -1,16 +1,9 @@
 import pyzx
 import numpy as np
 
-from qelebrimbor.common.components import BgCube
-from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
-from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
 from qelebrimbor.utilities.ring_making import find_realisation, find_completion, extend_unrealised
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType
-from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.paths import PathSpecification
-from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
+from qelebrimbor.common.attributes_zx import NodeId, NodeType
 from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
@@ -24,6 +17,7 @@ logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
 logging.getLogger('qelebrimbor.helpers.blockgraph').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.vedo').setLevel(logging.INFO)
 
 def find_terminal_node(graph: pyzx.graph.base.BaseGraph, qubit: int) -> int:
@@ -117,19 +111,17 @@ if __name__ == "__main__":
     console.info(f"Cycle {index} : {cycle}")
     find_realisation(vzx, cycle, maximal_overhead = 2)
 
-    # index = 1
-    # cycle = cycles[index]
-    # console.info(f"Cycle {index} : {cycle}")
-    # BlockGraphConstructor.realise_nodes(
-    #     vzx = vzx, specifications = { 1 : BgCube(CubeKind.ZZX, Coordinates(0,1,1)) }
-    # )
-    # BlockGraphConstructor.connect_cubes(
-    #     vzx = vzx, endpoints = [ (17, 20), (19, 20), (14, 24) ]
-    # )
-
-    index = 2
+    index = 1
     cycle = cycles[index]
     console.info(f"Cycle {index} : {cycle}")
+    find_completion(vzx, cycle, maximal_overhead = 4)
+
+    # index = 2
+    # cycle = cycles[index]
+    # console.info(f"Cycle {index} : {cycle}")
+    # find_completion(vzx, cycle, maximal_overhead = 4)
+
+    # TODO: adapt find_completion to identify unrealised edges when all spiders are already realised
 
     # extend_unrealised(vzx)
 

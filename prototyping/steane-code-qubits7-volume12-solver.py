@@ -5,11 +5,7 @@ import networkx as nx
 from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
 from qelebrimbor.utilities.ring_making import find_realisation, find_completion, extend_unrealised
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeId, EdgeType
-from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.paths import PathSpecification
-from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
+from qelebrimbor.common.attributes_zx import NodeId, NodeType
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
@@ -18,9 +14,11 @@ from qelebrimbor.vedo.zx_layout.manual import ManualLayout
 import logging
 console = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
 logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.CRITICAL)
 
 def find_terminal_node(graph: zx.graph.base.BaseGraph, qubit: int) -> int:
     return max(
@@ -107,7 +105,7 @@ if __name__ == "__main__":
     index = 1
     cycle = cycles[index]
     console.info(f"Cycle {index} : {cycle}")
-    find_completion(vzx, cycle)
+    find_completion(vzx, cycle, maximal_overhead = 4)
 
     extend_unrealised(vzx)
 

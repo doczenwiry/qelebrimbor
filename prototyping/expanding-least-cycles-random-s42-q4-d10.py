@@ -42,10 +42,10 @@ if __name__ == "__main__":
     console.info(f"Cycle {index} : {cycle}")
     find_realisation(vzx, cycle, maximal_overhead = 2)
 
-    # index = 1
-    # cycle = cycles[index]
-    # console.info(f"Cycle {index} : {cycle}")
-    # find_completion(vzx, cycle, maximal_overhead = 6)
+    index = 1
+    cycle = cycles[index]
+    console.info(f"Cycle {index} : {cycle}")
+    find_completion(vzx, cycle, maximal_overhead = 6)
 
     # index = 4
     # cycle = cycles[index]

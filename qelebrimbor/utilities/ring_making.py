@@ -93,64 +93,32 @@ def find_completion(
     console.info(f"Found {len(completions)} completions for chain {chain}")
 
     completion = completions[0]
-    nr = len(completion.extras)
     console.info(f"Realisation : {completion.source} - {completion.extras} - {completion.target}")
 
     BlockGraphConstructor.realise_nodes(graph, completion.to_nodes_specifications(zx_nodes))
     BlockGraphConstructor.realise_edges(graph, completion.to_edges_specifications(graph, zx_edges))
 
-    # terminal_cube_id = extras[-1]
-    # source, target = final, terminal_cube_id
-    # extra_cubes: list[BgCube]
-    # if final > terminal_cube_id:
-    #     source, target = target, source
-    #     extra_cubes = completion.extras[len(extras) + 1:nr - 1]
-    # else:
-    #     extra_cubes = list(reversed(completion.extras[len(extras) + 1:nr - 1]))
-    #
-    # BlockGraphConstructor.realise_edges(graph, {
-    #     (source, target): PathSpecification(
-    #         source_cube= graph.get_zx_node(source).realising_cube,
-    #         target_cube= graph.get_zx_node(target).realising_cube,
-    #         extras = extra_cubes,
-    #         pipes = [ pipes1[-1] if i == 0 else EdgeType.IDENTITY for i in range(nr)]
-    #     )
-    # })
-
     return True
 
-def __find_realising_cubes(graph: VolumetricZxGraph, cube: BgCube):
-    all_cubes: list[BgCube] = [ cube ]
-    queue = deque([cube])
-    while queue:
-        current = queue.popleft()
-        for neighbor in graph.get_cube_neighbours(current.id):
-            neighbor_cube = graph.get_bg_cube(neighbor)
-            if neighbor_cube.kind == cube.kind:
-                all_cubes.append(neighbor_cube)
-                if neighbor_cube not in all_cubes:
-                    queue.append(neighbor_cube)
-    return all_cubes
-
-def extend_unrealised(graph: VolumetricZxGraph, edge_specifications: dict[EdgeId, PathSpecification | None] | None = None):
+def extend_unrealised(graph: VolumetricZxGraph):
     schedule: dict[NodeId, list[NodeId]] = defaultdict(list)
     for node in filter(lambda nd : graph.is_zx_node_realised(nd), graph.nodes):
         for neighbor in filter(lambda nd : not graph.is_zx_node_realised(nd), graph.neighbors(node)):
             schedule[node].append( neighbor )
 
+    edges_specifications: dict[EdgeId, PathSpecification] = {}
+
     for node, neighbors in schedule.items():
         node_kind = graph.get_bg_cube(graph.get_zx_node(node).realising_cube).kind
         cube = graph.get_bg_cube(graph.get_zx_node(node).realising_cube)
         cube_reach = cube.kind.get_reach()
-        realising_cubes = __find_realising_cubes(graph, cube)
         for neighbor in neighbors:
-            available = [
-                pos for pos in itertools.chain.from_iterable([
-                    Spacetime.get_constellation(cube.position, cube.kind.get_reach()) for cube in realising_cubes
-                ]) if pos not in graph.occupied
-            ]
+            available = filter(
+                lambda pos : pos not in graph.occupied,
+                Spacetime.get_constellation(cube.position, cube.kind.get_reach())
+            )
             edge_type = graph.get_zx_edge(node, neighbor).type
-            neighbor_position = available[0]
+            neighbor_position = next(iter(available))
             step_taken = cube.position - neighbor_position
             neighbor_kinds = [
                 kind for kind in CubeKind.suitable_kinds(graph.get_zx_node(neighbor).type)
@@ -159,5 +127,11 @@ def extend_unrealised(graph: VolumetricZxGraph, edge_specifications: dict[EdgeId
             ]
             neighbor_cube = BgCube(neighbor_kinds[0], neighbor_position)
             graph.realise_zx_node(neighbor, neighbor_cube)
+            source, target = (node, neighbor) if node < neighbor else (neighbor, node)
+            edges_specifications[ source, target ] = PathSpecification(
+                source_cube = graph.get_zx_node(source).realising_cube,
+                target_cube = graph.get_zx_node(target).realising_cube,
+                pipes = [ edge_type ]
+            )
 
-    BlockGraphConstructor.realise_edges(graph, edge_specifications or dict())
+    BlockGraphConstructor.realise_edges(graph, edges_specifications)

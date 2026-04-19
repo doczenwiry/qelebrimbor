@@ -131,18 +131,13 @@ class Path:
 
         source = edges[-1].source
         target = edges[-1].target
-        extras = self.extras[edge_count-1 : extra_count]
-        if source > target:
-            source, target = target, source
-        else:
-            extras = list(reversed(extras))
+        extras = list(reversed(self.extras[edge_count-1 : extra_count]))
         edges_specifications[(source, target)] = PathSpecification(
                 source_cube = graph.get_zx_node(source).realising_cube,
                 target_cube = graph.get_zx_node(target).realising_cube,
                 extras = extras,
                 pipes = [ edges[-1].type if i == 0 else EdgeType.IDENTITY for i in range(extra_count - edge_count + 1)]
         )
-        console.info(f"Adding path spec for {source}-{target} : {edges_specifications[source, target]}")
 
         return edges_specifications
 

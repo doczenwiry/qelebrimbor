@@ -59,4 +59,12 @@ class BlockGraphConstructor:
                     console.debug(f"Realisation: {source} -> {target} [{vzx.get_zx_edge(source, target).type}]")
                     vzx.realise_zx_edge(source, target, proposal)
                 else:
-                    console.error(f"Proposal {source}{vzx.get_zx_edge(source,target).type.name[0]}{target} is invalid : {proposal.extras}")
+                    alternative = PathSpecification(
+                        source_cube = proposal.source_cube, target_cube = proposal.target_cube,
+                        extras = list(reversed(proposal.extras)), pipes = list(reversed(proposal.pipes))
+                    )
+                    if vzx.is_path_valid(source, target, alternative):
+                        console.debug(f"Realisation: {source} -> {target} [{vzx.get_zx_edge(source, target).type}]")
+                        vzx.realise_zx_edge(source, target, alternative)
+                    else:
+                        console.error(f"Proposal {source}{vzx.get_zx_edge(source,target).type.name[0]}{target} is invalid : {proposal.extras}")
