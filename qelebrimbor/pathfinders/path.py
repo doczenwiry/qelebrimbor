@@ -92,7 +92,7 @@ class Path:
         return terminal.position.get_manhattan_distance(self.target.position)
 
     def manhattan_length(self):
-        return len(self.extras)
+        return len(self.extras) + 1
 
     def occupies(self, position: Coordinates):
         return position in self.occupied
