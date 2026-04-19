@@ -2,12 +2,16 @@ import numpy as np
 from functools import total_ordering
 
 from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import EdgeType
-from qelebrimbor.common.components import BgCube
+from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
+from qelebrimbor.common.components import ZxNode, BgCube, ZxEdge
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import Spacetime
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+
+import logging
+console = logging.getLogger(__name__)
 
 @total_ordering
 class Path:
@@ -102,6 +106,45 @@ class Path:
         cp.extras.extend(self.extras)
         cp.occupied = set(self.occupied)
         return cp
+
+    def to_nodes_specifications(self, nodes: list[ZxNode]) -> dict[NodeId, BgCube]:
+        nodes_specifications: dict[NodeId, BgCube] = {}
+        for nd in range(len(nodes)):
+            nodes_specifications[nodes[nd].id] = self.extras[nd]
+        return nodes_specifications
+
+    def to_edges_specifications(self, graph: VolumetricZxGraph, edges: list[ZxEdge]) -> dict[EdgeId, PathSpecification]:
+        edge_count = len(edges)
+        extra_count = len(self.extras)
+        edges_specifications: dict[EdgeId, PathSpecification] = {}
+
+        for i in range(edge_count-1):
+            source = edges[i].source
+            target = edges[i].target
+            if source > target:
+                source, target = target, source
+            edges_specifications[ (source, target) ] = PathSpecification(
+                source_cube = graph.get_zx_node(source).realising_cube,
+                target_cube = graph.get_zx_node(target).realising_cube,
+                extras = [], pipes = [ edges[i].type ]
+            )
+
+        source = edges[-1].source
+        target = edges[-1].target
+        extras = self.extras[edge_count-1 : extra_count]
+        if source > target:
+            source, target = target, source
+        else:
+            extras = list(reversed(extras))
+        edges_specifications[(source, target)] = PathSpecification(
+                source_cube = graph.get_zx_node(source).realising_cube,
+                target_cube = graph.get_zx_node(target).realising_cube,
+                extras = extras,
+                pipes = [ edges[-1].type if i == 0 else EdgeType.IDENTITY for i in range(extra_count - edge_count + 1)]
+        )
+        console.info(f"Adding path spec for {source}-{target} : {edges_specifications[source, target]}")
+
+        return edges_specifications
 
     def to_specification(self) -> PathSpecification:
         pipes = []

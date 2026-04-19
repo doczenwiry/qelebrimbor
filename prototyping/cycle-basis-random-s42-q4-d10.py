@@ -4,16 +4,13 @@ from collections import defaultdict
 import pyzx
 
 from qelebrimbor.common.attributes_bg import CubeId, CubeKind
-from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
+from qelebrimbor.common.attributes_zx import EdgeId
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import Spacetime
-from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
-from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
-from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
-from qelebrimbor.utilities.ring_making import find_realisation
+from qelebrimbor.utilities.ring_making import find_realisation, find_completion
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
@@ -25,39 +22,10 @@ LAYERS = 10
 import logging
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger(__name__)
-logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.DEBUG)
+logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
+logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.CRITICAL)
-
-# TODO: go beyond assumption that cycle is made of one realised chain and one unrealised chain
-# TODO: figure out which edges are missing if all the nodes are already placed
-# TODO: after placing a ring, try placing the adjacents of the constituents of the ring
-# TODO: only place those constituents if there is only one position for them to be in (i.e. positions determined)
-def breakdown_cycle(graph: VolumetricZxGraph, cycle: list[NodeId]) -> tuple[NodeId, NodeId, list[NodeId]]:
-    nc = len(cycle)
-
-    transition_ur = next(
-        idx for idx in range(nc)
-        if not graph.is_zx_node_realised(cycle[(idx - 1) % nc]) and graph.is_zx_node_realised(cycle[idx])
-    )
-
-    transition_ru = next(
-        idx for idx in range(nc)
-        if graph.is_zx_node_realised(cycle[idx]) and not graph.is_zx_node_realised(cycle[(idx + 1) % nc])
-    )
-
-    realised = sum(1 for idx in range(nc) if graph.is_zx_node_realised(cycle[idx]))
-
-    intermediates: list[NodeId] = [
-        cycle[(transition_ru + 1 + idx) % nc] for idx in range(nc - realised)
-    ]
-
-    if cycle[transition_ur] < cycle[transition_ru]:
-        transition_ur, transition_ru = transition_ru, transition_ur
-        intermediates = list(reversed(intermediates))
-
-    return cycle[transition_ru], cycle[transition_ur], intermediates
 
 # TODO: sort the mess that multiple realising_cubes introduce here
 def place_determined(graph: VolumetricZxGraph):
@@ -122,85 +90,6 @@ def reserve_positions(graph: VolumetricZxGraph, reservations: dict[Coordinates, 
                         console.info(f"Reserving port {port} for cube #{cube} [{node}].")
                         reservations[port] = cube
 
-def find_completion_edges(
-        graph: VolumetricZxGraph, cycle: list[NodeId],
-        maximal_overhead: int = 10,
-        reservations: dict[Coordinates, CubeId] | None = None
-):
-    reserved = reservations if reservations else dict()
-
-    nc = len(cycle)
-    start, final, extras = breakdown_cycle(graph, cycle)
-
-    console.info(f"Breakdown of {cycle} : {start} - {extras} - {final}")
-
-def find_completion(
-        graph: VolumetricZxGraph, cycle: list[NodeId],
-        maximal_overhead: int = 10,
-        reservations: dict[Coordinates, CubeId] | None = None
-):
-    reserved = reservations if reservations else dict()
-
-    nc = len(cycle)
-    start, final, extras = breakdown_cycle(graph, cycle)
-
-    console.info(f"Breakdown of {cycle} : {start} - {extras} - {final}")
-
-    nodes1 = list(map(lambda nd : graph.get_zx_node(nd).type, extras))
-    edges1 = [(cycle[i], cycle[(i + 1) % len(cycle)]) for i in range(1, len(extras) + 1)]
-    pipes1 = list(map(lambda ed : graph.get_zx_edge(*ed).type, edges1))
-
-    # # Breakdown cycle1
-    # TODO: deal with case where multiple cubes realise the start of the final
-    start_cube_id = graph.get_zx_node(start).realising_cube
-    final_cube_id = graph.get_zx_node(final).realising_cube
-    start_cube = (graph.get_bg_cube(start_cube_id).kind, graph.get_bg_cube(start_cube_id).position)
-    final_cube = (graph.get_bg_cube(final_cube_id).kind, graph.get_bg_cube(final_cube_id).position)
-    console.info(f"Searching completion from {start}#{start_cube_id} [{start_cube}] to {final}#{final_cube_id} [{final_cube}]")
-    console.info(f"> Nodes : {nodes1}")
-    console.info(f"> Pipes : {pipes1}")
-    minimal_overhead, rings = PathFinderDFS.find_minimal_paths(
-        start = start_cube, final = final_cube,
-        node_types = nodes1,
-        edge_types = pipes1,
-        unavailable_positions= graph.occupied,
-        reserved_positions = reserved,
-        maximal_overhead = maximal_overhead
-    )
-
-    console.info(f"Found {len(rings)} realisations for cycle.")
-
-    if len(rings) == 0:
-        return False
-
-    ring = rings[0]
-    nr = len(ring.extras)
-    console.info(f"Realisation 1 : {ring.extras}")
-
-    BlockGraphConstructor.realise_nodes(graph, {
-        extras[idx] : ring.extras[idx + 1] for idx in range(len(extras))
-    })
-
-    terminal_cube_id = extras[-1]
-    source, target = final, terminal_cube_id
-    extra_cubes: list[tuple[CubeKind, Coordinates]]
-    if final > terminal_cube_id:
-        source, target = target, source
-        extra_cubes = ring.extras[len(extras) + 1:nr - 1]
-    else:
-        extra_cubes = list(reversed(ring.extras[len(extras) + 1:nr - 1]))
-
-    BlockGraphConstructor.realise_edges(graph, {
-        (source, target): PathSpecification(
-            source_cube = graph.get_zx_node(source).realising_cube,
-            target_cube = graph.get_zx_node(target).realising_cube,
-            extras = extra_cubes,
-            pipes = [ pipes1[-1] if i == 0 else EdgeType.IDENTITY for i in range(nc)]
-        )
-    })
-
-    return True
-
 random.seed(SEED)
 if __name__ == "__main__":
     circuit = f"random-s{SEED}-q{QUBITS}-d{LAYERS}"
@@ -221,68 +110,10 @@ if __name__ == "__main__":
     console.info(f"Cycle {index} : {cycle}")
     find_realisation(vzx, cycle, maximal_overhead = 2)
 
-    # nodes0 = list(map(lambda nd : vzx.get_zx_node(nd).type, cycle0))
-    # pipes0 = list(map(lambda ed : vzx.get_zx_edge(*ed).type, edges0))
-    #
-    # zx_nodes = list(map(lambda nd : vzx.get_zx_node(nd).type, nodes0))
-    # zx_edges = list(map(lambda ed : vzx.get_zx_edge(*ed).type, pipes0))
-    #
-    # console.info(f"Nodes 0 : {" ".join(map(lambda nd: str(nd) + ':' + str(vzx.get_zx_node(nd).type), cycle0))}")
-    # console.info(f"Edges 0 : {" ".join(map(lambda ed: str(vzx.get_zx_edge(*ed).type)[0] + str(ed).replace(' ',''), edges0))}")
-    #
-    # realisations0 = RingFinderBFS.find_minimal_rings(nodes0, pipes0, maximal_overhead = 2)
-    # ring0 = realisations0[0]
-    #
-    # console.info(f"Realisation 0 [{len(ring0.extras)}] : {ring0}")
-    #
-    # BlockGraphConstructor.realise_nodes(vzx, {cycle0[nd]: ring0.extras[nd] for nd in range(n0)})
-
-    # cycle0 = cycles[0]
-    # start = cycle0[0]
-    # final = cycle0[n0 - 1]
-    # if final < start:
-    #     start, final = final, start
-    # c0 = len(ring0.extras)
-    # BlockGraphConstructor.realise_edges(vzx,
-    #     specifications = {
-    #         (start, final): PathSpecification(
-    #             source_cube= vzx.get_zx_node(start).realising_cube,
-    #             target_cube= vzx.get_zx_node(final).realising_cube,
-    #             extras = list(reversed(ring0.extras[n0:c0])),
-    #             pipes = pipes0
-    #         )
-    #     }
-    # )
-    #
-    # reservations: dict[Coordinates, CubeId] = dict()
-    #
-    # place_determined(vzx)
-    # reserve_positions(vzx, reservations)
-    #
-    # cycle1 = cycles[1]
-    # console.info(f"Cycle 1 : {cycle1}")
-    # find_completion(graph = vzx, cycle = cycle1, reservations = reservations)
-    #
-    # place_determined(vzx)
-    # reserve_positions(vzx, reservations)
-    #
-    # cycle2 = cycles[2]
-    # console.info(f"Cycle 2 : {cycle2}")
-    # find_completion(graph = vzx, cycle = cycle2, reservations = reservations)
-    #
-    # place_determined(vzx)
-    # reserve_positions(vzx, reservations)
-    #
-    # cycle3 = cycles[3]
-    # console.info(f"Cycle 3 : {cycle3}")
-    # find_completion(graph = vzx, cycle = cycle3, reservations = reservations)
-    #
-    # place_determined(vzx)
-    # reserve_positions(vzx, reservations)
-    #
-    # cycle4 = cycles[4]
-    # console.info(f"Cycle 4 : {cycle4}")
-    # # find_completion(vzx, cycle4)
+    for index in range(1, 4):
+        cycle = cycles[index]
+        console.info(f"Cycle {index} : {cycle}")
+        find_completion(vzx, cycle, maximal_overhead = 10)
 
     excess_volume: dict[EdgeId, int] = dict()
     for edge in vzx.edges:
@@ -291,7 +122,7 @@ if __name__ == "__main__":
             if count > 0:
                 excess_volume[edge] = count
 
-    console.info(f"Excess volume :")
+    console.info(f"Excess volume : +{sum(excess_volume.values())}")
     for edge in excess_volume:
         console.info(f"> {edge} : +{excess_volume[edge]}")
 

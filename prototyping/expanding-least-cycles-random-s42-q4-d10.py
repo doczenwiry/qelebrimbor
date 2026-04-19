@@ -18,7 +18,7 @@ LAYERS = 10
 import logging
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger(__name__)
-logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.DEBUG)
+logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
 logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.INFO)
 logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
@@ -38,41 +38,35 @@ if __name__ == "__main__":
     cycles = MinimalCycleBasisAnalyser.decompose(vzx)
 
     index = 0
-    cycle = cycles[index]
+    cycle = cycles[index][6:] + cycles[index][:6]
     console.info(f"Cycle {index} : {cycle}")
     find_realisation(vzx, cycle, maximal_overhead = 2)
 
-    index = 1
-    cycle = cycles[index]
-    console.info(f"Cycle {index} : {cycle}")
-    find_completion(vzx, cycle)
+    # index = 1
+    # cycle = cycles[index]
+    # console.info(f"Cycle {index} : {cycle}")
+    # find_completion(vzx, cycle, maximal_overhead = 6)
 
-    index = 4
-    cycle = cycles[index]
-    console.info(f"Cycle {index} : {cycle}")
-    find_completion(vzx, cycle)
-    # BlockGraphConstructor.realise_nodes(vzx,
-    #     specifications = {
-    #         22 : BgCube(CubeKind.XXZ, Coordinates( 2, 0, 0)),
-    #     }
-    # )
-    # BlockGraphConstructor.realise_edges(vzx, {})
+    # index = 4
+    # cycle = cycles[index]
+    # console.info(f"Cycle {index} : {cycle}")
+    # find_completion(vzx, cycle)
 
     # index = 6
     # cycle = cycles[index]
     # console.info(f"Cycle {index} : {cycle}")
     # find_completion(vzx, cycle)
-    #
+
     # index = 5
     # cycle = cycles[index]
     # console.info(f"Cycle {index} : {cycle}")
     # find_completion(vzx, cycle)
-    #
+
     # index = 3
     # cycle = cycles[index]
     # console.info(f"Cycle {index} : {cycle}")
     # find_completion(vzx, cycle)
-    #
+
     # index = 2
     # cycle = cycles[index]
     # console.info(f"Cycle {index} : {cycle}")

@@ -25,7 +25,7 @@ class RingFinderBFS:
         anchor = BgCube(kind = CubeKind.suitable_kinds(nodes[0].type)[0], position = Spacetime.ORIGIN)
 
         queue: deque[Ring] = deque()
-        queue.append( Ring(anchor, nodes, edges) )
+        queue.append( Ring(anchor) )
 
         console.info(f"Starting at {anchor} [n={n}, e={e}] {len(rings) < number_sought}")
         console.info(f"> Nodes : {nodes}")

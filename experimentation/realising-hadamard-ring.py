@@ -45,11 +45,11 @@ if __name__ == "__main__":
             edges = zip( ((s, (s + 1) % LENGTH) for s in range(LENGTH)), edges)
         )
 
-        nodes_specifications = realisation.to_nodes_specifications()
+        nodes_specifications = realisation.to_nodes_specifications(zx_nodes)
         console.info(f"Nodes specifications : {nodes_specifications}")
         BlockGraphConstructor.realise_nodes(vzx = vzx, specifications = nodes_specifications)
 
-        edges_specifications = realisation.to_edges_specifications(vzx)
+        edges_specifications = realisation.to_edges_specifications(vzx, zx_edges)
         console.info(f"Edges specifications : {edges_specifications}")
         BlockGraphConstructor.realise_edges(vzx = vzx, specifications = edges_specifications)
 

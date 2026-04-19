@@ -27,6 +27,9 @@ class ZxEdge(RecordClass):
     def __str__(self):
         return f"N{self.source}-{self.type.name[0]}-N{self.target}"
 
+    def __repr__(self):
+        return str(self)
+
 class BgCube(RecordClass):
     kind: CubeKind
     position: Coordinates

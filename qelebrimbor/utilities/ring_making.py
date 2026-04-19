@@ -36,20 +36,15 @@ def find_realisation(graph: VolumetricZxGraph, cycle: list[NodeId], maximal_over
     console.info(f"Found {len(realisations)} realisations for cycle : {cycle}")
     console.info(f"> Realisation [{ring.manhattan_length()}] : {ring}")
 
-    BlockGraphConstructor.realise_nodes(vzx = graph , specifications = ring.to_nodes_specifications())
-    BlockGraphConstructor.realise_edges(vzx = graph, specifications = ring.to_edges_specifications(graph))
+    BlockGraphConstructor.realise_nodes(vzx = graph, specifications = ring.to_nodes_specifications(zx_nodes))
+    BlockGraphConstructor.realise_edges(vzx = graph, specifications = ring.to_edges_specifications(graph, zx_edges))
 
 # TODO: go beyond assumption that cycle is made of one realised chain and one unrealised chain
 # TODO: figure out which edges are missing if all the nodes are already placed
 # TODO: after placing a ring, try placing the adjacents of the constituents of the ring
 # TODO: only place those constituents if there is only one position for them to be in (i.e. positions determined)
-def breakdown_cycle(graph: VolumetricZxGraph, cycle: list[NodeId]) -> tuple[NodeId, NodeId, list[NodeId]]:
+def extract_chain(graph: VolumetricZxGraph, cycle: list[NodeId]) -> list[NodeId]:
     nc = len(cycle)
-
-    transition_ur = next(
-        idx for idx in range(nc)
-        if not graph.is_zx_node_realised(cycle[(idx - 1) % nc]) and graph.is_zx_node_realised(cycle[idx])
-    )
 
     transition_ru = next(
         idx for idx in range(nc)
@@ -58,77 +53,69 @@ def breakdown_cycle(graph: VolumetricZxGraph, cycle: list[NodeId]) -> tuple[Node
 
     realised = sum(1 for idx in range(nc) if graph.is_zx_node_realised(cycle[idx]))
 
-    intermediates: list[NodeId] = [
-        cycle[(transition_ru + 1 + idx) % nc] for idx in range(nc - realised)
+    return [
+        cycle[(transition_ru + idx) % nc] for idx in range(nc - realised + 2)
     ]
-
-    if cycle[transition_ur] < cycle[transition_ru]:
-        transition_ur, transition_ru = transition_ru, transition_ur
-        intermediates = list(reversed(intermediates))
-
-    return cycle[transition_ru], cycle[transition_ur], intermediates
 
 def find_completion(
         graph: VolumetricZxGraph, cycle: list[NodeId],
-        maximal_overhead: int = 10,
+        maximal_overhead: int = 0,
         reservations: dict[Coordinates, CubeId] | None = None
 ):
     nc = len(cycle)
-    start, final, extras = breakdown_cycle(graph, cycle)
+    chain = extract_chain(graph, cycle)
+    start = chain[0]
+    extras = chain[1:-1]
+    final = chain[-1]
 
     console.info(f"Breakdown of {cycle} : {start} - {extras} - {final}")
+    console.info(f"> Chain : {chain}")
 
-    nodes1 = list(map(lambda nd : graph.get_zx_node(nd).type, extras))
-    edges1 = [(cycle[i], cycle[(i + 1) % nc]) for i in range(1, len(extras) + 1)]
-    pipes1 = list(map(lambda ed : graph.get_zx_edge(*ed).type, edges1))
+    zx_nodes = [ graph.get_zx_node(nd) for nd in extras ]
+    zx_edges = [ graph.get_zx_edge(chain[i], chain[(i + 1) % nc]) for i in range(len(extras)+1) ]
 
-    # Breakdown cycl
     start_cube = graph.get_bg_cube(graph.get_zx_node(start).realising_cube)
     final_cube = graph.get_bg_cube(graph.get_zx_node(final).realising_cube)
     console.info(f"Searching completion from {start_cube} to {final_cube}.")
-    console.info(f"> Nodes : {nodes1}")
-    console.info(f"> Pipes : {pipes1}")
+    console.info(f"> Nodes : {zx_nodes}")
+    console.info(f"> Edges : {zx_edges}")
     unavailable_positions = graph.occupied.copy()
     if reservations is not None:
         unavailable_positions.update(reservations.keys())
     completions = PathFinderDFS.find_minimal_paths(
         start = start_cube, final = final_cube,
-        node_types = nodes1,
-        edge_types = pipes1,
-        unavailable_positions= unavailable_positions,
+        node_types = [ node.type for node in zx_nodes ],
+        edge_types = [ edge.type for edge in zx_edges ],
+        unavailable_positions = unavailable_positions,
         maximal_overhead = maximal_overhead
     )
 
-    console.info(f"Found {len(completions)} completions for cycle {cycle}")
+    console.info(f"Found {len(completions)} completions for chain {chain}")
 
     completion = completions[0]
     nr = len(completion.extras)
     console.info(f"Realisation : {completion.source} - {completion.extras} - {completion.target}")
 
-    BlockGraphConstructor.realise_nodes(graph, {
-        start : completion.source, final : completion.target
-    })
-    BlockGraphConstructor.realise_nodes(graph, {
-        extras[idx] : completion.extras[idx] for idx in range(len(extras))
-    })
+    BlockGraphConstructor.realise_nodes(graph, completion.to_nodes_specifications(zx_nodes))
+    BlockGraphConstructor.realise_edges(graph, completion.to_edges_specifications(graph, zx_edges))
 
-    terminal_cube_id = extras[-1]
-    source, target = final, terminal_cube_id
-    extra_cubes: list[BgCube]
-    if final > terminal_cube_id:
-        source, target = target, source
-        extra_cubes = completion.extras[len(extras) + 1:nr - 1]
-    else:
-        extra_cubes = list(reversed(completion.extras[len(extras) + 1:nr - 1]))
-
-    BlockGraphConstructor.realise_edges(graph, {
-        (source, target): PathSpecification(
-            source_cube= graph.get_zx_node(source).realising_cube,
-            target_cube= graph.get_zx_node(target).realising_cube,
-            extras = extra_cubes,
-            pipes = [ pipes1[-1] if i == 0 else EdgeType.IDENTITY for i in range(nr)]
-        )
-    })
+    # terminal_cube_id = extras[-1]
+    # source, target = final, terminal_cube_id
+    # extra_cubes: list[BgCube]
+    # if final > terminal_cube_id:
+    #     source, target = target, source
+    #     extra_cubes = completion.extras[len(extras) + 1:nr - 1]
+    # else:
+    #     extra_cubes = list(reversed(completion.extras[len(extras) + 1:nr - 1]))
+    #
+    # BlockGraphConstructor.realise_edges(graph, {
+    #     (source, target): PathSpecification(
+    #         source_cube= graph.get_zx_node(source).realising_cube,
+    #         target_cube= graph.get_zx_node(target).realising_cube,
+    #         extras = extra_cubes,
+    #         pipes = [ pipes1[-1] if i == 0 else EdgeType.IDENTITY for i in range(nr)]
+    #     )
+    # })
 
     return True
 

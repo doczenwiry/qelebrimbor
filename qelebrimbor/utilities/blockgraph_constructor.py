@@ -42,7 +42,7 @@ class BlockGraphConstructor:
             vzx.connect_path(proposal)
 
     @staticmethod
-    def realise_edges(vzx: VolumetricZxGraph, specifications: dict[EdgeId, PathSpecification | None]):
+    def realise_edges(vzx: VolumetricZxGraph, specifications: dict[EdgeId, PathSpecification]):
         for edge in vzx.edges:
             source, target = edge
 
@@ -52,27 +52,9 @@ class BlockGraphConstructor:
 
             if edge in specifications:
                 proposal = specifications[edge]
-            elif vzx.is_zx_node_realised(source) and vzx.is_zx_node_realised(target):
-                source_cube = vzx.get_bg_cube(vzx.get_zx_node(source).realising_cube)
-                target_cube = vzx.get_bg_cube(vzx.get_zx_node(target).realising_cube)
 
-                if source_cube.kind in [ CubeKind.OOO, CubeKind.YYY ]:
-                    start = target_cube
-                    final = source_cube
-                else:
-                    start = source_cube
-                    final = target_cube
+                console.debug(f"> Proposal for edge {source}-{target} : {proposal.extras if proposal else None}")
 
-                proposal = PathSpecification(
-                    start.id, final.id,
-                    pipes = [ vzx.get_zx_edge(source, target).type ]
-                )
-            else:
-                proposal = None
-
-            console.debug(f"> Proposal for edge {source}-{target} : {proposal.extras if proposal else None}")
-
-            if proposal is not None:
                 if vzx.is_path_valid(source, target, proposal):
                     console.debug(f"Realisation: {source} -> {target} [{vzx.get_zx_edge(source, target).type}]")
                     vzx.realise_zx_edge(source, target, proposal)
