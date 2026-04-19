@@ -169,7 +169,7 @@ def extend_unrealised(graph: VolumetricZxGraph, edge_specifications: dict[EdgeId
                 if Spacetime.contains(kind.get_reach(), step_taken) and Spacetime.contains(cube_reach, step_taken) and
                    edge_type in BlockGraphHelper.infer_pipe_type(node_kind, kind)
             ]
-            neighbor_kind = neighbor_kinds[0]
-            graph.realise_zx_node(neighbor, neighbor_kind, neighbor_position)
+            neighbor_cube = BgCube(neighbor_kinds[0], neighbor_position)
+            graph.realise_zx_node(neighbor, neighbor_cube)
 
     BlockGraphConstructor.realise_edges(graph, edge_specifications or dict())

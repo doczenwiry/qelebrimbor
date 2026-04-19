@@ -32,7 +32,7 @@ class BlockGraphConstructor:
             minimal_overhead, paths = PathFinderDFS.find_minimal_paths(start, final, occupied_positions = vzx.occupied)
             path = paths[0]
             proposal = PathSpecification(
-                start, final,
+                start.id, final.id,
                 extras = path.cubes[1:-1],
                 pipes = [ EdgeType.IDENTITY for _ in range(len(path.cubes) - 1) ]
             )

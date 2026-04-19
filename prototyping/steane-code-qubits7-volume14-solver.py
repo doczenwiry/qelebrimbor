@@ -1,6 +1,7 @@
 import pyzx
 import numpy as np
 
+from qelebrimbor.common.components import BgCube
 from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
 from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
 from qelebrimbor.utilities.ring_making import find_realisation, find_completion, extend_unrealised
@@ -121,7 +122,7 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_nodes(
         vzx = vzx,
         specifications = {
-            1 : (CubeKind.ZZX, Coordinates(1,2,1))
+            1 : BgCube(CubeKind.ZZX, Coordinates(1,2,1))
         }
     )
     BlockGraphConstructor.realise_edges(vzx, {
