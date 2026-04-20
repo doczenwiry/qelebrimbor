@@ -1,6 +1,8 @@
-from vedo.plotter.runtime import Plotter
+from vedo.plotter.runtime import Plotter  # type: ignore[import-untyped]
 
+from qelebrimbor.common.attributes_zx import EdgeId
 from qelebrimbor.common.attributes_bg import CubeId, PipeId
+from qelebrimbor.vedo.shapes_zx import VdNode, VdEdge
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.vedo.shapes_bg import VdCube, VdPipe
 
@@ -10,6 +12,7 @@ console = getLogger(__name__)
 class BgSceneManager:
     def __init__(self, vzx: VolumetricZxGraph, plotter: Plotter):
         self.__plotter = plotter
+        self.__graph = vzx
 
         self.__cubes = dict()
         self.__pipes = dict()
@@ -31,30 +34,46 @@ class BgSceneManager:
         # Prepare the first frame
         console.info(f"> {len(self.__cubes)} cubes, {len(self.__pipes)} pipes.")
         console.debug(f"> Actors : {self.__plotter.actors}")
-        self.__reset_camera()
 
-    def __reset_camera(self):
-        # Initialise the camera for the BG Graph
-        self.__plotter.camera.SetPosition(22, 14, 15)
-        self.__plotter.camera.SetFocalPoint(0, 0, 0)
-        self.__plotter.camera.SetViewUp(0, 0, 1)
+    def alter_cube_appearance(self, selected: CubeId, highlight: bool = False):
+        if selected == -1:
+            console.error(f"Cube #{selected} not found in BG-scene.")
+        else:
+            alpha = 0.025 if highlight else 1.0
 
-    def alter_cube_appearance(self, cube: CubeId, highlight: bool = False):
-        if cube != -1:
-            if cube in self.__cubes:
-                self.__cubes[cube].alter_appearance(highlight = highlight)
-            else:
-                console.error(f"Cube #{cube} not found in BG-scene.")
+            for cube in self.__cubes:
+                if cube == selected:
+                    self.__cubes[cube].alter_appearance(highlight=highlight)
+                else:
+                    self.__cubes[cube].alpha(alpha)
+
+            for pipe in self.__pipes:
+                self.__pipes[pipe].alpha(alpha)
 
     def alter_pipes_appearance(self, *pipes: PipeId, highlight: bool = False):
-        for pipe in pipes:
-            if pipe in self.__pipes:
-                source, target = pipe
-                self.__cubes[ source ].alter_appearance(highlight = highlight)
-                self.__cubes[ target ].alter_appearance(highlight = highlight)
+        cubes: set[CubeId] = set()
+        for source, target in pipes:
+            cubes.add( source )
+            cubes.add( target )
+
+        alpha = 0.025 if highlight else 1.0
+        for pipe in self.__pipes:
+            if pipe in pipes:
                 self.__pipes[ *pipe ].alter_appearance(highlight = highlight)
             else:
-                console.error(f"Pipe {pipe} not found in BG-scene.")
+                self.__pipes[ *pipe ].alpha(alpha)
+
+        for cube in self.__cubes:
+            if cube in cubes:
+                self.__cubes[ cube ].alter_appearance(highlight = highlight)
+            else:
+                self.__cubes[ cube ].alpha(alpha)
+
+    def alter_cycle_appearance(self, cycle: list[EdgeId], highlight: bool = False):
+        pipes = set()
+        for edge in cycle:
+            pipes.update( self.__graph.get_zx_edge(*edge).realisation )
+        self.alter_pipes_appearance(*pipes, highlight = highlight)
 
     def on_key_press(self, event):
         self.__plotter.render(resetcam = False)

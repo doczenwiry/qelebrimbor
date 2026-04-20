@@ -5,6 +5,7 @@ from qelebrimbor.common.components import ZxEdge
 from qelebrimbor.vedo.shapes_zx import VdNode, VdEdge
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 
+from qelebrimbor.common.attributes_zx import EdgeId
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 from logging import getLogger
@@ -37,10 +38,18 @@ class ZxSceneManager:
         if node != -1:
             self.__nodes[ node ].alter_appearance(highlight = highlight)
 
-    def alter_edge_appearance(self, edge: ZxEdge, highlight: bool = False):
-        self.alter_node_appearance(edge.source, highlight=highlight)
-        self.alter_node_appearance(edge.target, highlight=highlight)
-        self.__edges[ edge.source, edge.target ].alter_appearance(highlight = highlight)
+    def alter_edges_appearance(self, edge: EdgeId, highlight: bool = False):
+        source, target = edge
+        self.alter_node_appearance(source, highlight=highlight)
+        self.alter_node_appearance(target, highlight=highlight)
+        self.__edges[ *edge ].alter_appearance(highlight = highlight)
+
+    def alter_cycle_appearance(self, cycle: list[EdgeId], highlight: bool = False):
+        for edge in cycle:
+            source, target = edge
+            self.alter_node_appearance(source, highlight=highlight )
+            self.alter_node_appearance(target, highlight=highlight )
+            self.alter_edges_appearance(edge, highlight=highlight)
 
     # def on_left_click(self, event):
     #     if isinstance(event.object, ZxNode):

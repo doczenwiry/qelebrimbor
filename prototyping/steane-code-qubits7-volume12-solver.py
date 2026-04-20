@@ -95,7 +95,7 @@ if __name__ == "__main__":
     vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)
 
     MinimalCycleBasisAnalyser.analyse(vzx)
-    cycles = MinimalCycleBasisAnalyser.decompose(vzx)
+    cycles = MinimalCycleBasisAnalyser.decompose_nodes(vzx)
 
     index = 0
     cycle = cycles[index]

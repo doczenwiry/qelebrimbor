@@ -1,5 +1,6 @@
-from vedo import settings, Plotter  # type: ignore[import-untyped]
+from vedo import settings, Plotter, ButtonWidget, Text3D  # type: ignore[import-untyped]
 
+from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
 from qelebrimbor.vedo.miscellaneous import VdCubeReference
 from qelebrimbor.vedo.scene_manager_bg import BgSceneManager
 from qelebrimbor.vedo.scene_manager_zx import ZxSceneManager
@@ -10,6 +11,7 @@ from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.common.attributes_zx import EdgeId
 
 import logging
 console = logging.getLogger(__name__)
@@ -30,18 +32,7 @@ settings.enable_default_keyboard_callbacks = False
 
 class VolumetricZxGraphViewer(Plotter):
     def __init__(self, vzx: VolumetricZxGraph, label: str = "", layout: ZxLayout | None = None):
-        super().__init__(size = "full", shape = VIEWPORTS, sharecam = False, title = f"qelebrimbor [{label}]")
-
-        # Initialise the camera for the BG Graph
-        zx_camera = self.at(ZX_VIEWPORT).camera
-        zx_camera.SetParallelProjection(True)
-        zx_camera.SetViewUp(0, 1, 0)
-
-        # Share the camera between the BlockGraph and the CubeFaces
-        self.at(BG_CUBEFACE).add( VdCubeReference() )
-        self.at(BG_CUBEFACE).camera.SetFocalPoint(0, 0, 0)
-        self.at(BG_CUBEFACE).camera.SetViewUp(0, 0, 1)
-        self.at(BG_CUBEFACE).camera.SetPosition(22, 14, 15)
+        super().__init__(size = "auto", shape = VIEWPORTS, sharecam = False, title = f"qelebrimbor [{label}]")
 
         # Store the original AugmentedNxGraph
         self.__graph = vzx
@@ -56,56 +47,88 @@ class VolumetricZxGraphViewer(Plotter):
             plotter = self.at(ZX_VIEWPORT),
             layout = CircuitLayout(vzx) if layout is None else layout
         )
+        self.at(ZX_VIEWPORT).camera.SetParallelProjection(True)
 
         # Prepare the scene manager for the BG-graph
         self.__bg_scene_manager = BgSceneManager(self.__graph, self.at(BG_VIEWPORT))
 
-        self.__selected_object = None
+        # Prepare the cube for face reference
+        self.at(BG_CUBEFACE).add( VdCubeReference() )
 
-    def __alter_highlighting(self, selected_object, highlighting: bool = True):
-        if isinstance(selected_object, VdNode):
+        # Initialise the cameras for the viewports
+        self.__reset_camera()
+
+        self.__cycle_highlighting = False
+        self.__hovered_object = None
+
+    def __reset_camera(self):
+        # Initialise the camera for the ZX Graph
+        self.at(ZX_VIEWPORT).camera.SetViewUp(0, 1, 0)
+
+        # Initialise the camera for the BG Graph
+        self.at(BG_VIEWPORT).camera.SetPosition(22, 14, 15)
+        self.at(BG_VIEWPORT).camera.SetFocalPoint(0, 0, 0)
+        self.at(BG_VIEWPORT).camera.SetViewUp(0, 0, 1)
+
+        # Share the camera between the BlockGraph and the CubeFaces
+        self.at(BG_CUBEFACE).camera.SetFocalPoint(0, 0, 0)
+        self.at(BG_CUBEFACE).camera.SetViewUp(0, 0, 1)
+        self.at(BG_CUBEFACE).camera.SetPosition(22, 14, 15)
+
+    def __alter_highlighting(self, selected, highlighting: bool = True):
+        if isinstance(selected, VdNode):
             # Highlight the zx-node and its corresponding bg-cube
-            zx_node = selected_object.zx_node
+            zx_node = selected.zx_node
             if highlighting:
                 console.info(f"ZxNode : {zx_node}")
             self.__zx_scene_manager.alter_node_appearance(zx_node.id, highlight = highlighting)
             self.__bg_scene_manager.alter_cube_appearance(zx_node.realising_cube, highlight = highlighting)
-        elif isinstance(selected_object, VdEdge):
-            zx_edge = selected_object.zx_edge
+        elif isinstance(selected, VdEdge):
+            zx_edge = selected.zx_edge
             if highlighting:
                 console.info(f"ZxEdge : {zx_edge}")
             # Highlight the edge in the ZX-graph and all the pipes of its realisation
-            self.__zx_scene_manager.alter_edge_appearance(zx_edge, highlight = highlighting)
-            self.__bg_scene_manager.alter_pipes_appearance(*zx_edge.realisation, highlight = highlighting)
-        elif isinstance(selected_object, VdCube):
-            bg_cube = selected_object.bg_cube
+            edge = (zx_edge.source, zx_edge.target)
+            if self.__cycle_highlighting:
+                cycle: list[EdgeId] = next(iter(filter(lambda cc : edge in cc, MinimalCycleBasisAnalyser.decompose_edges(self.__graph))))
+                self.__zx_scene_manager.alter_cycle_appearance(cycle, highlight = highlighting)
+                self.__bg_scene_manager.alter_cycle_appearance(cycle, highlight = highlighting)
+            else:
+                self.__zx_scene_manager.alter_edges_appearance( (zx_edge.source, zx_edge.target), highlight = highlighting)
+                self.__bg_scene_manager.alter_pipes_appearance(*zx_edge.realisation, highlight = highlighting)
+        elif isinstance(selected, VdCube):
+            bg_cube = selected.bg_cube
             if highlighting:
                 console.info(f"BgCube : {bg_cube}")
             # Highlight the bg-cube and its corresponding zx-node if it has one
             self.__zx_scene_manager.alter_node_appearance(bg_cube.realised_node, highlight = highlighting)
             self.__bg_scene_manager.alter_cube_appearance(bg_cube.id, highlight = highlighting)
-        elif isinstance(selected_object, VdPipe):
-            bg_source_cube = selected_object.bg_source
-            bg_target_cube = selected_object.bg_target
+        elif isinstance(selected, VdPipe):
+            bg_source_cube = selected.bg_source
+            bg_target_cube = selected.bg_target
             if highlighting:
                 console.info(f"BgPipe : {bg_source_cube}-{bg_target_cube}")
             self.__bg_scene_manager.alter_pipes_appearance((bg_source_cube.id, bg_target_cube.id), highlight = highlighting)
             # TODO: highlight the entire path this pipe belongs to
 
     def __on_key_pressed(self, event):
+        console.info(f"KeyPressed : {event.keypress}")
         # Pass the key press to the BG scene manager
         if event.keypress == "Escape":
             self.close()
+        elif event.keypress == "c":
+            self.__cycle_highlighting = not self.__cycle_highlighting
+            console.info(f"Cycle highlighting : {self.__cycle_highlighting}")
         else:
             self.__bg_scene_manager.on_key_press(event)
 
     def __on_mouse_moved(self, event):
-        if event.object != self.__selected_object:
-            if self.__selected_object is not None:
-                self.__alter_highlighting(self.__selected_object, highlighting = False)
+        if event.object != self.__hovered_object:
+            if self.__hovered_object is not None:
+                self.__alter_highlighting(self.__hovered_object, highlighting = False)
 
-            self.__selected_object = event.object
-            self.__alter_highlighting(self.__selected_object, highlighting = True)
+            self.__hovered_object = event.object
+            self.__alter_highlighting(self.__hovered_object, highlighting = True)
 
         self.at(BG_CUBEFACE).camera.SetViewUp(self.at(BG_VIEWPORT).camera.GetViewUp())
         self.render()
