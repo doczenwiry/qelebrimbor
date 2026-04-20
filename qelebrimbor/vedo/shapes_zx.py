@@ -18,7 +18,7 @@ class VdNode(Assembly):
 
         self.zx_node: ZxNode = node
 
-        console.info(f"ZxNode : {node} [{placement}]")
+        console.debug(f"ZxNode : {node} [{placement}]")
 
         disc_position = (SPACING_X * placement[0], SPACING_Y * placement[1], 0.00)
         text_position = (SPACING_X * placement[0], SPACING_Y * placement[1], 0.05)
@@ -57,7 +57,7 @@ class VdEdge(Assembly):
         # Create the line of this edge
         self.__edge = Line(p0 = source_position, p1 = target_position, lw = 8, c = color).z(0.01)
 
-        console.info(f"ZxEdge {edge.source}L{source_placement}@{source_position} - {edge.target}L{target_placement}@{target_position}")
+        console.debug(f"ZxEdge {edge.source}L{source_placement}@{source_position} - {edge.target}L{target_placement}@{target_position}")
 
         # Create the background of this edge for highlighting
         self.__background = Line(p0 = source_position, p1 = target_position, lw = 16, c = 'white')

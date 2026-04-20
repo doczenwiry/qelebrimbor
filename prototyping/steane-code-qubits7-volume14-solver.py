@@ -1,10 +1,10 @@
 import pyzx
 import numpy as np
 
+from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
 from qelebrimbor.utilities.ring_making import find_realisation, find_completion, extend_unrealised
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.attributes_zx import NodeId, NodeType
-from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 
@@ -18,7 +18,7 @@ logging.getLogger('qelebrimbor.helpers.blockgraph').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.vedo').setLevel(logging.INFO)
+logging.getLogger('qelebrimbor.vedo').setLevel(logging.CRITICAL)
 
 def find_terminal_node(graph: pyzx.graph.base.BaseGraph, qubit: int) -> int:
     return max(
@@ -103,27 +103,29 @@ if __name__ == "__main__":
 
     vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)
 
-    CycleBasisAnalyser.analyse(vzx)
-    cycles = CycleBasisAnalyser.decompose(vzx)
+    MinimalCycleBasisAnalyser.analyse(vzx)
+    cycles = MinimalCycleBasisAnalyser.decompose_nodes(vzx)
 
     index = 0
     cycle = cycles[index]
     console.info(f"Cycle {index} : {cycle}")
-    find_realisation(vzx, cycle, maximal_overhead = 2)
+    find_realisation(vzx, cycle, maximal_overhead = 4)
 
     index = 1
     cycle = cycles[index]
     console.info(f"Cycle {index} : {cycle}")
     find_completion(vzx, cycle, maximal_overhead = 4)
 
-    # index = 2
-    # cycle = cycles[index]
-    # console.info(f"Cycle {index} : {cycle}")
-    # find_completion(vzx, cycle, maximal_overhead = 4)
+    index = 2
+    cycle = cycles[index]
+    console.info(f"Cycle {index} : {cycle}")
+    find_completion(vzx, cycle, maximal_overhead = 10)
 
     # TODO: adapt find_completion to identify unrealised edges when all spiders are already realised
 
     # extend_unrealised(vzx)
+
+    vzx.log_report()
 
     hexagon = prepare_layout()
     viewer = VolumetricZxGraphViewer(vzx = vzx, label = "steane-code-7", layout = hexagon)

@@ -119,8 +119,6 @@ class VolumetricZxGraphViewer(Plotter):
             # TODO: highlight the entire path this pipe belongs to
 
     def __on_key_pressed(self, event):
-        console.info(f"KeyPressed : {event.keypress}")
-        # Pass the key press to the BG scene manager
         if event.keypress == "Escape":
             self.close()
         elif event.keypress == "c":

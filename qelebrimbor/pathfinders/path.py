@@ -136,7 +136,7 @@ class Path:
                 source_cube = graph.get_zx_node(source).realising_cube,
                 target_cube = graph.get_zx_node(target).realising_cube,
                 extras = extras,
-                pipes = [ edges[-1].type if i == 0 else EdgeType.IDENTITY for i in range(extra_count - edge_count + 1)]
+                pipes = [ edges[-1].type if i == 0 else EdgeType.IDENTITY for i in range(extra_count - edge_count + 2)]
         )
 
         return edges_specifications

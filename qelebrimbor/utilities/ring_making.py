@@ -45,16 +45,17 @@ def find_realisation(graph: VolumetricZxGraph, cycle: list[NodeId], maximal_over
 # TODO: only place those constituents if there is only one position for them to be in (i.e. positions determined)
 def extract_chain(graph: VolumetricZxGraph, cycle: list[NodeId]) -> list[NodeId]:
     nc = len(cycle)
+    chain: list[NodeId] = []
 
     transition_ru = next(
-        idx for idx in range(nc)
-        if graph.is_zx_node_realised(cycle[idx]) and not graph.is_zx_node_realised(cycle[(idx + 1) % nc])
+        (idx+1) % nc for idx in range(nc)
+        if graph.is_zx_edge_realised(cycle[idx], cycle[(idx+1) % nc]) and not graph.is_zx_edge_realised(cycle[(idx+1) % nc], cycle[(idx+2) % nc])
     )
 
-    realised = sum(1 for idx in range(nc) if graph.is_zx_node_realised(cycle[idx]))
+    realised = sum(1 for idx in range(nc) if graph.is_zx_edge_realised(cycle[idx], cycle[(idx+1) % nc]))
 
     return [
-        cycle[(transition_ru + idx) % nc] for idx in range(nc - realised + 2)
+        cycle[(transition_ru + idx) % nc] for idx in range(nc - realised + 1)
     ]
 
 def find_completion(
@@ -68,8 +69,8 @@ def find_completion(
     extras = chain[1:-1]
     final = chain[-1]
 
-    console.info(f"Breakdown of {cycle} : {start} - {extras} - {final}")
-    console.info(f"> Chain : {chain}")
+    console.info(f"Breakdown of {cycle} :")
+    console.info(f"> {start} - {extras} - {final}")
 
     zx_nodes = [ graph.get_zx_node(nd) for nd in extras ]
     zx_edges = [ graph.get_zx_edge(chain[i], chain[(i + 1) % nc]) for i in range(len(extras)+1) ]
@@ -95,8 +96,12 @@ def find_completion(
     completion = completions[0]
     console.info(f"Realisation : {completion.source} - {completion.extras} - {completion.target}")
 
-    BlockGraphConstructor.realise_nodes(graph, completion.to_nodes_specifications(zx_nodes))
-    BlockGraphConstructor.realise_edges(graph, completion.to_edges_specifications(graph, zx_edges))
+    nodes_specifications = completion.to_nodes_specifications(zx_nodes)
+    console.info(f"> Nodes specifications : {nodes_specifications}")
+    BlockGraphConstructor.realise_nodes(graph, nodes_specifications)
+    edges_specifications = completion.to_edges_specifications(graph, zx_edges)
+    console.info(f"> Edges specifications : {edges_specifications}")
+    BlockGraphConstructor.realise_edges(graph, edges_specifications)
 
     return True
 

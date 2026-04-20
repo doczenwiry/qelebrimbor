@@ -19,6 +19,7 @@ logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRI
 logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.vedo').setLevel(logging.CRITICAL)
 
 def find_terminal_node(graph: zx.graph.base.BaseGraph, qubit: int) -> int:
     return max(
