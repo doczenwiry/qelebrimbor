@@ -3,7 +3,10 @@ from vedo import get_color  # type: ignore[import-untyped]
 from qelebrimbor.common.attributes_zx import NodeType
 
 class ZxPalette:
-    BLACK = [ 255 * c for c in get_color(rgb='k5')]
+    BLACK = [ 255 * c for c in get_color(rgb='black')]
+    LGRAY = [ 255 * c for c in get_color(rgb='k5')]
+    DGRAY = [ 255 * c for c in get_color(rgb='k2')]
+    WHITE = [ 255 * c for c in get_color(rgb='white')]
 
     MAJOR_COLORS = {
         NodeType.O: [255 * c for c in get_color(rgb='k2')],

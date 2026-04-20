@@ -173,7 +173,7 @@ if __name__ == "__main__":
         }
     )
 
-    # extend_unrealised(vzx)
+    extend_unrealised(vzx)
 
     vzx.log_report()
 

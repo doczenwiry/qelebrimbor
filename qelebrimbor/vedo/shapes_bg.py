@@ -1,8 +1,8 @@
 from vedo import Assembly, Cube, Box, Text3D  # type: ignore[import-untyped]
 
-from qelebrimbor.vedo.coloring.abstract import BlockGraphPainter
-from qelebrimbor.vedo.coloring.default_bg_painter import DefaultBlockGraphPainter
-from qelebrimbor.vedo.coloring.shaded_bg_painter import ShadedBlockGraphPainter
+from qelebrimbor.vedo.bg_painter.abstract import BlockGraphPainter
+from qelebrimbor.vedo.bg_painter.default import DefaultBlockGraphPainter
+from qelebrimbor.vedo.bg_painter.shaded import ShadedBlockGraphPainter
 
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.helpers.spacetime import Spacetime
@@ -72,14 +72,6 @@ class VdCube(Assembly):
 
     def paint(self, painter: BlockGraphPainter):
         self.__cube.cellcolors = painter.get_cube_colors(self.bg_cube)
-
-    def alter_appearance(self, highlight: bool = False):
-        if highlight:
-            self.__cube.linecolor('teal5')
-            self.__cube.linewidth(6)
-        else:
-            self.__cube.linecolor('k')
-            self.__cube.linewidth(3)
 
     def __repr__(self):
         return str(self)
@@ -152,14 +144,6 @@ class VdPipe(Assembly):
         else:
             self.__pipe_source.cellcolors = painter.get_pipe_colors(self.bg_source, self.bg_target)
             self.__pipe_target.cellcolors = painter.get_pipe_colors(self.bg_target, self.bg_source)
-
-    def alter_appearance(self, highlight: bool = False):
-        color = 'teal5' if highlight else 'k'
-        width = 6 if highlight else 3
-
-        for mesh in self.objects:
-            mesh.linecolor(color)
-            mesh.linewidth(width)
 
     def __repr__(self):
         return str(self)

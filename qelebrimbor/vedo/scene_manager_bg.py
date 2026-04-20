@@ -2,9 +2,9 @@ from vedo.plotter.runtime import Plotter  # type: ignore[import-untyped]
 
 from qelebrimbor.common.attributes_zx import EdgeId
 from qelebrimbor.common.attributes_bg import CubeId, PipeId
-from qelebrimbor.vedo.coloring.default_bg_painter import DefaultBlockGraphPainter
-from qelebrimbor.vedo.coloring.shaded_bg_painter import ShadedBlockGraphPainter
-from qelebrimbor.vedo.shapes_zx import VdNode, VdEdge
+from qelebrimbor.vedo.bg_painter.default import DefaultBlockGraphPainter
+from qelebrimbor.vedo.bg_painter.grayscale import GrayscaleBlockGraphPainter
+from qelebrimbor.vedo.bg_painter.shaded import ShadedBlockGraphPainter
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.vedo.shapes_bg import VdCube, VdPipe
 
@@ -18,7 +18,7 @@ class BgSceneManager:
 
         self.__cubes = dict()
         self.__pipes = dict()
-        self.__painters = [ DefaultBlockGraphPainter(), ShadedBlockGraphPainter() ]
+        self.__painters = [DefaultBlockGraphPainter(), ShadedBlockGraphPainter(), GrayscaleBlockGraphPainter()]
         self.__painter_index = 0
 
         for cube in vzx.get_bg_cubes():
@@ -59,6 +59,7 @@ class BgSceneManager:
             cubes.add( target )
 
         alpha = 0.025 if highlight else 1.0
+
         for pipe in self.__pipes:
             if pipe not in pipes:
                 self.__pipes[ *pipe ].alpha(alpha)
@@ -75,7 +76,7 @@ class BgSceneManager:
 
     def on_key_press(self, event):
         if event.keypress == "p":
-            self.__painter_index = 1 - self.__painter_index
+            self.__painter_index = (self.__painter_index + 1) % len(self.__painters)
             for cube in self.__cubes.values():
                 cube.paint(self.__painters[self.__painter_index])
             for pipe in self.__pipes.values():

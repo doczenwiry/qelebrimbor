@@ -3,7 +3,7 @@ from vedo import Assembly, Disc, Line, Text3D, Box  # type: ignore[import-untype
 from qelebrimbor.common.components import ZxNode, ZxEdge
 from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.vedo.coloring.zx_palette import ZxPalette
+from qelebrimbor.vedo.bg_painter.zx_palette import ZxPalette
 
 from logging import getLogger
 console = getLogger(__name__)

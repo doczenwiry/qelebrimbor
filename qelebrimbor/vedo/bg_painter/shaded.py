@@ -2,8 +2,8 @@ from numpy import array
 
 from qelebrimbor.common.attributes_zx import NodeType
 from qelebrimbor.common.components import BgCube
-from qelebrimbor.vedo.coloring.abstract import BlockGraphPainter
-from qelebrimbor.vedo.coloring.zx_palette import ZxPalette
+from qelebrimbor.vedo.bg_painter.abstract import BlockGraphPainter
+from qelebrimbor.vedo.bg_painter.zx_palette import ZxPalette
 
 
 class ShadedBlockGraphPainter(BlockGraphPainter):
@@ -30,7 +30,7 @@ class ShadedBlockGraphPainter(BlockGraphPainter):
                 if source_type == target_type:
                     color = ZxPalette.get_minor(source_type)
                 else:
-                    color = ZxPalette.BLACK
+                    color = ZxPalette.LGRAY
             colors.append(color)
             colors.append(color)
         return colors
