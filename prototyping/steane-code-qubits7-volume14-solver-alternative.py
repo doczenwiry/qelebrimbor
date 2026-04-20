@@ -180,5 +180,5 @@ if __name__ == "__main__":
     vzx.log_report()
 
     hexagon = prepare_layout()
-    viewer = VolumetricZxGraphViewer(vzx = vzx, label = "steane-code-7", layout = hexagon)
+    viewer = VolumetricZxGraphViewer(graph= vzx, label ="steane-code-7", layout = hexagon)
     viewer.display()

@@ -1,7 +1,6 @@
 from vedo.plotter import Plotter  # type: ignore[import-untyped]
 
 from qelebrimbor.common.attributes_zx import NodeId
-from qelebrimbor.common.components import ZxEdge
 from qelebrimbor.vedo.shapes_zx import VdNode, VdEdge
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 
@@ -12,20 +11,20 @@ from logging import getLogger
 console = getLogger(__name__)
 
 class ZxSceneManager:
-    def __init__(self, vzx: VolumetricZxGraph, plotter: Plotter, layout: ZxLayout):
+    def __init__(self, graph: VolumetricZxGraph, plotter: Plotter, layout: ZxLayout):
         self.__plotter = plotter
-        self.__zx_layout = layout
+        self.__vzx_graph = graph
 
         self.__nodes = dict()
         self.__edges = dict()
 
         # Prepare all the elements for the ZX scene (i.e. nodes and edges)
-        for node in vzx.get_zx_nodes():
+        for node in graph.get_zx_nodes():
             vd_node = VdNode(node, layout.get_node_placement(node.id)).z(+0.1)
             self.__nodes[ node.id ] = vd_node
             self.__plotter.add( vd_node )
 
-        for edge in vzx.get_zx_edges():
+        for edge in graph.get_zx_edges():
             vd_edge = VdEdge(
                 edge, layout.get_node_placement(edge.source), layout.get_node_placement(edge.target)
             ).z(-0.1)

@@ -11,7 +11,6 @@ from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.attributes_zx import EdgeId
 
 import logging
 console = logging.getLogger(__name__)
@@ -33,11 +32,11 @@ settings.enable_default_mouse_callbacks = False
 settings.enable_default_keyboard_callbacks = False
 
 class VolumetricZxGraphViewer(Plotter):
-    def __init__(self, vzx: VolumetricZxGraph, label: str = "", layout: ZxLayout | None = None):
+    def __init__(self, graph: VolumetricZxGraph, label: str = "", layout: ZxLayout | None = None):
         super().__init__(size = "full", shape = VIEWPORTS, sharecam = False, title = f"qelebrimbor [{label}]")
 
         # Store the original AugmentedNxGraph
-        self.__graph = vzx
+        self.__vzx_graph = graph
 
         # Set the global callbacks
         self.add_callback("key press", self.__on_key_pressed)
@@ -45,14 +44,14 @@ class VolumetricZxGraphViewer(Plotter):
 
         # Prepare the scene manager for the ZX-graph
         self.__zx_scene_manager = ZxSceneManager(
-            vzx= self.__graph,
+            graph= self.__vzx_graph,
             plotter = self.at(ZX_VIEWPORT),
-            layout = CircuitLayout(vzx) if layout is None else layout
+            layout = CircuitLayout(graph) if layout is None else layout
         )
         self.at(ZX_VIEWPORT).camera.SetParallelProjection(True)
 
         # Prepare the scene manager for the BG-graph
-        self.__bg_scene_manager = BgSceneManager(self.__graph, self.at(BG_VIEWPORT))
+        self.__bg_scene_manager = BgSceneManager(self.__vzx_graph, self.at(BG_VIEWPORT))
 
         # Prepare the cube for face reference
         self.at(BG_CUBEFACE).add( VdCubeReference() )
@@ -60,9 +59,10 @@ class VolumetricZxGraphViewer(Plotter):
         # Initialise the cameras for the viewports
         self.__reset_camera()
 
-        self.__cycle_highlighting = True
-        console.info(f"Cycle highlighting mode: {self.__cycle_highlighting}")
         self.__hovered_object = None
+
+        self.__available_cycles = MinimalCycleBasisAnalyser.decompose_edges(self.__vzx_graph)
+        self.__selected_cycle_index = -1
 
     def __reset_camera(self):
         # Initialise the camera for the ZX Graph
@@ -91,18 +91,8 @@ class VolumetricZxGraphViewer(Plotter):
             if highlighting:
                 console.debug(f"ZxEdge : {zx_edge}")
             # Highlight the edge in the ZX-graph and all the pipes of its realisation
-            edge = (zx_edge.source, zx_edge.target)
-            if self.__cycle_highlighting:
-                cycles = filter(lambda cc : edge in cc, MinimalCycleBasisAnalyser.decompose_edges(self.__graph))
-                try:
-                    cycle = next(iter(cycles))
-                    self.__zx_scene_manager.alter_cycle_appearance(cycle, highlight = highlighting)
-                    self.__bg_scene_manager.alter_cycle_appearance(cycle, highlight = highlighting)
-                except StopIteration as si:
-                    console.debug(f"> Not part of any cycle.")
-            else:
-                self.__zx_scene_manager.alter_edges_appearance( (zx_edge.source, zx_edge.target), highlight = highlighting)
-                self.__bg_scene_manager.alter_pipes_appearance(*zx_edge.realisation, highlight = highlighting)
+            self.__zx_scene_manager.alter_edges_appearance( (zx_edge.source, zx_edge.target), highlight = highlighting)
+            self.__bg_scene_manager.alter_pipes_appearance(*zx_edge.realisation, highlight = highlighting)
         elif isinstance(selected, VdCube):
             bg_cube = selected.bg_cube
             if highlighting:
@@ -116,27 +106,44 @@ class VolumetricZxGraphViewer(Plotter):
             if highlighting:
                 console.debug(f"BgPipe : {bg_source_cube}-{bg_target_cube}")
             self.__bg_scene_manager.alter_pipes_appearance((bg_source_cube.id, bg_target_cube.id), highlight = highlighting)
-            # TODO: highlight the entire path this pipe belongs to
+
+    def __shift_selected_cycle(self, shift: int):
+        self.__alter_selected_cycle_appearance(highlighting=False)
+        self.__selected_cycle_index = (self.__selected_cycle_index + shift) % len(self.__available_cycles)
+        self.__alter_selected_cycle_appearance(highlighting=True)
+
+    def __alter_selected_cycle_appearance(self, highlighting: bool):
+        if self.__selected_cycle_index != -1:
+            selected_cycle = self.__available_cycles[self.__selected_cycle_index]
+            self.__zx_scene_manager.alter_cycle_appearance(selected_cycle, highlight = highlighting)
+            self.__bg_scene_manager.alter_cycle_appearance(selected_cycle, highlight = highlighting)
 
     def __on_key_pressed(self, event):
         if event.keypress == "Escape":
             self.close()
-        elif event.keypress == "c":
-            self.__cycle_highlighting = not self.__cycle_highlighting
-            console.info(f"Cycle highlighting mode: {self.__cycle_highlighting}")
+        elif event.keypress == "grave":
+            self.__alter_selected_cycle_appearance(highlighting = False)
+            self.__selected_cycle_index = -1
+        elif event.keypress == "Up":
+            self.__shift_selected_cycle(shift = +1)
+        elif event.keypress == "Down":
+            self.__shift_selected_cycle(shift = -1)
         else:
             self.__bg_scene_manager.on_key_press(event)
 
-    def __on_mouse_moved(self, event):
-        if event.object != self.__hovered_object:
-            if self.__hovered_object is not None:
-                self.__alter_highlighting(self.__hovered_object, highlighting = False)
-
-            self.__hovered_object = event.object
-            self.__alter_highlighting(self.__hovered_object, highlighting = True)
-
-        self.at(BG_CUBEFACE).camera.SetViewUp(self.at(BG_VIEWPORT).camera.GetViewUp())
         self.render()
+
+    def __on_mouse_moved(self, event):
+        if self.__selected_cycle_index == -1:
+            if event.object != self.__hovered_object:
+                if self.__hovered_object is not None:
+                    self.__alter_highlighting(self.__hovered_object, highlighting = False)
+
+                self.__hovered_object = event.object
+                self.__alter_highlighting(self.__hovered_object, highlighting = True)
+
+            self.at(BG_CUBEFACE).camera.SetViewUp(self.at(BG_VIEWPORT).camera.GetViewUp())
+            self.render()
 
     def display(self):
         self.at(ZX_VIEWPORT).show()
