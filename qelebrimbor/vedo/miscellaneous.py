@@ -1,0 +1,54 @@
+from vedo import Assembly, Cube, Box, Text3D  # type: ignore[import-untyped]
+
+from qelebrimbor.helpers.spacetime import Spacetime
+from qelebrimbor.vedo.color_scheme import COLOR_RGBS
+
+from numpy import array
+
+from logging import getLogger
+console = getLogger(__name__)
+
+class VdCubeReference(Assembly):
+    LARGE_CUBE = 1.00
+
+    def __init__(self):
+        super().__init__()
+
+        # Initialise the cube
+        self.__cube = Cube(pos = (0,0,0), side = 1.00)
+        # Assign colors to the six faces of the cube (i.e. +X,-X,+Y,-Y,+Z,-Z)
+        self.__cube.cellcolors = array([ COLOR_RGBS[ f ] for f in "XXYYZZ" ])
+        self.__cube.linecolor('k')
+        self.__cube.linewidth(3)
+        self.__cube.lighting('off')
+
+        self.add(self.__cube)
+
+        # Initialise the labels (i.e. numbers on the cube if it corresponds to a ZX-node)
+        self.__texts = []
+        for label, direction in [ ('X', Spacetime.XP), ('X', Spacetime.XM) , ('Y', Spacetime.YP), ('Y', Spacetime.YM) , ('Z', Spacetime.ZP) , ('Z', Spacetime.ZM) ]:
+            face_center = (0.55 * direction).as_tuple()
+            text = Text3D(txt = label, pos = face_center, s = 0.5, font ='Roboto', justify ='centered', c ='white')
+            # Rotate the text to line it up with its face
+            rotation_axis = Spacetime.ZP.cross(direction).as_tuple()
+            text.rotate(angle = 90.0, axis = rotation_axis, point = face_center)
+            # Rotate the text to line it up with the top (resp. bottom) in the plus (resp. minus) direction
+            if   direction == Spacetime.XP: rotation_angle =  90.0
+            elif direction == Spacetime.XM: rotation_angle = -90.0
+            elif direction == Spacetime.YP: rotation_angle = 180.0
+            else: # direction in [Spacetime.YM, Spacetime.ZP, Spacetime.ZM]
+                rotation_angle = 0.0
+
+            text.rotate(angle = rotation_angle, axis = direction.as_tuple(), point = face_center)
+            self.__texts.append(text)
+            self.add(text)
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        stringed = ""
+        if self.bg_cube != -1:
+            stringed += f"#{self.bg_cube}:"
+        stringed += f"{self.__kind}@{self.__position}"
+        return stringed

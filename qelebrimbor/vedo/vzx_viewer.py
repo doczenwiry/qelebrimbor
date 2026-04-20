@@ -1,5 +1,6 @@
 from vedo import settings, Plotter  # type: ignore[import-untyped]
 
+from qelebrimbor.vedo.miscellaneous import VdCubeReference
 from qelebrimbor.vedo.scene_manager_bg import BgSceneManager
 from qelebrimbor.vedo.scene_manager_zx import ZxSceneManager
 from qelebrimbor.vedo.shapes_zx import VdNode, VdEdge
@@ -9,7 +10,6 @@ from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.attributes_bg import CubeId
 
 import logging
 console = logging.getLogger(__name__)
@@ -17,10 +17,12 @@ logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
 
 ZX_VIEWPORT = 0
 BG_VIEWPORT = 1
+BG_CUBEFACE = 2
 
 VIEWPORTS = [
     dict(bottomleft=(0.00, 0.00), topright=(0.50, 1.00), bg='k8'), # ZX Viewport
     dict(bottomleft=(0.50, 0.00), topright=(1.00, 1.00), bg='k6'), # BG Viewport
+    dict(bottomleft=(0.95, 0.90), topright=(1.00, 1.00), bg='k7'), # BG Cube Face
 ]
 
 settings.enable_default_mouse_callbacks = False
@@ -34,6 +36,12 @@ class VolumetricZxGraphViewer(Plotter):
         zx_camera = self.at(ZX_VIEWPORT).camera
         zx_camera.SetParallelProjection(True)
         zx_camera.SetViewUp(0, 1, 0)
+
+        # Share the camera between the BlockGraph and the CubeFaces
+        self.at(BG_CUBEFACE).add( VdCubeReference() )
+        self.at(BG_CUBEFACE).camera.SetFocalPoint(0, 0, 0)
+        self.at(BG_CUBEFACE).camera.SetViewUp(0, 0, 1)
+        self.at(BG_CUBEFACE).camera.SetPosition(22, 14, 15)
 
         # Store the original AugmentedNxGraph
         self.__graph = vzx
@@ -93,17 +101,17 @@ class VolumetricZxGraphViewer(Plotter):
 
     def __on_mouse_moved(self, event):
         if event.object != self.__selected_object:
-            console.debug(f"Entered new object.")
-
             if self.__selected_object is not None:
                 self.__alter_highlighting(self.__selected_object, highlighting = False)
 
             self.__selected_object = event.object
             self.__alter_highlighting(self.__selected_object, highlighting = True)
 
+        self.at(BG_CUBEFACE).camera.SetViewUp(self.at(BG_VIEWPORT).camera.GetViewUp())
         self.render()
 
     def display(self):
         self.at(ZX_VIEWPORT).show()
         self.at(BG_VIEWPORT).show()
+        self.at(BG_CUBEFACE).show()
         self.interactive().close()
