@@ -7,7 +7,7 @@ from numpy import array
 
 from logging import getLogger
 
-from qelebrimbor.vedo.bg_painter.zx_palette import ZxPalette
+from qelebrimbor.vedo.zx_palette import ZxPalette
 
 console = getLogger(__name__)
 

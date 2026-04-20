@@ -16,10 +16,10 @@ class ZxPalette:
     }
 
     MINOR_COLORS = {
-        NodeType.O: [255 * c for c in get_color(rgb='k5')],
-        NodeType.X: [255 * c for c in get_color(rgb='r2')],
-        NodeType.Y: [255 * c for c in get_color(rgb='g2')],
-        NodeType.Z: [255 * c for c in get_color(rgb='b2')]
+        NodeType.O: [255 * c for c in get_color(rgb='k4')],
+        NodeType.X: [255 * c for c in get_color(rgb='r4')],
+        NodeType.Y: [255 * c for c in get_color(rgb='g4')],
+        NodeType.Z: [255 * c for c in get_color(rgb='b4')]
     }
 
     @staticmethod

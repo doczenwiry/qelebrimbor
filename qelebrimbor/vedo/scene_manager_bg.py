@@ -1,3 +1,5 @@
+from collections import deque
+
 from vedo.plotter.runtime import Plotter  # type: ignore[import-untyped]
 
 from qelebrimbor.common.attributes_zx import EdgeId
@@ -14,7 +16,7 @@ console = getLogger(__name__)
 class BgSceneManager:
     def __init__(self, vzx: VolumetricZxGraph, plotter: Plotter):
         self.__plotter = plotter
-        self.__graph = vzx
+        self.__vzx_graph = vzx
 
         self.__cubes = dict()
         self.__pipes = dict()
@@ -45,12 +47,34 @@ class BgSceneManager:
         else:
             alpha = 0.025 if highlight else 1.0
 
+            selected_kind = self.__vzx_graph.get_bg_cube(selected).kind
+            equivalent_cubes: set[CubeId] = { selected }
+            connecting_pipes: set[PipeId] = set()
+            queue: deque[CubeId] = deque([ selected ])
+            while queue:
+                current : CubeId = queue.popleft()
+                for neighbor in self.__vzx_graph.get_cube_neighbours(current):
+                    if self.__vzx_graph.get_bg_cube(neighbor).kind != selected_kind:
+                        continue
+
+                    source, target = current, neighbor
+                    if source > target:
+                        source, target = target, source
+                    connecting_pipes.add( (source, target) )
+
+                    if neighbor not in equivalent_cubes:
+                        equivalent_cubes.add(neighbor)
+                        queue.append( neighbor )
+
+            console.debug(f"Equivalent cubes [{selected}] : {equivalent_cubes}")
+
             for cube in self.__cubes:
-                if cube != selected:
+                if cube not in equivalent_cubes:
                     self.__cubes[cube].alpha(alpha)
 
             for pipe in self.__pipes:
-                self.__pipes[pipe].alpha(alpha)
+                if pipe not in connecting_pipes:
+                    self.__pipes[pipe].alpha(alpha)
 
     def alter_pipes_appearance(self, *pipes: PipeId, highlight: bool = False):
         cubes: set[CubeId] = set()
@@ -71,7 +95,7 @@ class BgSceneManager:
     def alter_cycle_appearance(self, cycle: list[EdgeId], highlight: bool = False):
         pipes = set()
         for edge in cycle:
-            pipes.update( self.__graph.get_zx_edge(*edge).realisation )
+            pipes.update(self.__vzx_graph.get_zx_edge(*edge).realisation)
         self.alter_pipes_appearance(*pipes, highlight = highlight)
 
     def on_key_press(self, event):

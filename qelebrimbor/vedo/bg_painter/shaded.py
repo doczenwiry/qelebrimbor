@@ -3,7 +3,7 @@ from numpy import array
 from qelebrimbor.common.attributes_zx import NodeType
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.vedo.bg_painter.abstract import BlockGraphPainter
-from qelebrimbor.vedo.bg_painter.zx_palette import ZxPalette
+from qelebrimbor.vedo.zx_palette import ZxPalette
 
 
 class ShadedBlockGraphPainter(BlockGraphPainter):
@@ -25,7 +25,7 @@ class ShadedBlockGraphPainter(BlockGraphPainter):
         source_type = source.kind.get_type()
         target_type = target.kind.get_type()
         for c in range(3):
-            color = ZxPalette.get_major(NodeType.O)
+            color = ZxPalette.LGRAY
             if distances[c] == 0:
                 if source_type == target_type:
                     color = ZxPalette.get_minor(source_type)
