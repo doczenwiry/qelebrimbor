@@ -2,10 +2,6 @@ import random
 import pyzx
 
 from qelebrimbor.common.attributes_zx import EdgeId
-from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.components import BgCube
-from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
 from qelebrimbor.utilities.ring_making import find_realisation, find_completion, extend_unrealised
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer

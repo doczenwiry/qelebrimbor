@@ -26,7 +26,7 @@ class VdCube(Assembly):
 
         self.bg_cube: BgCube = cube
 
-        console.debug(f"BgCube : {cube}")
+        console.info(f"BgCube : {cube}")
 
         # Scaling the position
         position = GLOBAL_SPACING_FACTOR * cube.position
@@ -111,7 +111,7 @@ class VdPipe(Assembly):
     ):
         super().__init__()
 
-        console.debug(f"BgPipe : {source} -{pipe_type.name[0]}- {target}")
+        console.info(f"BgPipe : {source} -{pipe_type.name[0]}- {target}")
 
         self.bg_source: BgCube = source
         self.bg_target: BgCube = target

@@ -21,9 +21,11 @@ ZX_VIEWPORT = 0
 BG_VIEWPORT = 1
 BG_CUBEFACE = 2
 
+ZXVP = 0.25
+
 VIEWPORTS = [
-    dict(bottomleft=(0.00, 0.00), topright=(0.50, 1.00), bg='k8'), # ZX Viewport
-    dict(bottomleft=(0.50, 0.00), topright=(1.00, 1.00), bg='k6'), # BG Viewport
+    dict(bottomleft=(0.00, 0.00), topright=(ZXVP, 1.00), bg='k8'), # ZX Viewport
+    dict(bottomleft=(ZXVP, 0.00), topright=(1.00, 1.00), bg='k6'), # BG Viewport
     dict(bottomleft=(0.95, 0.90), topright=(1.00, 1.00), bg='k7'), # BG Cube Face
 ]
 
@@ -32,7 +34,7 @@ settings.enable_default_keyboard_callbacks = False
 
 class VolumetricZxGraphViewer(Plotter):
     def __init__(self, vzx: VolumetricZxGraph, label: str = "", layout: ZxLayout | None = None):
-        super().__init__(size = "auto", shape = VIEWPORTS, sharecam = False, title = f"qelebrimbor [{label}]")
+        super().__init__(size = "full", shape = VIEWPORTS, sharecam = False, title = f"qelebrimbor [{label}]")
 
         # Store the original AugmentedNxGraph
         self.__graph = vzx
@@ -58,7 +60,8 @@ class VolumetricZxGraphViewer(Plotter):
         # Initialise the cameras for the viewports
         self.__reset_camera()
 
-        self.__cycle_highlighting = False
+        self.__cycle_highlighting = True
+        console.info(f"Cycle highlighting mode: {self.__cycle_highlighting}")
         self.__hovered_object = None
 
     def __reset_camera(self):
@@ -80,26 +83,30 @@ class VolumetricZxGraphViewer(Plotter):
             # Highlight the zx-node and its corresponding bg-cube
             zx_node = selected.zx_node
             if highlighting:
-                console.info(f"ZxNode : {zx_node}")
+                console.debug(f"ZxNode : {zx_node}")
             self.__zx_scene_manager.alter_node_appearance(zx_node.id, highlight = highlighting)
             self.__bg_scene_manager.alter_cube_appearance(zx_node.realising_cube, highlight = highlighting)
         elif isinstance(selected, VdEdge):
             zx_edge = selected.zx_edge
             if highlighting:
-                console.info(f"ZxEdge : {zx_edge}")
+                console.debug(f"ZxEdge : {zx_edge}")
             # Highlight the edge in the ZX-graph and all the pipes of its realisation
             edge = (zx_edge.source, zx_edge.target)
             if self.__cycle_highlighting:
-                cycle: list[EdgeId] = next(iter(filter(lambda cc : edge in cc, MinimalCycleBasisAnalyser.decompose_edges(self.__graph))))
-                self.__zx_scene_manager.alter_cycle_appearance(cycle, highlight = highlighting)
-                self.__bg_scene_manager.alter_cycle_appearance(cycle, highlight = highlighting)
+                cycles = filter(lambda cc : edge in cc, MinimalCycleBasisAnalyser.decompose_edges(self.__graph))
+                try:
+                    cycle = next(iter(cycles))
+                    self.__zx_scene_manager.alter_cycle_appearance(cycle, highlight = highlighting)
+                    self.__bg_scene_manager.alter_cycle_appearance(cycle, highlight = highlighting)
+                except StopIteration as si:
+                    console.debug(f"> Not part of any cycle.")
             else:
                 self.__zx_scene_manager.alter_edges_appearance( (zx_edge.source, zx_edge.target), highlight = highlighting)
                 self.__bg_scene_manager.alter_pipes_appearance(*zx_edge.realisation, highlight = highlighting)
         elif isinstance(selected, VdCube):
             bg_cube = selected.bg_cube
             if highlighting:
-                console.info(f"BgCube : {bg_cube}")
+                console.debug(f"BgCube : {bg_cube}")
             # Highlight the bg-cube and its corresponding zx-node if it has one
             self.__zx_scene_manager.alter_node_appearance(bg_cube.realised_node, highlight = highlighting)
             self.__bg_scene_manager.alter_cube_appearance(bg_cube.id, highlight = highlighting)
@@ -107,7 +114,7 @@ class VolumetricZxGraphViewer(Plotter):
             bg_source_cube = selected.bg_source
             bg_target_cube = selected.bg_target
             if highlighting:
-                console.info(f"BgPipe : {bg_source_cube}-{bg_target_cube}")
+                console.debug(f"BgPipe : {bg_source_cube}-{bg_target_cube}")
             self.__bg_scene_manager.alter_pipes_appearance((bg_source_cube.id, bg_target_cube.id), highlight = highlighting)
             # TODO: highlight the entire path this pipe belongs to
 
@@ -118,7 +125,7 @@ class VolumetricZxGraphViewer(Plotter):
             self.close()
         elif event.keypress == "c":
             self.__cycle_highlighting = not self.__cycle_highlighting
-            console.info(f"Cycle highlighting : {self.__cycle_highlighting}")
+            console.info(f"Cycle highlighting mode: {self.__cycle_highlighting}")
         else:
             self.__bg_scene_manager.on_key_press(event)
 
