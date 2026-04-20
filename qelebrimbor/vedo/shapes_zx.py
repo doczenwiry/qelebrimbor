@@ -1,7 +1,7 @@
 from vedo import Assembly, Disc, Line, Text3D, Box  # type: ignore[import-untyped]
 
 from qelebrimbor.common.components import ZxNode, ZxEdge
-from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType
+from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
 
 from qelebrimbor.vedo.color_scheme import COLOR_NAMES
@@ -14,18 +14,25 @@ SPACING_Y = 6.0
 
 class VdNode(Assembly):
     def __init__(self, node: ZxNode, placement: tuple[float, float]):
+        super().__init__()
+
         self.zx_node: ZxNode = node
+
+        console.debug(f"ZxNode : {node} [{placement}]")
 
         disc_position = (SPACING_X * placement[0], SPACING_Y * placement[1], 0.00)
         text_position = (SPACING_X * placement[0], SPACING_Y * placement[1], 0.05)
         radius = 1.0 if node.type != NodeType.O else 0.75
         color = COLOR_NAMES[ node.type.name ]
 
-        self.__disc = Disc(pos = disc_position, r1 = 0.0, r2 = radius, c = color)
-        self.__background = Disc(pos = disc_position, r1 = 0.0, r2 = 1.15 * radius, c = 'white')
-        self.__text = Text3D(str(node.id), pos = text_position, font = 'Calco', justify = 'centered', c = 'white')
+        self.__disc = Disc(pos = disc_position, r1 = 0.0, r2 = radius, c = color).z(0.01)
+        self.add( self.__disc )
 
-        super().__init__( [ self.__background, self.__disc, self.__text ] )
+        self.__background = Disc(pos = disc_position, r1 = 0.0, r2 = 1.15 * radius, c = 'white')
+        self.add( self.__background )
+
+        self.__text = Text3D(str(node.id), pos = text_position, font = 'Calco', justify = 'centered', c = 'white').z(0.02)
+        self.add( self.__text )
 
         self.alter_appearance(highlight = False)
 
@@ -53,7 +60,7 @@ class VdEdge(Assembly):
         console.debug(f"ZxEdge {edge.source}L{source_placement}@{source_position} - {edge.target}L{target_placement}@{target_position}")
 
         # Create the background of this edge for highlighting
-        self.__background = Line(p0 = source_position, p1 = target_position, lw = 8, c = 'white')
+        self.__background = Line(p0 = source_position, p1 = target_position, lw = 10, c = 'white').z(-0.01)
         self.alter_appearance(highlight = False)
 
         super().__init__( self.__background, self.__edge )

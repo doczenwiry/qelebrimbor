@@ -1,18 +1,17 @@
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.attributes_bg import CubeId
-
-from vedo import settings, Plotter
+from vedo import settings, Plotter  # type: ignore[import-untyped]
 
 from qelebrimbor.vedo.scene_manager_bg import BgSceneManager
 from qelebrimbor.vedo.scene_manager_zx import ZxSceneManager
 from qelebrimbor.vedo.shapes_zx import VdNode, VdEdge
 from qelebrimbor.vedo.shapes_bg import VdCube, VdPipe
 
-import logging
-
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.common.attributes_bg import CubeId
+
+import logging
 console = logging.getLogger(__name__)
 logging.getLogger('matplotlib').setLevel(logging.CRITICAL)
 
@@ -20,8 +19,8 @@ ZX_VIEWPORT = 0
 BG_VIEWPORT = 1
 
 VIEWPORTS = [
-    dict(bottomleft=(0.00, 0.75), topright=(1.00, 1.00), bg='k8'), # ZX Viewport
-    dict(bottomleft=(0.00, 0.00), topright=(1.00, 0.75), bg='k6'), # BG Viewport
+    dict(bottomleft=(0.00, 0.00), topright=(0.50, 1.00), bg='k8'), # ZX Viewport
+    dict(bottomleft=(0.50, 0.00), topright=(1.00, 1.00), bg='k6'), # BG Viewport
 ]
 
 settings.enable_default_mouse_callbacks = False

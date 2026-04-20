@@ -23,7 +23,7 @@ logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.INFO)
 logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.vedo').setLevel(logging.INFO)
+logging.getLogger('qelebrimbor.vedo').setLevel(logging.DEBUG)
 
 random.seed(SEED)
 if __name__ == "__main__":
@@ -42,10 +42,10 @@ if __name__ == "__main__":
     console.info(f"Cycle {index} : {cycle}")
     find_realisation(vzx, cycle, maximal_overhead = 2)
 
-    index = 1
-    cycle = cycles[index]
-    console.info(f"Cycle {index} : {cycle}")
-    find_completion(vzx, cycle, maximal_overhead = 6)
+    # index = 1
+    # cycle = cycles[index]
+    # console.info(f"Cycle {index} : {cycle}")
+    # find_completion(vzx, cycle, maximal_overhead = 6)
 
     # index = 4
     # cycle = cycles[index]

@@ -22,6 +22,8 @@ class BgSceneManager:
         for bg_pipe in vzx.get_bg_pipes():
             source_cube = vzx.get_bg_cube(bg_pipe.source)
             target_cube = vzx.get_bg_cube(bg_pipe.target)
+            if source_cube.id > target_cube.id:
+                source_cube, target_cube = target_cube, source_cube
             vd_pipe = VdPipe(source_cube, target_cube, bg_pipe.type)
             self.__pipes[ source_cube.id, target_cube.id ] = vd_pipe
             self.__plotter.add( vd_pipe )

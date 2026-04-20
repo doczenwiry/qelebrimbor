@@ -1,12 +1,16 @@
-from numpy import array
 from vedo import Assembly, Cube, Box, Text3D  # type: ignore[import-untyped]
+from qelebrimbor.vedo.color_scheme import COLOR_RGBS
+
+from numpy import array
 
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.helpers.spacetime import Spacetime
-from qelebrimbor.common.attributes_bg import CubeId, CubeKind
-from qelebrimbor.common.attributes_zx import NodeId, EdgeType
+from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.common.attributes_zx import EdgeType
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.vedo.color_scheme import COLOR_RGBS
+
+from logging import getLogger
+console = getLogger(__name__)
 
 GLOBAL_SPACING_FACTOR = 3.0
 
@@ -21,6 +25,8 @@ class VdCube(Assembly):
         super().__init__()
 
         self.bg_cube: BgCube = cube
+
+        console.debug(f"BgCube : {cube}")
 
         # Scaling the position
         position = GLOBAL_SPACING_FACTOR * cube.position
@@ -104,6 +110,8 @@ class VdPipe(Assembly):
         source: BgCube, target: BgCube, pipe_type: EdgeType = EdgeType.IDENTITY
     ):
         super().__init__()
+
+        console.debug(f"BgPipe : {source} -{pipe_type.name[0]}- {target}")
 
         self.bg_source: BgCube = source
         self.bg_target: BgCube = target
