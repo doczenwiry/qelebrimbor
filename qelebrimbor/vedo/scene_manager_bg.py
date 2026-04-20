@@ -1,6 +1,6 @@
 from vedo.plotter.runtime import Plotter
 
-from qelebrimbor.common.attributes_bg import CubeId
+from qelebrimbor.common.attributes_bg import CubeId, PipeId
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.vedo.shapes_bg import VdCube, VdPipe
 
@@ -40,17 +40,21 @@ class BgSceneManager:
         self.__plotter.camera.SetViewUp(0, 0, 1)
 
     def alter_cube_appearance(self, cube: CubeId, highlight: bool = False):
-        if cube in self.__cubes:
-            self.__cubes[cube].alter_appearance(highlight = highlight)
-        else:
-            console.error(f"Cube #{cube} not found in BG-scene.")
+        if cube != -1:
+            if cube in self.__cubes:
+                self.__cubes[cube].alter_appearance(highlight = highlight)
+            else:
+                console.error(f"Cube #{cube} not found in BG-scene.")
 
-    def alter_pipe_appearance(self, source: CubeId, target: CubeId, highlight: bool = False):
-        pipe = tuple(sorted((source, target)))
-        if pipe in self.__pipes:
-            self.__pipes[ *pipe ].alter_appearance(highlight = highlight)
-        else:
-            console.error(f"Pipe {pipe} not found in BG-scene.")
+    def alter_pipes_appearance(self, *pipes: PipeId, highlight: bool = False):
+        for pipe in pipes:
+            if pipe in self.__pipes:
+                source, target = pipe
+                self.__cubes[ source ].alter_appearance(highlight = highlight)
+                self.__cubes[ target ].alter_appearance(highlight = highlight)
+                self.__pipes[ *pipe ].alter_appearance(highlight = highlight)
+            else:
+                console.error(f"Pipe {pipe} not found in BG-scene.")
 
     def on_key_press(self, event):
         self.__plotter.render(resetcam = False)

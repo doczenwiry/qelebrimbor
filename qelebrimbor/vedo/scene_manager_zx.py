@@ -34,9 +34,12 @@ class ZxSceneManager:
         self.__selected_object = None
 
     def alter_node_appearance(self, node: NodeId, highlight: bool = False):
-        self.__nodes[ node ].alter_appearance(highlight = highlight)
+        if node != -1:
+            self.__nodes[ node ].alter_appearance(highlight = highlight)
 
     def alter_edge_appearance(self, edge: ZxEdge, highlight: bool = False):
+        self.alter_node_appearance(edge.source, highlight=highlight)
+        self.alter_node_appearance(edge.target, highlight=highlight)
         self.__edges[ edge.source, edge.target ].alter_appearance(highlight = highlight)
 
     # def on_left_click(self, event):

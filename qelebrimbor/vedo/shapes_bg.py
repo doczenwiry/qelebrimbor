@@ -70,7 +70,7 @@ class VdCube(Assembly):
 
     def alter_appearance(self, highlight: bool = False):
         if highlight:
-            self.__cube.linecolor('k5')
+            self.__cube.linecolor('teal5')
             self.__cube.linewidth(6)
         else:
             self.__cube.linecolor('k')
@@ -155,7 +155,7 @@ class VdPipe(Assembly):
             mesh.linewidth(3)
 
     def alter_appearance(self, highlight: bool = False):
-        color = 'k5' if highlight else 'k'
+        color = 'teal5' if highlight else 'k'
         width = 6 if highlight else 3
 
         for mesh in self.objects:
