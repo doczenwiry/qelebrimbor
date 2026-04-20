@@ -1,7 +1,8 @@
 from vedo import Assembly, Cube, Box, Text3D  # type: ignore[import-untyped]
-from qelebrimbor.vedo.color_scheme import COLOR_RGBS
 
-from numpy import array
+from qelebrimbor.vedo.coloring.abstract import BlockGraphPainter
+from qelebrimbor.vedo.coloring.default_bg_painter import DefaultBlockGraphPainter
+from qelebrimbor.vedo.coloring.shaded_bg_painter import ShadedBlockGraphPainter
 
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.helpers.spacetime import Spacetime
@@ -21,7 +22,7 @@ class VdCube(Assembly):
     SMALL_CUBE = LARGE_CUBE * FACTOR_SMALLER
     SMALL_TEXT = LARGE_TEXT * FACTOR_SMALLER
 
-    def __init__(self, cube: BgCube):
+    def __init__(self, cube: BgCube, painter: BlockGraphPainter = DefaultBlockGraphPainter()):
         super().__init__()
 
         self.bg_cube: BgCube = cube
@@ -39,7 +40,6 @@ class VdCube(Assembly):
         # Initialise the cube
         self.__cube = Cube(pos = position, side = VdCube.LARGE_CUBE if cube.kind != CubeKind.OOO else VdCube.SMALL_CUBE)
         # Assign colors to the six faces of the cube (i.e. +X,-X,+Y,-Y,+Z,-Z)
-        self.__cube.cellcolors = array([ COLOR_RGBS[ cube.kind.name[f // 2] ] for f in range(6) ])
         self.__cube.linecolor('k')
         self.__cube.linewidth(3)
         self.__cube.lighting('off')
@@ -66,7 +66,12 @@ class VdCube(Assembly):
             self.__texts.append(text)
             self.add(text)
 
+        self.paint(painter)
+
         self.__highlighted = False
+
+    def paint(self, painter: BlockGraphPainter):
+        self.__cube.cellcolors = painter.get_cube_colors(self.bg_cube)
 
     def alter_appearance(self, highlight: bool = False):
         if highlight:
@@ -91,23 +96,10 @@ class VdPipe(Assembly):
     HALF_PIPE_LENGTH = (GLOBAL_SPACING_FACTOR - VdCube.LARGE_CUBE) / 2.0 - (PIPE_RING_LENGTH / 2.0)
     DIAMETER = VdCube.LARGE_CUBE * 0.75
 
-    @staticmethod
-    def __prepare_pipe_colors(source: BgCube, target: BgCube, distances: Coordinates):
-        # cellcolors are for faces (+X, -X, +Y, -Y, +Z, -Z)
-        colors = []
-        distances = distances.as_tuple()
-        for c in range(3):
-            if distances[c] == 0 and (
-                    source.kind not in [CubeKind.OOO, CubeKind.YYY] or target.kind not in [CubeKind.OOO, CubeKind.YYY]):
-                color = source.kind.name[c] if source.kind not in [CubeKind.OOO, CubeKind.YYY] else target.kind.name[c]
-            else:
-                color = 'U'
-            colors.append(COLOR_RGBS[color])
-            colors.append(COLOR_RGBS[color])
-        return colors
-
     def __init__(self,
-        source: BgCube, target: BgCube, pipe_type: EdgeType = EdgeType.IDENTITY
+         source: BgCube, target: BgCube,
+         pipe_type: EdgeType = EdgeType.IDENTITY,
+         painter: BlockGraphPainter = DefaultBlockGraphPainter()
     ):
         super().__init__()
 
@@ -115,6 +107,7 @@ class VdPipe(Assembly):
 
         self.bg_source: BgCube = source
         self.bg_target: BgCube = target
+        self.pipe_type: EdgeType = pipe_type
 
         distances = target.position - source.position
 
@@ -125,27 +118,24 @@ class VdPipe(Assembly):
                 size = [2.2 * VdPipe.HALF_PIPE_LENGTH if d != 0 else VdPipe.DIAMETER for d in distances]
             )
             self.add(self.__pipe)
-            self.__pipe.cellcolors = VdPipe.__prepare_pipe_colors(source, target, distances)
         else:  # pipe_type == EdgeType.HADAMARD
             # Construct the pipe on the side of the source
             self.__pipe_source = Box(
                 pos =GLOBAL_SPACING_FACTOR * (source.position + distances / 4.0) + (VdPipe.HALF_PIPE_LENGTH / 4.0) * distances,
                 size = [VdPipe.HALF_PIPE_LENGTH if d != 0 else VdPipe.DIAMETER for d in distances]
             )
-            self.__pipe_source.cellcolors = VdPipe.__prepare_pipe_colors(source, target, distances)
             self.add(self.__pipe_source)
             # Construct the pipe on the side of the target
             self.__pipe_target = Box(
                 pos =GLOBAL_SPACING_FACTOR * (target.position - distances / 4.0) - (VdPipe.HALF_PIPE_LENGTH / 4.0) * distances,
                 size = [VdPipe.HALF_PIPE_LENGTH if d != 0 else VdPipe.DIAMETER for d in distances]
             )
-            self.__pipe_target.cellcolors = VdPipe.__prepare_pipe_colors(target, source, distances)
             self.add(self.__pipe_target)
             # Construct the ring representing the HADAMARD type of the pipe
             self.__pipe_type_ring = Box(
                 pos = GLOBAL_SPACING_FACTOR * (source.position + distances / 2.0),
                 size = [0.8 * VdPipe.PIPE_RING_LENGTH if d != 0 else VdPipe.DIAMETER for d in distances],
-                c = 'y'
+                c = 'k' if EdgeType.IDENTITY else 'y'
             )
             self.add(self.__pipe_type_ring)
 
@@ -153,6 +143,15 @@ class VdPipe(Assembly):
             mesh.lighting('off')
             mesh.linecolor('k')
             mesh.linewidth(3)
+
+        self.paint(painter)
+
+    def paint(self, painter: BlockGraphPainter):
+        if self.pipe_type == EdgeType.IDENTITY:
+            self.__pipe.cellcolors = painter.get_pipe_colors(self.bg_source, self.bg_target)
+        else:
+            self.__pipe_source.cellcolors = painter.get_pipe_colors(self.bg_source, self.bg_target)
+            self.__pipe_target.cellcolors = painter.get_pipe_colors(self.bg_target, self.bg_source)
 
     def alter_appearance(self, highlight: bool = False):
         color = 'teal5' if highlight else 'k'

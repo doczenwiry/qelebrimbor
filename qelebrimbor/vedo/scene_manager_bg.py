@@ -2,6 +2,8 @@ from vedo.plotter.runtime import Plotter  # type: ignore[import-untyped]
 
 from qelebrimbor.common.attributes_zx import EdgeId
 from qelebrimbor.common.attributes_bg import CubeId, PipeId
+from qelebrimbor.vedo.coloring.default_bg_painter import DefaultBlockGraphPainter
+from qelebrimbor.vedo.coloring.shaded_bg_painter import ShadedBlockGraphPainter
 from qelebrimbor.vedo.shapes_zx import VdNode, VdEdge
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.vedo.shapes_bg import VdCube, VdPipe
@@ -16,6 +18,8 @@ class BgSceneManager:
 
         self.__cubes = dict()
         self.__pipes = dict()
+        self.__painters = [ DefaultBlockGraphPainter(), ShadedBlockGraphPainter() ]
+        self.__painter_index = 0
 
         for cube in vzx.get_bg_cubes():
             vd_cube = VdCube(cube = cube)
@@ -42,9 +46,7 @@ class BgSceneManager:
             alpha = 0.025 if highlight else 1.0
 
             for cube in self.__cubes:
-                if cube == selected:
-                    self.__cubes[cube].alter_appearance(highlight=highlight)
-                else:
+                if cube != selected:
                     self.__cubes[cube].alpha(alpha)
 
             for pipe in self.__pipes:
@@ -58,15 +60,11 @@ class BgSceneManager:
 
         alpha = 0.025 if highlight else 1.0
         for pipe in self.__pipes:
-            if pipe in pipes:
-                self.__pipes[ *pipe ].alter_appearance(highlight = highlight)
-            else:
+            if pipe not in pipes:
                 self.__pipes[ *pipe ].alpha(alpha)
 
         for cube in self.__cubes:
-            if cube in cubes:
-                self.__cubes[ cube ].alter_appearance(highlight = highlight)
-            else:
+            if cube not in cubes:
                 self.__cubes[ cube ].alpha(alpha)
 
     def alter_cycle_appearance(self, cycle: list[EdgeId], highlight: bool = False):
@@ -76,4 +74,10 @@ class BgSceneManager:
         self.alter_pipes_appearance(*pipes, highlight = highlight)
 
     def on_key_press(self, event):
+        if event.keypress == "p":
+            self.__painter_index = 1 - self.__painter_index
+            for cube in self.__cubes.values():
+                cube.paint(self.__painters[self.__painter_index])
+            for pipe in self.__pipes.values():
+                pipe.paint(self.__painters[self.__painter_index])
         self.__plotter.render(resetcam = False)

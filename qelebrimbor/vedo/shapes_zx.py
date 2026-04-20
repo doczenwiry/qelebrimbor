@@ -3,8 +3,7 @@ from vedo import Assembly, Disc, Line, Text3D, Box  # type: ignore[import-untype
 from qelebrimbor.common.components import ZxNode, ZxEdge
 from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
-
-from qelebrimbor.vedo.color_scheme import COLOR_NAMES
+from qelebrimbor.vedo.coloring.zx_palette import ZxPalette
 
 from logging import getLogger
 console = getLogger(__name__)
@@ -23,7 +22,7 @@ class VdNode(Assembly):
         disc_position = (SPACING_X * placement[0], SPACING_Y * placement[1], 0.00)
         text_position = (SPACING_X * placement[0], SPACING_Y * placement[1], 0.05)
         radius = 1.0 if node.type != NodeType.O else 0.75
-        color = COLOR_NAMES[ node.type.name ]
+        color = ZxPalette.get_major(node.type)
 
         self.__disc = Disc(pos = disc_position, r1 = 0.0, r2 = radius, c = color).z(0.01)
         self.add( self.__disc )

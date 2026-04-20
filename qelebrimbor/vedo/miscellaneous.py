@@ -1,11 +1,14 @@
 from vedo import Assembly, Cube, Box, Text3D  # type: ignore[import-untyped]
 
+from qelebrimbor.common.attributes_zx import NodeType
 from qelebrimbor.helpers.spacetime import Spacetime
-from qelebrimbor.vedo.color_scheme import COLOR_RGBS
 
 from numpy import array
 
 from logging import getLogger
+
+from qelebrimbor.vedo.coloring.zx_palette import ZxPalette
+
 console = getLogger(__name__)
 
 class VdCubeReference(Assembly):
@@ -17,7 +20,6 @@ class VdCubeReference(Assembly):
         # Initialise the cube
         self.__cube = Cube(pos = (0,0,0), side = 1.00)
         # Assign colors to the six faces of the cube (i.e. +X,-X,+Y,-Y,+Z,-Z)
-        self.__cube.cellcolors = array([ COLOR_RGBS[ f ] for f in "XXYYZZ" ])
         self.__cube.linecolor('k')
         self.__cube.linewidth(3)
         self.__cube.lighting('off')
@@ -42,6 +44,10 @@ class VdCubeReference(Assembly):
             text.rotate(angle = rotation_angle, axis = direction.as_tuple(), point = face_center)
             self.__texts.append(text)
             self.add(text)
+
+        self.__cube.cellcolors = array([
+            ZxPalette.get_major(f) for f in [NodeType.X, NodeType.X, NodeType.Y, NodeType.Y, NodeType.Z, NodeType.Z]
+        ])
 
     def __repr__(self):
         return str(self)
