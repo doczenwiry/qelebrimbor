@@ -39,14 +39,14 @@ class PathFinderDFS:
 
         minimal_number_of_cubes = nt if nt % 2 == 0 else nt + 1
         maximal_volume = max(start.position.get_manhattan_distance(final.position), minimal_number_of_cubes) + maximal_overhead + 2
-        console.info(f"Maximal volume considered : {maximal_volume}")
 
         initial = Path( start , final )
         queue: PriorityQueue[Path] = PriorityQueue[Path]()
         queue.put( initial )
 
         console.info(f"Searching for paths from {start} to {final} [{node_types}].")
-        console.info(f"> Unavailable positions : {unavailable}")
+        console.info(f"> Maximal volume allowed : {maximal_volume}")
+        console.info(f"> Unavailable positions  : {unavailable}")
 
         while not queue.empty():
             path: Path = queue.get()
@@ -61,7 +61,7 @@ class PathFinderDFS:
                     manhattan_length = path.manhattan_length()
                     path_overhead = path.overhead()
 
-                    console.info(f"> Target reached : {candidate} [+{path_overhead}]")
+                    console.debug(f"> Target reached : {candidate} [+{path_overhead}]")
                     console.debug(f">> {path}")
 
                     if manhattan_length < maximal_volume:

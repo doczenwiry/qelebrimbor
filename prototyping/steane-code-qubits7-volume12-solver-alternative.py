@@ -31,7 +31,7 @@ if __name__ == "__main__":
     vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)
 
     BlockGraphConstructor.realise_nodes(
-        vzx = vzx,
+        graph= vzx,
         specifications = {
             1 : BgCube(kind=CubeKind.XZZ, position=Coordinates( 0, 0, 0)),
             5 : BgCube(kind=CubeKind.XZX, position=Coordinates( 0, 0, 2)),
@@ -42,7 +42,7 @@ if __name__ == "__main__":
         }
     )
     BlockGraphConstructor.realise_edges(
-        vzx = vzx,
+        graph= vzx,
         specifications = {
             (s,t) : PathSpecification(
                 source_cube = vzx.get_zx_node(s).realising_cube,
@@ -53,7 +53,7 @@ if __name__ == "__main__":
         }
     )
     BlockGraphConstructor.realise_edges(
-        vzx = vzx,
+        graph= vzx,
         specifications = {
             (1,5) : PathSpecification(
                 source_cube = vzx.get_zx_node(1).realising_cube,
@@ -71,14 +71,14 @@ if __name__ == "__main__":
     )
 
     BlockGraphConstructor.realise_nodes(
-        vzx = vzx,
+        graph= vzx,
         specifications = {
             3 : BgCube(kind=CubeKind.ZZX, position=Coordinates(-1, 0, 1)),
             6 : BgCube(kind=CubeKind.XXZ, position=Coordinates( 0,-1, 0))
         }
     )
     BlockGraphConstructor.realise_edges(
-        vzx = vzx,
+        graph= vzx,
         specifications = {
             (s,t) : PathSpecification(
                 source_cube = vzx.get_zx_node(s).realising_cube,
@@ -89,7 +89,7 @@ if __name__ == "__main__":
         }
     )
     BlockGraphConstructor.realise_edges(
-        vzx = vzx,
+        graph= vzx,
         specifications = {
             (3,6) : PathSpecification(
                 source_cube = vzx.get_zx_node(3).realising_cube,
@@ -106,7 +106,6 @@ if __name__ == "__main__":
     extend_unrealised(vzx)
 
     vzx.log_report()
-    vzx.log_summary()
 
     hexagon = HexagonLayout(graph = vzx, nodes = [1, 4, 0, 7, 3, 6],
         extras = {2 : (0.7, 1.5 / 6.0) , 5 : (0.7, 4.5 / 6.0), 9 : (0.7, 0.5 / 6.0), 12 : (0.7, 3.5 / 6.0)}

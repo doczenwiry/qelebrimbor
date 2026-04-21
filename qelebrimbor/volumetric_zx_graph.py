@@ -483,6 +483,8 @@ class VolumetricZxGraph(nx.Graph):
         start = self.get_bg_cube(proposal.source_cube)
         final = self.get_bg_cube(proposal.target_cube)
 
+        console.info(f"Validating {source}-{target} : {proposal}")
+
         if start.id != self.get_zx_node(source).realising_cube:
             if self.__is_alternative_realising_cube(source, start):
                 console.debug(f"Start {start} is an alternative realising cube of node {source}.")
@@ -548,7 +550,7 @@ class VolumetricZxGraph(nx.Graph):
 
             if final.id != self.get_zx_node(target).realising_cube:
                 if self.__is_alternative_realising_cube(target, final):
-                    console.debug(f"Final {final} is an alternative realising cube of node {target}.")
+                    console.warning(f"Final {final} is an alternative realising cube of node {target}.")
                 else:
                     raise Exception(f"Final {final} is not realising target node {target}.")
 
@@ -556,19 +558,19 @@ class VolumetricZxGraph(nx.Graph):
             step_taken = final.position - previous.position
 
             if Spacetime.ORIGIN.get_manhattan_distance(step_taken) != 1:
-                console.debug(f"> Consecutive cubes are not adjacent [{previous.position}-{final.position}]")
+                console.warning(f"> Consecutive cubes are not adjacent [{previous.position}-{final.position}]")
                 return False
 
             final_reach = final.kind.get_reach()
             if not Spacetime.contains(previous_reach, step_taken) or not Spacetime.contains(final_reach, step_taken):
-                console.debug(f"> Reaches do not contain step [{step_taken}]: {previous} {final}")
+                console.warning(f"> Reaches do not contain step [{step_taken}]: {previous} {final}")
                 return False
 
             # Check that the current pipe has a type consistent with what is allowed
             current_pipe_type = proposal.pipes[-1]
             inferred = BlockGraphHelper.infer_pipe_type(previous.kind, final.kind)
             if current_pipe_type not in inferred:
-                console.debug(f"> Pipe type is not allowed between {previous} and {final} [{current_pipe_type} not in {inferred}].")
+                console.warning(f"> Pipe type is not allowed between {previous} and {final} [{current_pipe_type} not in {inferred}].")
                 return False
 
             if current_pipe_type == EdgeType.HADAMARD:

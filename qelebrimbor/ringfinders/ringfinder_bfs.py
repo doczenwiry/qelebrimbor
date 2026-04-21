@@ -36,7 +36,7 @@ class RingFinderBFS:
             terminal: BgCube = ring.get_terminal()
             node_types: set[NodeType] = { nodes[length].type } if length < n else { NodeType.X , NodeType.Z }
             pipe_type: EdgeType = edges[ length-1 ].type if edges and length <= e else EdgeType.IDENTITY
-            console.info(f"Terminal cube: {terminal} [{pipe_type}]")
+            console.debug(f"Terminal cube: {terminal} [{pipe_type}]")
 
             for candidate in BlockGraphHelper.get_candidate_constellation(terminal, node_types = node_types, pipe_type = pipe_type):
                 console.debug(f"> Candidate : {candidate}")
@@ -46,22 +46,22 @@ class RingFinderBFS:
 
                 # Skip if the next_position is already occupied
                 if ring.occupies(candidate.position):
-                    console.info(f"> Candidate position already occupied [{candidate}]")
+                    console.debug(f"> Candidate position already occupied [{candidate}]")
                     continue
 
                 # Skip if the next_kind is not of the color specified
                 if length < n and candidate.kind.get_type() != nodes[length].type:
-                    console.info(f"> Candidate doesn't have requested node type [{candidate}]")
+                    console.debug(f"> Candidate doesn't have requested node type [{candidate}]")
                     continue
 
                 extended: Ring = ring.copy()
                 extended.append(candidate)
 
                 # Check whether the ring satisfies the specification
-                console.info(f"Extended : {extended}")
+                console.debug(f"Extended : {extended}")
                 console.debug(f"> {extended.manhattan_length()} <= {n} + {maximal_overhead}?")
                 if length >= n-1 and anchor.position.get_manhattan_distance(candidate.position) == 1:
-                    console.info(f"Target reached : {ring}")
+                    console.debug(f"Target reached : {ring}")
                     step = candidate.position - anchor.position
                     reach_condition = Spacetime.contains(anchor.kind.get_reach(), step) and Spacetime.contains(candidate.kind.get_reach(), step)
                     console.debug(f"> {step} ? [{reach_condition}]")
@@ -71,6 +71,6 @@ class RingFinderBFS:
                     if extended.manhattan_length() + extended.manhattan_distance_anchor() <= n + maximal_overhead:
                         queue.append(extended)
                     else:
-                        console.info(f"> Candidate is too far away [{candidate}]")
+                        console.debug(f"> Candidate is too far away [{candidate}]")
 
         return rings

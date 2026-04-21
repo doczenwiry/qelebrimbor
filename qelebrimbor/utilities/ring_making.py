@@ -36,8 +36,8 @@ def find_realisation(graph: VolumetricZxGraph, cycle: list[NodeId], maximal_over
     console.info(f"Found {len(realisations)} realisations for cycle : {cycle}")
     console.info(f"> Realisation [{ring.manhattan_length()}] : {ring}")
 
-    BlockGraphConstructor.realise_nodes(vzx = graph, specifications = ring.to_nodes_specifications(zx_nodes))
-    BlockGraphConstructor.realise_edges(vzx = graph, specifications = ring.to_edges_specifications(graph, zx_edges))
+    BlockGraphConstructor.realise_nodes(graph= graph, specifications = ring.to_nodes_specifications(zx_nodes))
+    BlockGraphConstructor.realise_edges(graph= graph, specifications = ring.to_edges_specifications(graph, zx_edges))
 
 # TODO: go beyond assumption that cycle is made of one realised chain and one unrealised chain
 # TODO: figure out which edges are missing if all the nodes are already placed

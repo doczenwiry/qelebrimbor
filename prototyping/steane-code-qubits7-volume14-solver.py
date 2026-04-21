@@ -1,6 +1,12 @@
 import pyzx
 
-from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
+from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.common.attributes_zx import EdgeType
+from qelebrimbor.common.components import BgCube
+from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.common.paths import PathSpecification
+from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
+from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
 from qelebrimbor.utilities.ring_making import find_realisation, find_completion, extend_unrealised
 from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
@@ -10,10 +16,6 @@ import logging
 console = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
-logging.getLogger('qelebrimbor.helpers.blockgraph').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.vedo').setLevel(logging.INFO)
 
 if __name__ == "__main__":
@@ -22,25 +24,45 @@ if __name__ == "__main__":
 
     vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)
 
-    MinimalCycleBasisAnalyser.analyse(vzx)
-    cycles = MinimalCycleBasisAnalyser.decompose_nodes(vzx)
+    CycleBasisAnalyser.analyse(vzx)
+    cycles = CycleBasisAnalyser.decompose_nodes(vzx)
 
     index = 0
     cycle = cycles[index]
     console.info(f"Cycle {index} : {cycle}")
     find_realisation(vzx, cycle, maximal_overhead = 4)
 
-    index = 1
-    cycle = cycles[index]
-    console.info(f"Cycle {index} : {cycle}")
-    find_completion(vzx, cycle, maximal_overhead = 4)
+    BlockGraphConstructor.realise_nodes(
+        graph = vzx,
+        specifications = {
+            1 : BgCube(CubeKind.ZXZ, Coordinates(-1,-1,0))
+        }
+    )
 
-    index = 2
-    cycle = cycles[index]
-    console.info(f"Cycle {index} : {cycle}")
-    find_completion(vzx, cycle, maximal_overhead = 10)
+    BlockGraphConstructor.realise_edges(
+        graph = vzx,
+        specifications = {
+            (0,1) : PathSpecification(
+                source_cube = vzx.get_bg_cube(vzx.get_zx_node(0).realising_cube).id,
+                target_cube=vzx.get_bg_cube(vzx.get_zx_node(1).realising_cube).id,
+                pipes = [ vzx.get_zx_edge(0, 1).type ]
+            ),
+            (1, 4): PathSpecification(
+                source_cube = vzx.get_bg_cube(vzx.get_zx_node(1).realising_cube).id,
+                target_cube = vzx.get_bg_cube(vzx.get_zx_node(4).realising_cube).id,
+                extras = [
+                    BgCube(CubeKind.ZXZ, Coordinates(-1,-1,-1)) , BgCube(CubeKind.ZXZ, Coordinates( 0,-1,-1)),
+                    BgCube(CubeKind.ZXZ, Coordinates( 0,-1,-2)), BgCube(CubeKind.ZXZ, Coordinates(1, -1,-2))
+                ],
+                pipes=[ vzx.get_zx_edge(1, 4).type if i == 0 else EdgeType.IDENTITY for i in range(5) ]
+            )
+        }
+    )
 
-    # TODO: adapt find_completion to identify unrealised edges when all spiders are already realised
+    BlockGraphConstructor.connect_cubes(
+        graph = vzx,
+        endpoints = [ (19, 23) ]
+    )
 
     # extend_unrealised(vzx)
 

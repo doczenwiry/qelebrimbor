@@ -34,7 +34,7 @@ settings.enable_default_keyboard_callbacks = False
 
 class VolumetricZxGraphViewer(Plotter):
     def __init__(self, graph: VolumetricZxGraph, label: str = "", layout: ZxLayout | None = None):
-        super().__init__(size = "full", shape = VIEWPORTS, sharecam = False, title = f"qelebrimbor [{label}]")
+        super().__init__(size = "auto", shape = VIEWPORTS, sharecam = False, title = f"qelebrimbor [{label}]")
 
         # Store the original AugmentedNxGraph
         self.__vzx_graph = graph
@@ -89,20 +89,20 @@ class VolumetricZxGraphViewer(Plotter):
             # Highlight the zx-node and its corresponding bg-cube
             zx_node = selected.zx_node
             if highlighting:
-                console.debug(f"ZxNode : {zx_node}")
+                console.info(f"ZxNode : {zx_node}")
             self.__zx_scene_manager.alter_node_appearance(zx_node.id, highlight = highlighting)
             self.__bg_scene_manager.alter_cube_appearance(zx_node.realising_cube, highlight = highlighting)
         elif isinstance(selected, VdEdge):
             zx_edge = selected.zx_edge
             if highlighting:
-                console.debug(f"ZxEdge : {zx_edge}")
+                console.info(f"ZxEdge : {zx_edge}")
             # Highlight the edge in the ZX-graph and all the pipes of its realisation
             self.__zx_scene_manager.alter_edge_appearance((zx_edge.source, zx_edge.target), highlight = highlighting)
             self.__bg_scene_manager.alter_pipes_appearance(*zx_edge.realisation, highlight = highlighting)
         elif isinstance(selected, VdCube):
             bg_cube = selected.bg_cube
             if highlighting:
-                console.debug(f"BgCube : {bg_cube}")
+                console.info(f"BgCube : {bg_cube}")
             # Highlight the bg-cube and its corresponding zx-node if it has one
             self.__zx_scene_manager.alter_node_appearance(bg_cube.realised_node, highlight = highlighting)
             self.__bg_scene_manager.alter_cube_appearance(bg_cube.id, highlight = highlighting)
@@ -110,7 +110,7 @@ class VolumetricZxGraphViewer(Plotter):
             bg_source_cube = selected.bg_source
             bg_target_cube = selected.bg_target
             if highlighting:
-                console.debug(f"BgPipe : {bg_source_cube}-{bg_target_cube}")
+                console.info(f"BgPipe : {bg_source_cube}-{bg_target_cube}")
             self.__bg_scene_manager.alter_pipes_appearance((bg_source_cube.id, bg_target_cube.id), highlight = highlighting)
 
     def __shift_selected_cycle(self, shift: int):
@@ -125,7 +125,6 @@ class VolumetricZxGraphViewer(Plotter):
             self.__bg_scene_manager.alter_cycle_appearance(selected_cycle, highlight = highlighting)
 
     def __on_key_pressed(self, event):
-        console.info(f"KeyPressed: {event.keypress}")
         if event.keypress == "Escape":
             self.close()
         elif event.keypress == "grave":
