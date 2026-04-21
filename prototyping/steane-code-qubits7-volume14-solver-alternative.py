@@ -1,12 +1,7 @@
 import pyzx
 
-from qelebrimbor.common.attributes_zx import EdgeType
-from qelebrimbor.common.components import BgCube
-from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.paths import PathSpecification
-
-from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
+from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
+from qelebrimbor.utilities.ring_making import find_realisation, find_completion
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -29,72 +24,23 @@ if __name__ == "__main__":
 
     vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)
 
-    BlockGraphConstructor.realise_nodes(
-        vzx = vzx,
-        specifications = {
-            1 : BgCube(kind=CubeKind.XZZ, position=Coordinates( 0, 0, 0)),
-            0 : BgCube(kind=CubeKind.XXZ, position=Coordinates( 0,-1, 0)),
-            4 : BgCube(kind=CubeKind.XXZ, position=Coordinates( 0,+1, 0)),
-            6 : BgCube(kind=CubeKind.XZX, position=Coordinates( 0, 0,+1)),
-        }
-    )
-    BlockGraphConstructor.realise_edges(
-        vzx = vzx,
-        specifications = {
-            (s,t) : PathSpecification(
-                source_cube = vzx.get_zx_node(s).realising_cube,
-                target_cube = vzx.get_zx_node(t).realising_cube,
-                pipes = [ vzx.get_zx_edge(s,t).type ]
-            )
-            for s, t in [ (0,1) , (1,4) , (1,6) ]
-        }
-    )
+    CycleBasisAnalyser.analyse(vzx)
+    cycles = CycleBasisAnalyser.decompose_nodes(vzx)
 
-    BlockGraphConstructor.realise_nodes(
-        vzx = vzx,
-        specifications = {
-            2 : BgCube(kind=CubeKind.XZZ, position=Coordinates(+1, 0, 0)),
-            3 : BgCube(kind=CubeKind.ZXZ, position=Coordinates(-1,-1, 0)),
-            5 : BgCube(kind=CubeKind.ZXZ, position=Coordinates(-1,+1, 0)),
-        }
-    )
-    BlockGraphConstructor.realise_edges(
-        vzx = vzx,
-        specifications = {
-            (s,t) : PathSpecification(
-                source_cube = vzx.get_zx_node(s).realising_cube,
-                target_cube = vzx.get_zx_node(t).realising_cube,
-                pipes = [ vzx.get_zx_edge(s,t).type ]
-            )
-            for s, t in [ (0,3) , (4,5) ]
-        }
-    )
-    BlockGraphConstructor.realise_edges(
-        vzx = vzx,
-        specifications = {
-            (0,2) : PathSpecification(
-                source_cube = vzx.get_zx_node(0).realising_cube,
-                target_cube = vzx.get_zx_node(2).realising_cube,
-                extras = [ BgCube(kind = CubeKind.XXZ, position=Coordinates(+1,-1, 0)), ],
-                pipes = [ vzx.get_zx_edge(0,2).type ]
-            ),
-            (2, 4): PathSpecification(
-                source_cube=vzx.get_zx_node(2).realising_cube,
-                target_cube=vzx.get_zx_node(4).realising_cube,
-                extras=[BgCube(kind=CubeKind.XXZ, position=Coordinates(+1, +1, 0)), ],
-                pipes=[vzx.get_zx_edge(2,4).type]
-            ),
-            (5, 6) : PathSpecification(
-                source_cube = vzx.get_zx_node(5).realising_cube,
-                target_cube = vzx.get_zx_node(6).realising_cube,
-                extras = [
-                    BgCube(kind=CubeKind.ZXX, position=Coordinates(-1,+1,+1)),
-                    BgCube(kind=CubeKind.ZZX, position=Coordinates(-1, 0,+1)),
-                ],
-                pipes = [ vzx.get_zx_edge(5,6).type , EdgeType.IDENTITY , EdgeType.IDENTITY ]
-            )
-        }
-    )
+    index = 0
+    cycle = cycles[index]
+    console.info(f"Cycle {index} : {cycle}")
+    find_realisation(vzx, cycle, maximal_overhead = 4)
+
+    index = 1
+    cycle = cycles[index]
+    console.info(f"Cycle {index} : {cycle}")
+    find_completion(vzx, cycle, maximal_overhead = 4)
+
+    index = 2
+    cycle = cycles[index]
+    console.info(f"Cycle {index} : {cycle}")
+    find_completion(vzx, cycle, maximal_overhead = 4)
 
     # extend_unrealised(vzx)
 

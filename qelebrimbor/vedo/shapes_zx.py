@@ -33,10 +33,7 @@ class VdNode(Assembly):
         self.__text = Text3D(str(node.id), s = radius, pos = text_position, font = 'Calco', justify = 'centered', c = 'white').z(0.02)
         self.add( self.__text )
 
-        self.alter_appearance(highlight = False)
-
-    def alter_appearance(self, highlight: bool = False):
-        color = 'teal5' if highlight else 'w'
+    def alter_highlighting(self, color: str):
         self.__background.color(color)
 
 class VdEdge(Assembly):
@@ -46,6 +43,7 @@ class VdEdge(Assembly):
     def __init__(self,
             edge: ZxEdge, source_placement: tuple[float, float], target_placement: tuple[float, float]
     ):
+        super().__init__()
         self.zx_edge: ZxEdge = edge
 
         color = 'k' if edge.type == EdgeType.IDENTITY else 'y4'
@@ -55,15 +53,13 @@ class VdEdge(Assembly):
 
         # Create the line of this edge
         self.__edge = Line(p0 = source_position, p1 = target_position, lw = 8, c = color).z(0.01)
+        self.add( self.__edge )
 
         console.debug(f"ZxEdge {edge.source}L{source_placement}@{source_position} - {edge.target}L{target_placement}@{target_position}")
 
         # Create the background of this edge for highlighting
         self.__background = Line(p0 = source_position, p1 = target_position, lw = 16, c = 'white')
-        self.alter_appearance(highlight = False)
+        self.add( self.__background )
 
-        super().__init__( self.__background, self.__edge )
-
-    def alter_appearance(self, highlight: bool = False):
-        color = 'teal5' if highlight else 'w' if self.zx_edge.type == EdgeType.IDENTITY else 'y4'
+    def alter_highlighting(self, color: str):
         self.__background.linecolor(color)

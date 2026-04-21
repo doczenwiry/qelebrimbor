@@ -1,5 +1,6 @@
 from vedo import settings, Plotter, ButtonWidget, Text3D  # type: ignore[import-untyped]
 
+from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
 from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
 from qelebrimbor.vedo.miscellaneous import VdCubeReference
 from qelebrimbor.vedo.scene_manager_bg import BgSceneManager
@@ -61,8 +62,13 @@ class VolumetricZxGraphViewer(Plotter):
 
         self.__hovered_object = None
 
-        self.__available_cycles = MinimalCycleBasisAnalyser.decompose_edges(self.__vzx_graph)
+        self.__available_cycle_analysers = [
+            MinimalCycleBasisAnalyser.decompose_edges(self.__vzx_graph),
+            CycleBasisAnalyser.decompose_edges(self.__vzx_graph)
+        ]
+        self.__selected_cycle_analyser = 0
         self.__selected_cycle_index = -1
+        self.__available_cycles = self.__available_cycle_analysers[self.__selected_cycle_analyser]
 
     def __reset_camera(self):
         # Initialise the camera for the ZX Graph
@@ -91,7 +97,7 @@ class VolumetricZxGraphViewer(Plotter):
             if highlighting:
                 console.debug(f"ZxEdge : {zx_edge}")
             # Highlight the edge in the ZX-graph and all the pipes of its realisation
-            self.__zx_scene_manager.alter_edges_appearance( (zx_edge.source, zx_edge.target), highlight = highlighting)
+            self.__zx_scene_manager.alter_edge_appearance((zx_edge.source, zx_edge.target), highlight = highlighting)
             self.__bg_scene_manager.alter_pipes_appearance(*zx_edge.realisation, highlight = highlighting)
         elif isinstance(selected, VdCube):
             bg_cube = selected.bg_cube
@@ -119,6 +125,7 @@ class VolumetricZxGraphViewer(Plotter):
             self.__bg_scene_manager.alter_cycle_appearance(selected_cycle, highlight = highlighting)
 
     def __on_key_pressed(self, event):
+        console.info(f"KeyPressed: {event.keypress}")
         if event.keypress == "Escape":
             self.close()
         elif event.keypress == "grave":
@@ -128,6 +135,12 @@ class VolumetricZxGraphViewer(Plotter):
             self.__shift_selected_cycle(shift = +1)
         elif event.keypress == "Down":
             self.__shift_selected_cycle(shift = -1)
+        elif event.keypress == "m":
+            self.__alter_selected_cycle_appearance(highlighting = False)
+            self.__selected_cycle_analyser = (self.__selected_cycle_analyser + 1) % len(self.__available_cycle_analysers)
+            self.__available_cycles = self.__available_cycle_analysers[self.__selected_cycle_analyser]
+            self.__selected_cycle_index = 0
+            self.__alter_selected_cycle_appearance(highlighting = True)
         else:
             self.__bg_scene_manager.on_key_press(event)
 

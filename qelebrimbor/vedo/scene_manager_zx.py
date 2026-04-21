@@ -35,27 +35,27 @@ class ZxSceneManager:
 
     def alter_node_appearance(self, node: NodeId, highlight: bool = False):
         if node != -1:
-            self.__nodes[ node ].alter_appearance(highlight = highlight)
+            if highlight:
+                new_color = 'teal5' if self.__vzx_graph.is_zx_node_realised(node) else 'indigo5'
+            else:
+                new_color = 'white'
 
-    def alter_edges_appearance(self, edge: EdgeId, highlight: bool = False):
+            self.__nodes[node].alter_highlighting(color= new_color)
+
+    def alter_edge_appearance(self, edge: EdgeId, highlight: bool = False):
         source, target = edge
         self.alter_node_appearance(source, highlight=highlight)
         self.alter_node_appearance(target, highlight=highlight)
-        self.__edges[ *edge ].alter_appearance(highlight = highlight)
+
+        if highlight:
+            new_color = 'teal5' if self.__vzx_graph.is_zx_edge_realised(*edge) else 'indigo5'
+        else:
+            new_color = 'white'
+        self.__edges[ *edge ].alter_highlighting(color = new_color)
 
     def alter_cycle_appearance(self, cycle: list[EdgeId], highlight: bool = False):
         for edge in cycle:
             source, target = edge
             self.alter_node_appearance(source, highlight=highlight )
             self.alter_node_appearance(target, highlight=highlight )
-            self.alter_edges_appearance(edge, highlight=highlight)
-
-    # def on_left_click(self, event):
-    #     if isinstance(event.object, ZxNode):
-    #         bg_cube = self.__nx_graph.get_cube(event.object.zx_node)
-    #         extra = f"[C{bg_cube}]" if bg_cube is not None else ""
-    #         console.debug(f"Clicked on Node #{event.object.zx_node} {extra}")
-    #         event.object.toggle_highlight()
-    #
-    #     if isinstance(event.object, ZxEdge):
-    #         console.debug(f"Clicked on Edge  {event.object.zx_source}-{event.object.zx_target}")
+            self.alter_edge_appearance(edge, highlight=highlight)
