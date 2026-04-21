@@ -1,39 +1,54 @@
-from vedo.plotter.runtime import Plotter
+from vedo.plotter import Plotter  # type: ignore[import-untyped]
 
-from qelebrimbor.augmented_nx_graph import AugmentedNxGraph
-from qelebrimbor.common.components_zx import NodeId
-from qelebrimbor.vedo.shapes_zx import ZxNode, ZxEdge
+from qelebrimbor.common.attributes_zx import NodeId
+from qelebrimbor.vedo.shapes_zx import VdNode, VdEdge
+from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
+
+from qelebrimbor.common.attributes_zx import EdgeId
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 from logging import getLogger
 console = getLogger(__name__)
 
 class ZxSceneManager:
-    def __init__(self, nx_graph: AugmentedNxGraph, plotter: Plotter):
-        self.__nx_graph = nx_graph
+    def __init__(self, graph: VolumetricZxGraph, plotter: Plotter, layout: ZxLayout):
         self.__plotter = plotter
+        self.__vzx_graph = graph
 
         self.__nodes = dict()
         self.__edges = dict()
 
         # Prepare all the elements for the ZX scene (i.e. nodes and edges)
-        for node in self.__nx_graph.get_nodes():
-            zx_node = ZxNode(node, self.__nx_graph).z(+0.1)
-            self.__nodes[ node ] = zx_node
+        for node in graph.get_zx_nodes():
+            vd_node = VdNode(node, layout.get_node_placement(node.id)).z(+0.1)
+            self.__nodes[ node.id ] = vd_node
+            self.__plotter.add( vd_node )
 
-        for source, target in self.__nx_graph.get_edges():
-            zx_edge = ZxEdge(source, target, self.__nx_graph).z(-0.1)
-            self.__edges[ source , target ] = zx_edge
-
-        self.__plotter.add(list(self.__nodes.values()))
-        self.__plotter.add(list(self.__edges.values()))
+        for edge in graph.get_zx_edges():
+            vd_edge = VdEdge(
+                edge, layout.get_node_placement(edge.source), layout.get_node_placement(edge.target)
+            ).z(-0.1)
+            self.__edges[ edge.source , edge.target] = vd_edge
+            self.__plotter.add( vd_edge )
 
         self.__selected_object = None
 
     def alter_node_appearance(self, node: NodeId, highlight: bool = False):
-        self.__nodes[ node ].alter_appearance(highlight = highlight)
+        if node != -1:
+            self.__nodes[ node ].alter_appearance(highlight = highlight)
 
-    def alter_edge_appearance(self, source: NodeId, target: NodeId, highlight: bool = False):
-        self.__edges[ source , target ].alter_appearance(highlight = highlight)
+    def alter_edges_appearance(self, edge: EdgeId, highlight: bool = False):
+        source, target = edge
+        self.alter_node_appearance(source, highlight=highlight)
+        self.alter_node_appearance(target, highlight=highlight)
+        self.__edges[ *edge ].alter_appearance(highlight = highlight)
+
+    def alter_cycle_appearance(self, cycle: list[EdgeId], highlight: bool = False):
+        for edge in cycle:
+            source, target = edge
+            self.alter_node_appearance(source, highlight=highlight )
+            self.alter_node_appearance(target, highlight=highlight )
+            self.alter_edges_appearance(edge, highlight=highlight)
 
     # def on_left_click(self, event):
     #     if isinstance(event.object, ZxNode):

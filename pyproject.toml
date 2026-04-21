@@ -7,9 +7,11 @@ version = "0.1.0"
 description = "A toolbox for studying the relationships between ZX-graphs and Lattice Surgery."
 requires-python = ">=3.14"
 dependencies = [
-    "jsonpickle==4.1.1",
+    "mypy>=1.11",
     "networkx==3.6.1",
+    "types-networkx==3.6.1.20260408",
     "numpy==2.4.3",
-    "pyzx==0.9.0",
-    "vedo==2026.6.1"
+    "pyzx==0.10.0",
+    "vedo==2026.6.1",
+    "recordclass==0.24"
 ]

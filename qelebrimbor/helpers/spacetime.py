@@ -1,19 +1,42 @@
+from enum import Enum
+
 from qelebrimbor.common.coordinates import Coordinates
+
+class Octant(Enum):
+    PPP = Coordinates(+1, +1, +1)
+    PPM = Coordinates(+1, +1, -1)
+    PMP = Coordinates(+1, -1, +1)
+    PMM = Coordinates(+1, -1, -1)
+    MPP = Coordinates(-1, +1, +1)
+    MPM = Coordinates(-1, +1, -1)
+    MMP = Coordinates(-1, -1, +1)
+    MMM = Coordinates(-1, -1, -1)
+
+    def __getitem__(self, index):
+        return self.value[index]
+
+class Step(Enum):
+    XP = Coordinates(+1,  0,  0)
+    XM = Coordinates(-1,  0,  0)
+    YP = Coordinates( 0, +1,  0)
+    YM = Coordinates( 0, -1,  0)
+    ZP = Coordinates( 0,  0, +1)
+    ZM = Coordinates( 0,  0, -1)
 
 class Spacetime:
     ORIGIN = Coordinates(0, 0, 0)
 
-    XP = Coordinates(+1, 0, 0)
-    XM = Coordinates(-1, 0, 0)
-    YP = Coordinates(0, +1, 0)
-    YM = Coordinates(0, -1, 0)
-    ZP = Coordinates(0, 0, +1)
-    ZM = Coordinates(0, 0, -1)
+    XP = Coordinates(+1,  0,  0)
+    XM = Coordinates(-1,  0,  0)
+    YP = Coordinates( 0, +1,  0)
+    YM = Coordinates( 0, -1,  0)
+    ZP = Coordinates( 0,  0, +1)
+    ZM = Coordinates( 0,  0, -1)
 
-    XYZ = Coordinates(0, 0, 0)
-    XY  = Coordinates(0, 0, 1)
-    XZ  = Coordinates(0, 1, 0)
-    YZ  = Coordinates(1, 0, 0)
+    XYZ = Coordinates(+1, +1, +1)
+    XY  = Coordinates( 0,  0, +1)
+    XZ  = Coordinates( 0, +1,  0)
+    YZ  = Coordinates(+1,  0,  0)
 
     STEPS = [ XP ,YP, ZP, XM, YM, ZM ]
     PLANES = [ XY, XZ, YZ ]
@@ -43,21 +66,7 @@ class Spacetime:
         return [step for step in Spacetime.STEPS if reach.dot(step) == 0]
 
     @staticmethod
-    def get_orthogonal_plane(plane: Coordinates, line_of_intersection: Coordinates) -> Coordinates:
-        if plane.dot(line_of_intersection) != 0:
-            raise ValueError(f"Line of intersection {line_of_intersection} does not lie in plane {plane}.")
-
-        reach = plane
-
-        if abs(reach.x) == abs(line_of_intersection.x):
-            return Spacetime.YZ
-        elif abs(reach.y) == abs(line_of_intersection.y):
-            return Spacetime.XZ
-        else: # abs(reach.z) != abs(line_of_intersection.z)
-            return Spacetime.XY
-
-    @staticmethod
-    def get_constellation(position: Coordinates, restriction: Coordinates = None) -> list[Coordinates]:
+    def get_constellation(position: Coordinates, restriction: Coordinates | None = None) -> list[Coordinates]:
         constellation = []
         for step in Spacetime.STEPS:
             if restriction is None or restriction.dot(step) == 0:
@@ -65,7 +74,5 @@ class Spacetime:
         return constellation
 
     @staticmethod
-    def in_octant(
-        position: Coordinates, octant : tuple[Coordinates, Coordinates, Coordinates] = (XP, YP, ZP)
-    ) -> bool:
-        return all( position.dot(axis) >= 0 for axis in octant)
+    def in_octant(position: Coordinates, octant : Octant = Octant.PPP) -> bool:
+        return all( position[i] * octant[i] >= 0 for i in range(3) )

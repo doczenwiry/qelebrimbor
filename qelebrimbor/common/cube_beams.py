@@ -1,7 +1,7 @@
 from qelebrimbor.helpers.spacetime import Spacetime
 from qelebrimbor.common.coordinates import Coordinates
 
-from qelebrimbor.common.components_bg import CubeKind
+from qelebrimbor.common.attributes_bg import CubeKind
 
 from logging import getLogger
 console = getLogger(__name__)
@@ -9,8 +9,8 @@ console = getLogger(__name__)
 class CubeBeams:
     def __init__(self,
         cube_kind: CubeKind, cube_position: Coordinates,
-        extras: list[tuple[CubeKind, Coordinates]] = None,
-        occupied: set[Coordinates] = None
+        extras: list[tuple[CubeKind, Coordinates]] | None = None,
+        occupied: set[Coordinates] | None = None
     ):
         cube_reach = cube_kind.get_reach()
 

@@ -1,12 +1,18 @@
 from math import sqrt
 from functools import total_ordering
 from dataclasses import dataclass
+from ast import literal_eval as make_tuple
 
 @dataclass(frozen = True)
+@total_ordering
 class Coordinates:
     x: float
     y: float
     z: float
+
+    @staticmethod
+    def from_string(s: str):
+        return Coordinates.from_tuple(make_tuple(s))
 
     @staticmethod
     def from_list(l: list[float]):
@@ -27,18 +33,29 @@ class Coordinates:
     def __sub__(self, other):
         return Coordinates(self.x - other.x, self.y - other.y, self.z - other.z)
 
-    def __mul__(self, scalar):
+    def scale(self, scalar):
         if isinstance(scalar, (int, float)):
             return Coordinates(self.x * scalar, self.y * scalar, self.z * scalar)
-        raise NotImplemented("Scalar multiplication requires <int> or <float>.")
+        raise NotImplementedError("Scalar multiplication requires <int> or <float>.")
+
+    def __mul__(self, scalar: int):
+        if isinstance(scalar, (int, float)):
+            return Coordinates(self.x * scalar, self.y * scalar, self.z * scalar)
+        raise NotImplementedError("Scalar multiplication requires <int> or <float>.")
     __rmul__ = __mul__
+
+    def __getitem__(self, index):
+        if index == 0:
+            return self.x
+        elif index == 1:
+            return self.y
+        elif index == 2:
+            return self.z
+        else:
+            raise ValueError("Invalid index provided.")
 
     def __truediv__(self, scalar: float):
         return Coordinates(self.x / scalar, self.y / scalar, self.z / scalar)
-
-    def dmul(self, other):
-        return Coordinates(self.x * other.x, self.y * other.y, self.z * other.z)
-
 
     def normalized(self):
         return self / sqrt(self.dot(self))
@@ -83,9 +100,8 @@ class Coordinates:
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y and self.z == other.z
 
-    @total_ordering
     def __lt__(self, other):
         return self.as_tuple().__lt__(other.as_tuple())
 
     def __str__(self):
-        return f"({self.x}, {self.y}, {self.z})"
+        return f"({self.x},{self.y},{self.z})"

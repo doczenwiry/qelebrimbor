@@ -1,88 +1,69 @@
-from vedo import Assembly, Disc, Line, Text3D, Box
+from vedo import Assembly, Disc, Line, Text3D, Box  # type: ignore[import-untyped]
 
-from qelebrimbor.augmented_nx_graph import AugmentedNxGraph
-from qelebrimbor.common.components_zx import NodeId, NodeType, EdgeType
+from qelebrimbor.common.components import ZxNode, ZxEdge
+from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
-
-from qelebrimbor.vedo.color_scheme import COLOR_NAMES
+from qelebrimbor.vedo.zx_palette import ZxPalette
 
 from logging import getLogger
 console = getLogger(__name__)
 
-QUBIT_SPACING = 6.0
-LAYER_SPACING = 6.0
+SPACING_X = 6.0
+SPACING_Y = 6.0
 
-class ZxNode(Assembly):
-    def __init__(self, node: NodeId, anx: AugmentedNxGraph):
-        self.zx_node = node
+class VdNode(Assembly):
+    def __init__(self, node: ZxNode, placement: tuple[float, float]):
+        super().__init__()
 
-        node_type = anx.get_node_type(node)
-        qubit = anx.get_qubit(node)
-        layer = anx.get_node_layer(node)
+        self.zx_node: ZxNode = node
 
-        disc_position = (LAYER_SPACING * layer, QUBIT_SPACING * qubit, 0.00)
-        text_position = (LAYER_SPACING * layer, QUBIT_SPACING * qubit, 0.05)
-        radius = 1.0 if node_type != NodeType.O else 0.75
-        color = COLOR_NAMES[ node_type.name ]
+        console.debug(f"ZxNode : {node} [{placement}]")
 
-        self.__disc = Disc(pos = disc_position, r1 = 0.0, r2 = radius, c = color)
-        self.__background = Disc(pos = disc_position, r1 = 0.0, r2 = 1.15 * radius, c = 'white')
-        self.__disc_highlight = Disc(pos = text_position, r1 = 0.8 * radius, r2 = radius - 0.05, c = COLOR_NAMES[ 'highlighted' ])
-        self.__text = Text3D(str(node), pos = text_position, font = 'Calco', justify = 'centered', c = 'white')
+        disc_position = (SPACING_X * placement[0], SPACING_Y * placement[1], 0.00)
+        text_position = (SPACING_X * placement[0], SPACING_Y * placement[1], 0.05)
+        radius = 1.0 if node.type != NodeType.O else 0.75
+        color = ZxPalette.get_major(node.type)
 
-        super().__init__( [ self.__background, self.__disc, self.__disc_highlight, self.__text ] )
+        self.__disc = Disc(pos = disc_position, r1 = 0.0, r2 = radius, c = color).z(0.01)
+        self.add( self.__disc )
 
-        # self.__highlighted = False
+        self.__background = Disc(pos = disc_position, r1 = 0.0, r2 = 1.30 * radius, c = 'white')
+        self.add( self.__background )
+
+        self.__text = Text3D(str(node.id), s = radius, pos = text_position, font = 'Calco', justify = 'centered', c = 'white').z(0.02)
+        self.add( self.__text )
+
         self.alter_appearance(highlight = False)
 
     def alter_appearance(self, highlight: bool = False):
-        if highlight: self.__disc_highlight.alpha(1.0)
-        else: self.__disc_highlight.alpha(0.0)
+        color = 'teal5' if highlight else 'w'
+        self.__background.color(color)
 
-    def show_label(self): self.__text.alpha(1.0)
-    def hide_label(self): self.__text.alpha(0.0)
-
-# Replace line with a Box
-class ZxEdge(Assembly):
+class VdEdge(Assembly):
     LENGTH = 3.00
     DIAMETER = 0.50
 
-    def __init__(self, source: NodeId, target: NodeId, anx: AugmentedNxGraph):
+    def __init__(self,
+            edge: ZxEdge, source_placement: tuple[float, float], target_placement: tuple[float, float]
+    ):
+        self.zx_edge: ZxEdge = edge
 
-        self.zx_source: NodeId = source
-        self.zx_target: NodeId = target
-        self.edge_type = anx.get_edge_type(source, target)
+        color = 'k' if edge.type == EdgeType.IDENTITY else 'y4'
 
-        source_qubit = anx.get_qubit(source)
-        source_layer = anx.get_node_layer(source)
-        target_qubit = anx.get_qubit(target)
-        target_layer = anx.get_node_layer(target)
-        edge_type = anx.get_edge_type(source, target)
+        source_position = Coordinates(SPACING_X * source_placement[0], SPACING_Y * source_placement[1],  0.05)
+        target_position = Coordinates(SPACING_X * target_placement[0], SPACING_Y * target_placement[1], -0.05)
 
-        color = 'k' if edge_type == EdgeType.IDENTITY else 'y4'
+        # Create the line of this edge
+        self.__edge = Line(p0 = source_position, p1 = target_position, lw = 8, c = color).z(0.01)
 
-        source_position = Coordinates(LAYER_SPACING * source_layer, QUBIT_SPACING * source_qubit,  0.05)
-        target_position = Coordinates(LAYER_SPACING * target_layer, QUBIT_SPACING * target_qubit, -0.05)
+        console.debug(f"ZxEdge {edge.source}L{source_placement}@{source_position} - {edge.target}L{target_placement}@{target_position}")
 
-        distances = target_position - source_position
-        position = source_position + distances / 2.0
-        # Compute the measurements of this pipe (i.e. length, width, height) according to its direction
-        measures = [ abs(d) if d != 0 else ZxEdge.DIAMETER for d in distances ]
-        self.__edge = Box(pos = position.as_tuple(), size = measures, c = color)
-
-        console.debug(f"ZxEdge {source}L{source_layer}@{source_position} - {target}L{target_layer}@{target_position} : {measures} / {distances}")
-
-        measures = [ abs(d) if d != 0 else 1.25 * ZxEdge.DIAMETER for d in distances ]
-        self.__background = Box(pos = position.as_tuple(), size = measures, c = 'white')
-
+        # Create the background of this edge for highlighting
+        self.__background = Line(p0 = source_position, p1 = target_position, lw = 16, c = 'white')
         self.alter_appearance(highlight = False)
 
         super().__init__( self.__background, self.__edge )
 
     def alter_appearance(self, highlight: bool = False):
-        if highlight:
-            self.__edge.linecolor('k5')
-            self.__edge.linewidth(6)
-        else:
-            self.__edge.linecolor('k' if self.edge_type == EdgeType.IDENTITY else 'y4')
-            self.__edge.linewidth(3)
+        color = 'teal5' if highlight else 'w' if self.zx_edge.type == EdgeType.IDENTITY else 'y4'
+        self.__background.linecolor(color)
