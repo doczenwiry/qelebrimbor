@@ -1,6 +1,7 @@
 import sys
 
 from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
@@ -29,5 +30,6 @@ if __name__ == '__main__':
     console.info(f"Total volume : {vzx.number_of_cubes() - boundaries}")
     console.info(f"Excess volume: +{excess_volume}")
 
-    viewer = VolumetricZxGraphViewer(vzx, label = filepath)
+    circuit_layout = CircuitLayout(vzx, vertical = len(vzx.get_qubits()) < len(vzx.get_layers()))
+    viewer = VolumetricZxGraphViewer(vzx, label = filepath, layout = circuit_layout)
     viewer.display()

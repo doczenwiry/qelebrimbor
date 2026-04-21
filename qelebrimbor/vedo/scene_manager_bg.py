@@ -20,11 +20,11 @@ class BgSceneManager:
 
         self.__cubes = dict()
         self.__pipes = dict()
-        self.__painters = [DefaultBlockGraphPainter(), ShadedBlockGraphPainter(), GrayscaleBlockGraphPainter()]
+        self.__painters = [ ShadedBlockGraphPainter(), DefaultBlockGraphPainter(), GrayscaleBlockGraphPainter()]
         self.__painter_index = 0
 
         for cube in vzx.get_bg_cubes():
-            vd_cube = VdCube(cube = cube)
+            vd_cube = VdCube(cube = cube, painter = self.__painters[self.__painter_index])
             self.__cubes[ cube.id ] = vd_cube
             self.__plotter.add( vd_cube )
 
@@ -33,7 +33,7 @@ class BgSceneManager:
             target_cube = vzx.get_bg_cube(bg_pipe.target)
             if source_cube.id > target_cube.id:
                 source_cube, target_cube = target_cube, source_cube
-            vd_pipe = VdPipe(source_cube, target_cube, bg_pipe.type)
+            vd_pipe = VdPipe(source_cube, target_cube, bg_pipe.type, painter = self.__painters[self.__painter_index])
             self.__pipes[ source_cube.id, target_cube.id ] = vd_pipe
             self.__plotter.add( vd_pipe )
 

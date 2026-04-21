@@ -11,7 +11,7 @@ dependencies = [
     "networkx==3.6.1",
     "types-networkx==3.6.1.20260408",
     "numpy==2.4.3",
-    "pyzx==0.9.0",
+    "pyzx==0.10.0",
     "vedo==2026.6.1",
     "recordclass==0.24"
 ]
