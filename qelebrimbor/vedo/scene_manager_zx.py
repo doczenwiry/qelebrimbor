@@ -32,6 +32,25 @@ class ZxSceneManager:
             self.__plotter.add( vd_edge )
 
         self.__selected_object = None
+        self.__show_unrealised = True
+        self.toggle_unrealised_appearance()
+
+    def toggle_unrealised_appearance(self):
+        self.__show_unrealised = not self.__show_unrealised
+
+        node_alpha = 1.0
+        edge_alpha = 1.0
+        if not self.__show_unrealised:
+            node_alpha /= 4.0
+            edge_alpha /= 32.0
+        
+        for node in self.__vzx_graph.get_zx_nodes():
+            if not node.is_realised():
+                self.__nodes[ node.id ].alpha(node_alpha)
+
+        for edge in self.__vzx_graph.get_zx_edges():
+            if not edge.is_realised():
+                self.__edges[ edge.source , edge.target ].alpha(edge_alpha)
 
     def alter_node_appearance(self, node: NodeId, highlight: bool = False):
         if node != -1:

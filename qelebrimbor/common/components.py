@@ -12,6 +12,9 @@ class ZxNode(RecordClass):
     layer: LayerId = -1
     realising_cube: CubeId = -1
 
+    def is_realised(self):
+        return self.realising_cube != -1
+
     def __str__(self):
         return f"N{self.id}:{self.type}"
 
@@ -23,6 +26,9 @@ class ZxEdge(RecordClass):
     target: NodeId
     type: EdgeType
     realisation: list[PipeId] = []
+
+    def is_realised(self):
+        return len(self.realisation) > 0
 
     def __str__(self):
         return f"N{self.source}-{self.type.name[0]}-N{self.target}"

@@ -141,6 +141,10 @@ class VolumetricZxGraphViewer(Plotter):
             self.__available_cycles = self.__available_cycle_analysers[self.__selected_cycle_analyser]
             self.__selected_cycle_index = 0
             self.__alter_selected_cycle_appearance(highlighting = True)
+        elif event.keypress == "u":
+            # TODO: hide the unrealised part of the zx-graph
+            self.__zx_scene_manager.toggle_unrealised_appearance()
+            pass
         else:
             self.__bg_scene_manager.on_key_press(event)
 
