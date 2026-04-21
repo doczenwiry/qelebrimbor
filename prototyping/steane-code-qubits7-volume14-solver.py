@@ -51,17 +51,21 @@ if __name__ == "__main__":
                 source_cube = vzx.get_bg_cube(vzx.get_zx_node(1).realising_cube).id,
                 target_cube = vzx.get_bg_cube(vzx.get_zx_node(4).realising_cube).id,
                 extras = [
-                    BgCube(CubeKind.ZXZ, Coordinates(-1,-1,-1)) , BgCube(CubeKind.ZXZ, Coordinates( 0,-1,-1)),
+                    BgCube(CubeKind.ZXZ, Coordinates(-1,-1,-1)), BgCube(CubeKind.ZXZ, Coordinates( 0,-1,-1)),
                     BgCube(CubeKind.ZXZ, Coordinates( 0,-1,-2)), BgCube(CubeKind.ZXZ, Coordinates(1, -1,-2))
                 ],
                 pipes=[ vzx.get_zx_edge(1, 4).type if i == 0 else EdgeType.IDENTITY for i in range(5) ]
+            ),
+            (1, 6) : PathSpecification(
+                source_cube = 23, # Chosen cube for node 1
+                target_cube = vzx.get_bg_cube(vzx.get_zx_node(6).realising_cube).id,
+                extras = [
+                    BgCube(CubeKind.XXZ, Coordinates(-1,-1,-2)), BgCube(CubeKind.XZZ, Coordinates(-1, 0,-2)),
+                    BgCube(CubeKind.XZX, Coordinates(-1, 0,-1))
+                ],
+                pipes = [ vzx.get_zx_edge(1, 6).type if i == 0 else EdgeType.IDENTITY for i in range(4) ]
             )
         }
-    )
-
-    BlockGraphConstructor.connect_cubes(
-        graph = vzx,
-        endpoints = [ (19, 23) ]
     )
 
     # extend_unrealised(vzx)

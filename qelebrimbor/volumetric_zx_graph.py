@@ -346,6 +346,30 @@ class VolumetricZxGraph(nx.Graph):
     def get_bg_pipe(self, source: CubeId, target: CubeId) -> BgPipe:
         return self.__bg_graph.edges[source, target][VolumetricZxGraph.KEY_BG_PIPE]
 
+    def get_equivalent_bg_cubes(self, cube: CubeId) -> tuple[Iterable[CubeId], Iterable[PipeId]]:
+        equivalent_cubes: set[CubeId] = { cube }
+        connecting_pipes: set[PipeId] = set()
+
+        cube_kind = self.get_bg_cube(cube).kind
+        queue: deque[CubeId] = deque([ cube ])
+        while queue:
+            current = queue.popleft()
+            for nb in self.get_cube_neighbours(current):
+                neighbor = self.get_bg_cube(nb)
+                if neighbor.kind != cube_kind:
+                    continue
+
+                source, target = current, nb
+                if source > target:
+                    source, target = target, source
+                connecting_pipes.add( (source, target) )
+
+                if nb not in equivalent_cubes:
+                    equivalent_cubes.add(nb)
+                    queue.append(neighbor.id)
+
+        return equivalent_cubes, connecting_pipes
+
     def is_zx_node_realised(self, node: NodeId) -> bool:
         return self.get_zx_node(node).realising_cube != -1
 
@@ -472,9 +496,12 @@ class VolumetricZxGraph(nx.Graph):
                     if neighbor.realised_node == node:
                         return True
 
-                    visited.add(nb)
                     if nb not in visited:
+                        visited.add(nb)
                         queue.append(neighbor)
+
+        console.info(f"Neigborhood visited to find alternative : {visited}")
+
         return False
 
     def is_path_valid(self, source: NodeId, target: NodeId, proposal: PathSpecification) -> bool:

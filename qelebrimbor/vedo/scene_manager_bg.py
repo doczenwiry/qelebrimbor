@@ -47,26 +47,7 @@ class BgSceneManager:
         else:
             alpha = 0.025 if highlight else 1.0
 
-            selected_kind = self.__vzx_graph.get_bg_cube(selected).kind
-            equivalent_cubes: set[CubeId] = { selected }
-            connecting_pipes: set[PipeId] = set()
-            queue: deque[CubeId] = deque([ selected ])
-            while queue:
-                current : CubeId = queue.popleft()
-                for neighbor in self.__vzx_graph.get_cube_neighbours(current):
-                    if self.__vzx_graph.get_bg_cube(neighbor).kind != selected_kind:
-                        continue
-
-                    source, target = current, neighbor
-                    if source > target:
-                        source, target = target, source
-                    connecting_pipes.add( (source, target) )
-
-                    if neighbor not in equivalent_cubes:
-                        equivalent_cubes.add(neighbor)
-                        queue.append( neighbor )
-
-            console.debug(f"Equivalent cubes [{selected}] : {equivalent_cubes}")
+            equivalent_cubes, connecting_pipes = self.__vzx_graph.get_equivalent_bg_cubes(selected)
 
             for cube in self.__cubes:
                 if cube not in equivalent_cubes:
@@ -78,14 +59,20 @@ class BgSceneManager:
 
     def alter_pipes_appearance(self, *pipes: PipeId, highlight: bool = False):
         cubes: set[CubeId] = set()
+        piping: set[PipeId] = set()
+
         for source, target in pipes:
-            cubes.add( source )
-            cubes.add( target )
+            equivalent_sources, connecting_sources = self.__vzx_graph.get_equivalent_bg_cubes(source)
+            equivalent_targets, connecting_targets = self.__vzx_graph.get_equivalent_bg_cubes(target)
+            cubes.update( equivalent_sources )
+            cubes.update( equivalent_targets )
+            piping.update( connecting_sources )
+            piping.update( connecting_targets )
 
         alpha = 0.025 if highlight else 1.0
 
         for pipe in self.__pipes:
-            if pipe not in pipes:
+            if pipe not in piping and pipe not in pipes:
                 self.__pipes[ *pipe ].alpha(alpha)
 
         for cube in self.__cubes:

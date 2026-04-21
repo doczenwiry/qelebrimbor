@@ -8,13 +8,8 @@ from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 import logging
 console = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.CRITICAL)
 logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
-logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.vedo').setLevel(logging.CRITICAL)
 
 if __name__ == "__main__":
     with open("../assets/pyzx/steane-code-qubits7-spiders8.json", 'r') as file:
