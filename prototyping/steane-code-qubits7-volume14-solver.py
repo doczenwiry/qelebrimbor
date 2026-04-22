@@ -14,9 +14,8 @@ from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 import logging
 console = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.CRITICAL)
 logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
-logging.getLogger('qelebrimbor.vedo').setLevel(logging.INFO)
 
 if __name__ == "__main__":
     with open("../assets/pyzx/steane-code-qubits7-spiders7.json", 'r') as file:
@@ -43,22 +42,28 @@ if __name__ == "__main__":
         graph = vzx,
         specifications = {
             (0,1) : PathSpecification(
-                source_cube = vzx.get_bg_cube(vzx.get_zx_node(0).realising_cube).id,
-                target_cube=vzx.get_bg_cube(vzx.get_zx_node(1).realising_cube).id,
+                source_cube = vzx.get_zx_node(0).realising_cube,
+                target_cube=vzx.get_zx_node(1).realising_cube,
                 pipes = [ vzx.get_zx_edge(0, 1).type ]
             ),
             (1, 4): PathSpecification(
-                source_cube = vzx.get_bg_cube(vzx.get_zx_node(1).realising_cube).id,
-                target_cube = vzx.get_bg_cube(vzx.get_zx_node(4).realising_cube).id,
+                source_cube = vzx.get_zx_node(1).realising_cube,
+                target_cube = vzx.get_zx_node(4).realising_cube,
                 extras = [
                     BgCube(CubeKind.ZXZ, Coordinates(-1,-1,-1)), BgCube(CubeKind.ZXZ, Coordinates( 0,-1,-1)),
                     BgCube(CubeKind.ZXZ, Coordinates( 0,-1,-2)), BgCube(CubeKind.ZXZ, Coordinates(1, -1,-2))
                 ],
                 pipes=[ vzx.get_zx_edge(1, 4).type if i == 0 else EdgeType.IDENTITY for i in range(5) ]
             ),
+        }
+    )
+
+    BlockGraphConstructor.realise_edges(
+        graph = vzx,
+        specifications = {
             (1, 6) : PathSpecification(
-                source_cube = 23, # Chosen cube for node 1
-                target_cube = vzx.get_bg_cube(vzx.get_zx_node(6).realising_cube).id,
+                source_cube = vzx.get_bg_cube(23), # Chosen cube for node 1
+                target_cube = vzx.get_zx_node(6).realising_cube,
                 extras = [
                     BgCube(CubeKind.XXZ, Coordinates(-1,-1,-2)), BgCube(CubeKind.XZZ, Coordinates(-1, 0,-2)),
                     BgCube(CubeKind.XZX, Coordinates(-1, 0,-1))
@@ -68,7 +73,7 @@ if __name__ == "__main__":
         }
     )
 
-    # extend_unrealised(vzx)
+    extend_unrealised(vzx)
 
     vzx.log_report()
 

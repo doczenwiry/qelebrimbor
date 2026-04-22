@@ -50,10 +50,10 @@ def extract_chain(graph: VolumetricZxGraph, cycle: list[ZxNode]) -> list[ZxNode]
 
     transition_ru = next(
         (idx+1) % nc for idx in range(nc)
-        if graph.is_zx_edge_realised(cycle[idx].id, cycle[(idx+1) % nc].id) and not graph.is_zx_edge_realised(cycle[(idx+1) % nc].id, cycle[(idx+2) % nc].id)
+        if graph.get_zx_edge(cycle[idx].id, cycle[(idx+1) % nc].id).is_realised() and not graph.get_zx_edge(cycle[(idx+1) % nc].id, cycle[(idx+2) % nc].id).is_realised()
     )
 
-    realised = sum(1 for idx in range(nc) if graph.is_zx_edge_realised(cycle[idx].id, cycle[(idx+1) % nc].id))
+    realised = sum(1 for idx in range(nc) if graph.get_zx_edge(cycle[idx].id, cycle[(idx+1) % nc].id).is_realised())
 
     return [
         cycle[(transition_ru + idx) % nc] for idx in range(nc - realised + 1)
@@ -114,13 +114,12 @@ def extend_unrealised(graph: VolumetricZxGraph):
     edges_specifications: dict[EdgeId, PathSpecification] = {}
 
     for node, neighbors in schedule.items():
-        node_kind = graph.get_bg_cube(graph.get_zx_node(node).realising_cube).kind
-        cube = graph.get_bg_cube(graph.get_zx_node(node).realising_cube)
+        cube = graph.get_zx_node(node).realising_cube
         cube_reach = cube.kind.get_reach()
         for neighbor in neighbors:
             available = filter(
                 lambda pos : pos not in graph.occupied,
-                Spacetime.get_constellation(cube.position, cube.kind.get_reach())
+                Spacetime.get_constellation(cube.position, cube_reach)
             )
             edge_type = graph.get_zx_edge(node, neighbor).type
             neighbor_position = next(iter(available))
@@ -128,10 +127,10 @@ def extend_unrealised(graph: VolumetricZxGraph):
             neighbor_kinds = [
                 kind for kind in CubeKind.suitable_kinds(graph.get_zx_node(neighbor).type)
                 if Spacetime.contains(kind.get_reach(), step_taken) and Spacetime.contains(cube_reach, step_taken) and
-                   edge_type in BlockGraphHelper.infer_pipe_type(node_kind, kind)
+                   edge_type in BlockGraphHelper.infer_pipe_type(cube.kind, kind)
             ]
             neighbor_cube = BgCube(neighbor_kinds[0], neighbor_position)
-            graph.realise_zx_node(neighbor, neighbor_cube)
+            graph.realise_zx_node(graph.get_zx_node(neighbor), neighbor_cube)
             source, target = (node, neighbor) if node < neighbor else (neighbor, node)
             edges_specifications[ source, target ] = PathSpecification(
                 source_cube = graph.get_zx_node(source).realising_cube,

@@ -54,7 +54,7 @@ class ZxSceneManager:
                 self.__edges[ edge ].alpha(edge_alpha)
 
     def alter_node_appearance(self, node: ZxNode, highlight: bool = False):
-        if node != -1:
+        if node is not None:
             self.__nodes[node].alter_highlighting(
                 color = 'white' if not highlight else 'teal5' if node.is_realised() else 'indigo5'
             )

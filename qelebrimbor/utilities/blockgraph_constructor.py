@@ -27,28 +27,17 @@ class BlockGraphConstructor:
 
     @staticmethod
     def realise_edges(graph: VolumetricZxGraph, specifications: dict[EdgeId, PathSpecification]):
-        for edge in graph.edges:
+        for edge, proposal in specifications.items():
             source, target = edge
 
-            if graph.is_zx_edge_realised(*edge):
-                console.debug(f"Edge: {source} -> {target} is already realised : {graph.get_zx_edge(source, target).realisation}")
+            zx_edge = graph.get_zx_edge(*edge)
+            if zx_edge.is_realised():
+                console.warning(f"Edge: {source} -> {target} is already realised : {zx_edge.realisation}")
                 continue
 
-            if edge in specifications:
-                proposal = specifications[edge]
-
-                console.info(f"Realisation: {source} -> {target} [{graph.get_zx_edge(source, target).type}]")
-                console.info(f"> Proposal for edge {source}-{target} : {proposal}")
-                if graph.is_path_valid(source, target, proposal):
-                    console.info(f"> Proposal: {proposal}")
-                    graph.realise_zx_edge(source, target, proposal)
-                # else:
-                #     alternative = PathSpecification(
-                #         source_cube = proposal.source_cube, target_cube = proposal.target_cube,
-                #         extras = list(reversed(proposal.extras)), pipes = list(reversed(proposal.pipes))
-                #     )
-                #     if graph.is_path_valid(source, target, alternative):
-                #         console.info(f"> Alternative: {alternative}")
-                #         graph.realise_zx_edge(source, target, alternative)
-                else:
-                    raise Exception(f"> Invalid path proposal for {source}-{target} : {proposal}")
+            console.info(f"Realisation of edge {zx_edge}")
+            console.info(f"> Proposal : {proposal}")
+            if graph.is_path_valid(source, target, proposal):
+                graph.realise_zx_edge(source, target, proposal)
+            else:
+                raise Exception(f"> Invalid path proposal for edge {edge} [{proposal}]")

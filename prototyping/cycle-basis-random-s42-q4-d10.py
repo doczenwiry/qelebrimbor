@@ -5,7 +5,7 @@ import pyzx
 
 from qelebrimbor.common.attributes_bg import CubeId, CubeKind
 from qelebrimbor.common.attributes_zx import EdgeId
-from qelebrimbor.common.components import BgCube
+from qelebrimbor.common.components import BgCube, ZxEdge
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
@@ -20,18 +20,15 @@ QUBITS = 4
 LAYERS = 10
 
 import logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.CRITICAL)
 console = logging.getLogger(__name__)
 logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
-logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.CRITICAL)
 
 # TODO: sort the mess that multiple realising_cubes introduce here
 def place_determined(graph: VolumetricZxGraph):
     for node in graph.nodes:
         if graph.is_zx_node_realised(node):
-            unrealised_neighbors = list(filter(lambda nb: not graph.is_zx_edge_realised(node, nb), graph.neighbors(node)))
+            unrealised_neighbors = list(filter(lambda nb: not graph.get_zx_edge(node, nb).is_realised(), graph.neighbors(node)))
             if len(unrealised_neighbors) != 1:
                 continue
 
@@ -70,7 +67,7 @@ def place_determined(graph: VolumetricZxGraph):
 def reserve_positions(graph: VolumetricZxGraph, reservations: dict[Coordinates, CubeId]):
     for node in graph.nodes:
         if graph.is_zx_node_realised(node):
-            unrealised_neighbors = list(filter(lambda nb: not graph.is_zx_edge_realised(node, nb), graph.neighbors(node)))
+            unrealised_neighbors = list(filter(lambda nb: not graph.get_zx_edge(node, nb).is_realised(), graph.neighbors(node)))
             open_ports: dict[Coordinates, CubeId] = dict()
             cube = graph.get_zx_node(node).realising_cube
             if cube != -1:
@@ -115,16 +112,16 @@ if __name__ == "__main__":
         console.info(f"Cycle {index} : {cycle}")
         find_completion(vzx, cycle, maximal_overhead = 10)
 
-    excess_volume: dict[EdgeId, int] = dict()
-    for edge in vzx.edges:
-        if vzx.is_zx_edge_realised(*edge):
-            count = len(vzx.get_zx_edge(*edge).realisation) - 1
+    excess_volume: dict[ZxEdge, int] = dict()
+    for edge in vzx.get_zx_edges():
+        if edge.is_realised():
+            count = sum(1 for _ in edge.realisation) - 1
             if count > 0:
                 excess_volume[edge] = count
 
     console.info(f"Excess volume : +{sum(excess_volume.values())}")
-    for edge in excess_volume:
-        console.info(f"> {edge} : +{excess_volume[edge]}")
+    for edge, excess in excess_volume.items():
+        console.info(f"> {edge} : +{excess}")
 
     console.info(f"Total volume : {vzx.number_of_cubes()}")
     viewer = VolumetricZxGraphViewer(vzx, label = circuit)

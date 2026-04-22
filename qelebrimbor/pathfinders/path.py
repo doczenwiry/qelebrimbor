@@ -130,7 +130,7 @@ class Path:
         source = edges[-1].source
         target = edges[-1].target
         extras = list(reversed(self.extras[edge_count-1 : extra_count]))
-        edges_specifications[(source, target)] = PathSpecification(
+        edges_specifications[(source.id, target.id)] = PathSpecification(
                 source_cube = source.realising_cube,
                 target_cube = target.realising_cube,
                 extras = extras,

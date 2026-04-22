@@ -390,11 +390,7 @@ class VolumetricZxGraph(nx.Graph):
         return cube_id
 
     def is_zx_edge_realised(self, source: NodeId, target: NodeId) -> bool:
-        try:
-            next(iter(self.get_zx_edge(source, target).realisation))
-            return True
-        except StopIteration:
-            return False
+        return self.get_zx_edge(source, target).is_realised()
 
     def realise_zx_edge(self, source: NodeId, target: NodeId, proposal: PathSpecification):
         if not self.is_zx_node_realised(source):
@@ -406,7 +402,8 @@ class VolumetricZxGraph(nx.Graph):
         if not self.has_edge(source, target):
             raise Exception(f"No edge {source}-{target} found in the ZX-graph.")
 
-        if self.is_zx_edge_realised(source, target):
+        zx_edge = self.get_zx_edge(source, target)
+        if zx_edge.is_realised():
             raise Exception(f"{source}-{target} is already realized by a path.")
 
         # Reject path if it is invalid.
@@ -416,9 +413,9 @@ class VolumetricZxGraph(nx.Graph):
         pipe_ids = self.connect_path(proposal)
 
         # Associate the path as a realisation of the edge
-        self.edges[source, target][VolumetricZxGraph.KEY_ZX_EDGE].realisation = pipe_ids
+        zx_edge.realisation = pipe_ids
 
-        console.info(f"Realising edge {source}-{target} [type={self.get_zx_edge(source,target).type}] with pipes : {pipe_ids}")
+        console.info(f"Realising edge {zx_edge} with pipes : {pipe_ids}")
 
     def place_cube(self, cube: BgCube) -> CubeId:
         if cube.position in self.occupied:
@@ -489,7 +486,8 @@ class VolumetricZxGraph(nx.Graph):
         bg_pipe = BgPipe(source = source.id, target = target.id, type = pipe_type)
         self.__bg_graph.edges[source.id, target.id][VolumetricZxGraph.KEY_BG_PIPE] = bg_pipe
 
-    def __is_alternative_realising_cube(self, node: NodeId, cube: BgCube):
+    def __is_alternative_realising_cube(self, node_id: NodeId, cube: BgCube):
+        node = self.get_zx_node(node_id)
         visited: set[BgCube] = { cube }
         queue: deque[BgCube] = deque([cube])
         while queue:
@@ -500,7 +498,7 @@ class VolumetricZxGraph(nx.Graph):
                     if neighbor.realised_node == node:
                         return True
 
-                    if nb not in visited:
+                    if neighbor not in visited:
                         visited.add(neighbor)
                         queue.append(neighbor)
 
@@ -514,7 +512,7 @@ class VolumetricZxGraph(nx.Graph):
         start = proposal.source_cube
         final = proposal.target_cube
 
-        console.info(f"Validating {source}-{target} : {proposal}")
+        console.debug(f"Validating {source}-{target} : {proposal}")
 
         if start != self.get_zx_node(source).realising_cube:
             if self.__is_alternative_realising_cube(source, start):
@@ -680,16 +678,16 @@ class VolumetricZxGraph(nx.Graph):
         console.info(f"Realised boundaries : {number_of_realised_boundaries} of {number_of_boundaries}")
         console.info(f"Overall volume : {self.total_volume()}")
 
-        excess_volume: dict[EdgeId, int] = dict()
-        for edge in self.edges:
-            if self.is_zx_edge_realised(*edge):
-                count = sum(1 for _ in self.get_zx_edge(*edge).realisation) - 1
+        excess_volume: dict[ZxEdge, int] = dict()
+        for edge in self.get_zx_edges():
+            if edge.is_realised():
+                count = sum(1 for _ in edge.realisation) - 1
                 if count > 0:
-                    excess_volume[edge] = count
+                    excess_volume[ edge ] = count
 
         console.info(f"Excess volume : +{sum(excess_volume.values())}")
-        for edge in excess_volume:
-            console.info(f"> {edge} : +{excess_volume[edge]}")
+        for edge, volume in excess_volume.items():
+            console.info(f"> {edge} : +{volume}")
 
     def __identify_cube_at_position(self, position: Coordinates) -> int:
         for cube in self.get_bg_cubes():
