@@ -6,7 +6,7 @@ from logging import getLogger
 console = getLogger(__name__)
 
 class PathSpecification:
-    def __init__(self, source_cube: CubeId, target_cube: CubeId,
+    def __init__(self, source_cube: BgCube, target_cube: BgCube,
                  extras: list[BgCube] | None = None,
                  pipes: list[EdgeType] | None = None
                  ):
@@ -16,7 +16,7 @@ class PathSpecification:
         self.pipes = pipes if pipes is not None else [ EdgeType.IDENTITY ]
 
     def __str__(self):
-        return f"#{self.source_cube} - {self.extras} - #{self.target_cube} {self.pipes}"
+        return f"{self.source_cube} - {self.extras} - {self.target_cube} {self.pipes}"
 
     def __repr__(self):
         return str(self)

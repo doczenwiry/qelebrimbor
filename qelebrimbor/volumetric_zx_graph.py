@@ -67,11 +67,11 @@ class VolumetricZxGraph(nx.Graph):
 
         if edges is not None:
             for edge, edge_type in edges:
-                source = min(edge)
-                target = max(edge)
-                self.add_edge(source, target)
+                source = self.get_zx_node(min(edge))
+                target = self.get_zx_node(max(edge))
+                self.add_edge(source.id, target.id)
                 zx_edge = ZxEdge(source = source, target = target, type = edge_type)
-                self.edges[source, target][VolumetricZxGraph.KEY_ZX_EDGE] = zx_edge
+                self.edges[source.id, target.id][VolumetricZxGraph.KEY_ZX_EDGE] = zx_edge
 
         # TODO: split any spider with more than 4 edges (cfr. graph_manager.py; prep_3d_g)
         # TODO: does the choice of how to split such spiders affect the minimal achievable volume ?
@@ -220,7 +220,7 @@ class VolumetricZxGraph(nx.Graph):
             file.write("\nEDGES: source;target;type;realisation\n")
             file.writelines(
                 [
-                    f"{edge.source};{edge.target};{edge.type};[{':'.join(map(str, edge.realisation))}]\n"
+                    f"{edge.source.id};{edge.target.id};{edge.type};[{':'.join(map(str, edge.realisation))}]\n"
                     for edge in self.get_zx_edges()
                 ]
             )
@@ -346,9 +346,9 @@ class VolumetricZxGraph(nx.Graph):
     def get_bg_pipe(self, source: CubeId, target: CubeId) -> BgPipe:
         return self.__bg_graph.edges[source, target][VolumetricZxGraph.KEY_BG_PIPE]
 
-    def get_equivalent_bg_cubes(self, cube: CubeId) -> tuple[Iterable[CubeId], Iterable[PipeId]]:
-        equivalent_cubes: set[CubeId] = { cube }
-        connecting_pipes: set[PipeId] = set()
+    def get_equivalent_bg_cubes(self, cube: CubeId) -> tuple[Iterable[BgCube], Iterable[BgPipe]]:
+        equivalent_cubes: set[BgCube] = { self.get_bg_cube(cube) }
+        connecting_pipes: set[BgPipe] = set()
 
         cube_kind = self.get_bg_cube(cube).kind
         queue: deque[CubeId] = deque([ cube ])
@@ -362,35 +362,39 @@ class VolumetricZxGraph(nx.Graph):
                 source, target = current, nb
                 if source > target:
                     source, target = target, source
-                connecting_pipes.add( (source, target) )
+                connecting_pipes.add( self.get_bg_pipe(source, target) )
 
-                if nb not in equivalent_cubes:
-                    equivalent_cubes.add(nb)
+                if neighbor not in equivalent_cubes:
+                    equivalent_cubes.add(neighbor)
                     queue.append(neighbor.id)
 
         return equivalent_cubes, connecting_pipes
 
     def is_zx_node_realised(self, node: NodeId) -> bool:
-        return self.get_zx_node(node).realising_cube != -1
+        return self.get_zx_node(node).realising_cube is not None
 
-    def realise_zx_node(self, node: NodeId, cube: BgCube) -> CubeId:
+    def realise_zx_node(self, node: ZxNode, cube: BgCube) -> CubeId:
         """Realise the node as a cube of the given kind placed at the given coordinates."""
-        if cube.kind not in CubeKind.suitable_kinds(self.get_zx_node(node).type):
-            raise Exception(f"Proposed cube {cube} is not compatible with {self.get_zx_node(node).type}")
+        if cube.kind not in CubeKind.suitable_kinds(node.type):
+            raise Exception(f"Proposed cube {cube} is not compatible with {node.type}")
 
-        if not self.has_node(node):
-            raise Exception(f"Node #{node} not found in the ZX-graph.")
+        if not self.has_node(node.id):
+            raise Exception(f"Node {node} not found in the ZX-graph.")
 
         cube_id = self.place_cube(cube)
         self.__bg_graph.nodes[cube_id][VolumetricZxGraph.KEY_BG_CUBE].realised_node = node
-        self.nodes[node][VolumetricZxGraph.KEY_ZX_NODE].realising_cube = cube_id
+        self.nodes[node.id][VolumetricZxGraph.KEY_ZX_NODE].realising_cube = cube
 
-        console.info(f"Realising node #{node} [{self.get_zx_node(node).type}] as cube {cube}")
+        console.info(f"Realising node {node} as cube {cube}")
 
-        return cube
+        return cube_id
 
     def is_zx_edge_realised(self, source: NodeId, target: NodeId) -> bool:
-        return len(self.get_zx_edge(source, target).realisation) > 0
+        try:
+            next(iter(self.get_zx_edge(source, target).realisation))
+            return True
+        except StopIteration:
+            return False
 
     def realise_zx_edge(self, source: NodeId, target: NodeId, proposal: PathSpecification):
         if not self.is_zx_node_realised(source):
@@ -430,11 +434,11 @@ class VolumetricZxGraph(nx.Graph):
 
         return cube.id
 
-    def connect_path(self, proposal: PathSpecification) -> list[PipeId]:
-        source_cube = self.get_bg_cube(proposal.source_cube)
-        target_cube = self.get_bg_cube(proposal.target_cube)
+    def connect_path(self, proposal: PathSpecification) -> list[BgPipe]:
+        source_cube = proposal.source_cube
+        target_cube = proposal.target_cube
         # Representation of the path that will go into edge_realisations
-        pipe_ids: list[PipeId] = []
+        pipe_ids: list[BgPipe] = []
 
         # Add all the extra cubes and pipes of the path to the BlockGraph
         previous_cube: BgCube = source_cube
@@ -448,7 +452,7 @@ class VolumetricZxGraph(nx.Graph):
             self.connect_pipe(previous_cube, extra_cube, extra_pipe_type)
 
             # Extend the sequence of extra node ids
-            pipe = (previous_cube.id, extra_cube_id) if previous_cube.id < extra_cube_id else (extra_cube_id, previous_cube.id)
+            pipe = BgPipe(source = previous_cube.id, target = extra_cube_id, type = extra_pipe_type)
             pipe_ids.append( pipe )
 
             # Prepare for the next iteration
@@ -458,7 +462,7 @@ class VolumetricZxGraph(nx.Graph):
         final_pipe_type = proposal.pipes[-1]
         self.connect_pipe(previous_cube, target_cube, final_pipe_type)
 
-        pipe = (previous_cube.id, target_cube.id) if previous_cube.id < target_cube.id else (target_cube.id, previous_cube.id)
+        pipe = BgPipe(source = previous_cube.id, target = target_cube.id, type = final_pipe_type)
         pipe_ids.append( pipe )
 
         return pipe_ids
@@ -486,7 +490,7 @@ class VolumetricZxGraph(nx.Graph):
         self.__bg_graph.edges[source.id, target.id][VolumetricZxGraph.KEY_BG_PIPE] = bg_pipe
 
     def __is_alternative_realising_cube(self, node: NodeId, cube: BgCube):
-        visited: set[CubeId] = { cube.id }
+        visited: set[BgCube] = { cube }
         queue: deque[BgCube] = deque([cube])
         while queue:
             current = queue.popleft()
@@ -497,7 +501,7 @@ class VolumetricZxGraph(nx.Graph):
                         return True
 
                     if nb not in visited:
-                        visited.add(nb)
+                        visited.add(neighbor)
                         queue.append(neighbor)
 
         console.info(f"Neigborhood visited to find alternative : {visited}")
@@ -507,12 +511,12 @@ class VolumetricZxGraph(nx.Graph):
     def is_path_valid(self, source: NodeId, target: NodeId, proposal: PathSpecification) -> bool:
         is_hadamard_path = False
 
-        start = self.get_bg_cube(proposal.source_cube)
-        final = self.get_bg_cube(proposal.target_cube)
+        start = proposal.source_cube
+        final = proposal.target_cube
 
         console.info(f"Validating {source}-{target} : {proposal}")
 
-        if start.id != self.get_zx_node(source).realising_cube:
+        if start != self.get_zx_node(source).realising_cube:
             if self.__is_alternative_realising_cube(source, start):
                 console.debug(f"Start {start} is an alternative realising cube of node {source}.")
             else:
@@ -572,10 +576,7 @@ class VolumetricZxGraph(nx.Graph):
             previous_reach = current_reach
 
         if self.is_zx_node_realised(target):
-            if final.id != self.get_zx_node(target).realising_cube:
-                raise Exception(f"Cube #{final} is not realising target {target}.")
-
-            if final.id != self.get_zx_node(target).realising_cube:
+            if final != self.get_zx_node(target).realising_cube:
                 if self.__is_alternative_realising_cube(target, final):
                     console.warning(f"Final {final} is an alternative realising cube of node {target}.")
                 else:
@@ -674,15 +675,15 @@ class VolumetricZxGraph(nx.Graph):
         number_of_spiders = sum(1 for node in self.get_zx_nodes() if node.type in { NodeType.X , NodeType.Z })
         number_of_realised_spiders = sum(1 for node in self.get_zx_nodes() if node.type in { NodeType.X, NodeType.Z } and self.is_zx_node_realised(node.id))
         console.info(f"Realised spiders : {number_of_realised_spiders} of {number_of_spiders}")
-        number_of_boundaries = sum(1 for node in self.get_zx_nodes() if node.type in { NodeType.O , NodeType.Y })
-        number_of_realised_boundaries = sum(1 for node in self.get_zx_nodes() if node.type in { NodeType.O, NodeType.Y } and self.is_zx_node_realised(node.id))
+        number_of_boundaries = sum(1 for _ in self.get_zx_nodes(node_type = NodeType.O))
+        number_of_realised_boundaries = sum(1 for node in self.get_zx_nodes(node_type = NodeType.O) if node.is_realised())
         console.info(f"Realised boundaries : {number_of_realised_boundaries} of {number_of_boundaries}")
         console.info(f"Overall volume : {self.total_volume()}")
 
         excess_volume: dict[EdgeId, int] = dict()
         for edge in self.edges:
             if self.is_zx_edge_realised(*edge):
-                count = len(self.get_zx_edge(*edge).realisation) - 1
+                count = sum(1 for _ in self.get_zx_edge(*edge).realisation) - 1
                 if count > 0:
                     excess_volume[edge] = count
 

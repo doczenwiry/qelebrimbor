@@ -4,7 +4,7 @@ from qelebrimbor.vedo.bg_painter.abstract import BlockGraphPainter
 from qelebrimbor.vedo.bg_painter.default import DefaultBlockGraphPainter
 from qelebrimbor.vedo.bg_painter.shaded import ShadedBlockGraphPainter
 
-from qelebrimbor.common.components import BgCube
+from qelebrimbor.common.components import BgCube, BgPipe
 from qelebrimbor.helpers.spacetime import Spacetime
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import EdgeType
@@ -33,7 +33,7 @@ class VdCube(Assembly):
         position = GLOBAL_SPACING_FACTOR * cube.position
 
         # Parameters for the label
-        label = str(cube.realised_node) if cube.realised_node != -1 else ''
+        label = str(cube.realised_node.id) if cube.realised_node is not None else ''
         text_size = VdCube.LARGE_TEXT if cube.kind != CubeKind.OOO else VdCube.SMALL_TEXT
         step_scale = 0.55 if cube.kind != CubeKind.OOO else 0.55 * VdCube.FACTOR_SMALLER
 
@@ -90,13 +90,15 @@ class VdPipe(Assembly):
 
     def __init__(self,
          source: BgCube, target: BgCube,
-         pipe_type: EdgeType = EdgeType.IDENTITY,
+         pipe_type: EdgeType,
+         pipe: BgPipe,
          painter: BlockGraphPainter = DefaultBlockGraphPainter()
     ):
         super().__init__()
 
         console.debug(f"BgPipe : {source} -{pipe_type.name[0]}- {target}")
 
+        self.bg_pipe: BgPipe = pipe
         self.bg_source: BgCube = source
         self.bg_target: BgCube = target
         self.pipe_type: EdgeType = pipe_type

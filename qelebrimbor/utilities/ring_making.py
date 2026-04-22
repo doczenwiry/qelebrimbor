@@ -1,6 +1,7 @@
 from collections import defaultdict, deque
 
 import itertools
+from typing import cast
 
 from qelebrimbor.common.components import BgCube, ZxNode, ZxEdge
 from qelebrimbor.common.coordinates import Coordinates
@@ -18,65 +19,64 @@ from qelebrimbor.common.attributes_bg import CubeId, CubeKind
 import logging
 console = logging.getLogger(__name__)
 
-def find_realisation(graph: VolumetricZxGraph, cycle: list[NodeId], maximal_overhead: int = 0):
-    nc = len(cycle)
+def find_realisation(graph: VolumetricZxGraph, zx_nodes: list[ZxNode], maximal_overhead: int = 0):
+    nc = len(zx_nodes)
 
-    zx_nodes = [
-        ZxNode(id = cycle[i], type = graph.get_zx_node(cycle[i]).type)
-        for i in range(nc)
-    ]
     zx_edges = [
-        ZxEdge(source = cycle[s], target = cycle[(s+1) % nc], type = graph.get_zx_edge(cycle[s], cycle[(s+1)%nc]).type)
+        ZxEdge(source = zx_nodes[s], target = zx_nodes[(s+1) % nc], type = graph.get_zx_edge(zx_nodes[s].id, zx_nodes[(s+1)%nc].id).type)
         for s in range(nc)
     ]
 
     realisations = RingFinderBFS.find_minimal_rings(zx_nodes, zx_edges, maximal_overhead = maximal_overhead)
     ring = realisations[0]
 
-    console.info(f"Found {len(realisations)} realisations for cycle : {cycle}")
+    console.info(f"Found {len(realisations)} realisations for cycle : {zx_nodes}")
     console.info(f"> Realisation [{ring.manhattan_length()}] : {ring}")
 
-    BlockGraphConstructor.realise_nodes(graph= graph, specifications = ring.to_nodes_specifications(zx_nodes))
-    BlockGraphConstructor.realise_edges(graph= graph, specifications = ring.to_edges_specifications(graph, zx_edges))
+    nodes_specifications = ring.to_nodes_specifications(zx_nodes)
+    console.info(f"> Nodes specifications : {nodes_specifications}")
+    BlockGraphConstructor.realise_nodes(graph= graph, specifications = nodes_specifications)
+
+    edges_specifications = ring.to_edges_specifications(graph, zx_edges)
+    console.info(f"> Edges specifications : {edges_specifications}")
+    BlockGraphConstructor.realise_edges(graph= graph, specifications = edges_specifications)
 
 # TODO: go beyond assumption that cycle is made of one realised chain and one unrealised chain
 # TODO: figure out which edges are missing if all the nodes are already placed
 # TODO: after placing a ring, try placing the adjacents of the constituents of the ring
 # TODO: only place those constituents if there is only one position for them to be in (i.e. positions determined)
-def extract_chain(graph: VolumetricZxGraph, cycle: list[NodeId]) -> list[NodeId]:
+def extract_chain(graph: VolumetricZxGraph, cycle: list[ZxNode]) -> list[ZxNode]:
     nc = len(cycle)
-    chain: list[NodeId] = []
 
     transition_ru = next(
         (idx+1) % nc for idx in range(nc)
-        if graph.is_zx_edge_realised(cycle[idx], cycle[(idx+1) % nc]) and not graph.is_zx_edge_realised(cycle[(idx+1) % nc], cycle[(idx+2) % nc])
+        if graph.is_zx_edge_realised(cycle[idx].id, cycle[(idx+1) % nc].id) and not graph.is_zx_edge_realised(cycle[(idx+1) % nc].id, cycle[(idx+2) % nc].id)
     )
 
-    realised = sum(1 for idx in range(nc) if graph.is_zx_edge_realised(cycle[idx], cycle[(idx+1) % nc]))
+    realised = sum(1 for idx in range(nc) if graph.is_zx_edge_realised(cycle[idx].id, cycle[(idx+1) % nc].id))
 
     return [
         cycle[(transition_ru + idx) % nc] for idx in range(nc - realised + 1)
     ]
 
 def find_completion(
-        graph: VolumetricZxGraph, cycle: list[NodeId],
+        graph: VolumetricZxGraph, cycle: list[ZxNode],
         maximal_overhead: int = 0,
         reservations: dict[Coordinates, CubeId] | None = None
 ):
     nc = len(cycle)
     chain = extract_chain(graph, cycle)
     start = chain[0]
-    extras = chain[1:-1]
     final = chain[-1]
 
+    zx_nodes = chain[1:-1]
+    zx_edges = [ graph.get_zx_edge(chain[i].id, chain[(i + 1) % nc].id) for i in range(len(zx_nodes)+1) ]
+
     console.info(f"Breakdown of {cycle} :")
-    console.info(f"> {start} - {extras} - {final}")
+    console.info(f"> {start} - {zx_nodes} - {final}")
 
-    zx_nodes = [ graph.get_zx_node(nd) for nd in extras ]
-    zx_edges = [ graph.get_zx_edge(chain[i], chain[(i + 1) % nc]) for i in range(len(extras)+1) ]
-
-    start_cube = graph.get_bg_cube(graph.get_zx_node(start).realising_cube)
-    final_cube = graph.get_bg_cube(graph.get_zx_node(final).realising_cube)
+    start_cube = start.realising_cube
+    final_cube = final.realising_cube
     console.info(f"Searching completion from {start_cube} to {final_cube}.")
     console.info(f"> Nodes : {zx_nodes}")
     console.info(f"> Edges : {zx_edges}")
@@ -94,7 +94,7 @@ def find_completion(
     console.info(f"Found {len(completions)} completions for chain {chain}")
 
     completion = completions[0]
-    console.info(f"Realisation : {completion.source} - {completion.extras} - {completion.target}")
+    console.info(f"Completion : {completion.source} - {completion.extras} - {completion.target}")
 
     nodes_specifications = completion.to_nodes_specifications(zx_nodes)
     console.info(f"> Nodes specifications : {nodes_specifications}")

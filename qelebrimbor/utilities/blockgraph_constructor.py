@@ -20,26 +20,10 @@ class BlockGraphConstructor:
 
     @staticmethod
     def realise_nodes(graph: VolumetricZxGraph, specifications: dict[NodeId, BgCube]):
-        for node in graph.nodes:
-            if not graph.is_zx_node_realised(node) and node in specifications:
-                console.debug(f"Node: {node} -> {specifications[node]}")
-                graph.realise_zx_node(node, specifications[node])
-
-    @staticmethod
-    def connect_cubes(graph: VolumetricZxGraph, endpoints: list[tuple[CubeId, CubeId]]):
-        for source, target in endpoints:
-            start = graph.get_bg_cube(source)
-            final = graph.get_bg_cube(target)
-            paths = PathFinderDFS.find_minimal_paths(start, final, unavailable_positions= graph.occupied)
-            path = paths[0]
-            proposal = PathSpecification(
-                start.id, final.id,
-                extras = path.extras,
-                pipes = [EdgeType.IDENTITY for _ in range(len(path.extras) + 1)]
-            )
-
-            # if vzx.is_path_valid(source, target, proposal):
-            graph.connect_path(proposal)
+        for node in graph.get_zx_nodes():
+            if not node.is_realised() and node.id in specifications:
+                console.debug(f"Node: {node} -> {specifications[node.id]}")
+                graph.realise_zx_node(node, specifications[node.id])
 
     @staticmethod
     def realise_edges(graph: VolumetricZxGraph, specifications: dict[EdgeId, PathSpecification]):
@@ -53,19 +37,18 @@ class BlockGraphConstructor:
             if edge in specifications:
                 proposal = specifications[edge]
 
-
                 console.info(f"Realisation: {source} -> {target} [{graph.get_zx_edge(source, target).type}]")
                 console.info(f"> Proposal for edge {source}-{target} : {proposal}")
                 if graph.is_path_valid(source, target, proposal):
                     console.info(f"> Proposal: {proposal}")
                     graph.realise_zx_edge(source, target, proposal)
+                # else:
+                #     alternative = PathSpecification(
+                #         source_cube = proposal.source_cube, target_cube = proposal.target_cube,
+                #         extras = list(reversed(proposal.extras)), pipes = list(reversed(proposal.pipes))
+                #     )
+                #     if graph.is_path_valid(source, target, alternative):
+                #         console.info(f"> Alternative: {alternative}")
+                #         graph.realise_zx_edge(source, target, alternative)
                 else:
-                    alternative = PathSpecification(
-                        source_cube = proposal.source_cube, target_cube = proposal.target_cube,
-                        extras = list(reversed(proposal.extras)), pipes = list(reversed(proposal.pipes))
-                    )
-                    if graph.is_path_valid(source, target, alternative):
-                        console.info(f"> Alternative: {alternative}")
-                        graph.realise_zx_edge(source, target, alternative)
-                    else:
-                        console.info(f"> INVALID : {proposal}")
+                    raise Exception(f"> Invalid path proposal for {source}-{target} : {proposal}")

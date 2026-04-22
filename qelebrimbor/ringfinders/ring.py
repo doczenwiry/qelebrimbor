@@ -33,7 +33,7 @@ class Ring:
         return cp
 
     def to_nodes_specifications(self, nodes: list[ZxNode]) -> dict[NodeId, BgCube]:
-        return { nodes[nd].id: self.cubes[nd] for nd in range(len(nodes)) }
+        return { nodes[nd].id : self.cubes[nd] for nd in range(len(nodes)) }
 
     def to_edges_specifications(self, graph: VolumetricZxGraph, edges: list[ZxEdge]) -> dict[EdgeId, PathSpecification]:
         edge_count = len(edges)
@@ -46,22 +46,22 @@ class Ring:
             target = edges[i].target
             if source > target:
                 source, target = target, source
-            edges_specifications[ (source, target) ] = PathSpecification(
-                source_cube = graph.get_zx_node(source).realising_cube,
-                target_cube = graph.get_zx_node(target).realising_cube,
+            edges_specifications[ (source.id, target.id) ] = PathSpecification(
+                source_cube = source.realising_cube,
+                target_cube = target.realising_cube,
                 extras = [], pipes = [ edges[i].type ]
             )
 
         start = edges[-1].target
         final = edges[-1].source
         cubes = self.cubes[edge_count : cube_count]
-        if start > final:
+        if start.id > final.id:
             start, final = final, start
         else:
             cubes = list(reversed(cubes))
-        edges_specifications[(start, final)] = PathSpecification(
-                source_cube = graph.get_zx_node(start).realising_cube,
-                target_cube = graph.get_zx_node(final).realising_cube,
+        edges_specifications[(start.id, final.id)] = PathSpecification(
+                source_cube = start.realising_cube,
+                target_cube = final.realising_cube,
                 extras = cubes,
                 pipes = [ edges[-1].type if i == 0 else EdgeType.IDENTITY for i in range(cube_count - edge_count + 1)]
         )

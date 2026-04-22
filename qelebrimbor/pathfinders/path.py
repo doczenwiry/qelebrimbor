@@ -118,23 +118,21 @@ class Path:
         extra_count = len(self.extras)
         edges_specifications: dict[EdgeId, PathSpecification] = {}
 
-        for i in range(edge_count-1):
-            source = edges[i].source
-            target = edges[i].target
-            if source > target:
-                source, target = target, source
-            edges_specifications[ (source, target) ] = PathSpecification(
-                source_cube = graph.get_zx_node(source).realising_cube,
-                target_cube = graph.get_zx_node(target).realising_cube,
-                extras = [], pipes = [ edges[i].type ]
+        for edge in edges[:-1]: # range(edge_count-1):
+            source = edge.source
+            target = edge.target
+            edges_specifications[ (source.id, target.id) ] = PathSpecification(
+                source_cube = source.realising_cube,
+                target_cube = target.realising_cube,
+                extras = [], pipes = [ edge.type ]
             )
 
         source = edges[-1].source
         target = edges[-1].target
         extras = list(reversed(self.extras[edge_count-1 : extra_count]))
         edges_specifications[(source, target)] = PathSpecification(
-                source_cube = graph.get_zx_node(source).realising_cube,
-                target_cube = graph.get_zx_node(target).realising_cube,
+                source_cube = source.realising_cube,
+                target_cube = target.realising_cube,
                 extras = extras,
                 pipes = [ edges[-1].type if i == 0 else EdgeType.IDENTITY for i in range(extra_count - edge_count + 2)]
         )

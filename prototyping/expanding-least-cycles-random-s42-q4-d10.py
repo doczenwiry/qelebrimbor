@@ -16,6 +16,8 @@ logging.basicConfig(level=logging.CRITICAL)
 console = logging.getLogger(__name__)
 logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
 logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.INFO)
+# logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.INFO)
+# logging.getLogger('qelebrimbor.vedo.scene_manager_bg').setLevel(logging.DEBUG)
 
 random.seed(SEED)
 if __name__ == "__main__":
@@ -34,15 +36,15 @@ if __name__ == "__main__":
     console.info(f"Cycle {index} : {cycle}")
     find_realisation(vzx, cycle, maximal_overhead = 2)
 
-    index = 5
-    cycle = cycles[index]
-    console.info(f"Cycle {index} : {cycle}")
-    find_completion(vzx, cycle, maximal_overhead = 8)
+    # index = 5
+    # cycle = cycles[index]
+    # console.info(f"Cycle {index} : {cycle}")
+    # find_completion(vzx, cycle, maximal_overhead = 8)
 
-    index = 6
-    cycle = cycles[index]
-    console.info(f"Cycle {index} : {cycle}")
-    find_completion(vzx, cycle, maximal_overhead = 8)
+    # index = 6
+    # cycle = cycles[index]
+    # console.info(f"Cycle {index} : {cycle}")
+    # find_completion(vzx, cycle, maximal_overhead = 8)
 
     # index = 4
     # cycle = cycles[index]
@@ -77,9 +79,9 @@ if __name__ == "__main__":
     console.info(f"Overall volume : {vzx.number_of_cubes()}")
 
     excess_volume: dict[EdgeId, int] = dict()
-    for edge in vzx.edges:
-        if vzx.is_zx_edge_realised(*edge):
-            count = len(vzx.get_zx_edge(*edge).realisation) - 1
+    for edge in vzx.get_zx_edges():
+        if edge.is_realised():
+            count = sum(1 for _ in edge.realisation) - 1
             if count > 0:
                 excess_volume[edge] = count
 

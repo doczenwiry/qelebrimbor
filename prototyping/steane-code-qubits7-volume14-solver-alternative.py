@@ -15,7 +15,8 @@ logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
 logging.getLogger('qelebrimbor.helpers.blockgraph').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.INFO)
+logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.DEBUG)
 logging.getLogger('qelebrimbor.vedo').setLevel(logging.CRITICAL)
 
 if __name__ == "__main__":
