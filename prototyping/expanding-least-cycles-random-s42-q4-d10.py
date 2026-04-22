@@ -75,19 +75,8 @@ if __name__ == "__main__":
 
     vzx.log_report()
 
-    console.info(f"Realised nodes : {sum(1 for node in vzx.nodes if vzx.is_zx_node_realised(node))} of {vzx.number_of_nodes()}")
+    console.info(f"Realised nodes : {sum(1 for node in vzx.get_zx_nodes() if node.is_realised())} of {vzx.number_of_nodes()}")
     console.info(f"Overall volume : {vzx.number_of_cubes()}")
-
-    excess_volume: dict[EdgeId, int] = dict()
-    for edge in vzx.get_zx_edges():
-        if edge.is_realised():
-            count = sum(1 for _ in edge.realisation) - 1
-            if count > 0:
-                excess_volume[edge] = count
-
-    console.info(f"Excess volume : +{sum(excess_volume.values())}")
-    for edge in excess_volume:
-        console.info(f"> {edge} : +{excess_volume[edge]}")
 
     viewer = VolumetricZxGraphViewer(vzx, label = circuit)
     viewer.display()

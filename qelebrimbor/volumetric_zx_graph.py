@@ -389,14 +389,11 @@ class VolumetricZxGraph(nx.Graph):
 
         return cube_id
 
-    def is_zx_edge_realised(self, source: NodeId, target: NodeId) -> bool:
-        return self.get_zx_edge(source, target).is_realised()
-
     def realise_zx_edge(self, source: NodeId, target: NodeId, proposal: PathSpecification):
-        if not self.is_zx_node_realised(source):
+        if not self.get_zx_node(source).is_realised():
             raise Exception(f"{source} is not realised; cannot connect with a path.")
 
-        if not self.is_zx_node_realised(target):
+        if not self.get_zx_node(target).is_realised():
             raise Exception(f"{target} is not realised; cannot connect with a path.")
 
         if not self.has_edge(source, target):
@@ -573,7 +570,7 @@ class VolumetricZxGraph(nx.Graph):
             previous = current
             previous_reach = current_reach
 
-        if self.is_zx_node_realised(target):
+        if self.get_zx_node(target).is_realised():
             if final != self.get_zx_node(target).realising_cube:
                 if self.__is_alternative_realising_cube(target, final):
                     console.warning(f"Final {final} is an alternative realising cube of node {target}.")
@@ -671,7 +668,7 @@ class VolumetricZxGraph(nx.Graph):
 
     def log_report(self):
         number_of_spiders = sum(1 for node in self.get_zx_nodes() if node.type in { NodeType.X , NodeType.Z })
-        number_of_realised_spiders = sum(1 for node in self.get_zx_nodes() if node.type in { NodeType.X, NodeType.Z } and self.is_zx_node_realised(node.id))
+        number_of_realised_spiders = sum(1 for node in self.get_zx_nodes() if node.type in { NodeType.X, NodeType.Z } and node.is_realised())
         console.info(f"Realised spiders : {number_of_realised_spiders} of {number_of_spiders}")
         number_of_boundaries = sum(1 for _ in self.get_zx_nodes(node_type = NodeType.O))
         number_of_realised_boundaries = sum(1 for node in self.get_zx_nodes(node_type = NodeType.O) if node.is_realised())
@@ -687,7 +684,7 @@ class VolumetricZxGraph(nx.Graph):
 
         console.info(f"Excess volume : +{sum(excess_volume.values())}")
         for edge, volume in excess_volume.items():
-            console.info(f"> {edge} : +{volume}")
+            console.info(f"> Edge {edge} : +{volume}")
 
     def __identify_cube_at_position(self, position: Coordinates) -> int:
         for cube in self.get_bg_cubes():

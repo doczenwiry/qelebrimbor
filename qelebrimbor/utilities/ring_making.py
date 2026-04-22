@@ -106,22 +106,22 @@ def find_completion(
     return True
 
 def extend_unrealised(graph: VolumetricZxGraph):
-    schedule: dict[NodeId, list[NodeId]] = defaultdict(list)
-    for node in filter(lambda nd : graph.is_zx_node_realised(nd), graph.nodes):
-        for neighbor in filter(lambda nd : not graph.is_zx_node_realised(nd), graph.neighbors(node)):
+    schedule: dict[ZxNode, list[NodeId]] = defaultdict(list)
+    for node in filter(lambda nd: nd.is_realised, graph.get_zx_nodes()):
+        for neighbor in filter(lambda nd : not graph.get_zx_node(nd).is_realised(), graph.neighbors(node.id)):
             schedule[node].append( neighbor )
 
     edges_specifications: dict[EdgeId, PathSpecification] = {}
 
     for node, neighbors in schedule.items():
-        cube = graph.get_zx_node(node).realising_cube
+        cube = node.realising_cube
         cube_reach = cube.kind.get_reach()
         for neighbor in neighbors:
             available = filter(
                 lambda pos : pos not in graph.occupied,
                 Spacetime.get_constellation(cube.position, cube_reach)
             )
-            edge_type = graph.get_zx_edge(node, neighbor).type
+            edge_type = graph.get_zx_edge(node.id, neighbor).type
             neighbor_position = next(iter(available))
             step_taken = cube.position - neighbor_position
             neighbor_kinds = [
@@ -131,7 +131,7 @@ def extend_unrealised(graph: VolumetricZxGraph):
             ]
             neighbor_cube = BgCube(neighbor_kinds[0], neighbor_position)
             graph.realise_zx_node(graph.get_zx_node(neighbor), neighbor_cube)
-            source, target = (node, neighbor) if node < neighbor else (neighbor, node)
+            source, target = (node.id, neighbor) if node.id < neighbor else (neighbor, node.id)
             edges_specifications[ source, target ] = PathSpecification(
                 source_cube = graph.get_zx_node(source).realising_cube,
                 target_cube = graph.get_zx_node(target).realising_cube,

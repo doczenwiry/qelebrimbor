@@ -26,54 +26,54 @@ logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
 
 # TODO: sort the mess that multiple realising_cubes introduce here
 def place_determined(graph: VolumetricZxGraph):
-    for node in graph.nodes:
-        if graph.is_zx_node_realised(node):
-            unrealised_neighbors = list(filter(lambda nb: not graph.get_zx_edge(node, nb).is_realised(), graph.neighbors(node)))
+    for node in graph.get_zx_nodes():
+        if node.is_realised():
+            unrealised_neighbors = list(
+                filter(lambda nb: not graph.get_zx_edge(node.id, nb).is_realised(), graph.neighbors(node.id))
+            )
             if len(unrealised_neighbors) != 1:
                 continue
 
-            open_ports: dict[CubeId, list[Coordinates]] = defaultdict(list)
-            cube = graph.get_zx_node(node).realising_cube
-            if cube != -1:
-                cube_reach = graph.get_bg_cube(cube).kind.get_reach()
-                cube_position = graph.get_bg_cube(cube).position
-                for port in Spacetime.get_constellation(cube_position, cube_reach):
+            open_ports: dict[BgCube, list[Coordinates]] = defaultdict(list)
+            cube = node.realising_cube
+            if cube is not None:
+                cube_reach = cube.kind.get_reach()
+                for port in Spacetime.get_constellation(cube.position, cube_reach):
                     if port not in graph.occupied:
                         open_ports[cube].append(port)
 
             if sum(len(pts) for pts in open_ports.values()) == 1:
                 neighbor = unrealised_neighbors[0]
-                edge_type = graph.get_zx_edge(node, neighbor).type
+                edge_type = graph.get_zx_edge(node.id, neighbor).type
                 cube, ports = next(iter(open_ports.items()))
-                cube_kind = graph.get_bg_cube(cube).kind
-                cube_reach = cube_kind.get_reach()
-                cube_position = graph.get_bg_cube(cube).position
+                cube_reach = cube.kind.get_reach()
                 port_position = ports[0]
                 console.info(f"Node {node} has an unrealised neighbor {neighbor} that must be placed now at {port_position}.")
-                step_taken = port_position - cube_position
+                step_taken = port_position - cube.position
                 console.info(f"> Step taken : {step_taken}")
                 neighbor_type = graph.get_zx_node(neighbor).type
                 neighbor_reach = next(filter(
                     lambda cr :
                         Spacetime.contains(cr, step_taken) and Spacetime.contains(cube_reach, step_taken) and
-                        edge_type in BlockGraphHelper.infer_pipe_type(cube_kind, CubeKind.convert(neighbor_type, cr)),
+                        edge_type in BlockGraphHelper.infer_pipe_type(cube.kind, CubeKind.convert(neighbor_type, cr)),
                         [ Spacetime.XP, Spacetime.YP, Spacetime.ZP ]
                 ))
                 neighbor_cube = BgCube(CubeKind.convert(neighbor_type, neighbor_reach), port_position)
                 neighbor_cube_id = graph.realise_zx_node(neighbor, neighbor_cube)
-                graph.realise_zx_edge(node, neighbor, PathSpecification(cube, neighbor_cube_id, extras = [], pipes = [edge_type]))
+                graph.realise_zx_edge(node, neighbor, PathSpecification(cube, neighbor_cube, extras = [], pipes = [edge_type]))
 
 # TODO: sort the mess that multiple realising_cubes introduce here
-def reserve_positions(graph: VolumetricZxGraph, reservations: dict[Coordinates, CubeId]):
-    for node in graph.nodes:
-        if graph.is_zx_node_realised(node):
-            unrealised_neighbors = list(filter(lambda nb: not graph.get_zx_edge(node, nb).is_realised(), graph.neighbors(node)))
-            open_ports: dict[Coordinates, CubeId] = dict()
+def reserve_positions(graph: VolumetricZxGraph, reservations: dict[Coordinates, BgCube]):
+    for node in graph.get_zx_nodes():
+        if node.is_realised():
+            unrealised_neighbors = list(
+                filter(lambda nb: not graph.get_zx_edge(node.id, nb).is_realised(), graph.neighbors(node.id))
+            )
+            open_ports: dict[Coordinates, BgCube] = dict()
             cube = graph.get_zx_node(node).realising_cube
-            if cube != -1:
-                cube_reach = graph.get_bg_cube(cube).kind.get_reach()
-                cube_position = graph.get_bg_cube(cube).position
-                for port in Spacetime.get_constellation(cube_position, cube_reach):
+            if cube is not None:
+                cube_reach = cube.kind.get_reach()
+                for port in Spacetime.get_constellation(cube.position, cube_reach):
                     if port not in graph.occupied:
                         if port in open_ports and port in reservations and cube != reservations[port]:
                             console.warning(f"Multiple cubes [{open_ports[port]},{cube}] realising the same node have the a port in common. Overwriting.")
@@ -112,17 +112,7 @@ if __name__ == "__main__":
         console.info(f"Cycle {index} : {cycle}")
         find_completion(vzx, cycle, maximal_overhead = 10)
 
-    excess_volume: dict[ZxEdge, int] = dict()
-    for edge in vzx.get_zx_edges():
-        if edge.is_realised():
-            count = sum(1 for _ in edge.realisation) - 1
-            if count > 0:
-                excess_volume[edge] = count
+    vzx.log_report()
 
-    console.info(f"Excess volume : +{sum(excess_volume.values())}")
-    for edge, excess in excess_volume.items():
-        console.info(f"> {edge} : +{excess}")
-
-    console.info(f"Total volume : {vzx.number_of_cubes()}")
     viewer = VolumetricZxGraphViewer(vzx, label = circuit)
     viewer.display()

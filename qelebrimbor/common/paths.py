@@ -16,7 +16,11 @@ class PathSpecification:
         self.pipes = pipes if pipes is not None else [ EdgeType.IDENTITY ]
 
     def __str__(self):
-        return f"{self.source_cube} - {self.extras} - {self.target_cube} {self.pipes}"
+        content = f"{self.source_cube} -{self.pipes[0].name[0]}-"
+        for e in range(len(self.extras)):
+            content += f" {self.extras[e]} -{self.pipes[e+1].name[0]}-"
+        content += f" {self.target_cube}"
+        return content
 
     def __repr__(self):
         return str(self)
