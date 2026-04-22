@@ -110,139 +110,6 @@ class VolumetricZxGraph(nx.Graph):
 
         return vzx
 
-    @staticmethod
-    def from_file(filepath: str):
-        with open(filepath, 'r') as file:
-            # Instantiate the VolumetricZxGraph
-            vzx = VolumetricZxGraph()
-
-            # Read the blockgraph header
-            header = file.readline()
-            if header != "VOLUMETRIC-ZX-GRAPH 0.0.1\n":
-                raise Exception(f"Invalid file format. Header <VOLUMETRIC-ZX-GRAPH 0.0.1> not found [got={header}].")
-
-            # Read the empty line between the blockgraph header and the cubes header
-            file.readline()
-
-            # Read the nodes header
-            header = file.readline()
-            if header != "NODES: id;type;qubit;layer;realising_cube\n":
-                raise Exception(f"Invalid file format. Header for NODES not found [got={header}].")
-
-            # Read all the lines describing nodes
-            current_line = file.readline()
-            while current_line and current_line != "\n":
-                if current_line != "":
-                    node_id, node_type, qubit, layer, realising_cube = current_line.split(';')
-                    node = int(node_id)
-                    vzx.add_node(node)
-                    vzx.nodes[node][VolumetricZxGraph.KEY_ZX_NODE] = ZxNode(
-                        id = node, type = NodeType[node_type],
-                        qubit = int(qubit), layer = int(layer),
-                        realising_cube = int(realising_cube)
-                    )
-                    vzx.__zx_qubits[int(qubit)].append(node)
-                    vzx.__zx_layers[int(layer)].append(node)
-                current_line = file.readline()
-
-            # Read the edges header
-            header = file.readline()
-            if header != "EDGES: source;target;type;realisation\n":
-                raise Exception(f"Invalid file format. Header for EDGES not found [got={header}].")
-
-            # Read all the lines describing edges
-            current_line = file.readline()
-            while current_line and current_line != "\n":
-                if current_line != "":
-                    source_id, target_id, edge_type, realisation = current_line.split(';')
-                    source = int(source_id)
-                    target = int(target_id)
-                    vzx.add_edge(source, target)
-                    vzx.edges[source, target][VolumetricZxGraph.KEY_ZX_EDGE] = ZxEdge(
-                        source = source, target = target,
-                        type = EdgeType[edge_type],
-                        realisation =  [ make_tuple(pair) for pair in realisation[1:-2].split(':') ]
-                    )
-                current_line = file.readline()
-
-            # Read the cubes header
-            header = file.readline()
-            if header != "CUBES: id;x;y;z;kind;realised_node\n":
-                raise Exception(f"Invalid file format. Header for CUBES not found [got={header}].")
-
-            # Read all the lines describing cubes
-            current_line = file.readline()
-            while current_line and current_line != "\n":
-                if current_line != "":
-                    cube_id, x, y, z, kind, realised_node = current_line.split(';')
-                    cube = int(cube_id)
-                    vzx.__bg_graph.add_node(cube)
-                    vzx.__bg_graph.nodes[cube][VolumetricZxGraph.KEY_BG_CUBE] = BgCube(
-                        id = cube, kind = CubeKind[kind], position = Coordinates(int(x), int(y), int(z)),
-                        realised_node = int(realised_node)
-                    )
-                current_line = file.readline()
-
-            # Read the pipes header
-            header = file.readline()
-            if header != "PIPES: source;target;type\n":
-                raise Exception(f"Invalid file format. Header for PIPES not found [got={header}].")
-
-            # Read all the lines describing pipes
-            current_line = file.readline()
-            while current_line and current_line != "\n":
-                if current_line != "":
-                    source_id, target_id, pipe_type = current_line.split(';')
-                    source = int(source_id)
-                    target = int(target_id)
-                    vzx.__bg_graph.add_edge(source, target)
-                    vzx.__bg_graph.edges[source, target][VolumetricZxGraph.KEY_BG_PIPE] = BgPipe(
-                        source = source, target = target, type = EdgeType[pipe_type[:-1]]
-                    )
-                current_line = file.readline()
-
-            return vzx
-
-    def into_file(self, filepath: str):
-        with (open(filepath, 'w') as file):
-            file.write(f"VOLUMETRIC-ZX-GRAPH 0.0.1\n")
-
-            # Store node information
-            file.write("\nNODES: id;type;qubit;layer;realising_cube\n")
-            file.writelines(
-                [
-                    f"{node.id};{node.type.name};{node.qubit};{node.layer};{node.realising_cube}\n"
-                    for node in self.get_zx_nodes()
-                ]
-            )
-
-            # Store edge information
-            file.write("\nEDGES: source;target;type;realisation\n")
-            file.writelines(
-                [
-                    f"{edge.source.id};{edge.target.id};{edge.type};[{':'.join(map(str, edge.realisation))}]\n"
-                    for edge in self.get_zx_edges()
-                ]
-            )
-
-            # Store cube information
-            file.write("\nCUBES: id;x;y;z;kind;realised_node\n")
-            file.writelines(
-                [
-                    f"{cube.id};{';'.join(map(str, iter(cube.position)))};{cube.kind.name};{cube.realised_node}\n"
-                    for cube in self.get_bg_cubes()
-                ]
-            )
-
-            # Store pipe information
-            file.write("\nPIPES: source;target;type\n")
-            file.writelines(
-                [
-                    f"{pipe.source};{pipe.target};{pipe.type.name}\n"
-                    for pipe in self.get_bg_pipes()
-                ]
-            )
-
     def get_zx_nodes(self, node_type: NodeType | None = None, qubit: QubitId | None = None, layer: LayerId | None = None):
         return map(lambda nd: self.get_zx_node(nd),
             filter(
@@ -686,9 +553,236 @@ class VolumetricZxGraph(nx.Graph):
         for edge, volume in excess_volume.items():
             console.info(f"> Edge {edge} : +{volume}")
 
-    def __identify_cube_at_position(self, position: Coordinates) -> int:
-        for cube in self.get_bg_cubes():
-            if cube.position == position:
-                return cube
+    @staticmethod
+    def from_file(filepath: str):
+        with open(filepath, 'r') as file:
+            # Instantiate the VolumetricZxGraph
+            vzx = VolumetricZxGraph()
 
-        return -1
+            # Read the blockgraph header
+            header = file.readline()
+            if header not in [ "VOLUMETRIC-ZX-GRAPH 0.0.1\n", "BLOCKGRAPH 0.1.0;\n" ] :
+                raise Exception(f"Invalid file format. Header <VOLUMETRIC-ZX-GRAPH 0.0.1> not found [got={header}].")
+
+            # Read the empty line between the blockgraph header and the cubes header
+            file.readline()
+
+            # Read the nodes header
+            header = file.readline()
+            if header != "NODES: index;type;qubit;layer;realising_cube\n":
+                raise Exception(f"Invalid file format. Header for NODES not found [got={header}].")
+
+            zx_node_bg_cube: dict[CubeId, ZxNode] = dict()
+
+            # Read all the lines describing nodes
+            current_line = file.readline()
+            while current_line and current_line != "\n":
+                if current_line != "":
+                    node_id, node_type, qubit, layer, realising_cube = current_line.split(';')
+                    node = int(node_id)
+                    vzx.add_node(node)
+                    zx_node = ZxNode(id = node, type = NodeType[node_type], qubit = int(qubit), layer = int(layer))
+                    zx_node_bg_cube[int(realising_cube)] = zx_node
+                    vzx.nodes[node][VolumetricZxGraph.KEY_ZX_NODE] = zx_node
+                    vzx.__zx_qubits[int(qubit)].append(node)
+                    vzx.__zx_layers[int(layer)].append(node)
+                current_line = file.readline()
+
+            # Read the edges header
+            header = file.readline()
+            if header != "EDGES: source;target;type;realisation\n":
+                raise Exception(f"Invalid file format. Header for EDGES not found [got={header}].")
+
+            # Read all the lines describing edges
+            current_line = file.readline()
+            while current_line and current_line != "\n":
+                if current_line != "":
+                    source_id, target_id, edge_type, realisation = current_line.split(';')
+                    source = int(source_id)
+                    target = int(target_id)
+                    vzx.add_edge(source, target)
+                    zx_edge = ZxEdge(source = source, target = target, type = EdgeType[edge_type])
+                    zx_edge.realisation = [ make_tuple(pair) for pair in realisation[1:-2].split(':') ]
+                    vzx.edges[source, target][VolumetricZxGraph.KEY_ZX_EDGE] = zx_edge
+                current_line = file.readline()
+
+            # Read the cubes header
+            header = file.readline()
+            if header != "CUBES: index;x;y;z;kind;label;\n":
+                raise Exception(f"Invalid file format. Header for CUBES not found [got={header}].")
+
+            # Read all the lines describing cubes
+            current_line = file.readline()
+            while current_line and current_line != "\n":
+                if current_line != "":
+                    cube_id, x, y, z, kind, realised_node, _ = current_line.split(';')
+                    cube = int(cube_id)
+                    vzx.__bg_graph.add_node(cube)
+                    bg_cube = BgCube(
+                        id = cube, kind = CubeKind[kind.upper()], position = Coordinates(int(x), int(y), int(z))
+                    )
+                    if cube in zx_node_bg_cube:
+                        bg_cube.realised_node = zx_node_bg_cube[cube]
+                    vzx.__bg_graph.nodes[cube][VolumetricZxGraph.KEY_BG_CUBE] = bg_cube
+                current_line = file.readline()
+
+            # Read the pipes header
+            header = file.readline()
+            if header != "PIPES: source;target;type\n":
+                raise Exception(f"Invalid file format. Header for PIPES not found [got={header}].")
+
+            # Read all the lines describing pipes
+            current_line = file.readline()
+            while current_line and current_line != "\n":
+                if current_line != "":
+                    source_id, target_id, pipe_type = current_line.split(';')
+                    source = int(source_id)
+                    target = int(target_id)
+                    vzx.__bg_graph.add_edge(source, target)
+                    vzx.__bg_graph.edges[source, target][VolumetricZxGraph.KEY_BG_PIPE] = BgPipe(
+                        source = source, target = target, type = EdgeType[pipe_type[:-1]]
+                    )
+                current_line = file.readline()
+
+            return vzx
+
+    def into_file(self, filepath: str):
+        with (open(filepath, 'w') as file):
+            file.write(f"VOLUMETRIC-ZX-GRAPH 0.0.1\n")
+
+            # Store node information
+            file.write("\nNODES: index;type;qubit;layer;realising_cube\n")
+            file.writelines(
+                [
+                    f"{node.id};{node.type.name};{node.qubit};{node.layer};{node.realising_cube}\n"
+                    for node in self.get_zx_nodes()
+                ]
+            )
+
+            # Store edge information
+            file.write("\nEDGES: source;target;type;realisation\n")
+            file.writelines(
+                [
+                    f"{edge.source.id};{edge.target.id};{edge.type};[{':'.join(map(str, edge.realisation))}]\n"
+                    for edge in self.get_zx_edges()
+                ]
+            )
+
+            # Store cube information
+            file.write("\nCUBES: index;x;y;z;kind\n")
+            file.writelines(
+                [
+                    f"{cube.id};{';'.join(map(str, iter(cube.position)))};{cube.kind.name}\n"
+                    for cube in self.get_bg_cubes()
+                ]
+            )
+
+            # Store pipe information
+            file.write("\nPIPES: source;target;type;\n")
+            file.writelines(
+                [
+                    f"{pipe.source};{pipe.target};{pipe.type.name}\n"
+                    for pipe in self.get_bg_pipes()
+                ]
+            )
+
+    @staticmethod
+    def from_topologiq_file(filepath: str):
+        with open(filepath, 'r') as file:
+            # Instantiate the VolumetricZxGraph
+            vzx = VolumetricZxGraph()
+
+            # Read the blockgraph header
+            header = file.readline()
+            if header != "BLOCKGRAPH 0.1.0;\n" :
+                raise Exception(f"Invalid file format. Header <BLOCKGRAPH 0.1.0> not found [got={header}].")
+
+            # Read the empty line between the blockgraph header and the cubes header
+            file.readline()
+
+            # Read the nodes header
+            header = file.readline()
+            if header != "NODES: index;type;qubit;layer;realising_cube\n":
+                raise Exception(f"Invalid file format. Header for NODES not found [got={header}].")
+
+            zx_node_bg_cube: dict[ZxNode, CubeId] = dict()
+
+            # Read all the lines describing nodes
+            current_line = file.readline()
+            while current_line and current_line != "\n":
+                if current_line != "":
+                    node_id, node_type, qubit, layer, realising_cube = current_line.split(';')
+                    node = int(node_id)
+                    vzx.add_node(node)
+                    zx_node = ZxNode(id = node, type = NodeType[node_type], qubit = int(qubit), layer = int(layer))
+                    vzx.nodes[node][VolumetricZxGraph.KEY_ZX_NODE] = zx_node
+                    zx_node_bg_cube[zx_node] = int(realising_cube)
+                    vzx.__zx_qubits[int(qubit)].append(node)
+                    vzx.__zx_layers[int(layer)].append(node)
+                current_line = file.readline()
+
+            # Read the edges header
+            header = file.readline()
+            if header != "EDGES: source;target;type;realisation\n":
+                raise Exception(f"Invalid file format. Header for EDGES not found [got={header}].")
+
+            zx_edge_bg_pipe: dict[ZxEdge, list[PipeId]] = dict()
+
+            # Read all the lines describing edges
+            current_line = file.readline()
+            while current_line and current_line != "\n":
+                if current_line != "":
+                    source_id, target_id, edge_type, realisation = current_line.split(';')
+                    source = vzx.get_zx_node(int(source_id))
+                    target = vzx.get_zx_node(int(target_id))
+                    vzx.add_edge(source.id, target.id)
+                    zx_edge = ZxEdge(source = source, target = target, type = EdgeType[edge_type])
+                    vzx.edges[source.id, target.id][VolumetricZxGraph.KEY_ZX_EDGE] = zx_edge
+                    zx_edge_bg_pipe[zx_edge] = [ make_tuple(pair) for pair in realisation[1:-2].split(':') ]
+                current_line = file.readline()
+
+            # Read the cubes header
+            header = file.readline()
+            if header != "CUBES: index;x;y;z;kind;label;\n":
+                raise Exception(f"Invalid file format. Header for CUBES not found [got={header}].")
+
+            # Read all the lines describing cubes
+            current_line = file.readline()
+            while current_line and current_line != "\n":
+                if current_line != "":
+                    cube_id, x, y, z, kind, realised_node, _ = current_line.split(';')
+                    cube = int(cube_id)
+                    vzx.__bg_graph.add_node(cube)
+                    bg_cube = BgCube(
+                        id = cube, kind = CubeKind[kind.upper()], position = Coordinates(int(x), int(y), int(z)) / 3.0
+                    )
+                    vzx.__bg_graph.nodes[cube][VolumetricZxGraph.KEY_BG_CUBE] = bg_cube
+                current_line = file.readline()
+
+            # Read the pipes header
+            header = file.readline()
+            if header != "PIPES: src;tgt;kind;\n":
+                raise Exception(f"Invalid file format. Header for PIPES not found [got={header}].")
+
+            # Read all the lines describing pipes
+            current_line = file.readline()
+            while current_line and current_line != "\n":
+                if current_line != "":
+                    source_id, target_id, pipe_kind, _ = current_line.split(';')
+                    source = int(source_id)
+                    target = int(target_id)
+                    vzx.__bg_graph.add_edge(source, target)
+                    vzx.__bg_graph.edges[source, target][VolumetricZxGraph.KEY_BG_PIPE] = BgPipe(
+                        source = source, target = target, type = EdgeType.HADAMARD if 'h' in pipe_kind else EdgeType.IDENTITY
+                    )
+                current_line = file.readline()
+
+            for zx_node, bg_cube_id in zx_node_bg_cube.items():
+                bg_cube = vzx.get_bg_cube(bg_cube_id)
+                bg_cube.realised_node = zx_node
+                zx_node.realising_cube = bg_cube
+
+            for zx_edge, bg_pipe_ids in zx_edge_bg_pipe.items():
+                zx_edge.realisation = list(map(lambda pp: vzx.get_bg_pipe(*pp), bg_pipe_ids))
+
+            return vzx
