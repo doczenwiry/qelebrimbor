@@ -30,8 +30,8 @@ class BgSceneManager:
             self.__plotter.add( vd_cube )
 
         for pipe in vzx.get_bg_pipes():
-            source_cube = vzx.get_bg_cube(pipe.source)
-            target_cube = vzx.get_bg_cube(pipe.target)
+            source_cube = pipe.source
+            target_cube = pipe.target
             if source_cube.id > target_cube.id:
                 source_cube, target_cube = target_cube, source_cube
             vd_pipe = VdPipe(source_cube, target_cube, pipe.type, pipe, painter = self.__painters[self.__painter_index])
@@ -47,7 +47,7 @@ class BgSceneManager:
         else:
             alpha = 0.025 if highlight else 1.0
 
-            equivalent_cubes, connecting_pipes = self.__vzx_graph.get_equivalent_bg_cubes(selected.id)
+            equivalent_cubes, connecting_pipes = self.__vzx_graph.get_equivalent_bg_cubes(selected)
 
             for bg_cube, vd_cube in self.__cubes.items():
                 if bg_cube not in equivalent_cubes:

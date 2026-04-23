@@ -1,6 +1,7 @@
 from collections import defaultdict, deque
 from enum import Enum
 from typing import Iterable
+from itertools import chain
 
 import pyzx as zx
 import networkx as nx
@@ -23,12 +24,24 @@ from qelebrimbor.utilities.nmtfl_constraint import NoMoreThanFourLegsConstraint
 console = logging.getLogger(__name__)
 console.setLevel(logging.INFO)
 
-class LayerTransitionType(Enum):
+class LayerTransition(Enum):
     EVERY = 0
     LOWER = 1
     INTRA = 2
     UPPER = 3
     OUTER = 4
+
+    def matches(self, source_layer: LayerId, target_layer: LayerId):
+        if self == LayerTransition.EVERY:
+            return True
+        elif self == LayerTransition.LOWER:
+            return target_layer < source_layer
+        elif self == LayerTransition.INTRA:
+            return source_layer == target_layer
+        elif self == LayerTransition.UPPER:
+            return source_layer < target_layer
+        else: # self == LayerTransition.OUTER
+            return False
 
 # TODO: figure out what the other VertexType and EdgeType represent
 # TODO: how do we deal with the last four VertexType (i.e. H_BOX, W_INPUT, W_OUTPUT, Z_BOX) ?
@@ -60,18 +73,18 @@ class VolumetricZxGraph(nx.Graph):
         self.occupied: set[Coordinates] = set()
 
         if nodes is not None:
-            for node_id, node_type in nodes:
-                self.add_node(node_id)
-                zx_node = ZxNode(id = node_id, type = node_type)
-                self.nodes[node_id][VolumetricZxGraph.KEY_ZX_NODE] = zx_node
+            for node, node_type in nodes:
+                zx_node = ZxNode(id = node, type = node_type)
+                self.add_node(zx_node.id)
+                self.nodes[zx_node.id][VolumetricZxGraph.KEY_ZX_NODE] = zx_node
 
         if edges is not None:
             for edge, edge_type in edges:
-                source = self.get_zx_node(min(edge))
-                target = self.get_zx_node(max(edge))
-                self.add_edge(source.id, target.id)
-                zx_edge = ZxEdge(source = source, target = target, type = edge_type)
-                self.edges[source.id, target.id][VolumetricZxGraph.KEY_ZX_EDGE] = zx_edge
+                zx_source = self.get_zx_node(min(edge))
+                zx_target = self.get_zx_node(max(edge))
+                zx_edge = ZxEdge(source = zx_source, target = zx_target, type = edge_type)
+                self.add_edge(zx_source.id, zx_target.id)
+                self.edges[zx_source.id, zx_target.id][VolumetricZxGraph.KEY_ZX_EDGE] = zx_edge
 
         # TODO: split any spider with more than 4 edges (cfr. graph_manager.py; prep_3d_g)
         # TODO: does the choice of how to split such spiders affect the minimal achievable volume ?
@@ -111,53 +124,55 @@ class VolumetricZxGraph(nx.Graph):
         return vzx
 
     def get_zx_nodes(self, node_type: NodeType | None = None, qubit: QubitId | None = None, layer: LayerId | None = None):
-        return map(lambda nd: self.get_zx_node(nd),
-            filter(
-                lambda node: (node_type is None or self.get_zx_node(node).type == node_type) and
-                             (qubit is None or self.get_zx_node(node).qubit == qubit) and
-                             (layer is None or self.get_zx_node(node).layer == layer),
-                self.nodes
-            )
+        return filter(
+            lambda node: (node_type is None or node.type == node_type) and
+                         (qubit is None or node.qubit == qubit) and
+                         (layer is None or node.layer == layer),
+            map(lambda nd: self.get_zx_node(nd), self.nodes)
         )
 
-    def get_qubits(self):
+    def get_zx_edges(self, edge_type: EdgeType | None = None, layered: tuple[LayerId, LayerTransition] | None = None):
+        if layered is None:
+            edges = map(lambda edge: self.get_zx_edge(*edge), self.edges)
+        else:
+            layer, transition = layered
+            if len(self.__zx_layers) == 0:
+                console.warning(f"Requesting layered edges but VolumetricZxGraph does not contain layer information.")
+            edges = chain.from_iterable(map(
+                lambda zxn: map(
+                    lambda neighbor : self.get_zx_edge(zxn.id, neighbor.id),
+                    filter(
+                        lambda nb: transition != LayerTransition.INTRA or zxn.id < nb.id,
+                        self.get_zx_neighbors(zxn, transition)
+                    )
+                ),
+                self.get_zx_nodes(layer = layer)
+            ))
+
+        return filter(lambda edge: edge_type is None or edge.type == edge_type, edges)
+
+    def get_zx_neighbors(self, node: ZxNode, transition: LayerTransition = LayerTransition.EVERY):
+        return filter(
+            lambda neighbor: transition.matches(node.layer, neighbor.layer),
+            map(self.get_zx_node, self.neighbors(node.id))
+        )
+
+    def get_zx_degree(self, node_id: NodeId) -> float:
+        return self.degree[node_id]
+
+    def get_zx_node(self, node_id: NodeId) -> ZxNode:
+        return self.nodes[node_id][VolumetricZxGraph.KEY_ZX_NODE]
+
+    def get_zx_edge(self, source_id: NodeId, target_id: NodeId) -> ZxEdge:
+        return self.edges[source_id, target_id][VolumetricZxGraph.KEY_ZX_EDGE]
+
+    def get_zx_qubits(self):
         return self.__zx_qubits.keys()
 
-    def get_layers(self):
+    def get_zx_layers(self):
         return self.__zx_layers.keys()
 
-    def get_layer_density(self, layer: int) -> tuple[int,int]:
-        number_of_nodes = 0
-        number_of_edges = 0
-        for node in self.get_zx_nodes(layer = layer):
-            number_of_edges += sum(1 for _ in self.get_node_neighbours(node.id, transition = LayerTransitionType.INTRA))
-            number_of_nodes += 1
-        number_of_edges = number_of_edges // 2
-        return number_of_nodes, number_of_edges
-
-    def get_zx_edges(self, edge_type: EdgeType | None = None):
-        return map(lambda edge: self.get_zx_edge(*edge),
-            filter(
-                lambda eg: edge_type is None or self.get_zx_edge(*eg).type == edge_type,
-                self.edges
-            )
-        )
-
-    def get_layered_edges(self, layer: int, transition: LayerTransitionType = LayerTransitionType.EVERY):
-        if transition == LayerTransitionType.LOWER:
-            filtering = lambda edge : self.get_zx_node(edge[0]).layer <  layer == self.get_zx_node(edge[1]).layer
-        elif transition == LayerTransitionType.INTRA:
-            filtering = lambda edge : self.get_zx_node(edge[0]).layer == layer == self.get_zx_node(edge[1]).layer
-        elif transition == LayerTransitionType.UPPER:
-            filtering = lambda edge : self.get_zx_node(edge[0]).layer == layer <  self.get_zx_node(edge[1]).layer
-        elif transition == LayerTransitionType.OUTER:
-            filtering = lambda edge : self.get_zx_node(edge[0]).layer <  layer <  self.get_zx_node(edge[1]).layer
-        else:
-            filtering = lambda edge : True
-
-        return filter(filtering, self.edges())
-
-    def total_volume(self) -> int:
+    def volume(self) -> int:
         return sum(1 for cube in self.get_bg_cubes() if cube.kind not in [ CubeKind.OOO, CubeKind.YYY ])
 
     def number_of_cubes(self) -> int:
@@ -181,59 +196,34 @@ class VolumetricZxGraph(nx.Graph):
             )
         )
 
-    def get_node_neighbours(self, node: NodeId, transition: LayerTransitionType = LayerTransitionType.EVERY):
-        if transition == LayerTransitionType.EVERY:
-            filtering = lambda other : True
-        elif transition == LayerTransitionType.LOWER:
-            filtering = lambda other : self.get_zx_node(other).layer < self.get_zx_node(node).layer
-        elif transition == LayerTransitionType.INTRA:
-            filtering = lambda other : self.get_zx_node(other).layer == self.get_zx_node(node).layer
-        elif transition == LayerTransitionType.UPPER:
-            filtering = lambda other : self.get_zx_node(node).layer < self.get_zx_node(other).layer
-        else: #transition == LayerTransitionType.OUTER
-            raise Exception(f"Requesting OUTER transition type for node neighbours. Will always be empty.")
+    def get_bg_cube(self, cube_id: CubeId) -> BgCube:
+        return self.__bg_graph.nodes[cube_id][VolumetricZxGraph.KEY_BG_CUBE]
 
-        return filter(filtering, self.neighbors(node))
+    def get_bg_pipe(self, source_id: CubeId, target_id: CubeId) -> BgPipe:
+        return self.__bg_graph.edges[source_id, target_id][VolumetricZxGraph.KEY_BG_PIPE]
 
-    def get_cube_neighbours(self, cube: CubeId):
-        return self.__bg_graph.neighbors(cube)
+    def get_bg_neighbours(self, cube_id: CubeId):
+        return map(self.get_bg_cube, self.__bg_graph.neighbors(cube_id))
 
-    def get_zx_degree(self, node: NodeId) -> float:
-        return self.degree[node]
-
-    def get_zx_node(self, node: NodeId) -> ZxNode:
-        return self.nodes[node][VolumetricZxGraph.KEY_ZX_NODE]
-
-    def get_zx_edge(self, source: NodeId, target: NodeId) -> ZxEdge:
-        return self.edges[source, target][VolumetricZxGraph.KEY_ZX_EDGE]
-
-    def get_bg_cube(self, cube: CubeId) -> BgCube:
-        return self.__bg_graph.nodes[cube][VolumetricZxGraph.KEY_BG_CUBE]
-
-    def get_bg_pipe(self, source: CubeId, target: CubeId) -> BgPipe:
-        return self.__bg_graph.edges[source, target][VolumetricZxGraph.KEY_BG_PIPE]
-
-    def get_equivalent_bg_cubes(self, cube: CubeId) -> tuple[Iterable[BgCube], Iterable[BgPipe]]:
-        equivalent_cubes: set[BgCube] = { self.get_bg_cube(cube) }
+    def get_equivalent_bg_cubes(self, cube: BgCube) -> tuple[Iterable[BgCube], Iterable[BgPipe]]:
+        equivalent_cubes: set[BgCube] = { cube }
         connecting_pipes: set[BgPipe] = set()
 
-        cube_kind = self.get_bg_cube(cube).kind
-        queue: deque[CubeId] = deque([ cube ])
+        queue: deque[BgCube] = deque([ cube ])
         while queue:
             current = queue.popleft()
-            for nb in self.get_cube_neighbours(current):
-                neighbor = self.get_bg_cube(nb)
-                if neighbor.kind != cube_kind:
+            for neighbor in self.get_bg_neighbours(current.id):
+                if neighbor.kind != cube.kind:
                     continue
 
-                source, target = current, nb
+                source, target = current.id, neighbor.id
                 if source > target:
                     source, target = target, source
                 connecting_pipes.add( self.get_bg_pipe(source, target) )
 
                 if neighbor not in equivalent_cubes:
                     equivalent_cubes.add(neighbor)
-                    queue.append(neighbor.id)
+                    queue.append(neighbor)
 
         return equivalent_cubes, connecting_pipes
 
@@ -313,7 +303,7 @@ class VolumetricZxGraph(nx.Graph):
             self.connect_pipe(previous_cube, extra_cube, extra_pipe_type)
 
             # Extend the sequence of extra node ids
-            pipe = BgPipe(source = previous_cube.id, target = extra_cube_id, type = extra_pipe_type)
+            pipe = BgPipe(source = previous_cube, target = extra_cube, type = extra_pipe_type)
             pipe_ids.append( pipe )
 
             # Prepare for the next iteration
@@ -323,7 +313,7 @@ class VolumetricZxGraph(nx.Graph):
         final_pipe_type = proposal.pipes[-1]
         self.connect_pipe(previous_cube, target_cube, final_pipe_type)
 
-        pipe = BgPipe(source = previous_cube.id, target = target_cube.id, type = final_pipe_type)
+        pipe = BgPipe(source = previous_cube, target = target_cube, type = final_pipe_type)
         pipe_ids.append( pipe )
 
         return pipe_ids
@@ -347,17 +337,15 @@ class VolumetricZxGraph(nx.Graph):
             raise Exception(f"Cubes {source} and {target} are not at adjacent positions.")
 
         self.__bg_graph.add_edge(source.id, target.id)
-        bg_pipe = BgPipe(source = source.id, target = target.id, type = pipe_type)
+        bg_pipe = BgPipe(source, target, pipe_type)
         self.__bg_graph.edges[source.id, target.id][VolumetricZxGraph.KEY_BG_PIPE] = bg_pipe
 
-    def __is_alternative_realising_cube(self, node_id: NodeId, cube: BgCube):
-        node = self.get_zx_node(node_id)
+    def __is_alternative_realising_cube(self, node: ZxNode, cube: BgCube):
         visited: set[BgCube] = { cube }
         queue: deque[BgCube] = deque([cube])
         while queue:
             current = queue.popleft()
-            for nb in self.get_cube_neighbours(current.id):
-                neighbor = self.get_bg_cube(nb)
+            for neighbor in self.get_bg_neighbours(current):
                 if neighbor.kind == cube.kind:
                     if neighbor.realised_node == node:
                         return True
@@ -493,11 +481,11 @@ class VolumetricZxGraph(nx.Graph):
             console.info(f"Edges  [{count}]: {content}")
 
         if layers:
-            for layer in self.get_layers():
+            for layer in self.get_zx_layers():
                 console.info(f"Layer {layer}  : {list(map(lambda zn: zn.id, self.get_zx_nodes(layer = layer)))}")
 
         if qubits:
-            for qubit in self.get_qubits():
+            for qubit in self.get_zx_qubits():
                 console.info(f"Qubit {qubit}  : {list(map(lambda zn: zn.id, self.get_zx_nodes(qubit = qubit)))}")
 
         if cubes:
@@ -520,10 +508,10 @@ class VolumetricZxGraph(nx.Graph):
             content += f"{edge} "
         print(f"Edges  : {content}")
 
-        for layer in self.get_layers():
+        for layer in self.get_zx_layers():
             print(f"Layer {layer}  : {list(map(lambda zn: zn.id, self.get_zx_nodes(layer = layer)))}")
 
-        for qubit in self.get_qubits():
+        for qubit in self.get_zx_qubits():
             print(f"Qubit {qubit}  : {list(map(lambda zn: zn.id, self.get_zx_nodes(qubit = qubit)))}")
 
         for cube in self.get_bg_cubes():
@@ -540,7 +528,7 @@ class VolumetricZxGraph(nx.Graph):
         number_of_boundaries = sum(1 for _ in self.get_zx_nodes(node_type = NodeType.O))
         number_of_realised_boundaries = sum(1 for node in self.get_zx_nodes(node_type = NodeType.O) if node.is_realised())
         console.info(f"Realised boundaries : {number_of_realised_boundaries} of {number_of_boundaries}")
-        console.info(f"Overall volume : {self.total_volume()}")
+        console.info(f"Overall volume : {self.volume()}")
 
         excess_volume: dict[ZxEdge, int] = dict()
         for edge in self.get_zx_edges():
@@ -593,6 +581,8 @@ class VolumetricZxGraph(nx.Graph):
             if header != "EDGES: source;target;type;realisation\n":
                 raise Exception(f"Invalid file format. Header for EDGES not found [got={header}].")
 
+            zx_edge_bg_pipe: dict[ZxEdge, list[PipeId]] = dict()
+
             # Read all the lines describing edges
             current_line = file.readline()
             while current_line and current_line != "\n":
@@ -602,7 +592,7 @@ class VolumetricZxGraph(nx.Graph):
                     target = int(target_id)
                     vzx.add_edge(source, target)
                     zx_edge = ZxEdge(source = source, target = target, type = EdgeType[edge_type])
-                    zx_edge.realisation = [ make_tuple(pair) for pair in realisation[1:-2].split(':') ]
+                    zx_edge_bg_pipe[zx_edge] = [make_tuple(pair) for pair in realisation[1:-2].split(':')]
                     vzx.edges[source, target][VolumetricZxGraph.KEY_ZX_EDGE] = zx_edge
                 current_line = file.readline()
 
@@ -636,13 +626,22 @@ class VolumetricZxGraph(nx.Graph):
             while current_line and current_line != "\n":
                 if current_line != "":
                     source_id, target_id, pipe_type = current_line.split(';')
-                    source = int(source_id)
-                    target = int(target_id)
-                    vzx.__bg_graph.add_edge(source, target)
-                    vzx.__bg_graph.edges[source, target][VolumetricZxGraph.KEY_BG_PIPE] = BgPipe(
-                        source = source, target = target, type = EdgeType[pipe_type[:-1]]
+                    source = vzx.get_bg_cube(int(source_id))
+                    target = vzx.get_bg_cube(int(target_id))
+                    vzx.__bg_graph.add_edge(source.id, target.id)
+                    vzx.__bg_graph.edges[source.id, target.id][VolumetricZxGraph.KEY_BG_PIPE] = BgPipe(
+                        source, target, EdgeType[pipe_type[:-1]]
                     )
                 current_line = file.readline()
+
+            # Encode correspondence between ZX and BG
+            for zx_node, bg_cube_id in zx_node_bg_cube.items():
+                bg_cube = vzx.get_bg_cube(bg_cube_id)
+                bg_cube.realised_node = zx_node
+                zx_node.realising_cube = bg_cube
+
+            for zx_edge, bg_pipe_ids in zx_edge_bg_pipe.items():
+                zx_edge.realisation = list(map(lambda pp: vzx.get_bg_pipe(*pp), bg_pipe_ids))
 
             return vzx
 
@@ -769,11 +768,11 @@ class VolumetricZxGraph(nx.Graph):
             while current_line and current_line != "\n":
                 if current_line != "":
                     source_id, target_id, pipe_kind, _ = current_line.split(';')
-                    source = int(source_id)
-                    target = int(target_id)
-                    vzx.__bg_graph.add_edge(source, target)
-                    vzx.__bg_graph.edges[source, target][VolumetricZxGraph.KEY_BG_PIPE] = BgPipe(
-                        source = source, target = target, type = EdgeType.HADAMARD if 'h' in pipe_kind else EdgeType.IDENTITY
+                    source = vzx.get_bg_cube(int(source_id))
+                    target = vzx.get_bg_cube(int(target_id))
+                    vzx.__bg_graph.add_edge(source.id, target.id)
+                    vzx.__bg_graph.edges[source.id, target.id][VolumetricZxGraph.KEY_BG_PIPE] = BgPipe(
+                        source, target, EdgeType.HADAMARD if 'h' in pipe_kind else EdgeType.IDENTITY
                     )
                 current_line = file.readline()
 

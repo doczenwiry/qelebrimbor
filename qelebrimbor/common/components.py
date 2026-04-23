@@ -85,10 +85,10 @@ class BgCube(RecordClass):
         return str(self)
 
 class BgPipe(RecordClass):
-    source: CubeId
-    target: CubeId
+    source: BgCube
+    target: BgCube
     type: EdgeType
 
     def __post_init__(self):
-        if self.source > self.target:
+        if self.source.id > self.target.id:
             self.source, self.target = self.target, self.source

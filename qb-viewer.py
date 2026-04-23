@@ -30,6 +30,6 @@ if __name__ == '__main__':
     console.info(f"Total volume : {vzx.number_of_cubes() - boundaries}")
     console.info(f"Excess volume: +{excess_volume}")
 
-    circuit_layout = CircuitLayout(vzx, vertical = len(vzx.get_qubits()) < len(vzx.get_layers()))
+    circuit_layout = CircuitLayout(vzx, vertical =len(vzx.get_zx_qubits()) < len(vzx.get_zx_layers()))
     viewer = VolumetricZxGraphViewer(vzx, label = filepath, layout = circuit_layout)
     viewer.display()
