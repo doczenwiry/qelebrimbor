@@ -32,8 +32,8 @@ settings.enable_default_mouse_callbacks = False
 settings.enable_default_keyboard_callbacks = False
 
 class VolumetricZxGraphViewer(Plotter):
-    def __init__(self, graph: VolumetricZxGraph, label: str = "", layout: ZxLayout | None = None):
-        super().__init__(size = "auto", shape = VIEWPORTS, sharecam = False, title = f"qelebrimbor [{label}]")
+    def __init__(self, graph: VolumetricZxGraph, label: str = "", layout: ZxLayout | None = None, size: str = "auto"):
+        super().__init__(size = size, shape = VIEWPORTS, sharecam = False, title = f"qelebrimbor [{label}]")
 
         # Store the original AugmentedNxGraph
         self.__vzx_graph = graph

@@ -1,3 +1,4 @@
+import argparse
 import sys
 
 from qelebrimbor.common.attributes_bg import CubeKind
@@ -9,21 +10,40 @@ import logging
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger(__name__)
 
+parser = argparse.ArgumentParser(
+    prog = "qb-viewer",
+    description = "A tool to visualize jointly the ZX-graph and its BG-graph stored in a file. Accepted files can be either in *.vzx or *.ang format."
+)
+parser.add_argument('filepath', help = "path to the file to visualize")
+parser.add_argument('-f', '--fullscreen', action='store_true', help = "display the visualisation in fullscreen mode")
+args = parser.parse_args()
+
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        raise Exception("Filepath to a *.vzx file required.")
+    args = parser.parse_args()
 
-    filepath = sys.argv[1]
-    console.info(f"Visualisation of {filepath}.")
+    if args.filepath is None:
+        raise Exception("Filepath to a *.vzx or *.ang file required.")
 
-    vzx: VolumetricZxGraph = VolumetricZxGraph.from_file(filepath)
+    window_size = "full" if args.fullscreen else "auto"
+
+    console.info(f"Visualisation of {args.filepath}.")
+
+    vzx: VolumetricZxGraph
+    if args.filepath.endswith(".vzx"):
+        vzx = VolumetricZxGraph.from_file(args.filepath)
+    elif args.filepath.endswith(".ang"):
+        vzx = VolumetricZxGraph.from_topologiq_file(args.filepath)
+    else:
+        raise Exception(f"Unknown file type: {args.filepath} [must be *.vzx or *.ang]")
+
     vzx.log_summary()
 
     excess_volume = 0
-    for edge in vzx.edges:
-        volume = len(vzx.get_zx_edge(*edge).realisation) - 1
+    for edge in vzx.get_zx_edges():
+        console.info(f"Edge {edge} : {list(edge.realisation)}")
+        volume = len(list(edge.realisation)) - 1
         if volume > 0:
-            console.info(f"Edge {edge} [+v={volume}] : {vzx.get_zx_edge(*edge).realisation}")
+            console.info(f"Edge {edge} [+v={volume}] : {list(edge.realisation)}")
         excess_volume += volume
 
     boundaries = len(list(vzx.get_bg_cubes(kind= CubeKind.OOO)))
@@ -31,5 +51,5 @@ if __name__ == '__main__':
     console.info(f"Excess volume: +{excess_volume}")
 
     circuit_layout = CircuitLayout(vzx, vertical =len(vzx.get_zx_qubits()) < len(vzx.get_zx_layers()))
-    viewer = VolumetricZxGraphViewer(vzx, label = filepath, layout = circuit_layout)
+    viewer = VolumetricZxGraphViewer(vzx, label = args.filepath, layout = circuit_layout, size = window_size)
     viewer.display()
