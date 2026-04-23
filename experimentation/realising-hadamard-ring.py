@@ -49,7 +49,7 @@ if __name__ == "__main__":
         console.info(f"Nodes specifications : {nodes_specifications}")
         BlockGraphConstructor.realise_nodes(graph= vzx, specifications = nodes_specifications)
 
-        edges_specifications = realisation.to_edges_specifications(vzx, zx_edges)
+        edges_specifications = realisation.to_edges_specifications(zx_edges)
         console.info(f"Edges specifications : {edges_specifications}")
         BlockGraphConstructor.realise_edges(graph= vzx, specifications = edges_specifications)
 

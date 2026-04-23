@@ -37,8 +37,10 @@ def find_realisation(graph: VolumetricZxGraph, zx_nodes: list[ZxNode], maximal_o
     console.info(f"> Nodes specifications : {nodes_specifications}")
     BlockGraphConstructor.realise_nodes(graph= graph, specifications = nodes_specifications)
 
-    edges_specifications = ring.to_edges_specifications(graph, zx_edges)
-    console.info(f"> Edges specifications : {edges_specifications}")
+    edges_specifications = ring.to_edges_specifications(zx_edges)
+    console.info(f"> Edges specifications :")
+    for edge, proposal in edges_specifications.items():
+        console.info(f">> {edge} : {proposal}")
     BlockGraphConstructor.realise_edges(graph= graph, specifications = edges_specifications)
 
 # TODO: go beyond assumption that cycle is made of one realised chain and one unrealised chain
@@ -99,16 +101,19 @@ def find_completion(
     nodes_specifications = completion.to_nodes_specifications(zx_nodes)
     console.info(f"> Nodes specifications : {nodes_specifications}")
     BlockGraphConstructor.realise_nodes(graph, nodes_specifications)
-    edges_specifications = completion.to_edges_specifications(graph, zx_edges)
-    console.info(f"> Edges specifications : {edges_specifications}")
+
+    edges_specifications = completion.to_edges_specifications(zx_edges)
+    console.info(f"> Edges specifications :")
+    for edge, proposal in edges_specifications.items():
+        console.info(f">> {edge} : {proposal}")
     BlockGraphConstructor.realise_edges(graph, edges_specifications)
 
     return True
 
 def extend_unrealised(graph: VolumetricZxGraph):
-    schedule: dict[ZxNode, list[NodeId]] = defaultdict(list)
-    for node in filter(lambda nd: nd.is_realised, graph.get_zx_nodes()):
-        for neighbor in filter(lambda nd : not graph.get_zx_node(nd).is_realised(), graph.neighbors(node.id)):
+    schedule: dict[ZxNode, list[ZxNode]] = defaultdict(list)
+    for node in filter(lambda nd: nd.is_realised(), graph.get_zx_nodes()):
+        for neighbor in filter(lambda nb : not nb.is_realised(), graph.get_zx_neighbors(node)):
             schedule[node].append( neighbor )
 
     edges_specifications: dict[EdgeId, PathSpecification] = {}
@@ -121,20 +126,26 @@ def extend_unrealised(graph: VolumetricZxGraph):
                 lambda pos : pos not in graph.occupied,
                 Spacetime.get_constellation(cube.position, cube_reach)
             )
-            edge_type = graph.get_zx_edge(node.id, neighbor).type
-            neighbor_position = next(iter(available))
+            edge_type = graph.get_zx_edge(node.id, neighbor.id).type
+
+            try:
+                neighbor_position = next(iter(available))
+            except StopIteration:
+                console.warning(f"No position available for neighbor {neighbor} of {node}")
+                continue
+
             step_taken = cube.position - neighbor_position
             neighbor_kinds = [
-                kind for kind in CubeKind.suitable_kinds(graph.get_zx_node(neighbor).type)
+                kind for kind in CubeKind.suitable_kinds(neighbor.type)
                 if Spacetime.contains(kind.get_reach(), step_taken) and Spacetime.contains(cube_reach, step_taken) and
                    edge_type in BlockGraphHelper.infer_pipe_type(cube.kind, kind)
             ]
             neighbor_cube = BgCube(neighbor_kinds[0], neighbor_position)
-            graph.realise_zx_node(graph.get_zx_node(neighbor), neighbor_cube)
-            source, target = (node.id, neighbor) if node.id < neighbor else (neighbor, node.id)
-            edges_specifications[ source, target ] = PathSpecification(
-                source_cube = graph.get_zx_node(source).realising_cube,
-                target_cube = graph.get_zx_node(target).realising_cube,
+            graph.realise_zx_node(neighbor, neighbor_cube)
+            source, target = (node, neighbor) if node.id < neighbor.id else (neighbor, node)
+            edges_specifications[ source.id, target.id ] = PathSpecification(
+                source_cube = source.realising_cube,
+                target_cube = target.realising_cube,
                 pipes = [ edge_type ]
             )
 

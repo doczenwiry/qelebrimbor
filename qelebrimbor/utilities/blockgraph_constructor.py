@@ -37,7 +37,7 @@ class BlockGraphConstructor:
 
             console.info(f"Realisation of edge {zx_edge}")
             console.info(f"> Proposal : {proposal}")
-            if graph.is_path_valid(source, target, proposal):
+            if graph.is_path_valid(zx_edge, proposal):
                 graph.realise_zx_edge(source, target, proposal)
             else:
                 raise Exception(f"> Invalid path proposal for edge {edge} [{proposal}]")

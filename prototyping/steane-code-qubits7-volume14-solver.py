@@ -14,7 +14,7 @@ from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 import logging
 console = logging.getLogger(__name__)
-logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.INFO)
 logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
 
 if __name__ == "__main__":

@@ -175,11 +175,11 @@ class VolumetricZxGraph(nx.Graph):
     def volume(self) -> int:
         return sum(1 for cube in self.get_bg_cubes() if cube.kind not in [ CubeKind.OOO, CubeKind.YYY ])
 
-    def number_of_cubes(self) -> int:
-        return self.__bg_graph.number_of_nodes()
+    def number_of_cubes(self, kind: CubeKind | None = None) -> int:
+        return sum(1 for _ in self.get_bg_cubes(kind = kind))
 
-    def number_of_pipes(self) -> int:
-        return self.__bg_graph.number_of_edges()
+    def number_of_pipes(self, pipe_type: EdgeType | None = None) -> int:
+        return sum(1 for _ in self.get_bg_pipes(pipe_type = pipe_type))
 
     def get_bg_cubes(self, kind: CubeKind | None = None):
         return map(lambda cb: self.get_bg_cube(cb),
@@ -261,8 +261,8 @@ class VolumetricZxGraph(nx.Graph):
             raise Exception(f"{source}-{target} is already realized by a path.")
 
         # Reject path if it is invalid.
-        if not self.is_path_valid(source, target, proposal):
-            raise Exception(f"Proposed path to realise edge {source}-{target} is invalid.")
+        if not self.is_path_valid(zx_edge, proposal):
+            raise Exception(f"Proposed path to realise edge {zx_edge} is invalid.")
 
         pipe_ids = self.connect_path(proposal)
 
@@ -340,12 +340,15 @@ class VolumetricZxGraph(nx.Graph):
         bg_pipe = BgPipe(source, target, pipe_type)
         self.__bg_graph.edges[source.id, target.id][VolumetricZxGraph.KEY_BG_PIPE] = bg_pipe
 
-    def __is_alternative_realising_cube(self, node: ZxNode, cube: BgCube):
+    def __is_realising_cube(self, node: ZxNode, cube: BgCube):
+        if cube.realised_node == node:
+            return True
+
         visited: set[BgCube] = { cube }
         queue: deque[BgCube] = deque([cube])
         while queue:
             current = queue.popleft()
-            for neighbor in self.get_bg_neighbours(current):
+            for neighbor in self.get_bg_neighbours(current.id):
                 if neighbor.kind == cube.kind:
                     if neighbor.realised_node == node:
                         return True
@@ -358,24 +361,19 @@ class VolumetricZxGraph(nx.Graph):
 
         return False
 
-    def is_path_valid(self, source: NodeId, target: NodeId, proposal: PathSpecification) -> bool:
+    def is_path_valid(self, edge: ZxEdge, proposal: PathSpecification) -> bool:
         is_hadamard_path = False
 
         start = proposal.source_cube
         final = proposal.target_cube
 
-        console.debug(f"Validating {source}-{target} : {proposal}")
+        if not (self.__is_realising_cube(edge.source, start) or self.__is_realising_cube(edge.target, start)):
+            raise Exception(f"Start cube {start} is not realising either endpoint of edge {edge} [proposal={proposal}].")
 
-        if start != self.get_zx_node(source).realising_cube:
-            if self.__is_alternative_realising_cube(source, start):
-                console.debug(f"Start {start} is an alternative realising cube of node {source}.")
-            else:
-                raise Exception(f"Start {start} is not realising source node {source}.")
+        if not (self.__is_realising_cube(edge.source, final) or self.__is_realising_cube(edge.target, final)):
+            raise Exception(f"Final cube {final} is not realising either endpoint of edge {edge} [proposal={proposal}].")
 
-        console.debug(f"Checking path validity:")
-        console.debug(f"> Start cube : {start}")
-        console.debug(f"> Final cube : {final}")
-        console.debug(f"> Extra cubes: {proposal.extras}")
+        console.debug(f"Validating path proposal for {edge} : {proposal}.")
 
         previous: BgCube = start
         previous_reach = start.kind.get_reach()
@@ -425,39 +423,30 @@ class VolumetricZxGraph(nx.Graph):
             previous = current
             previous_reach = current_reach
 
-        if self.get_zx_node(target).is_realised():
-            if final != self.get_zx_node(target).realising_cube:
-                if self.__is_alternative_realising_cube(target, final):
-                    console.warning(f"Final {final} is an alternative realising cube of node {target}.")
-                else:
-                    raise Exception(f"Final {final} is not realising target node {target}.")
+        # Check that the final step taken lies in the reach of the target cube
+        step_taken = final.position - previous.position
 
-            # Check that the final step taken lies in the reach of the target cube
-            step_taken = final.position - previous.position
+        if Spacetime.ORIGIN.get_manhattan_distance(step_taken) != 1:
+            console.warning(f"> Consecutive cubes are not adjacent [{previous.position}-{final.position}]")
+            return False
 
-            if Spacetime.ORIGIN.get_manhattan_distance(step_taken) != 1:
-                console.warning(f"> Consecutive cubes are not adjacent [{previous.position}-{final.position}]")
-                return False
+        final_reach = final.kind.get_reach()
+        if not Spacetime.contains(previous_reach, step_taken) or not Spacetime.contains(final_reach, step_taken):
+            console.warning(f"> Reaches do not contain step [{step_taken}]: {previous} {final}")
+            return False
 
-            final_reach = final.kind.get_reach()
-            if not Spacetime.contains(previous_reach, step_taken) or not Spacetime.contains(final_reach, step_taken):
-                console.warning(f"> Reaches do not contain step [{step_taken}]: {previous} {final}")
-                return False
+        # Check that the current pipe has a type consistent with what is allowed
+        current_pipe_type = proposal.pipes[-1]
+        inferred = BlockGraphHelper.infer_pipe_type(previous.kind, final.kind)
+        if current_pipe_type not in inferred:
+            console.warning(f"> Pipe type is not allowed between {previous} and {final} [{current_pipe_type} not in {inferred}].")
+            return False
 
-            # Check that the current pipe has a type consistent with what is allowed
-            current_pipe_type = proposal.pipes[-1]
-            inferred = BlockGraphHelper.infer_pipe_type(previous.kind, final.kind)
-            if current_pipe_type not in inferred:
-                console.warning(f"> Pipe type is not allowed between {previous} and {final} [{current_pipe_type} not in {inferred}].")
-                return False
+        if current_pipe_type == EdgeType.HADAMARD:
+            is_hadamard_path = not is_hadamard_path
 
-            if current_pipe_type == EdgeType.HADAMARD:
-                is_hadamard_path = not is_hadamard_path
-
-        edge_type = self.get_zx_edge(source, target).type
-
-        if is_hadamard_path != (edge_type == EdgeType.HADAMARD):
-            console.debug(f"> Proposed path is Hadamard-inconsistent with its purported edge [{edge_type}].")
+        if is_hadamard_path != (edge.type == EdgeType.HADAMARD):
+            console.debug(f"> Proposed path is Hadamard-inconsistent with its purported edge {edge}.")
             return False
         else:
             return True

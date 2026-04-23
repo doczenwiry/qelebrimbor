@@ -39,7 +39,7 @@ if __name__ == "__main__":
         )
 
         BlockGraphConstructor.realise_nodes(graph= vzx, specifications = realisation.to_nodes_specifications(zx_nodes))
-        BlockGraphConstructor.realise_edges(graph= vzx, specifications = realisation.to_edges_specifications(vzx, zx_edges))
+        BlockGraphConstructor.realise_edges(graph= vzx, specifications = realisation.to_edges_specifications(zx_edges))
 
         viewer = VolumetricZxGraphViewer(vzx, f"Identity Ring, n={LENGTH}", CycleLayout(vzx))
         viewer.display()

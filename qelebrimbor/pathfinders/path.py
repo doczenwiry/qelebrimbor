@@ -113,28 +113,30 @@ class Path:
             nodes_specifications[nodes[nd].id] = self.extras[nd]
         return nodes_specifications
 
-    def to_edges_specifications(self, graph: VolumetricZxGraph, edges: list[ZxEdge]) -> dict[EdgeId, PathSpecification]:
+    def to_edges_specifications(self, edges: list[ZxEdge]) -> dict[EdgeId, PathSpecification]:
         edge_count = len(edges)
         extra_count = len(self.extras)
         edges_specifications: dict[EdgeId, PathSpecification] = {}
 
+        previous_node = self.source.realised_node
         for edge in edges[:-1]: # range(edge_count-1):
-            source = edge.source
-            target = edge.target
-            edges_specifications[ (source.id, target.id) ] = PathSpecification(
-                source_cube = source.realising_cube,
-                target_cube = target.realising_cube,
+            current_node = edge.source if edge.source != previous_node else edge.target
+            edges_specifications[ (previous_node.id, current_node.id) ] = PathSpecification(
+                source_cube = previous_node.realising_cube,
+                target_cube = current_node.realising_cube,
                 extras = [], pipes = [ edge.type ]
             )
+            previous_node = current_node
 
-        source = edges[-1].source
-        target = edges[-1].target
-        extras = list(reversed(self.extras[edge_count-1 : extra_count]))
+        final_edge = edges[-1]
+        source = previous_node
+        target = final_edge.source if final_edge.source != previous_node else final_edge.target
+        extras = self.extras[edge_count-1 : extra_count]
         edges_specifications[(source.id, target.id)] = PathSpecification(
                 source_cube = source.realising_cube,
                 target_cube = target.realising_cube,
                 extras = extras,
-                pipes = [ edges[-1].type if i == 0 else EdgeType.IDENTITY for i in range(extra_count - edge_count + 2)]
+                pipes = [ final_edge.type if i == 0 else EdgeType.IDENTITY for i in range(extra_count - edge_count + 2)]
         )
 
         return edges_specifications

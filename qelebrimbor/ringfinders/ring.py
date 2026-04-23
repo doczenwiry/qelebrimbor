@@ -35,7 +35,7 @@ class Ring:
     def to_nodes_specifications(self, nodes: list[ZxNode]) -> dict[NodeId, BgCube]:
         return { nodes[nd].id : self.cubes[nd] for nd in range(len(nodes)) }
 
-    def to_edges_specifications(self, graph: VolumetricZxGraph, edges: list[ZxEdge]) -> dict[EdgeId, PathSpecification]:
+    def to_edges_specifications(self, edges: list[ZxEdge]) -> dict[EdgeId, PathSpecification]:
         edge_count = len(edges)
         cube_count = len(self.cubes)
 

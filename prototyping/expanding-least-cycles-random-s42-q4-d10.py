@@ -1,7 +1,8 @@
 import random
+from time import time
+
 import pyzx
 
-from qelebrimbor.common.attributes_zx import EdgeId
 from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
 from qelebrimbor.utilities.ring_making import find_realisation, find_completion, extend_unrealised
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
@@ -14,8 +15,8 @@ LAYERS = 10
 import logging
 logging.basicConfig(level=logging.CRITICAL)
 console = logging.getLogger(__name__)
-logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
-logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.INFO)
+# logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
+# logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.INFO)
 # logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.INFO)
 # logging.getLogger('qelebrimbor.vedo.scene_manager_bg').setLevel(logging.DEBUG)
 
@@ -36,42 +37,37 @@ if __name__ == "__main__":
     console.info(f"Cycle {index} : {cycle}")
     find_realisation(vzx, cycle, maximal_overhead = 2)
 
-    # index = 5
-    # cycle = cycles[index]
-    # console.info(f"Cycle {index} : {cycle}")
-    # find_completion(vzx, cycle, maximal_overhead = 8)
+    index = 5
+    cycle = cycles[index]
+    console.info(f"Cycle {index} : {cycle}")
+    find_completion(vzx, cycle, maximal_overhead = 8)
 
-    # index = 6
-    # cycle = cycles[index]
-    # console.info(f"Cycle {index} : {cycle}")
-    # find_completion(vzx, cycle, maximal_overhead = 8)
+    index = 6
+    cycle = cycles[index]
+    console.info(f"Cycle {index} : {cycle}")
+    find_completion(vzx, cycle, maximal_overhead = 8)
 
-    # index = 4
-    # cycle = cycles[index]
-    # console.info(f"Cycle {index} : {cycle}")
-    # find_completion(vzx, cycle, maximal_overhead = 4)
-    #
-    # index = 6
-    # cycle = cycles[index]
-    # console.info(f"Cycle {index} : {cycle}")
-    # find_completion(vzx, cycle, maximal_overhead = 6)
-    #
-    # index = 5
-    # cycle = cycles[index]
-    # console.info(f"Cycle {index} : {cycle}")
-    # find_completion(vzx, cycle, maximal_overhead = 6)
-    #
-    # index = 3
-    # cycle = cycles[index]
-    # console.info(f"Cycle {index} : {cycle}")
-    # find_completion(vzx, cycle, maximal_overhead = 6)
-    #
-    # index = 2
-    # cycle = cycles[index]
-    # console.info(f"Cycle {index} : {cycle}")
-    # find_completion(vzx, cycle, maximal_overhead = 6)
+    index = 4
+    cycle = cycles[index]
+    console.info(f"Cycle {index} : {cycle}")
+    find_completion(vzx, cycle, maximal_overhead = 4)
 
-    # extend_unrealised(vzx)
+    index = 3
+    cycle = cycles[index]
+    console.info(f"Cycle {index} : {cycle}")
+    find_completion(vzx, cycle, maximal_overhead = 6)
+
+    index = 2
+    cycle = cycles[index]
+    console.info(f"Cycle {index} : {cycle}")
+    find_completion(vzx, cycle, maximal_overhead = 6)
+
+    index = 1
+    cycle = cycles[index]
+    console.info(f"Cycle {index} : {cycle}")
+    find_completion(vzx, cycle, maximal_overhead = 6)
+
+    extend_unrealised(vzx)
 
     vzx.log_report()
 
