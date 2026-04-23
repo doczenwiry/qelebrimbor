@@ -143,7 +143,7 @@ class VolumetricZxGraph(nx.Graph):
                     lambda neighbor : self.get_zx_edge(zxn.id, neighbor.id),
                     filter(
                         lambda nb: transition != LayerTransition.INTRA or zxn.id < nb.id,
-                        self.get_zx_neighbors(zxn, transition)
+                        self.get_zx_neighbors(zxn, transition = transition)
                     )
                 ),
                 self.get_zx_nodes(layer = layer)
@@ -151,9 +151,12 @@ class VolumetricZxGraph(nx.Graph):
 
         return filter(lambda edge: edge_type is None or edge.type == edge_type, edges)
 
-    def get_zx_neighbors(self, node: ZxNode, transition: LayerTransition = LayerTransition.EVERY):
+    def get_zx_neighbors(
+            self, node: ZxNode, edge_type: EdgeType | None = None, transition: LayerTransition = LayerTransition.EVERY
+    ) -> Iterable[ZxNode]:
         return filter(
-            lambda neighbor: transition.matches(node.layer, neighbor.layer),
+            lambda neighbor: transition.matches(node.layer, neighbor.layer) and
+                             (edge_type is None or self.get_zx_edge(node.id, neighbor.id).type == edge_type),
             map(self.get_zx_node, self.neighbors(node.id))
         )
 
@@ -202,8 +205,14 @@ class VolumetricZxGraph(nx.Graph):
     def get_bg_pipe(self, source_id: CubeId, target_id: CubeId) -> BgPipe:
         return self.__bg_graph.edges[source_id, target_id][VolumetricZxGraph.KEY_BG_PIPE]
 
-    def get_bg_neighbours(self, cube_id: CubeId):
-        return map(self.get_bg_cube, self.__bg_graph.neighbors(cube_id))
+    def get_bg_neighbours(self, cube: BgCube, pipe_type: EdgeType | None = None) -> Iterable[BgCube]:
+        return filter(
+            lambda nb : (pipe_type is None or self.get_bg_pipe(cube.id, nb.id).type == pipe_type),
+            map(self.get_bg_cube, self.__bg_graph.neighbors(cube.id))
+        )
+
+    def get_bg_degree(self, cube_id: CubeId):
+        return self.__bg_graph.degree(cube_id)
 
     def get_equivalent_bg_cubes(self, cube: BgCube) -> tuple[Iterable[BgCube], Iterable[BgPipe]]:
         equivalent_cubes: set[BgCube] = { cube }
@@ -212,7 +221,7 @@ class VolumetricZxGraph(nx.Graph):
         queue: deque[BgCube] = deque([ cube ])
         while queue:
             current = queue.popleft()
-            for neighbor in self.get_bg_neighbours(current.id):
+            for neighbor in self.get_bg_neighbours(current):
                 if neighbor.kind != cube.kind:
                     continue
 
@@ -340,7 +349,8 @@ class VolumetricZxGraph(nx.Graph):
         bg_pipe = BgPipe(source, target, pipe_type)
         self.__bg_graph.edges[source.id, target.id][VolumetricZxGraph.KEY_BG_PIPE] = bg_pipe
 
-    def __is_realising_cube(self, node: ZxNode, cube: BgCube):
+    # TODO: figure the rules for this as it gets complicated quickly ...
+    def is_realising_cube(self, node: ZxNode, cube: BgCube):
         if cube.realised_node == node:
             return True
 
@@ -348,11 +358,15 @@ class VolumetricZxGraph(nx.Graph):
         queue: deque[BgCube] = deque([cube])
         while queue:
             current = queue.popleft()
-            for neighbor in self.get_bg_neighbours(current.id):
-                if neighbor.kind == cube.kind:
+            for neighbor in self.get_bg_neighbours(current, pipe_type = EdgeType.IDENTITY):
+                if neighbor.kind.get_type() == cube.kind.get_type():
                     if neighbor.realised_node == node:
                         return True
 
+                    if neighbor not in visited:
+                        visited.add(neighbor)
+                        queue.append(neighbor)
+                elif self.get_bg_degree(neighbor.id) == 2:
                     if neighbor not in visited:
                         visited.add(neighbor)
                         queue.append(neighbor)
@@ -367,10 +381,10 @@ class VolumetricZxGraph(nx.Graph):
         start = proposal.source_cube
         final = proposal.target_cube
 
-        if not (self.__is_realising_cube(edge.source, start) or self.__is_realising_cube(edge.target, start)):
+        if not (self.is_realising_cube(edge.source, start) or self.is_realising_cube(edge.target, start)):
             raise Exception(f"Start cube {start} is not realising either endpoint of edge {edge} [proposal={proposal}].")
 
-        if not (self.__is_realising_cube(edge.source, final) or self.__is_realising_cube(edge.target, final)):
+        if not (self.is_realising_cube(edge.source, final) or self.is_realising_cube(edge.target, final)):
             raise Exception(f"Final cube {final} is not realising either endpoint of edge {edge} [proposal={proposal}].")
 
         console.debug(f"Validating path proposal for {edge} : {proposal}.")

@@ -28,7 +28,7 @@ class HexagonLayout(ZxLayout):
             boundaries = list(filter(
                 lambda bd: graph.has_edge(node.id, bd.id), graph.get_zx_nodes(node_type = NodeType.O)
             ))
-            console.info(f"Node {node} has boundaries : {boundaries}")
+            console.debug(f"Node {node} has boundaries : {boundaries}")
             try:
                 boundary = next(iter(boundaries))
                 bx = (rho + 0.7) * np.cos(theta)
