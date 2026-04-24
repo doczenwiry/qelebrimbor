@@ -26,6 +26,13 @@ class BlockGraphConstructor:
                 graph.realise_zx_node(node, specifications[node.id])
 
     @staticmethod
+    def place_cubes(graph: VolumetricZxGraph, specifications: list[tuple[CubeKind, CubeId, Coordinates]]):
+        for kind, cube_id, step in specifications:
+            cube = graph.get_bg_cube(cube_id)
+            position = cube.position + step
+            graph.place_cube(BgCube(kind = kind, position = position))
+
+    @staticmethod
     def realise_edges(graph: VolumetricZxGraph, specifications: dict[EdgeId, PathSpecification]):
         for edge, proposal in specifications.items():
             source, target = edge
