@@ -14,7 +14,7 @@ class NodeType(Enum):
     Z = 3 # Z-Spider
 
     @staticmethod
-    def convert(vertex_type: pyzx.VertexType):
+    def convert_from_pyzx(vertex_type: pyzx.VertexType):
         if vertex_type == pyzx.VertexType.Z:
             return NodeType.Z
         elif vertex_type == pyzx.VertexType.X:
@@ -23,6 +23,17 @@ class NodeType(Enum):
             return NodeType.O
         else:
             raise ValueError(f"Unsupported vertex type: {vertex_type}")
+
+    @staticmethod
+    def convert_into_pyzx(self):
+        if self == NodeType.Z:
+            return pyzx.VertexType.Z
+        elif self == NodeType.X:
+            return pyzx.VertexType.X
+        elif self == NodeType.O:
+            return pyzx.VertexType.BOUNDARY
+        else:
+            raise ValueError(f"Unsupported conversion for node type: {self}")
 
     def __hash__(self):
         return hash(self.value)
@@ -36,13 +47,20 @@ class EdgeType(Enum):
     HADAMARD = 1
 
     @staticmethod
-    def convert(edge_type: pyzx.EdgeType):
+    def convert_from_pyzx(edge_type: pyzx.EdgeType):
         if edge_type == pyzx.EdgeType.SIMPLE:
             return EdgeType.IDENTITY
         elif edge_type == pyzx.EdgeType.HADAMARD:
             return EdgeType.HADAMARD
         else:
             raise ValueError(f"Unsupported edge type: {edge_type}")
+
+    @staticmethod
+    def convert_into_pyzx(self):
+        if self == EdgeType.IDENTITY:
+            return pyzx.EdgeType.SIMPLE
+        else: # self == EdgeType.HADAMARD:
+            return pyzx.EdgeType.HADAMARD
 
     def __str__(self):
         return self.name

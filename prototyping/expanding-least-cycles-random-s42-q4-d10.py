@@ -76,3 +76,5 @@ if __name__ == "__main__":
 
     viewer = VolumetricZxGraphViewer(vzx, label = circuit)
     viewer.display()
+
+    vzx.to_pyzx_graph(filepath = f"../assets/pyzx/{circuit}-blockgraph.json")

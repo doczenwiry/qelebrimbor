@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Iterable
 from itertools import chain
 
-import pyzx as zx
+import pyzx
 import networkx as nx
 from ast import literal_eval as make_tuple
 
@@ -93,19 +93,19 @@ class VolumetricZxGraph(nx.Graph):
         self.__next_cube_id = self.number_of_nodes()
 
     @staticmethod
-    def from_pyzx_graph(zx_graph: zx.graph.base.BaseGraph):
+    def from_pyzx_graph(zx_graph: pyzx.graph.base.BaseGraph):
         converted_node_ids: dict[NodeId, NodeId] = dict()
         nodes: list[tuple[NodeId, NodeType]] = []
         for original_id in zx_graph.vertices():
             node_id = len(converted_node_ids)
             converted_node_ids[original_id] = node_id
-            nodes.append( (node_id, NodeType.convert(zx_graph.type(original_id))) )
+            nodes.append((node_id, NodeType.convert_from_pyzx(zx_graph.type(original_id))))
 
         edges: list[tuple[EdgeId, EdgeType]] = []
         for edge in zx_graph.edges():
             source = converted_node_ids[min(edge)]
             target = converted_node_ids[max(edge)]
-            edges.append( ( (source,target) , EdgeType.convert(zx_graph.edge_type(edge))) )
+            edges.append(( (source,target) , EdgeType.convert_from_pyzx(zx_graph.edge_type(edge))))
 
         vzx = VolumetricZxGraph(nodes, edges)
 
@@ -118,10 +118,39 @@ class VolumetricZxGraph(nx.Graph):
             zx_node.qubit = node_qubit
             zx_node.layer = node_layer
 
-            vzx.__zx_qubits[node_qubit].append(node_id)
-            vzx.__zx_layers[node_layer].append(node_id)
+            if node_qubit != -1:
+                vzx.__zx_qubits[node_qubit].append(node_id)
+
+            if node_layer != -1:
+                vzx.__zx_layers[node_layer].append(node_id)
 
         return vzx
+
+    def to_pyzx_graph(self, planar_scale: int = 8, filepath: str = None):
+        pyzx_graph = pyzx.Graph()
+        if len(self.get_zx_qubits()) == 0 or len(self.get_zx_layers()) == 0:
+            layout = nx.planar_layout(self.__bg_graph, scale = planar_scale)
+        else:
+            # TODO: infer row and qubit of added cubes
+            layout = dict()
+            for cube in self.get_bg_cubes():
+                layout[cube.id] = (
+                    cube.realised_node.layer if cube.realised_node else -1,
+                    cube.realised_node.qubit if cube.realised_node else -1
+                )
+        for cube in self.get_bg_cubes():
+            layer, qubit = layout[cube.id]
+            pyzx_graph.add_vertex(
+                index = cube.id, ty = NodeType.convert_into_pyzx(cube.kind.get_type()), row = layer, qubit = qubit
+            )
+        for pipe in self.get_bg_pipes():
+            pyzx_graph.add_edge((pipe.source.id, pipe.target.id), EdgeType.convert_into_pyzx(pipe.type))
+
+        if filepath is not None:
+            with open(filepath, 'w') as file:
+                file.write(pyzx_graph.to_json())
+
+        return pyzx_graph
 
     def get_zx_nodes(self, node_type: NodeType | None = None, qubit: QubitId | None = None, layer: LayerId | None = None):
         return filter(
@@ -575,8 +604,10 @@ class VolumetricZxGraph(nx.Graph):
                     zx_node = ZxNode(id = node, type = NodeType[node_type], qubit = int(qubit), layer = int(layer))
                     zx_node_bg_cube[int(realising_cube)] = zx_node
                     vzx.nodes[node][VolumetricZxGraph.KEY_ZX_NODE] = zx_node
-                    vzx.__zx_qubits[int(qubit)].append(node)
-                    vzx.__zx_layers[int(layer)].append(node)
+                    if int(qubit) != -1:
+                        vzx.__zx_qubits[int(qubit)].append(node)
+                    if int(layer) != -1:
+                        vzx.__zx_layers[int(layer)].append(node)
                 current_line = file.readline()
 
             # Read the edges header
@@ -719,8 +750,10 @@ class VolumetricZxGraph(nx.Graph):
                     zx_node = ZxNode(id = node, type = NodeType[node_type], qubit = int(qubit), layer = int(layer))
                     vzx.nodes[node][VolumetricZxGraph.KEY_ZX_NODE] = zx_node
                     zx_node_bg_cube[zx_node] = int(realising_cube)
-                    vzx.__zx_qubits[int(qubit)].append(node)
-                    vzx.__zx_layers[int(layer)].append(node)
+                    if int(qubit) != -1:
+                        vzx.__zx_qubits[int(qubit)].append(node)
+                    if int(layer) != -1:
+                        vzx.__zx_layers[int(layer)].append(node)
                 current_line = file.readline()
 
             # Read the edges header
