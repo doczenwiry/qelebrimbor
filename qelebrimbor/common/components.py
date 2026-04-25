@@ -1,11 +1,12 @@
+from recordclass import RecordClass  # type: ignore[import-untyped]
 from typing import cast
 
-from recordclass import RecordClass  # type: ignore[import-untyped]
-
 from qelebrimbor.common.attributes_zx import NodeId, NodeType, QubitId, LayerId, EdgeType
-from qelebrimbor.common.attributes_bg import CubeId, PipeId, CubeKind, PipeType
+from qelebrimbor.common.attributes_bg import CubeId, CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 
+import logging
+console = logging.getLogger(__name__)
 
 class ZxNode(RecordClass):
     id: NodeId
@@ -43,6 +44,37 @@ class ZxEdge(RecordClass):
 
     def is_realised(self):
         return len(self.__realisation) > 0
+
+    @property
+    def is_intra_layer(self):
+        return self.source.layer == self.target.layer
+
+    @property
+    def is_inter_layer(self):
+        return self.source.layer != self.target.layer
+
+    @property
+    def number_of_pipes(self):
+        return len(self.__realisation)
+
+    @property
+    def excess_volume(self):
+        return len(self.__realisation) - 1
+
+    @property
+    def excess_cubes(self):
+        start_pipe = cast(BgPipe, self.__realisation[0])
+        if self.source.realising_cube == start_pipe.source or self.source.realising_cube == start_pipe.target:
+            previous_cube = self.source.realising_cube
+        else:
+            previous_cube = self.target.realising_cube
+        excess: list[BgCube] = []
+        for index in range(self.number_of_pipes-1):
+            pipe = cast(BgPipe, self.__realisation[index])
+            extra = pipe.source if pipe.source != previous_cube else pipe.target
+            excess.append( extra )
+            previous_cube = extra
+        return excess
 
     @property
     def realisation(self):

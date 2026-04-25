@@ -15,10 +15,6 @@ LAYERS = 10
 import logging
 logging.basicConfig(level=logging.CRITICAL)
 console = logging.getLogger(__name__)
-# logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
-# logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.INFO)
-# logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.INFO)
-# logging.getLogger('qelebrimbor.vedo.scene_manager_bg').setLevel(logging.DEBUG)
 
 random.seed(SEED)
 if __name__ == "__main__":

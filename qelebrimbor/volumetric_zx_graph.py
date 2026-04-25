@@ -7,6 +7,8 @@ import pyzx
 import networkx as nx
 from ast import literal_eval as make_tuple
 
+from networkx import neighbors
+
 from qelebrimbor.common.coordinates import Coordinates
 
 from qelebrimbor.helpers.spacetime import Spacetime
@@ -128,23 +130,83 @@ class VolumetricZxGraph(nx.Graph):
 
     def to_pyzx_graph(self, planar_scale: int = 8, filepath: str = None):
         pyzx_graph = pyzx.Graph()
-        if len(self.get_zx_qubits()) == 0 or len(self.get_zx_layers()) == 0:
-            layout = nx.planar_layout(self.__bg_graph, scale = planar_scale)
+        layout: dict[BgCube, tuple[float, float]] = dict()
+
+        layer_qubit_information_missing = len(self.get_zx_qubits()) == 0 or len(self.get_zx_layers()) == 0
+        # A PyZX graph obtained from a circuit has edges whose endpoints EITHER have the same layer OR the same qubit
+        non_circuit_pyzx_graph = any(
+            edge.source.layer != edge.target.layer and edge.source.qubit != edge.target.qubit
+            for edge in self.get_zx_edges()
+        )
+
+        if layer_qubit_information_missing or non_circuit_pyzx_graph:
+            for cube_id, coordinates in nx.planar_layout(self.__bg_graph, scale = planar_scale).items():
+                layout[self.get_bg_cube(cube_id)] = coordinates[0], coordinates[1]
         else:
-            # TODO: infer row and qubit of added cubes
-            layout = dict()
-            for cube in self.get_bg_cubes():
-                layout[cube.id] = (
-                    cube.realised_node.layer if cube.realised_node else -1,
-                    cube.realised_node.qubit if cube.realised_node else -1
-                )
+            # Compute the coordinates of the layers taking into account the extra nodes added to realise edges
+            layer_coordinates: dict[LayerId, float] = defaultdict(int)
+            current_coordinate = -1.0
+            for layer in self.get_zx_layers():
+                minimal_coordinate = current_coordinate + 1.0
+                for edge in self.get_zx_edges(layered = (layer, LayerTransition.LOWER)):
+                    previous = edge.source if edge.source.layer < edge.target.layer else edge.target
+                    minimal_coordinate = max(minimal_coordinate, layer_coordinates[previous.layer] + edge.number_of_pipes)
+                    console.debug(f"> {edge} [{edge.source.realising_cube}/{edge.target.realising_cube}] yields {minimal_coordinate}")
+                current_coordinate = minimal_coordinate
+                layer_coordinates[layer] = current_coordinate
+                console.debug(f"Layer {layer} : {current_coordinate}")
+
+            # Compute the coordinates of the qubits taking into account the extra nodes added to realise edges
+            qubit_coordinates: dict[QubitId, float] = defaultdict(int)
+            current_coordinate = -1.0
+            for qubit in self.get_zx_qubits():
+                minimal_coordinate = current_coordinate + 1.0
+                for node in self.get_zx_nodes(qubit = qubit):
+                    for neighbor in self.get_zx_neighbors(node, transition = LayerTransition.INTRA):
+                        edge = self.get_zx_edge(node.id, neighbor.id)
+                        previous = node if node.qubit < neighbor.qubit else neighbor
+                        minimal_coordinate = max(minimal_coordinate, qubit_coordinates[previous.qubit] + edge.number_of_pipes)
+                current_coordinate = minimal_coordinate
+                qubit_coordinates[qubit] = current_coordinate
+                console.debug(f"Qubit {qubit} : {current_coordinate}")
+
+            # Compute the placement of the nodes of the input ZX-graph
+            for node in filter(lambda nd: nd.is_realised(), self.get_zx_nodes()):
+                layout[node.realising_cube] = layer_coordinates[node.layer] , qubit_coordinates[node.qubit]
+                console.debug(f"Layout {node.realising_cube} : {layout[node.realising_cube]}")
+
+            # Compute the placement of the extra nodes added to realise the edges of the input ZX-graph
+            for edge in filter(lambda ed: ed.is_realised(), self.get_zx_edges()):
+                if edge.source.layer == edge.target.layer:
+                    start: QubitId = min(edge.source.qubit, edge.target.qubit)
+                    final: QubitId = max(edge.source.qubit, edge.target.qubit)
+                    offset = qubit_coordinates[start]
+                    step = abs(qubit_coordinates[final] - qubit_coordinates[start]) / float(edge.number_of_pipes)
+                    excess_cubes = edge.excess_cubes if edge.source.qubit < edge.target.qubit else reversed(edge.excess_cubes)
+                else: # edge.source.qubit == edge.target.qubit
+                    start: LayerId = min(edge.source.layer, edge.target.layer)
+                    final: LayerId = max(edge.source.layer, edge.target.layer)
+                    offset = layer_coordinates[start]
+                    step = abs(layer_coordinates[final] - layer_coordinates[start]) / float(edge.number_of_pipes)
+                    excess_cubes = edge.excess_cubes if edge.source.layer > edge.target.layer else reversed(edge.excess_cubes)
+
+                for cube in excess_cubes:
+                    offset += step
+                    if edge.source.layer == edge.target.layer:
+                        layout[cube] = layer_coordinates[edge.source.layer], offset
+                    else: # edge.source.qubit == edge.target.qubit
+                        layout[cube] = offset, qubit_coordinates[edge.source.qubit]
+                    console.debug(f"Layout [E] {cube} : {layout[cube]}")
+
         for cube in self.get_bg_cubes():
-            layer, qubit = layout[cube.id]
+            x, y = layout[cube] if cube in layout else (-1,-1)
             pyzx_graph.add_vertex(
-                index = cube.id, ty = NodeType.convert_into_pyzx(cube.kind.get_type()), row = layer, qubit = qubit
+                index = cube.id, ty = NodeType.convert_into_pyzx(cube.kind.get_type()), row = x, qubit = y
             )
         for pipe in self.get_bg_pipes():
             pyzx_graph.add_edge((pipe.source.id, pipe.target.id), EdgeType.convert_into_pyzx(pipe.type))
+
+        pyzx.draw(pyzx_graph, labels = True)
 
         if filepath is not None:
             with open(filepath, 'w') as file:
@@ -189,8 +251,8 @@ class VolumetricZxGraph(nx.Graph):
             map(self.get_zx_node, self.neighbors(node.id))
         )
 
-    def get_zx_degree(self, node_id: NodeId) -> float:
-        return self.degree[node_id]
+    def get_zx_degree(self, node_id: NodeId) -> int:
+        return int(self.degree[node_id])
 
     def get_zx_node(self, node_id: NodeId) -> ZxNode:
         return self.nodes[node_id][VolumetricZxGraph.KEY_ZX_NODE]
@@ -240,8 +302,8 @@ class VolumetricZxGraph(nx.Graph):
             map(self.get_bg_cube, self.__bg_graph.neighbors(cube.id))
         )
 
-    def get_bg_degree(self, cube_id: CubeId):
-        return self.__bg_graph.degree(cube_id)
+    def get_bg_degree(self, cube_id: CubeId) -> int:
+        return int(self.__bg_graph.degree[cube_id])
 
     def get_equivalent_bg_cubes(self, cube: BgCube) -> tuple[Iterable[BgCube], Iterable[BgPipe]]:
         equivalent_cubes: set[BgCube] = { cube }
