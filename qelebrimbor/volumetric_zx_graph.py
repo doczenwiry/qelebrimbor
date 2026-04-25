@@ -11,7 +11,7 @@ from networkx import neighbors
 
 from qelebrimbor.common.coordinates import Coordinates
 
-from qelebrimbor.helpers.spacetime import Spacetime
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 
 from qelebrimbor.common.components import ZxNode, ZxEdge, BgCube, BgPipe
@@ -507,11 +507,11 @@ class VolumetricZxGraph(nx.Graph):
 
             # Check that the step taken lies in both reaches of successive cubes
             step_taken = current.position - previous.position
-            if Spacetime.ORIGIN.get_manhattan_distance(step_taken) != 1:
+            if SpacetimeHelper.ORIGIN.get_manhattan_distance(step_taken) != 1:
                 console.warning(f"> Consecutive cubes are not adjacent [{previous}-{current}]")
                 return False
 
-            if not Spacetime.contains(previous_reach, step_taken) or not Spacetime.contains(current_reach, step_taken):
+            if not SpacetimeHelper.contains(previous_reach, step_taken) or not SpacetimeHelper.contains(current_reach, step_taken):
                 console.warning(f"> Reaches do not contain step [{step_taken}]: {previous} {current}")
                 return False
 
@@ -531,12 +531,12 @@ class VolumetricZxGraph(nx.Graph):
         # Check that the final step taken lies in the reach of the target cube
         step_taken = final.position - previous.position
 
-        if Spacetime.ORIGIN.get_manhattan_distance(step_taken) != 1:
+        if SpacetimeHelper.ORIGIN.get_manhattan_distance(step_taken) != 1:
             console.warning(f"> Consecutive cubes are not adjacent [{previous.position}-{final.position}]")
             return False
 
         final_reach = final.kind.get_reach()
-        if not Spacetime.contains(previous_reach, step_taken) or not Spacetime.contains(final_reach, step_taken):
+        if not SpacetimeHelper.contains(previous_reach, step_taken) or not SpacetimeHelper.contains(final_reach, step_taken):
             console.warning(f"> Reaches do not contain step [{step_taken}]: {previous} {final}")
             return False
 

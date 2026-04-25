@@ -1,4 +1,4 @@
-from qelebrimbor.helpers.spacetime import Spacetime
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.common.coordinates import Coordinates
 
 from qelebrimbor.common.attributes_bg import CubeKind
@@ -16,7 +16,7 @@ class CubeBeams:
 
         self.__cube_kind: CubeKind = cube_kind
         self.__cube_position: Coordinates = cube_position
-        self.__available_beams: list[Coordinates] = Spacetime.get_step_constellation(cube_reach)
+        self.__available_beams: list[Coordinates] = SpacetimeHelper.get_step_constellation(cube_reach)
 
         console.debug(f"Cube kind : {self.__cube_kind}@{self.__cube_position} [{cube_reach}].")
         console.debug(f"> Occupied : {occupied}")
@@ -25,7 +25,7 @@ class CubeBeams:
             for position in occupied:
                 console.debug(f"> {cube_position} colinear with {position} ? {cube_position.colinear(position)}")
                 if cube_position.colinear(position):
-                    los = Spacetime.get_direction(cube_position, position)
+                    los = SpacetimeHelper.get_direction(cube_position, position)
                     console.debug(f">> LOS[Occ] : {los} in {self.__available_beams} : {los in self.__available_beams}")
                     if los in self.__available_beams:
                         self.__available_beams.remove( los )
@@ -34,7 +34,7 @@ class CubeBeams:
             for _, position in extras:
                 console.debug(f"> {cube_position} colinear with {position} ? {cube_position.colinear(position)}")
                 if cube_position.colinear(position):
-                    los = Spacetime.get_direction(cube_position, position)
+                    los = SpacetimeHelper.get_direction(cube_position, position)
                     console.debug(f">> LOS[Ext] : {los} in {self.__available_beams} : {los in self.__available_beams}")
                     if los in self.__available_beams:
                         self.__available_beams.remove( los )
@@ -45,7 +45,7 @@ class CubeBeams:
         return len(self.__available_beams)
 
     def count_interrupted(self, lines_of_sight: set[Coordinates]) -> int:
-        if any([Spacetime.ORIGIN.get_manhattan_distance(los) != 1 for los in lines_of_sight]):
+        if any([SpacetimeHelper.ORIGIN.get_manhattan_distance(los) != 1 for los in lines_of_sight]):
             raise Exception(f"Computing remaining beam count requires lines-of-sight of unit length.")
 
         return sum(1 for los in lines_of_sight if los in self.__available_beams)

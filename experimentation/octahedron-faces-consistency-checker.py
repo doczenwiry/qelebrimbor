@@ -11,7 +11,7 @@ from collections import defaultdict
 
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.helpers.spacetime import Spacetime, Octant
+from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
 from qelebrimbor.helpers.octahedron import OctahedronHelper
 from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
 from qelebrimbor.pathfinders.path import Path
@@ -20,8 +20,8 @@ logging.getLogger('qelebrimbor.helpers').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.pathfinders').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.utilities').setLevel(logging.INFO)
 
-MOVE_ABOVE = Spacetime.XM + Spacetime.ZP
-MOVE_RIGHT = Spacetime.XM + Spacetime.YP
+MOVE_ABOVE = SpacetimeHelper.XM + SpacetimeHelper.ZP
+MOVE_RIGHT = SpacetimeHelper.XM + SpacetimeHelper.YP
 
 def __make_overhead_delimiter(face: Octant, z: int, header: bool = True):
     if z == 0:
@@ -125,7 +125,7 @@ def check_consistency(kinds: Iterable[CubeKind], faces: Iterable[Octant], manhat
     # The following seem to follow from symmetry relative to the source Cube
     # > Conjecture 1 : CubeKind.ZZX yields the same outcomes as CubeKind.ZXZ up to symmetry
     # > Conjecture 2 : CubeKind.XXZ yields the same outcomes as CubeKind.XZX up to symmetry
-    source = BgCube(CubeKind.XZZ, Spacetime.ORIGIN)
+    source = BgCube(CubeKind.XZZ, SpacetimeHelper.ORIGIN)
 
     inconsistencies = 0
 

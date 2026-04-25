@@ -13,12 +13,12 @@ from collections import defaultdict
 
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.helpers.spacetime import Spacetime, Octant
+from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
 from qelebrimbor.helpers.octahedron import OctahedronHelper
 from qelebrimbor.pathfinders.path import Path
 
-MOVE_ABOVE = Spacetime.XM + Spacetime.ZP
-MOVE_RIGHT = Spacetime.XM + Spacetime.YP
+MOVE_ABOVE = SpacetimeHelper.XM + SpacetimeHelper.ZP
+MOVE_RIGHT = SpacetimeHelper.XM + SpacetimeHelper.YP
 
 def __make_overhead_delimiter(face: Octant, z: int, header: bool = True):
     if z == 0:
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     kinds = [ CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ ]
     faces = [ Octant.PPP, Octant.PPM, Octant.MPP, Octant.MPM, Octant.MMP, Octant.MMM, Octant.PMP, Octant.PMM ]
 
-    source = BgCube(CubeKind.XZZ, Spacetime.ORIGIN)
+    source = BgCube(CubeKind.XZZ, SpacetimeHelper.ORIGIN)
 
     console.info(f"Source : {source}. Manhattan Distance : {manhattan_distance}")
     for target_kind in kinds:

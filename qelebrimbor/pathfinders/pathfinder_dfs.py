@@ -12,7 +12,7 @@ from collections import defaultdict
 from qelebrimbor.common.attributes_bg import CubeId, CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
-from qelebrimbor.helpers.spacetime import Spacetime
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 from qelebrimbor.pathfinders.path import Path
 
@@ -89,7 +89,7 @@ class PathFinderDFS:
     @staticmethod
     def find_paths(
             final: tuple[CubeKind, Coordinates],
-            start: tuple[CubeKind, Coordinates] = (CubeKind.XZZ, Spacetime.ORIGIN),
+            start: tuple[CubeKind, Coordinates] = (CubeKind.XZZ, SpacetimeHelper.ORIGIN),
             maximal_overheads: Iterable[int] | None = None
     ):
         if maximal_overheads is None:
@@ -105,7 +105,7 @@ class PathFinderDFS:
     @staticmethod
     def __core_find_paths(
             final: tuple[CubeKind, Coordinates],
-            start: tuple[CubeKind, Coordinates] = (CubeKind.XZZ, Spacetime.ORIGIN),
+            start: tuple[CubeKind, Coordinates] = (CubeKind.XZZ, SpacetimeHelper.ORIGIN),
             maximal_overhead: int = 6
     ) -> defaultdict[int, list[Path]]:
         paths = defaultdict(list)

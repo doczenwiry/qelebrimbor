@@ -1,5 +1,5 @@
 from qelebrimbor.common.components import BgCube
-from qelebrimbor.helpers.spacetime import Spacetime
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.common.coordinates import Coordinates
 
 from qelebrimbor.common.attributes_zx import NodeType, EdgeType
@@ -32,7 +32,7 @@ class BlockGraphHelper:
     ) -> bool:
         step = target.position - source.position
         space_condition = source.position.get_manhattan_distance(target.position) == 1
-        reach_condition = Spacetime.contains(source.kind.get_reach(), step) and Spacetime.contains(target.kind.get_reach(), step)
+        reach_condition = SpacetimeHelper.contains(source.kind.get_reach(), step) and SpacetimeHelper.contains(target.kind.get_reach(), step)
         pipe_condition = edge_type in BlockGraphHelper.infer_pipe_type(source.kind, target.kind)
         console.debug(f"Connectable: {source} - {target} : {space_condition}/{reach_condition}/{pipe_condition}")
         return space_condition and reach_condition and pipe_condition
@@ -47,13 +47,13 @@ class BlockGraphHelper:
 
         constellation = []
 
-        for step in Spacetime.get_step_constellation(origin.kind.get_reach()):
+        for step in SpacetimeHelper.get_step_constellation(origin.kind.get_reach()):
             candidate_position = origin.position + step
 
             for node_type in considered_node_types:
                 for candidate_kind in CubeKind.suitable_kinds(node_type):
                     cube_reach = candidate_kind.get_reach()
-                    if Spacetime.contains(cube_reach, step):
+                    if SpacetimeHelper.contains(cube_reach, step):
                         if pipe_type in BlockGraphHelper.infer_pipe_type(candidate_kind, origin.kind):
                             constellation.append( BgCube(kind = candidate_kind, position = candidate_position) )
 

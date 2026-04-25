@@ -1,7 +1,7 @@
 from vedo import Assembly, Cube, Box, Text3D  # type: ignore[import-untyped]
 
 from qelebrimbor.common.attributes_zx import NodeType
-from qelebrimbor.helpers.spacetime import Spacetime
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 from numpy import array
 
@@ -28,16 +28,16 @@ class VdCubeReference(Assembly):
 
         # Initialise the labels (i.e. numbers on the cube if it corresponds to a ZX-node)
         self.__texts = []
-        for label, direction in [ ('X', Spacetime.XP), ('X', Spacetime.XM) , ('Y', Spacetime.YP), ('Y', Spacetime.YM) , ('Z', Spacetime.ZP) , ('Z', Spacetime.ZM) ]:
+        for label, direction in [('X', SpacetimeHelper.XP), ('X', SpacetimeHelper.XM) , ('Y', SpacetimeHelper.YP), ('Y', SpacetimeHelper.YM) , ('Z', SpacetimeHelper.ZP) , ('Z', SpacetimeHelper.ZM)]:
             face_center = (0.55 * direction).as_tuple()
             text = Text3D(txt = label, pos = face_center, s = 0.5, font ='Roboto', justify ='centered', c ='white')
             # Rotate the text to line it up with its face
-            rotation_axis = Spacetime.ZP.cross(direction).as_tuple()
+            rotation_axis = SpacetimeHelper.ZP.cross(direction).as_tuple()
             text.rotate(angle = 90.0, axis = rotation_axis, point = face_center)
             # Rotate the text to line it up with the top (resp. bottom) in the plus (resp. minus) direction
-            if   direction == Spacetime.XP: rotation_angle =  90.0
-            elif direction == Spacetime.XM: rotation_angle = -90.0
-            elif direction == Spacetime.YP: rotation_angle = 180.0
+            if   direction == SpacetimeHelper.XP: rotation_angle =  90.0
+            elif direction == SpacetimeHelper.XM: rotation_angle = -90.0
+            elif direction == SpacetimeHelper.YP: rotation_angle = 180.0
             else: # direction in [Spacetime.YM, Spacetime.ZP, Spacetime.ZM]
                 rotation_angle = 0.0
 

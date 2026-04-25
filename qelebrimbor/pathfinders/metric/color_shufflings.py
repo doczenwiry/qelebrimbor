@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.helpers.spacetime import Spacetime
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 
 @dataclass
@@ -9,10 +9,10 @@ class ColorShuffling:
     VALID_SYMBOLS = ['o', 'x', 'y', 'z']
 
     GENERATORS = {
-        Spacetime.ORIGIN: 'xyz',
-        Spacetime.XP: 'oyz',
-        Spacetime.YP: 'xoz',
-        Spacetime.ZP: 'xyo'
+        SpacetimeHelper.ORIGIN: 'xyz',
+        SpacetimeHelper.XP: 'oyz',
+        SpacetimeHelper.YP: 'xoz',
+        SpacetimeHelper.ZP: 'xyo'
     }
 
     start: str = 'xyz'

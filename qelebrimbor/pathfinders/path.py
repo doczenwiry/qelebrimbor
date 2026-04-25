@@ -7,7 +7,7 @@ from qelebrimbor.common.components import ZxNode, BgCube, ZxEdge
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
-from qelebrimbor.helpers.spacetime import Spacetime
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
@@ -64,13 +64,13 @@ class Path:
 
             if manhattan >= 2:
                 if any(relative == source_reach.scale(manhattan - 1) + step
-                       for step in Spacetime.get_step_constellation(source_reach)
+                       for step in SpacetimeHelper.get_step_constellation(source_reach)
                 ):
                     overhead += 2
 
             if manhattan >= 3:
                 if any(relative == source_reach.scale(manhattan-2) + step + source_reach.cross(step)
-                       for step in Spacetime.get_step_constellation(source_reach)
+                       for step in SpacetimeHelper.get_step_constellation(source_reach)
                 ):
                     overhead += 2
         else:

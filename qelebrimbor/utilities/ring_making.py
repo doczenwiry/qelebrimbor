@@ -7,7 +7,7 @@ from qelebrimbor.common.components import BgCube, ZxNode, ZxEdge
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
-from qelebrimbor.helpers.spacetime import Spacetime
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
 from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
@@ -124,7 +124,7 @@ def extend_unrealised(graph: VolumetricZxGraph):
         for neighbor in neighbors:
             available = filter(
                 lambda pos : pos not in graph.occupied,
-                Spacetime.get_constellation(cube.position, cube_reach)
+                SpacetimeHelper.get_constellation(cube.position, cube_reach)
             )
             edge_type = graph.get_zx_edge(node.id, neighbor.id).type
 
@@ -137,7 +137,7 @@ def extend_unrealised(graph: VolumetricZxGraph):
             step_taken = cube.position - neighbor_position
             neighbor_kinds = [
                 kind for kind in CubeKind.suitable_kinds(neighbor.type)
-                if Spacetime.contains(kind.get_reach(), step_taken) and Spacetime.contains(cube_reach, step_taken) and
+                if SpacetimeHelper.contains(kind.get_reach(), step_taken) and SpacetimeHelper.contains(cube_reach, step_taken) and
                    edge_type in BlockGraphHelper.infer_pipe_type(cube.kind, kind)
             ]
             neighbor_cube = BgCube(neighbor_kinds[0], neighbor_position)

@@ -7,7 +7,7 @@ from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import NodeId, EdgeId, NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.helpers.spacetime import Spacetime, Step
+from qelebrimbor.helpers.spacetime import SpacetimeHelper, Step
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 N = 8
@@ -58,7 +58,7 @@ def convert_ring(
         if len(cubes) != len(steps) + 1:
             raise Exception("Inconsistent path specification.")
 
-        position = Spacetime.ORIGIN
+        position = SpacetimeHelper.ORIGIN
         ring.append( (CubeKind[cubes[0]], position) )
         for idx in range(len(steps)):
             position += Step[steps[idx]].value

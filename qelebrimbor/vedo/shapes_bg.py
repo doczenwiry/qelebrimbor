@@ -5,7 +5,7 @@ from qelebrimbor.vedo.bg_painter.default import DefaultBlockGraphPainter
 from qelebrimbor.vedo.bg_painter.shaded import ShadedBlockGraphPainter
 
 from qelebrimbor.common.components import BgCube, BgPipe
-from qelebrimbor.helpers.spacetime import Spacetime
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import EdgeType
 from qelebrimbor.common.coordinates import Coordinates
@@ -49,16 +49,16 @@ class VdCube(Assembly):
         # Initialise the labels (i.e. numbers on the cube if it corresponds to a ZX-node)
         self.__texts = []
         cube_kind_reach: Coordinates = cube.kind.get_reach()
-        for direction in [ cube_kind_reach , Spacetime.ORIGIN - cube_kind_reach ]:
+        for direction in [cube_kind_reach , SpacetimeHelper.ORIGIN - cube_kind_reach]:
             face_center = (position + step_scale * direction).as_tuple()
             text = Text3D(txt = label, pos = face_center, s = text_size, font ='Roboto', justify ='centered', c ='white')
             # Rotate the text to line it up with its face
-            rotation_axis = Spacetime.ZP.cross(direction).as_tuple()
+            rotation_axis = SpacetimeHelper.ZP.cross(direction).as_tuple()
             text.rotate(angle = 90.0, axis = rotation_axis, point = face_center)
             # Rotate the text to line it up with the top (resp. bottom) in the plus (resp. minus) direction
-            if   direction == Spacetime.XP: rotation_angle =  90.0
-            elif direction == Spacetime.XM: rotation_angle = -90.0
-            elif direction == Spacetime.YP: rotation_angle = 180.0
+            if   direction == SpacetimeHelper.XP: rotation_angle =  90.0
+            elif direction == SpacetimeHelper.XM: rotation_angle = -90.0
+            elif direction == SpacetimeHelper.YP: rotation_angle = 180.0
             else: # direction in [Spacetime.YM, Spacetime.ZP, Spacetime.ZM]
                 rotation_angle = 0.0
 

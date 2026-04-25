@@ -4,7 +4,7 @@ from qelebrimbor.common.components import BgCube, ZxNode, ZxEdge
 from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
-from qelebrimbor.helpers.spacetime import Spacetime, Octant
+from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
 from qelebrimbor.ringfinders.ring import Ring
 
 import logging
@@ -22,7 +22,7 @@ class RingFinderBFS:
         e = len(edges) if edges else 0
         rings: list[Ring] = []
 
-        anchor = BgCube(kind = CubeKind.suitable_kinds(nodes[0].type)[0], position = Spacetime.ORIGIN)
+        anchor = BgCube(kind = CubeKind.suitable_kinds(nodes[0].type)[0], position = SpacetimeHelper.ORIGIN)
 
         queue: deque[Ring] = deque()
         queue.append( Ring(anchor) )
@@ -41,7 +41,7 @@ class RingFinderBFS:
             for candidate in BlockGraphHelper.get_candidate_constellation(terminal, node_types = node_types, pipe_type = pipe_type):
                 console.debug(f"> Candidate : {candidate}")
                 # Only consider cubes placed in the PPP octant
-                if Spacetime.in_octant(candidate.position, Octant.PPP):
+                if SpacetimeHelper.in_octant(candidate.position, Octant.PPP):
                     continue
 
                 # Skip if the next_position is already occupied
@@ -63,7 +63,7 @@ class RingFinderBFS:
                 if length >= n-1 and anchor.position.get_manhattan_distance(candidate.position) == 1:
                     console.debug(f"Target reached : {ring}")
                     step = candidate.position - anchor.position
-                    reach_condition = Spacetime.contains(anchor.kind.get_reach(), step) and Spacetime.contains(candidate.kind.get_reach(), step)
+                    reach_condition = SpacetimeHelper.contains(anchor.kind.get_reach(), step) and SpacetimeHelper.contains(candidate.kind.get_reach(), step)
                     console.debug(f"> {step} ? [{reach_condition}]")
                     if reach_condition and pipe_type in BlockGraphHelper.infer_pipe_type(anchor.kind, candidate.kind):
                         rings.append(extended)

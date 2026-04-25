@@ -8,7 +8,7 @@ from collections import defaultdict
 
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.helpers.spacetime import Spacetime, Octant
+from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
 
 from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
 from qelebrimbor.pathfinders.path import Path
@@ -140,23 +140,23 @@ if __name__ == "__main__":
 
     positions_md_1 = list(set(
         filter(
-            lambda pos: pos != Spacetime.ORIGIN and Spacetime.in_octant(pos, Octant.PPP),
-            [ reduce(lambda acc, x : acc + x, steps, Spacetime.ORIGIN)
-              for steps in product(Spacetime.STEPS, repeat = 1)
+            lambda pos: pos != SpacetimeHelper.ORIGIN and SpacetimeHelper.in_octant(pos, Octant.PPP),
+            [ reduce(lambda acc, x : acc + x, steps, SpacetimeHelper.ORIGIN)
+              for steps in product(SpacetimeHelper.STEPS, repeat = 1)
             ]
         )
     ))
 
     positions_md_2 = list(set(
         filter(
-            lambda pos: pos != Spacetime.ORIGIN and Spacetime.in_octant(pos, Octant.PPP),
-            [ reduce(lambda acc, x : acc + x, steps, Spacetime.ORIGIN)
-              for steps in product(Spacetime.STEPS, repeat = manhattan_distance)
+            lambda pos: pos != SpacetimeHelper.ORIGIN and SpacetimeHelper.in_octant(pos, Octant.PPP),
+            [ reduce(lambda acc, x : acc + x, steps, SpacetimeHelper.ORIGIN)
+              for steps in product(SpacetimeHelper.STEPS, repeat = manhattan_distance)
             ]
         )
     ))
 
-    source = (CubeKind.XZZ, Spacetime.ORIGIN)
+    source = (CubeKind.XZZ, SpacetimeHelper.ORIGIN)
     source_kind, source_position = source
     console.info(f"Source kind : {source_kind}@{source_position}")
     console.info(f"> Manhattan Distance : {manhattan_distance}")

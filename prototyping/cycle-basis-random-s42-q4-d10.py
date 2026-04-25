@@ -9,7 +9,7 @@ from qelebrimbor.common.components import BgCube, ZxEdge
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
-from qelebrimbor.helpers.spacetime import Spacetime
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.utilities.ring_making import find_realisation, find_completion
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
@@ -38,7 +38,7 @@ def place_determined(graph: VolumetricZxGraph):
             cube = node.realising_cube
             if cube is not None:
                 cube_reach = cube.kind.get_reach()
-                for port in Spacetime.get_constellation(cube.position, cube_reach):
+                for port in SpacetimeHelper.get_constellation(cube.position, cube_reach):
                     if port not in graph.occupied:
                         open_ports[cube].append(port)
 
@@ -54,9 +54,9 @@ def place_determined(graph: VolumetricZxGraph):
                 neighbor_type = graph.get_zx_node(neighbor).type
                 neighbor_reach = next(filter(
                     lambda cr :
-                        Spacetime.contains(cr, step_taken) and Spacetime.contains(cube_reach, step_taken) and
-                        edge_type in BlockGraphHelper.infer_pipe_type(cube.kind, CubeKind.convert(neighbor_type, cr)),
-                        [ Spacetime.XP, Spacetime.YP, Spacetime.ZP ]
+                    SpacetimeHelper.contains(cr, step_taken) and SpacetimeHelper.contains(cube_reach, step_taken) and
+                    edge_type in BlockGraphHelper.infer_pipe_type(cube.kind, CubeKind.convert(neighbor_type, cr)),
+                        [SpacetimeHelper.XP, SpacetimeHelper.YP, SpacetimeHelper.ZP]
                 ))
                 neighbor_cube = BgCube(CubeKind.convert(neighbor_type, neighbor_reach), port_position)
                 neighbor_cube_id = graph.realise_zx_node(neighbor, neighbor_cube)
@@ -73,7 +73,7 @@ def reserve_positions(graph: VolumetricZxGraph, reservations: dict[Coordinates, 
             cube = graph.get_zx_node(node).realising_cube
             if cube is not None:
                 cube_reach = cube.kind.get_reach()
-                for port in Spacetime.get_constellation(cube.position, cube_reach):
+                for port in SpacetimeHelper.get_constellation(cube.position, cube_reach):
                     if port not in graph.occupied:
                         if port in open_ports and port in reservations and cube != reservations[port]:
                             console.warning(f"Multiple cubes [{open_ports[port]},{cube}] realising the same node have the a port in common. Overwriting.")

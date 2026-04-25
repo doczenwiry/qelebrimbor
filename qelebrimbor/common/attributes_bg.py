@@ -4,7 +4,7 @@ from enum import Enum
 from functools import total_ordering
 
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.helpers.spacetime import Spacetime
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.common.attributes_zx import NodeType
 
 CubeId = int
@@ -45,16 +45,16 @@ class CubeKind(Enum):
     @staticmethod
     def convert(node_type: NodeType, node_reach: Coordinates):
         if node_type == NodeType.X:
-            if node_reach == Spacetime.XY:
+            if node_reach == SpacetimeHelper.XY:
                 return CubeKind.ZZX
-            elif node_reach == Spacetime.XZ:
+            elif node_reach == SpacetimeHelper.XZ:
                 return CubeKind.ZXZ
             else:
                 return CubeKind.XZZ
         elif node_type == NodeType.Z:
-            if node_reach == Spacetime.XY:
+            if node_reach == SpacetimeHelper.XY:
                 return CubeKind.XXZ
-            elif node_reach == Spacetime.XZ:
+            elif node_reach == SpacetimeHelper.XZ:
                 return CubeKind.XZX
             else:
                 return CubeKind.ZXX
@@ -76,14 +76,14 @@ class CubeKind(Enum):
     # TODO: a CubeKind.YYY has Spacetime.XYZ and single port ?
     def get_reach(self) -> Coordinates:
         if self == CubeKind.XZZ or self == CubeKind.ZXX:
-            return Spacetime.YZ
+            return SpacetimeHelper.YZ
         elif self == CubeKind.ZXZ or self == CubeKind.XZX:
-            return Spacetime.XZ
+            return SpacetimeHelper.XZ
         elif self == CubeKind.ZZX or self == CubeKind.XXZ:
-            return Spacetime.XY
+            return SpacetimeHelper.XY
         elif self == CubeKind.OOO or self == CubeKind.YYY:
             # TODO: be careful about issues this might cause
-            return Spacetime.ORIGIN
+            return SpacetimeHelper.ORIGIN
         else:
             raise ValueError(f"Not applicable to cube kind {self.name}")
 

@@ -4,14 +4,14 @@ console = logging.getLogger(__name__)
 from typing import Iterable
 import numpy as np
 
-from qelebrimbor.helpers.spacetime import Spacetime, Octant
+from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
 from qelebrimbor.common.coordinates import Coordinates
 
 class OctahedronHelper:
-    MOVE_XM_YP = Spacetime.XM + Spacetime.YP
-    MOVE_XM_YM = Spacetime.XM + Spacetime.YM
-    MOVE_XP_YM = Spacetime.XP + Spacetime.YM
-    MOVE_XP_YP = Spacetime.XP + Spacetime.YP
+    MOVE_XM_YP = SpacetimeHelper.XM + SpacetimeHelper.YP
+    MOVE_XM_YM = SpacetimeHelper.XM + SpacetimeHelper.YM
+    MOVE_XP_YM = SpacetimeHelper.XP + SpacetimeHelper.YM
+    MOVE_XP_YP = SpacetimeHelper.XP + SpacetimeHelper.YP
 
     @staticmethod
     def get_positions(manhattan_distance: int) -> Iterable[Coordinates]:
@@ -40,7 +40,7 @@ class OctahedronHelper:
     @staticmethod
     def get_face_positions(manhattan_distance: int, octant: Octant) -> Iterable[Coordinates]:
         return filter(
-            lambda position : Spacetime.in_octant(position, octant),
+            lambda position : SpacetimeHelper.in_octant(position, octant),
             OctahedronHelper.get_positions(manhattan_distance)
         )
 

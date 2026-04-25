@@ -10,7 +10,7 @@ from collections import defaultdict
 
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.helpers.spacetime import Spacetime
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 from qelebrimbor.pathfinders.path import Path
 from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     kinds = [ CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ ]
 
     source_kind = CubeKind.XZZ
-    source_position = Spacetime.ORIGIN
+    source_position = SpacetimeHelper.ORIGIN
     source = (source_kind, source_position)
     console.info(f"Source kind : {source_kind}@{source_position}")
     console.info(f"> Manhattan Distance : {manhattan_distance}")
@@ -52,7 +52,7 @@ if __name__ == "__main__":
         product(range(len(kinds)), repeat = 3)
     ))
 
-    positions = [ Spacetime.ORIGIN, Spacetime.YP, Spacetime.ZP ]
+    positions = [SpacetimeHelper.ORIGIN, SpacetimeHelper.YP, SpacetimeHelper.ZP]
 
     count = 1
     total = len(possibilities)

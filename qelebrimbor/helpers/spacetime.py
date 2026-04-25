@@ -23,7 +23,7 @@ class Step(Enum):
     ZP = Coordinates( 0,  0, +1)
     ZM = Coordinates( 0,  0, -1)
 
-class Spacetime:
+class SpacetimeHelper:
     ORIGIN = Coordinates(0, 0, 0)
 
     XP = Coordinates(+1,  0,  0)
@@ -56,19 +56,19 @@ class Spacetime:
 
         line_of_sight = Coordinates.from_list( [ difference * delta for difference, delta in zip(differences, deltas) ] )
 
-        if Spacetime.ORIGIN.get_manhattan_distance(line_of_sight) != 1:
+        if SpacetimeHelper.ORIGIN.get_manhattan_distance(line_of_sight) != 1:
             raise Exception(f"Erroneous computation of line of sight [{source}/{target} = {line_of_sight}].")
 
         return line_of_sight
 
     @staticmethod
     def get_step_constellation(reach: Coordinates) -> list[Coordinates]:
-        return [step for step in Spacetime.STEPS if reach.dot(step) == 0]
+        return [step for step in SpacetimeHelper.STEPS if reach.dot(step) == 0]
 
     @staticmethod
     def get_constellation(position: Coordinates, restriction: Coordinates | None = None) -> list[Coordinates]:
         constellation = []
-        for step in Spacetime.STEPS:
+        for step in SpacetimeHelper.STEPS:
             if restriction is None or restriction.dot(step) == 0:
                 constellation.append(position + step)
         return constellation

@@ -13,12 +13,12 @@ from collections import defaultdict
 
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.helpers.spacetime import Spacetime, Octant
+from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
 from qelebrimbor.helpers.octahedron import OctahedronHelper
 from qelebrimbor.pathfinders.path import Path
 
-MOVE_ABOVE = Spacetime.XM + Spacetime.ZP
-MOVE_RIGHT = Spacetime.XM + Spacetime.YP
+MOVE_ABOVE = SpacetimeHelper.XM + SpacetimeHelper.ZP
+MOVE_RIGHT = SpacetimeHelper.XM + SpacetimeHelper.YP
 
 def __convert_direction(axis: str, direction: int):
     if direction == +1:
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     kinds = [ CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ ]
     sides = [ "PP", "MP", "MM", "PM" ]
 
-    source = BgCube(CubeKind.XZZ, Spacetime.ORIGIN)
+    source = BgCube(CubeKind.XZZ, SpacetimeHelper.ORIGIN)
     console.info(f"Source kind : {source}")
     console.info(f"> Manhattan Distance : {manhattan_distance}")
 
