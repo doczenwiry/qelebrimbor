@@ -25,7 +25,7 @@ if __name__ == "__main__":
     edges = [ EdgeType.IDENTITY for s in range(LENGTH)]
 
     zx_nodes = [ ZxNode(id = i, type = nodes[i]) for i in range(LENGTH) ]
-    zx_edges = [ ZxEdge(source = s, target = (s+1) % LENGTH, type = edges[s]) for s in range(LENGTH)]
+    zx_edges = [ ZxEdge(source = zx_nodes[s], target = zx_nodes[(s+1) % LENGTH], type = edges[s]) for s in range(LENGTH)]
 
     rings = RingFinderBFS.find_minimal_rings(zx_nodes, zx_edges, number_sought = -1, maximal_overhead = MAX_OVERHEAD + 4)
     console.info(f"Found {len(rings)} rings of length {LENGTH}")
@@ -39,6 +39,15 @@ if __name__ == "__main__":
         )
 
         BlockGraphConstructor.realise_nodes(graph= vzx, specifications = realisation.to_nodes_specifications(zx_nodes))
+
+        vzx.log_summary()
+
+        edges_specifications = realisation.to_edges_specifications(zx_edges)
+
+        console.info(f"Edges specifications :")
+        for edge, proposal in edges_specifications.items():
+            console.info(f"> Edge [{edge}] : {proposal}")
+
         BlockGraphConstructor.realise_edges(graph= vzx, specifications = realisation.to_edges_specifications(zx_edges))
 
         viewer = VolumetricZxGraphViewer(vzx, f"Identity Ring, n={LENGTH}", CycleLayout(vzx))

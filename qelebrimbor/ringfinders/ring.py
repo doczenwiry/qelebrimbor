@@ -44,7 +44,7 @@ class Ring:
         for i in range(edge_count-1):
             source = edges[i].source
             target = edges[i].target
-            if source > target:
+            if source.id > target.id:
                 source, target = target, source
             edges_specifications[ (source.id, target.id) ] = PathSpecification(
                 source_cube = source.realising_cube,

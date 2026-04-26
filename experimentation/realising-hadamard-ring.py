@@ -25,7 +25,7 @@ if __name__ == "__main__":
     edges = [ EdgeType.HADAMARD for _ in range(LENGTH)]
 
     zx_nodes = [ ZxNode(id = i, type = nodes[i]) for i in range(LENGTH) ]
-    zx_edges = [ ZxEdge(source = s, target = (s+1) % LENGTH, type = edges[s]) for s in range(LENGTH)]
+    zx_edges = [ ZxEdge(source = zx_nodes[s], target = zx_nodes[(s+1) % LENGTH], type = edges[s]) for s in range(LENGTH)]
 
     vzx = VolumetricZxGraph(
         nodes = zip(range(LENGTH), nodes),
