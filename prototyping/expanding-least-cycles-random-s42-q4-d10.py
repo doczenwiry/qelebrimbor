@@ -19,12 +19,12 @@ console = logging.getLogger(__name__)
 random.seed(SEED)
 if __name__ == "__main__":
     circuit = f"random-s{SEED}-q{QUBITS}-d{LAYERS}"
-    zx = pyzx.generate.cnots(qubits = QUBITS, depth = LAYERS)
+    pyzx_input = pyzx.generate.cnots(qubits = QUBITS, depth = LAYERS)
 
-    with open(f"../assets/pyzx/{circuit}.json", 'w') as file:
-        file.write(zx.to_json())
+    with open(f"../assets/pyzx/random/{circuit}.json", 'w') as file:
+        file.write(pyzx_input.to_json())
 
-    vzx = VolumetricZxGraph.from_pyzx_graph(zx)
+    vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_input)
     CycleBasisAnalyser.analyse(vzx)
     cycles = CycleBasisAnalyser.decompose_nodes(vzx)
 
@@ -64,6 +64,8 @@ if __name__ == "__main__":
     find_completion(vzx, cycle, maximal_overhead = 6)
 
     extend_unrealised(vzx)
+    extend_unrealised(vzx)
+    extend_unrealised(vzx)
 
     vzx.log_report()
 
@@ -73,4 +75,6 @@ if __name__ == "__main__":
     viewer = VolumetricZxGraphViewer(vzx, label = circuit)
     viewer.display()
 
-    vzx.to_pyzx_graph(filepath = f"../assets/pyzx/{circuit}-blockgraph.json")
+    pyzx_output = vzx.to_pyzx_graph(filepath =f"../assets/pyzx/random/{circuit}-blockgraph.json")
+    pyzx.draw(pyzx_input, labels=True)
+    pyzx.draw(pyzx_output, labels=True)

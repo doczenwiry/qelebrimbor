@@ -141,7 +141,7 @@ class VolumetricZxGraph(nx.Graph):
 
         if layer_qubit_information_missing or non_circuit_pyzx_graph:
             for cube_id, coordinates in nx.planar_layout(self.__bg_graph, scale = planar_scale).items():
-                layout[self.get_bg_cube(cube_id)] = coordinates[0], coordinates[1]
+                layout[self.get_bg_cube(cube_id)] = tuple(coordinates)
         else:
             # Compute the coordinates of the layers taking into account the extra nodes added to realise edges
             layer_coordinates: dict[LayerId, float] = defaultdict(int)
@@ -201,12 +201,14 @@ class VolumetricZxGraph(nx.Graph):
         for cube in self.get_bg_cubes():
             x, y = layout[cube] if cube in layout else (-1,-1)
             pyzx_graph.add_vertex(
-                index = cube.id, ty = NodeType.convert_into_pyzx(cube.kind.get_type()), row = x, qubit = y
+                index = cube.id if cube.realised_node is None else cube.realised_node.id,
+                ty = NodeType.convert_into_pyzx(cube.kind.get_type()), row = x, qubit = y
             )
-        for pipe in self.get_bg_pipes():
-            pyzx_graph.add_edge((pipe.source.id, pipe.target.id), EdgeType.convert_into_pyzx(pipe.type))
 
-        pyzx.draw(pyzx_graph, labels = True)
+        for pipe in self.get_bg_pipes():
+            source = pipe.source.id if pipe.source.realised_node is None else pipe.source.realised_node.id
+            target = pipe.target.id if pipe.target.realised_node is None else pipe.target.realised_node.id
+            pyzx_graph.add_edge((source, target), EdgeType.convert_into_pyzx(pipe.type))
 
         if filepath is not None:
             with open(filepath, 'w') as file:

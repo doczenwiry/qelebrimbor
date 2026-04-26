@@ -33,7 +33,6 @@ class GrayscaleBlockGraphPainter(BlockGraphPainter):
         distances = target.position - source.position
         # cellcolors are for faces (+X, -X, +Y, -Y, +Z, -Z)
         colors = []
-        distances = distances.as_tuple()
         source_type = source.kind.get_type()
         target_type = target.kind.get_type()
         for c in range(3):

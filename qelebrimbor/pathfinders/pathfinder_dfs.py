@@ -134,7 +134,7 @@ class PathFinderDFS:
                     continue
 
                 extended: Path = path.copy()
-                extended.append(next_kind, next_position)
+                extended.append( BgCube(next_kind,next_position) )
 
                 if extended.has_reached_target():
                     extended_overhead = extended.overhead()

@@ -22,7 +22,6 @@ class DefaultBlockGraphPainter(BlockGraphPainter):
         distances = target.position - source.position
         # cellcolors are for faces (+X, -X, +Y, -Y, +Z, -Z)
         colors = []
-        distances = distances.as_tuple()
         for c in range(3):
             if distances[c] == 0 and (
                     source.kind not in [CubeKind.OOO, CubeKind.YYY] or target.kind not in [CubeKind.OOO, CubeKind.YYY]):

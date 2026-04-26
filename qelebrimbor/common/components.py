@@ -116,6 +116,9 @@ class BgCube(RecordClass):
     def __repr__(self):
         return str(self)
 
+    def __hash__(self):
+        return hash( (self.kind, self.position.x, self.position.y, self.position.z) )
+
 class BgPipe(RecordClass):
     source: BgCube
     target: BgCube

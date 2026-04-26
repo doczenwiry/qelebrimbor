@@ -29,10 +29,10 @@ class VdCubeReference(Assembly):
         # Initialise the labels (i.e. numbers on the cube if it corresponds to a ZX-node)
         self.__texts = []
         for label, direction in [('X', SpacetimeHelper.XP), ('X', SpacetimeHelper.XM) , ('Y', SpacetimeHelper.YP), ('Y', SpacetimeHelper.YM) , ('Z', SpacetimeHelper.ZP) , ('Z', SpacetimeHelper.ZM)]:
-            face_center = (0.55 * direction).as_tuple()
+            face_center = (0.55 * direction)
             text = Text3D(txt = label, pos = face_center, s = 0.5, font ='Roboto', justify ='centered', c ='white')
             # Rotate the text to line it up with its face
-            rotation_axis = SpacetimeHelper.ZP.cross(direction).as_tuple()
+            rotation_axis = SpacetimeHelper.ZP.cross(direction)
             text.rotate(angle = 90.0, axis = rotation_axis, point = face_center)
             # Rotate the text to line it up with the top (resp. bottom) in the plus (resp. minus) direction
             if   direction == SpacetimeHelper.XP: rotation_angle =  90.0
@@ -41,7 +41,7 @@ class VdCubeReference(Assembly):
             else: # direction in [Spacetime.YM, Spacetime.ZP, Spacetime.ZM]
                 rotation_angle = 0.0
 
-            text.rotate(angle = rotation_angle, axis = direction.as_tuple(), point = face_center)
+            text.rotate(angle = rotation_angle, axis = direction, point = face_center)
             self.__texts.append(text)
             self.add(text)
 

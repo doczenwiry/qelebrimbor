@@ -54,7 +54,7 @@ class SpacetimeHelper:
 
         deltas = [ +1 if cs - ct < 0 else -1 for cs, ct in zip(source, target) ]
 
-        line_of_sight = Coordinates.from_list( [ difference * delta for difference, delta in zip(differences, deltas) ] )
+        line_of_sight = Coordinates( *(difference * delta for difference, delta in zip(differences, deltas)) )
 
         if SpacetimeHelper.ORIGIN.get_manhattan_distance(line_of_sight) != 1:
             raise Exception(f"Erroneous computation of line of sight [{source}/{target} = {line_of_sight}].")

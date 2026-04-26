@@ -50,10 +50,10 @@ class VdCube(Assembly):
         self.__texts = []
         cube_kind_reach: Coordinates = cube.kind.get_reach()
         for direction in [cube_kind_reach , SpacetimeHelper.ORIGIN - cube_kind_reach]:
-            face_center = (position + step_scale * direction).as_tuple()
+            face_center = (position + step_scale * direction)
             text = Text3D(txt = label, pos = face_center, s = text_size, font ='Roboto', justify ='centered', c ='white')
             # Rotate the text to line it up with its face
-            rotation_axis = SpacetimeHelper.ZP.cross(direction).as_tuple()
+            rotation_axis = SpacetimeHelper.ZP.cross(direction)
             text.rotate(angle = 90.0, axis = rotation_axis, point = face_center)
             # Rotate the text to line it up with the top (resp. bottom) in the plus (resp. minus) direction
             if   direction == SpacetimeHelper.XP: rotation_angle =  90.0
@@ -62,7 +62,7 @@ class VdCube(Assembly):
             else: # direction in [Spacetime.YM, Spacetime.ZP, Spacetime.ZM]
                 rotation_angle = 0.0
 
-            text.rotate(angle = rotation_angle, axis = direction.as_tuple(), point = face_center)
+            text.rotate(angle = rotation_angle, axis = direction, point = face_center)
             self.__texts.append(text)
             self.add(text)
 

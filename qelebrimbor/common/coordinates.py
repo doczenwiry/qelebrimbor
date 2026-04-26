@@ -1,31 +1,11 @@
 from math import sqrt
-from functools import total_ordering
-from dataclasses import dataclass
-from ast import literal_eval as make_tuple
+from typing import NamedTuple
 
-@dataclass(frozen = True)
-@total_ordering
-class Coordinates:
+
+class Coordinates(NamedTuple):
     x: float
     y: float
     z: float
-
-    @staticmethod
-    def from_string(s: str):
-        return Coordinates.from_tuple(make_tuple(s))
-
-    @staticmethod
-    def from_list(l: list[float]):
-        if len(l) != 3:
-            raise Exception(f"Provided list is too long. Needs to have 3 components.")
-        return Coordinates(l[0], l[1], l[2])
-
-    @staticmethod
-    def from_tuple(t: tuple[float, float, float]):
-        return Coordinates(t[0], t[1], t[2])
-
-    def as_tuple(self):
-        return self.x, self.y, self.z
 
     def __add__(self, other):
         return Coordinates(self.x + other.x, self.y + other.y, self.z + other.z)
@@ -38,21 +18,11 @@ class Coordinates:
             return Coordinates(self.x * scalar, self.y * scalar, self.z * scalar)
         raise NotImplementedError("Scalar multiplication requires <int> or <float>.")
 
-    def __mul__(self, scalar: int):
+    def __mul__(self, scalar: int | float):
         if isinstance(scalar, (int, float)):
             return Coordinates(self.x * scalar, self.y * scalar, self.z * scalar)
         raise NotImplementedError("Scalar multiplication requires <int> or <float>.")
     __rmul__ = __mul__
-
-    def __getitem__(self, index):
-        if index == 0:
-            return self.x
-        elif index == 1:
-            return self.y
-        elif index == 2:
-            return self.z
-        else:
-            raise ValueError("Invalid index provided.")
 
     def __truediv__(self, scalar: float):
         return Coordinates(self.x / scalar, self.y / scalar, self.z / scalar)
@@ -85,23 +55,8 @@ class Coordinates:
     def coplanar(self, other) -> bool:
         return self.__different_components(other) == 2
 
-    def __len__(self):
-        return 3
-
-    def __iter__(self):
-        return iter((self.x, self.y, self.z))
-
     def __repr__(self):
         return str(self)
-
-    def __hash__(self):
-        return hash(self.as_tuple())
-
-    def __eq__(self, other):
-        return self.x == other.x and self.y == other.y and self.z == other.z
-
-    def __lt__(self, other):
-        return self.as_tuple().__lt__(other.as_tuple())
 
     def __str__(self):
         return f"({self.x},{self.y},{self.z})"

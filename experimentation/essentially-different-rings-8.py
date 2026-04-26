@@ -68,7 +68,7 @@ def convert_ring(
             raise Exception("Inconsistent path realisation.")
 
         for cube, pos in zip(cubes, positions):
-            ring.append( (CubeKind[cube], Coordinates.from_tuple(pos)) )
+            ring.append( (CubeKind[cube], Coordinates(*pos)) )
 
     return ring
 
