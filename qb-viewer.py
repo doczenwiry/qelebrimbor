@@ -1,5 +1,4 @@
 import argparse
-import sys
 
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout

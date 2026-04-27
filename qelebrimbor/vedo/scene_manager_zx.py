@@ -33,7 +33,7 @@ class ZxSceneManager:
             self.__plotter.add( vd_edge )
 
         self.__selected_object = None
-        self.__show_unrealised = True
+        self.__show_unrealised = False
         self.toggle_unrealised_appearance()
 
     def toggle_unrealised_appearance(self):

@@ -12,10 +12,10 @@ class CycleLayout(ZxLayout):
         rho = 2.0
         step = (2.0 * np.pi) / ring.number_of_nodes()
         phi = np.pi - step / 2.0
-        for nd in ring.get_zx_nodes():
+        for node in ring.get_zx_nodes():
             x = rho * np.cos(phi)
             y = rho * np.sin(phi)
-            self.placements[nd] = (x, y)
+            self.placements[node] = (x, y)
             phi -= step
 
     def get_node_placement(self, node: ZxNode) -> Placement:
