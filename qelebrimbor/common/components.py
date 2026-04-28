@@ -96,6 +96,9 @@ class BgCube(RecordClass):
     id: CubeId = -1
     __realised_node: object = None
 
+    def matches(self, other):
+        return self.kind == other.kind and self.position == other.position
+
     @property
     def realised_node(self):
         return cast(ZxNode, self.__realised_node)

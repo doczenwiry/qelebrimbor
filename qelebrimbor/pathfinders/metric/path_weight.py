@@ -27,9 +27,8 @@ class PathWeight:
 
         return elements
 
-    def __mul__(self, other):
+    def extend(self, other):
         return PathWeight(self.shuffle.extend(other.shuffle), self.distance + other.distance)
-    __rmul__ = __mul__
 
     def __lt__(self, other):
         return self.shuffle == other.shuffle and self.distance < other.distance
@@ -56,7 +55,7 @@ class PathWeights:
 
     def extend(self, other):
         return PathWeights([
-            weight_one * weight_two for weight_one, weight_two in product(self.weights, other.weights)
+            weight_one.extend(weight_two) for weight_one, weight_two in product(self.weights, other.weights)
         ])
 
 if __name__ == '__main__':

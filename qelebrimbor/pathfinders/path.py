@@ -157,10 +157,10 @@ class Path:
         return self.manhattan_distance_remaining() < other.manhattan_distance_remaining()
 
     def __str__(self):
-        if len(self.extras) == 2:
+        if len(self.extras) == 0:
             return str(self.source) + " -> " + str(self.target)
         else:
-            return str(self.source) + " -> " + str(self.extras[1:-1]) + " -> " + str(self.target)
+            return str(self.source) + " -> " + str(self.extras) + " -> " + str(self.target)
 
     def __repr__(self):
         return str(self.extras)

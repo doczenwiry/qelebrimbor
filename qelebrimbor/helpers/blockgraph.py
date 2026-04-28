@@ -57,9 +57,6 @@ class BlockGraphHelper:
                         if pipe_type in BlockGraphHelper.infer_pipe_type(candidate_kind, origin.kind):
                             constellation.append( BgCube(kind = candidate_kind, position = candidate_position) )
 
-        testing = BgCube()
-        console.debug(f"Testing: {testing}")
-
         console.debug(f"Constellation of {len(constellation)} points.")
         for cube in constellation:
             console.debug(f"> {cube}")
