@@ -1,6 +1,5 @@
 from time import time
 
-import qelebrimbor
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
@@ -13,7 +12,7 @@ logging.basicConfig(level = logging.INFO)
 if __name__ == "__main__":
     source = BgCube(CubeKind.XZZ, SpacetimeHelper.ORIGIN)
 
-    for distance in range(1, 10):
+    for distance in range(1, 5):
         target = BgCube(CubeKind.XZZ, distance * SpacetimeHelper.XP)
         console.info(f"Searching for path between {source} and {target} [distance={distance}].")
         start = time()

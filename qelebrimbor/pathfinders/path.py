@@ -101,7 +101,7 @@ class Path:
         return overhead
 
     def manhattan_distance_remaining(self) -> int:
-        terminal = self.extras[-1]
+        terminal = self.target if len(self.extras) == 0 else self.extras[-1]
         return terminal.position.get_manhattan_distance(self.target.position)
 
     def manhattan_length(self):
