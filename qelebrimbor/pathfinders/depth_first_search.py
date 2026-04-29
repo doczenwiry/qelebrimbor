@@ -1,19 +1,21 @@
-from collections import defaultdict
+from collections import defaultdict, deque
 import matplotlib.pyplot as plt
 import networkx as nx
 
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType
-from qelebrimbor.common.components import BgCube
+from qelebrimbor.common.components import BgCube, ZxNode
 
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.pathfinders.path import Path, Distance
 
 import logging
+
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+
 console = logging.getLogger(__name__)
 
-# TODO: clarify that this is a Depth-First-Search with a Brand-and-Bound feature.
 class PathfinderDFS:
     @staticmethod
     def __retrieve_closest_unrelaxed(
@@ -41,7 +43,106 @@ class PathfinderDFS:
         return current
 
     @staticmethod
-    def find_optimal_paths(source: BgCube, target: BgCube, bnb: bool = False, tracing: bool = False) -> Path | None:
+    def find_closest_realisation(
+            graph: VolumetricZxGraph, source: BgCube, target: ZxNode,
+            maximal_distance: int = None,
+            tracing: bool = False
+    ) -> Path | None:
+        optimum: Path | None = None
+        minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
+        unrelaxed: deque[Path] = deque()
+        unrelaxed.append( Path(source, source) )
+        minimal_paths[ (source.kind, source.position) ] = Path(source = source, target = source)
+
+        console.info(f"Searching for placement from {source} to {target}.")
+
+        target_suitable_kinds: list[CubeKind] = CubeKind.suitable_kinds(target.type)
+
+        pruning_performed = 0
+        points_discovered = 0
+        points_considered = 0
+
+        # Tracing exploration
+        nodes : dict[BgCube, NodeId] = dict()
+        labels: dict[NodeId, str] = dict()
+        trace: nx.Graph = nx.Graph()
+        if tracing:
+            trace.add_node( 0 )
+            labels[len(nodes)] = str(source)
+            nodes[source] = 0
+
+        while len(unrelaxed) != 0 and optimum is None:
+            current_path = unrelaxed.pop()
+            terminal = current_path.target
+
+            console.debug(f"Current : {current_path}")
+
+            for neighbor in BlockGraphHelper.get_candidate_constellation(terminal):
+                neighbor_point = (neighbor.kind, neighbor.position)
+                console.debug(f"> Neighbor : {neighbor}")
+
+                if maximal_distance and maximal_distance < source.position.get_manhattan_distance(neighbor.position):
+                    continue
+
+                # Ignore neighbor if it introduces a loop
+                if neighbor.position in current_path.occupied or neighbor.position in graph.occupied:
+                    console.debug(f">> Position occupied : {neighbor.position}")
+                    continue
+
+                extended_path = current_path.copy()
+                if terminal != source:
+                    extended_path.append(terminal)
+                extended_path.target = neighbor
+
+                # If a suitable Cube has been reached for the target, stop there
+                console.debug(f"> Neighbor has kind : {neighbor.kind} vs {target_suitable_kinds}")
+                if neighbor.kind in target_suitable_kinds:
+
+                    optimum = extended_path
+                    continue
+
+                # Don't attempt to extend if the neighbor is a terminal cube.
+                if neighbor.kind in [ CubeKind.OOO , CubeKind.YYY ]:
+                    continue
+
+                # Update position of neighbor in unrelaxed as its distance is being updated
+                if neighbor not in minimal_paths:
+                    unrelaxed.append( extended_path )
+
+                # Tracing exploration
+                if tracing:
+                    # labels[len(nodes)] = str(neighbor)
+                    nodes[neighbor] = len(nodes)
+                    trace.add_node( nodes[neighbor] )
+                    trace.add_edge( nodes[terminal], nodes[neighbor] )
+
+                points_discovered += 1
+
+                # Update minimal distance discovered
+                minimal_paths[neighbor_point] = extended_path
+
+            points_considered += 1
+
+        console.debug(f"> Number of points considered : {points_considered}")
+        console.debug(f"> Number of pruning performed : {pruning_performed}")
+        console.debug(f"> Number of points discovered : {points_discovered}")
+
+        if tracing:
+            layout = nx.drawing.layout.bfs_layout(trace, start = 0)
+            nx.draw(trace, layout, node_size = 1)
+            nx.draw_networkx_labels(trace, layout, labels)
+            console.debug(f"> Number of nodes : {len(trace.nodes)}")
+            plt.show()
+
+        return optimum
+
+    @staticmethod
+    def find_optimal_paths(
+            graph: VolumetricZxGraph, source: BgCube, target: BgCube,
+            maximal_excess: int = 10,
+            bnb: bool = False,
+            tracing: bool = False
+    ) -> Path | None:
         """
         Perform path-finding using a Depth-First Search approach.
         :param source: The cube from which to start.
@@ -49,6 +150,7 @@ class PathfinderDFS:
         :param bnb: Controls whether a Branch-and-Bound refinement ought to be performed after finding the first path.
         This will incur an additional computational cost that may or may not fall into super-exponential territory.
         Proof of the possibility would be nice. Refutation thereof would be better.
+        :param tracing: Controls whether to keep track of the order of relaxations performed by the pathfinder. Performance metric.
         :return:
         """
         optimum: Path | None = None
@@ -61,6 +163,8 @@ class PathfinderDFS:
 
         manhattan_distance = source.position.get_manhattan_distance(target.position)
         console.info(f"Searching for path from {source} to {target} [distance={manhattan_distance}].")
+
+        maximal_distance = manhattan_distance + maximal_excess
 
         interconnect = { NodeType.X, NodeType.Z }
 
@@ -107,8 +211,11 @@ class PathfinderDFS:
                 neighbor_point = (neighbor.kind, neighbor.position)
                 console.debug(f"> Neighbor : {neighbor}")
 
+                if maximal_distance < source.position.get_manhattan_distance(neighbor.position):
+                    continue
+
                 # Ignore neighbor if it introduces a loop
-                if neighbor.position in current_path.occupied:
+                if neighbor.position in current_path.occupied or neighbor.position in graph.occupied:
                     continue
 
                 extended_path = current_path.copy()
@@ -140,16 +247,16 @@ class PathfinderDFS:
             points_considered += 1
 
         points_octahedron = int(manhattan_distance * (2 * manhattan_distance**2 + 1) / 3)
-        console.info(f"> Number of octahedron points : {points_octahedron}")
-        console.info(f"> Number of points considered : {points_considered}")
-        console.info(f"> Number of pruning performed : {pruning_performed}")
-        console.info(f"> Number of points discovered : {points_discovered}")
+        console.debug(f"> Number of octahedron points : {points_octahedron}")
+        console.debug(f"> Number of points considered : {points_considered}")
+        console.debug(f"> Number of pruning performed : {pruning_performed}")
+        console.debug(f"> Number of points discovered : {points_discovered}")
 
         if tracing:
             layout = nx.drawing.layout.bfs_layout(trace, start = 0)
             nx.draw(trace, layout, node_size = 1)
             nx.draw_networkx_labels(trace, layout, labels)
-            console.info(f"> Number of nodes : {len(trace.nodes)}")
+            console.debug(f"> Number of nodes : {len(trace.nodes)}")
             plt.show()
 
         return optimum

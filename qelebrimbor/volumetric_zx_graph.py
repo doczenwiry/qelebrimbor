@@ -21,8 +21,6 @@ import pyzx
 import networkx as nx
 from ast import literal_eval as make_tuple
 
-from networkx import neighbors
-
 from qelebrimbor.common.coordinates import Coordinates
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
@@ -33,12 +31,10 @@ from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeId, EdgeType,
 from qelebrimbor.common.attributes_bg import CubeId, CubeKind, PipeId
 from qelebrimbor.common.paths import PathSpecification
 
-import logging
-
 from qelebrimbor.utilities.nmtfl_constraint import NoMoreThanFourLegsConstraint
 
+import logging
 console = logging.getLogger(__name__)
-console.setLevel(logging.INFO)
 
 class LayerTransition(Enum):
     EVERY = 0
@@ -360,7 +356,7 @@ class VolumetricZxGraph(nx.Graph):
         self.__bg_graph.nodes[cube_id][VolumetricZxGraph.KEY_BG_CUBE].realised_node = node
         self.nodes[node.id][VolumetricZxGraph.KEY_ZX_NODE].realising_cube = cube
 
-        console.info(f"Realising node {node} as cube {cube}")
+        console.debug(f"Realising node {node} as cube {cube}")
 
         return cube_id
 
@@ -387,7 +383,7 @@ class VolumetricZxGraph(nx.Graph):
         # Associate the path as a realisation of the edge
         zx_edge.realisation = pipe_ids
 
-        console.info(f"Realising edge {zx_edge} with pipes : {pipe_ids}")
+        console.debug(f"Realising edge {zx_edge} with pipes : {pipe_ids}")
 
     def place_cube(self, cube: BgCube) -> CubeId:
         if cube.position in self.occupied:
@@ -480,7 +476,7 @@ class VolumetricZxGraph(nx.Graph):
                         visited.add(neighbor)
                         queue.append(neighbor)
 
-        console.info(f"Neigborhood visited to find alternative : {visited}")
+        console.debug(f"Neigborhood visited to find alternative : {visited}")
 
         return False
 
