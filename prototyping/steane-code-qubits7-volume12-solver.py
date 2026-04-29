@@ -54,4 +54,4 @@ if __name__ == "__main__":
     viewer = VolumetricZxGraphViewer(vzx, "steane-code-7", hexagon)
     viewer.display()
 
-    vzx.to_pyzx_graph(filepath ="../assets/pyzx/steane/steane-code-qubits7-spiders8-blockgraph.json")
+    vzx.into_pyzx_graph(filepath ="../assets/pyzx/steane/steane-code-qubits7-spiders8-blockgraph.json")

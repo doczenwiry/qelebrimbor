@@ -89,6 +89,6 @@ if __name__ == "__main__":
     viewer = VolumetricZxGraphViewer(vzx, label = circuit)
     viewer.display()
 
-    pyzx_output = vzx.to_pyzx_graph(filepath =f"../assets/pyzx/random/{circuit}-blockgraph.json")
+    pyzx_output = vzx.into_pyzx_graph(filepath =f"../assets/pyzx/random/{circuit}-blockgraph.json")
     pyzx.draw(pyzx_input, labels=True)
     pyzx.draw(pyzx_output, labels=True)

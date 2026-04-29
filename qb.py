@@ -1,4 +1,4 @@
-import networkx as nx
+import os
 import pyzx
 import argparse
 
@@ -13,11 +13,12 @@ logging.getLogger("qelebrimbor.pathfinders.depth_first_search").setLevel(logging
 
 parser = argparse.ArgumentParser(
     prog = "qb",
-    description = "A tool to construct a Volumetric ZX-graph (a.k.a. BlockGraph) from an input ZX-graph. Currently accepted files are *.json containing a PyZX graph."
+    description = "A tool to construct a Volumetric ZX-graph (a.k.a. BlockGraph) from an input ZX-graph. Currently accepted files are *.json containing a PyZX graph in JSON format."
 )
 parser.add_argument('filepath', help = "path to the file containing the input ZX-graph.")
-parser.add_argument('-v', '--visualization', action='store_true', help = "display the visualisation of the constructed Volumetric ZX-graph.")
+parser.add_argument('-v', '--visualization', action='store_true', help = "display the visualisation of the constructed Volumetric ZX-graph at the end of the construction.")
 parser.add_argument('-f', '--fullscreen', action='store_true', help = "display the visualisation in a fullscreen window.")
+parser.add_argument('--output_pyzx', action = 'store_true', help = "write the constructed Volumetric ZX-graph as a PyZX graph into a *.json file.")
 args = parser.parse_args()
 
 if __name__ == "__main__":
@@ -34,6 +35,13 @@ if __name__ == "__main__":
 
     root = max(vzx.get_zx_nodes(), key = lambda zxn: vzx.get_zx_degree(zxn.id))
     ZxGraphInflater.process(vzx, root = root)
+
+    if args.output_pyzx:
+        pyzx_output = vzx.into_pyzx_graph()
+        output = os.path.splitext(args.filepath)[0] + str("-compiled.json")
+        console.info(f"Writing to {output} from {args.filepath}")
+        with open(output, 'w') as file:
+            file.write(pyzx_output.to_json())
 
     if args.visualization:
         window_size = "full" if args.fullscreen else "auto"

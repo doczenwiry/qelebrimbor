@@ -95,5 +95,5 @@ if __name__ == "__main__":
     viewer = VolumetricZxGraphViewer(graph= vzx, label ="steane-code-7", layout = hexagon)
     viewer.display()
 
-    pyzx_output = vzx.to_pyzx_graph(filepath ="../assets/pyzx/steane/steane-code-qubits7-spiders7-blockgraph.json")
+    pyzx_output = vzx.into_pyzx_graph(filepath ="../assets/pyzx/steane/steane-code-qubits7-spiders7-blockgraph.json")
     pyzx.draw(pyzx_output, labels = True)

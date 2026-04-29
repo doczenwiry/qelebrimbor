@@ -140,7 +140,7 @@ class VolumetricZxGraph(nx.Graph):
 
         return vzx
 
-    def to_pyzx_graph(self, planar_scale: int = 8, filepath: str = None):
+    def into_pyzx_graph(self, planar_scale: int = 1, filepath: str = None):
         pyzx_graph = pyzx.Graph()
         layout: dict[BgCube, tuple[float, float]] = dict()
 
