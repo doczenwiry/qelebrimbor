@@ -128,8 +128,8 @@ class VdPipe(Assembly):
             # Construct the ring representing the HADAMARD type of the pipe
             self.__pipe_type_ring = Box(
                 pos = GLOBAL_SPACING_FACTOR * (source.position + distances / 2.0),
-                size = [0.8 * VdPipe.PIPE_RING_LENGTH if d != 0 else VdPipe.DIAMETER for d in distances],
-                c = 'k' if EdgeType.IDENTITY else 'y'
+                size = [0.75 * VdPipe.PIPE_RING_LENGTH if d != 0 else VdPipe.DIAMETER for d in distances],
+                c = 'k' if pipe_type == EdgeType.IDENTITY else 'y4'
             )
             self.add(self.__pipe_type_ring)
 

@@ -17,6 +17,7 @@ logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.DEBUG)
 logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.DEBUG)
 logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.vedo').setLevel(logging.INFO)
 
 LENGTH = 6
 MAX_OVERHEAD = 2 if LENGTH <= 5 else 1 if LENGTH % 2 != 0 else 0
@@ -29,7 +30,7 @@ if __name__ == "__main__":
 
     vzx = VolumetricZxGraph(
         nodes = zip(range(LENGTH), nodes),
-        edges = zip( ((s, (s + 1) % LENGTH) for s in range(LENGTH)), edges)
+        edges = ( (s, (s + 1) % LENGTH, edges[s]) for s in range(LENGTH) )
     )
 
     vzx.log_summary()
@@ -38,42 +39,26 @@ if __name__ == "__main__":
     console.info(f"Found {len(realisations)} realisations for Hadamard Ring of length {LENGTH}")
 
     for realisation in realisations[:2]:
-        cubes = realisation.manhattan_length()
-        console.info(f"> Realisation [{cubes}] : {realisation}")
+        console.info(f"> Realisation [{realisation.manhattan_length()}] : {realisation}")
         vzx = VolumetricZxGraph(
             nodes = zip(range(LENGTH), nodes),
-            edges = zip( ((s, (s + 1) % LENGTH) for s in range(LENGTH)), edges)
+            edges = ( (s, (s + 1) % LENGTH, edges[s]) for s in range(LENGTH) )
         )
 
         nodes_specifications = realisation.to_nodes_specifications(zx_nodes)
         console.info(f"Nodes specifications : {nodes_specifications}")
         BlockGraphConstructor.realise_nodes(graph= vzx, specifications = nodes_specifications)
 
+        # Update the realising cubes of all zx_nodes involved
+        for node in zx_nodes:
+            node.realising_cube = vzx.get_zx_node(node.id).realising_cube
+        for edge in zx_edges:
+            edge.source.realising_cube = vzx.get_zx_node(edge.source.id).realising_cube
+            edge.target.realising_cube = vzx.get_zx_node(edge.target.id).realising_cube
+
         edges_specifications = realisation.to_edges_specifications(zx_edges)
         console.info(f"Edges specifications : {edges_specifications}")
         BlockGraphConstructor.realise_edges(graph= vzx, specifications = edges_specifications)
-
-
-        # nodes_specifications: dict[NodeId, tuple[CubeKind, Coordinates]] = {
-        #     nd: realisation.extras[nd] for nd in range(ring.number_of_nodes())
-        # }
-        #
-        # BlockGraphConstructor.realise_nodes(ring,
-        #     specifications = {
-        #         nd: realisation.extras[nd] for nd in range(ring.number_of_nodes())
-        #     }
-        # )
-        #
-        # BlockGraphConstructor.realise_edges(ring,
-        #     specifications = {
-        #         (0, LENGTH-1) : PathSpecification(
-        #             source_cube= ring.get_zx_node(0).realising_cube,
-        #             target_cube= ring.get_zx_node(LENGTH - 1).realising_cube,
-        #             extras = list(reversed(realisation.extras[LENGTH:cubes])),
-        #             pipes = [EdgeType.IDENTITY if i != LENGTH-1 else EdgeType.HADAMARD for i in range(LENGTH)]
-        #         )
-        #     }
-        # )
 
         viewer = VolumetricZxGraphViewer(vzx, f"Hadamard Ring, n={LENGTH}", CycleLayout(vzx))
         viewer.display()

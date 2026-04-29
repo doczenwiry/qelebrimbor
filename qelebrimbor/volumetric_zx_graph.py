@@ -61,7 +61,7 @@ class VolumetricZxGraph(nx.Graph):
     # TODO: work around the assumption that the zx-nodes are numbered from 0..n-1
     def __init__(self,
         nodes: Iterable[tuple[NodeId, NodeType]] | None = None,
-        edges: Iterable[tuple[EdgeId, EdgeType]] | None = None
+        edges: Iterable[tuple[NodeId, NodeId, EdgeType]] | None = None
     ):
         # Separate ZX-graph and BG-graph
         super(VolumetricZxGraph, self).__init__()
@@ -81,9 +81,9 @@ class VolumetricZxGraph(nx.Graph):
                 self.nodes[zx_node.id][VolumetricZxGraph.KEY_ZX_NODE] = zx_node
 
         if edges is not None:
-            for edge, edge_type in edges:
-                zx_source = self.get_zx_node(min(edge))
-                zx_target = self.get_zx_node(max(edge))
+            for endpoint0, endpoint1, edge_type in edges:
+                zx_source = self.get_zx_node(min(endpoint0, endpoint1))
+                zx_target = self.get_zx_node(max(endpoint0, endpoint1))
                 zx_edge = ZxEdge(source = zx_source, target = zx_target, type = edge_type)
                 self.add_edge(zx_source.id, zx_target.id)
                 self.edges[zx_source.id, zx_target.id][VolumetricZxGraph.KEY_ZX_EDGE] = zx_edge
@@ -103,11 +103,13 @@ class VolumetricZxGraph(nx.Graph):
             converted_node_ids[original_id] = node_id
             nodes.append((node_id, NodeType.convert_from_pyzx(zx_graph.type(original_id))))
 
-        edges: list[tuple[EdgeId, EdgeType]] = []
+        edges: list[tuple[NodeId, NodeId, EdgeType]] = []
         for edge in zx_graph.edges():
             source = converted_node_ids[min(edge)]
             target = converted_node_ids[max(edge)]
-            edges.append(( (source,target) , EdgeType.convert_from_pyzx(zx_graph.edge_type(edge))))
+            edges.append(
+                (source, target , EdgeType.convert_from_pyzx(zx_graph.edge_type(edge)))
+            )
 
         vzx = VolumetricZxGraph(nodes, edges)
 

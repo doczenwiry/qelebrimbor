@@ -35,10 +35,18 @@ if __name__ == "__main__":
         console.info(f"> Realisation [{cubes}] : {realisation}")
         vzx = VolumetricZxGraph(
             nodes = zip(range(LENGTH), nodes),
-            edges = zip( ((s, (s + 1) % LENGTH) for s in range(LENGTH)), edges)
+            edges = ( (s, (s + 1) % LENGTH, edges[s]) for s in range(LENGTH) )
         )
 
-        BlockGraphConstructor.realise_nodes(graph= vzx, specifications = realisation.to_nodes_specifications(zx_nodes))
+        nodes_specifications = realisation.to_nodes_specifications(zx_nodes)
+        BlockGraphConstructor.realise_nodes(graph= vzx, specifications = nodes_specifications)
+
+        # Update the realising cubes of all zx_nodes involved
+        for node in zx_nodes:
+            node.realising_cube = vzx.get_zx_node(node.id).realising_cube
+        for edge in zx_edges:
+            edge.source.realising_cube = vzx.get_zx_node(edge.source.id).realising_cube
+            edge.target.realising_cube = vzx.get_zx_node(edge.target.id).realising_cube
 
         vzx.log_summary()
 
@@ -48,7 +56,7 @@ if __name__ == "__main__":
         for edge, proposal in edges_specifications.items():
             console.info(f"> Edge [{edge}] : {proposal}")
 
-        BlockGraphConstructor.realise_edges(graph= vzx, specifications = realisation.to_edges_specifications(zx_edges))
+        BlockGraphConstructor.realise_edges(graph= vzx, specifications = edges_specifications)
 
         viewer = VolumetricZxGraphViewer(vzx, f"Identity Ring, n={LENGTH}", CycleLayout(vzx))
         viewer.display()
