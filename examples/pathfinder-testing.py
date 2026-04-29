@@ -21,10 +21,10 @@ logging.getLogger("qelebrimbor.helpers.blockgraph").setLevel(logging.CRITICAL)
 logging.getLogger("qelebrimbor.pathfinders.depth_first_search").setLevel(logging.INFO)
 logging.getLogger("qelebrimbor.vedo").setLevel(logging.CRITICAL)
 
-PATHFINDER_UNDER_TEST = PathfinderDFS
+PATHFINDER_UNDER_TEST = PathfinderDijkstra
 DISTANCES = {
     PathfinderDFS : [1, 5, 10, 25, 50, 100, 200],
-    PathfinderDijkstra : [1, ..., 6],
+    PathfinderDijkstra : range(1, 4),
 }
 
 VISUALISATION = False
@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
         console.info(f"Searching for path between {source} and {target} [distance={distance}].")
         start = time()
-        path = pathfinder.find_optimal_paths(source_cube, target_cube)
+        path = pathfinder.find_optimal_paths(source_cube, target_cube, tracing = True)
         final = time()
 
         if path is None:

@@ -13,5 +13,7 @@ dependencies = [
     "numpy==2.4.3",
     "pyzx==0.10.0",
     "vedo==2026.6.1",
-    "recordclass==0.24"
+    "recordclass==0.24",
+    "scipy>=1.17.1",
+    "matplotlib>=3.10.8",
 ]

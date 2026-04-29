@@ -1,7 +1,9 @@
 from collections import defaultdict
+import networkx as nx
+import matplotlib.pyplot as plt
 
 from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import NodeType, EdgeType
+from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
@@ -39,7 +41,7 @@ class PathfinderDijkstra:
         return current
 
     @staticmethod
-    def find_optimal_paths(source: BgCube, target: BgCube) -> Path | None:
+    def find_optimal_paths(source: BgCube, target: BgCube, tracing: bool = False) -> Path | None:
         optimum: Path | None = None
         minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
 
@@ -50,11 +52,22 @@ class PathfinderDijkstra:
 
         manhattan_distance = source.position.get_manhattan_distance(target.position)
         console.info(f"Searching for path from {source} to {target} [distance={manhattan_distance}].")
+        console.info(f"> Least bound relaxed req. : {8 * 6 ** (manhattan_distance - 1)}")
+        console.info(f"> Upper bound relaxed req. : {8 * 6 ** manhattan_distance}")
 
         interconnect = { NodeType.X, NodeType.Z }
 
         points_reached = 0
         points_relaxed = 0
+
+        # Tracing exploration
+        nodes : dict[BgCube, NodeId] = dict()
+        labels: dict[NodeId, str] = dict()
+        trace: nx.Graph = nx.Graph()
+        if tracing:
+            trace.add_node( 0 )
+            labels[len(nodes)] = str(source)
+            nodes[source] = 0
 
         while len(unrelaxed) != 0 and optimum is None:
             current: BgCube = PathfinderDijkstra.__extract_closest_point(unrelaxed)
@@ -68,6 +81,14 @@ class PathfinderDijkstra:
                 if current != source:
                     completed_path.append( current )
                 completed_path.target = target
+
+                # Tracing exploration
+                if tracing:
+                    labels[len(nodes)] = str(target)
+                    nodes[target] = len(nodes)
+                    trace.add_node( nodes[target] )
+                    trace.add_edge( nodes[current], nodes[target] )
+
                 optimum = completed_path
 
             # Relaxation step on every neighbor
@@ -86,13 +107,19 @@ class PathfinderDijkstra:
                 console.debug(f">> {current_path}   =Relax=   {extended_path}")
 
                 if neighbor not in minimal_paths or extended_distance < minimal_paths[neighbor_point].manhattan_length():
-                    if neighbor.kind not in [CubeKind.OOO, CubeKind.YYY]:
-                        # Update position of neighbor in unrelaxed as its distance is being updated
-                        if neighbor in minimal_paths:
-                            PathfinderDijkstra.__remove_from_unrelaxed(
-                                neighbor, minimal_paths[neighbor_point].manhattan_length(), unrelaxed
-                            )
-                        PathfinderDijkstra.__add_into_unrelaxed(neighbor, extended_distance, unrelaxed)
+                    # Update position of neighbor in unrelaxed as its distance is being updated
+                    if neighbor in minimal_paths:
+                        PathfinderDijkstra.__remove_from_unrelaxed(
+                            neighbor, minimal_paths[neighbor_point].manhattan_length(), unrelaxed
+                        )
+                    PathfinderDijkstra.__add_into_unrelaxed(neighbor, extended_distance, unrelaxed)
+
+                    # Tracing exploration
+                    if tracing:
+                        # labels[len(nodes)] = str(neighbor)
+                        nodes[neighbor] = len(nodes)
+                        trace.add_node( nodes[neighbor] )
+                        trace.add_edge( nodes[current], nodes[neighbor] )
 
                     points_reached += 1
 
@@ -106,5 +133,12 @@ class PathfinderDijkstra:
         console.info(f"Number of points present : {points_present}")
         console.info(f"Number of points relaxed : {points_relaxed}")
         console.info(f"Number of points reached : {points_reached}")
+
+        if tracing:
+            layout = nx.drawing.layout.bfs_layout(trace, start = 0)
+            nx.draw(trace, layout, node_size = 1)
+            nx.draw_networkx_labels(trace, layout, labels)
+            console.info(f"> Number of nodes : {len(trace.nodes)}")
+            plt.show()
 
         return optimum

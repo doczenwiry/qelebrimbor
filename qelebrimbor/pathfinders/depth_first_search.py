@@ -1,7 +1,9 @@
 from collections import defaultdict
+import matplotlib.pyplot as plt
+import networkx as nx
 
 from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import NodeType, EdgeType
+from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType
 from qelebrimbor.common.components import BgCube
 
 from qelebrimbor.common.coordinates import Coordinates
@@ -39,7 +41,7 @@ class PathfinderDFS:
         return current
 
     @staticmethod
-    def find_optimal_paths(source: BgCube, target: BgCube, bnb: bool = False) -> Path | None:
+    def find_optimal_paths(source: BgCube, target: BgCube, bnb: bool = False, tracing: bool = False) -> Path | None:
         """
         Perform path-finding using a Depth-First Search approach.
         :param source: The cube from which to start.
@@ -64,6 +66,15 @@ class PathfinderDFS:
         pruning_performed = 0
         points_discovered = 0
         points_considered = 0
+
+        # Tracing exploration
+        nodes : dict[BgCube, NodeId] = dict()
+        labels: dict[NodeId, str] = dict()
+        trace: nx.Graph = nx.Graph()
+        if tracing:
+            trace.add_node( 0 )
+            labels[len(nodes)] = str(source)
+            nodes[source] = 0
 
         while len(unrelaxed) != 0 and (bnb or optimum is None):
             current: BgCube = PathfinderDFS.__extract_closest_point(unrelaxed)
@@ -113,6 +124,13 @@ class PathfinderDFS:
                         )
                     PathfinderDFS.__add_into_unrelaxed(neighbor, Path.minimal_length_possible(neighbor, target), unrelaxed)
 
+                    # Tracing exploration
+                    if tracing:
+                        # labels[len(nodes)] = str(neighbor)
+                        nodes[neighbor] = len(nodes)
+                        trace.add_node( nodes[neighbor] )
+                        trace.add_edge( nodes[current], nodes[neighbor] )
+
                     points_discovered += 1
 
                     # Update minimal distance discovered
@@ -125,5 +143,12 @@ class PathfinderDFS:
         console.info(f"> Number of points considered : {points_considered}")
         console.info(f"> Number of pruning performed : {pruning_performed}")
         console.info(f"> Number of points discovered : {points_discovered}")
+
+        if tracing:
+            layout = nx.drawing.layout.bfs_layout(trace, start = 0)
+            nx.draw(trace, layout, node_size = 1)
+            nx.draw_networkx_labels(trace, layout, labels)
+            console.info(f"> Number of nodes : {len(trace.nodes)}")
+            plt.show()
 
         return optimum
