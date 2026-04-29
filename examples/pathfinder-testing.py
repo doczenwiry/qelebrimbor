@@ -13,7 +13,6 @@ from qelebrimbor.pathfinders.depth_first_search import PathfinderDFS
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.planar import PlanarLayout
 
-
 import logging
 console = logging.getLogger(__name__)
 logging.basicConfig(level = logging.INFO)
@@ -22,15 +21,16 @@ logging.getLogger("qelebrimbor.helpers.blockgraph").setLevel(logging.CRITICAL)
 logging.getLogger("qelebrimbor.pathfinders.depth_first_search").setLevel(logging.INFO)
 logging.getLogger("qelebrimbor.vedo").setLevel(logging.CRITICAL)
 
-PATHFINDERS = [ PathfinderDFS, PathfinderDijkstra ]
-UNDER_TEST = 0
+PATHFINDER_UNDER_TEST = PathfinderDFS
 DISTANCES = {
     PathfinderDFS : [1, 5, 10, 25, 50, 100, 200],
     PathfinderDijkstra : [1, ..., 6],
 }
 
+VISUALISATION = False
+
 if __name__ == "__main__":
-    pathfinder = PATHFINDERS[UNDER_TEST]
+    pathfinder = PATHFINDER_UNDER_TEST
     distances = DISTANCES[pathfinder]
 
     for distance in distances:
@@ -62,5 +62,6 @@ if __name__ == "__main__":
         )
         vzx.realise_zx_edge(0, 1, proposal)
 
-        viewer = VolumetricZxGraphViewer(vzx, label = f"distance={distance}", layout = PlanarLayout(vzx, scale = 1))
-        viewer.display()
+        if VISUALISATION:
+            viewer = VolumetricZxGraphViewer(vzx, label = f"distance={distance}", layout = PlanarLayout(vzx, scale = 1))
+            viewer.display()

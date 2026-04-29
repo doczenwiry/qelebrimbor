@@ -61,6 +61,7 @@ class PathfinderDFS:
 
         interconnect = { NodeType.X, NodeType.Z }
 
+        pruning_performed = 0
         points_discovered = 0
         points_considered = 0
 
@@ -75,6 +76,7 @@ class PathfinderDFS:
 
             # Branch-and-bound
             if minimal_length_achieved and minimal_length_achieved <= manhattan_length_projected:
+                pruning_performed += 1
                 continue
 
             console.debug(f"Current : {current} [mlp-rest:{minimal_length_possible},mlp-total:{manhattan_length_projected},path:{current_path}]")
@@ -121,6 +123,7 @@ class PathfinderDFS:
         points_octahedron = int(manhattan_distance * (2 * manhattan_distance**2 + 1) / 3)
         console.info(f"> Number of octahedron points : {points_octahedron}")
         console.info(f"> Number of points considered : {points_considered}")
+        console.info(f"> Number of pruning performed : {pruning_performed}")
         console.info(f"> Number of points discovered : {points_discovered}")
 
         return optimum
