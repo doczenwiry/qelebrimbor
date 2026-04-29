@@ -23,39 +23,21 @@ class ZxGraphInflater:
         chosen_kind = root_kind if root_kind else CubeKind.suitable_kinds(root.type)[0]
         graph.realise_zx_node(root, BgCube(chosen_kind, SpacetimeHelper.ORIGIN))
 
-        for edge in nx.edge_bfs(graph, root.id):
-            console.info(f"> BFS-EDGE : {edge}")
+        # Form the backbone with the bfs_edges
+        # > Reserve needed positions based on remaining missing neighbors
+        # Then complete with the edge_bfs
+        # > Perform realisations in order of decreasing manhattan distance between the endpoint cubes
+
+        edges_to_process = nx.bfs_edges(graph, root.id)
+        for edge in edges_to_process:
             zx_edge = graph.get_zx_edge(*edge)
 
-            if edge == (113, 112):
-                break
-
             if zx_edge.is_realised():
-                continue
+                console.warning(f"> Second attempt to realise edge : {edge}")
 
             source, target = (zx_edge.source, zx_edge.target) if zx_edge.source.is_realised() else (zx_edge.target, zx_edge.source)
 
-            if source.is_realised() and target.is_realised():
-                # Cross-edge
-                console.info(f"> Searching edge-realisation : {source} - {target}")
-
-                path = PathfinderDFS.find_optimal_paths(graph, source.realising_cube, target.realising_cube)
-
-                if path is None:
-                    console.error(f"Failed to find any path for edge-realisation {source} - {target}")
-                    continue
-
-                console.info(f"> Optimal path found : {path}")
-
-                proposal = PathSpecification(
-                    source.realising_cube, target.realising_cube,
-                    extras=path.extras, pipes=[EdgeType.IDENTITY for _ in range(path.manhattan_length())]
-                )
-                graph.realise_zx_edge(source.id, target.id, proposal)
-
-                edge_realisations += 1
-
-            elif source.is_realised() or target.is_realised():
+            if source.is_realised() or target.is_realised():
                 # First-pass
                 console.info(f"> Searching node-realisation : {source} - {target}")
                 path = PathfinderDFS.find_closest_realisation(graph, source.realising_cube, target)
@@ -77,6 +59,37 @@ class ZxGraphInflater:
                 node_realisations += 1
             else:
                 console.error(f"> Unrealisable edge : {edge}")
+
+        # TODO: detects whether the source and/or target are unreachable in the BlockGraph.
+        # TODO: > represent the spacetime available and pathfind to the border of the blockgraph ?
+        # TODO: > reserve needed positions for connection ?
+        # for edge in nx.edge_bfs(graph, root.id):
+        #     zx_edge = graph.get_zx_edge(*edge)
+        #
+        #     if zx_edge.is_realised():
+        #         continue
+        #
+        #     source, target = (zx_edge.source, zx_edge.target) if zx_edge.source.is_realised() else (zx_edge.target, zx_edge.source)
+        #
+        #     if source.is_realised() and target.is_realised():
+        #         # Cross-edge
+        #         console.info(f"> Searching edge-realisation : {source} - {target}")
+        #
+        #         path = PathfinderDFS.find_optimal_paths(graph, source.realising_cube, target.realising_cube)
+        #
+        #         if path is None:
+        #             console.error(f"Failed to find any path for edge-realisation {source} - {target}")
+        #             continue
+        #
+        #         console.info(f"> Optimal path found : {path}")
+        #
+        #         proposal = PathSpecification(
+        #             source.realising_cube, target.realising_cube,
+        #             extras=path.extras, pipes=[EdgeType.IDENTITY for _ in range(path.manhattan_length())]
+        #         )
+        #         graph.realise_zx_edge(source.id, target.id, proposal)
+        #
+        #         edge_realisations += 1
 
         console.info(f"Number of node-realisations: {node_realisations}")
         console.info(f"Number of edge-realisations: {edge_realisations}")

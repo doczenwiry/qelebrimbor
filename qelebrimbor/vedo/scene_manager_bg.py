@@ -61,6 +61,11 @@ class BgSceneManager:
         else:
             alpha = 0.025 if highlight else 1.0
 
+            # TODO: adapt to toggle whether all equivalent cubes should be shown or only the "original" one
+            # for bg_cube, vd_cube in self.__cubes.items():
+            #     if bg_cube != selected:
+            #         vd_cube.alpha(alpha)
+
             equivalent_cubes, connecting_pipes = self.__vzx_graph.get_equivalent_bg_cubes(selected)
 
             for bg_cube, vd_cube in self.__cubes.items():
@@ -73,6 +78,10 @@ class BgSceneManager:
 
     def alter_pipes_appearance(self, *pipes: BgPipe, highlight: bool = False):
         cubes: set[BgCube] = set()
+        # for pipe in pipes:
+        #     cubes.add(pipe.source)
+        #     cubes.add(pipe.target)
+
         piping: set[BgPipe] = set()
 
         for pipe in pipes:
@@ -86,7 +95,7 @@ class BgSceneManager:
         alpha = 0.025 if highlight else 1.0
 
         for bg_pipe, vd_pipe in self.__pipes.items():
-            if bg_pipe not in piping and bg_pipe not in pipes:
+            if bg_pipe not in pipes and bg_pipe not in piping:
                 vd_pipe.alpha(alpha)
 
         for bg_cube, vd_cube in self.__cubes.items():
