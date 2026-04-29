@@ -11,6 +11,7 @@ from qelebrimbor.pathfinders.path import Path, Distance
 import logging
 console = logging.getLogger(__name__)
 
+# TODO: clarify that this is a Depth-First-Search with a Brand-and-Bound feature.
 class PathfinderDFS:
     @staticmethod
     def __retrieve_closest_unrelaxed(
@@ -38,10 +39,18 @@ class PathfinderDFS:
         return current
 
     @staticmethod
-    def find_optimal_paths(source: BgCube, target: BgCube, backtrack: bool = False) -> list[Path]:
-        paths: list[Path] = []
+    def find_optimal_paths(source: BgCube, target: BgCube, bnb: bool = False) -> Path | None:
+        """
+        Perform path-finding using a Depth-First Search approach.
+        :param source: The cube from which to start.
+        :param target: The cube towards which to go.
+        :param bnb: Controls whether a Branch-and-Bound refinement ought to be performed after finding the first path.
+        This will incur an additional computational cost that may or may not fall into super-exponential territory.
+        :return:
+        """
+        optimum: Path | None = None
 
-        minimal_length_achieved = None
+        minimal_length_achieved: int | None = None
         minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
         unrelaxed: dict[Distance, list[BgCube]] = defaultdict(list)
         PathfinderDFS.__add_into_unrelaxed(source, 0, unrelaxed)
@@ -52,23 +61,23 @@ class PathfinderDFS:
 
         interconnect = { NodeType.X, NodeType.Z }
 
-        earliest_terminal = 0
         points_discovered = 0
         points_considered = 0
 
-        while len(unrelaxed) != 0 and (backtrack or len(paths) == 0):
+        while len(unrelaxed) != 0 and (bnb or optimum is None):
             current: BgCube = PathfinderDFS.__extract_closest_point(unrelaxed)
             current_point = (current.kind, current.position)
             current_path = minimal_paths[current_point]
             terminal = current_path.target
 
-            manhattan_distance_remaining = terminal.position.get_manhattan_distance(target.position)
-            manhattan_length_projected = current_path.manhattan_length() + manhattan_distance_remaining
+            minimal_length_possible: int = Path.minimal_length_possible(terminal, target)
+            manhattan_length_projected: int = current_path.manhattan_length() + minimal_length_possible
 
-            if minimal_length_achieved and minimal_length_achieved < manhattan_length_projected:
+            # Branch-and-bound
+            if minimal_length_achieved and minimal_length_achieved <= manhattan_length_projected:
                 continue
 
-            console.debug(f"Current : {current} [mdr:{manhattan_distance_remaining},mlp:{manhattan_length_projected},path:{current_path}]")
+            console.debug(f"Current : {current} [mlp-rest:{minimal_length_possible},mlp-total:{manhattan_length_projected},path:{current_path}]")
 
             if BlockGraphHelper.connectable(current, target, EdgeType.IDENTITY):
                 console.debug(f"> Connectable to {target} : {BlockGraphHelper.connectable(current, target, EdgeType.IDENTITY)}")
@@ -78,10 +87,7 @@ class PathfinderDFS:
                 completed_path.target = target
                 if not minimal_length_achieved or completed_path.manhattan_length() < minimal_length_achieved:
                     minimal_length_achieved = completed_path.manhattan_length()
-                    paths.clear()
-
-                if completed_path.manhattan_length() == minimal_length_achieved:
-                    paths.append(completed_path)
+                    optimum = completed_path
 
             for neighbor in BlockGraphHelper.get_candidate_constellation(terminal, node_types = interconnect):
                 neighbor_point = (neighbor.kind, neighbor.position)
@@ -110,23 +116,11 @@ class PathfinderDFS:
                     # Update minimal distance discovered
                     minimal_paths[neighbor_point] = extended_path
 
-                if minimal_length_achieved is None:
-                    earliest_terminal += 1
-
             points_considered += 1
 
         points_octahedron = int(manhattan_distance * (2 * manhattan_distance**2 + 1) / 3)
         console.info(f"> Number of octahedron points : {points_octahedron}")
         console.info(f"> Number of points considered : {points_considered}")
         console.info(f"> Number of points discovered : {points_discovered}")
-        for kind in CubeKind:
-            if kind in [ CubeKind.OOO, CubeKind.YYY ]:
-                continue
 
-            if not any( point[0] == kind for point in minimal_paths.keys() ):
-                continue
-
-            points = list(filter(lambda p : p[0] == kind, minimal_paths.keys()))
-            console.debug(f"> Kind {kind} has {len(points)} points: {points}")
-
-        return paths
+        return optimum

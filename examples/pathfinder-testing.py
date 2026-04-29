@@ -5,10 +5,10 @@ from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
+from qelebrimbor.pathfinders.dijkstra import PathfinderDijkstra
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 from qelebrimbor.pathfinders.depth_first_search import PathfinderDFS
-from qelebrimbor.pathfinders.dijkstra import PathfinderDijkstra
 
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.planar import PlanarLayout
@@ -22,26 +22,40 @@ logging.getLogger("qelebrimbor.helpers.blockgraph").setLevel(logging.CRITICAL)
 logging.getLogger("qelebrimbor.pathfinders.depth_first_search").setLevel(logging.INFO)
 logging.getLogger("qelebrimbor.vedo").setLevel(logging.CRITICAL)
 
+PATHFINDERS = [ PathfinderDFS, PathfinderDijkstra ]
+UNDER_TEST = 0
+DISTANCES = {
+    PathfinderDFS : [1, 5, 10, 25, 50, 100, 200],
+    PathfinderDijkstra : [1, ..., 6],
+}
+
 if __name__ == "__main__":
-    for distance in [1, 5, 10, 200]:
+    pathfinder = PATHFINDERS[UNDER_TEST]
+    distances = DISTANCES[pathfinder]
+
+    for distance in distances:
+        # Prepare input VZX graph
         vzx = VolumetricZxGraph(
             nodes = [ (0, NodeType.X) , (1, NodeType.X) ],
-            edges = [ ( (0,1), EdgeType.IDENTITY) ]
+            edges = [ (0, 1, EdgeType.IDENTITY) ]
         )
         source = vzx.get_zx_node(0)
         target = vzx.get_zx_node(1)
         source_cube = vzx.get_bg_cube(vzx.realise_zx_node(source, BgCube(CubeKind.XZZ, SpacetimeHelper.ORIGIN)))
         target_cube = vzx.get_bg_cube(vzx.realise_zx_node(target, BgCube(CubeKind.XZZ, distance * SpacetimeHelper.XP)))
+
         console.info(f"Searching for path between {source} and {target} [distance={distance}].")
         start = time()
-        paths = PathfinderDFS.find_optimal_paths(source_cube, target_cube)
+        path = pathfinder.find_optimal_paths(source_cube, target_cube)
         final = time()
 
-        console.info(f"Found {len(paths)} paths in {round(final - start)} seconds.")
-        for path in paths:
-            console.info(f"> {path} [length={path.manhattan_length()}]")
+        if path is None:
+            console.error(f"Failed to find a path [runtime={round(final - start)}s].\n")
+            continue
 
-        path = paths[0]
+        console.info(f"Found a locally-optimal path [runtime={round(final - start)}s].")
+        console.info(f"> {path} [length={path.manhattan_length()}]\n")
+
         proposal = PathSpecification(
             source_cube, target_cube,
             extras = path.extras, pipes = [ EdgeType.IDENTITY for _ in range(path.manhattan_length()) ]

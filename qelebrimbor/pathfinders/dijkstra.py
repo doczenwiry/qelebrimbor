@@ -39,8 +39,8 @@ class PathfinderDijkstra:
         return current
 
     @staticmethod
-    def find_optimal_paths(source: BgCube, target: BgCube) -> list[Path]:
-        paths: list[Path] = []
+    def find_optimal_paths(source: BgCube, target: BgCube) -> Path | None:
+        optimum: Path | None = None
         minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
 
         # TODO: switch to a more efficient data-structure (i.e. fibo-heap)
@@ -53,11 +53,10 @@ class PathfinderDijkstra:
 
         interconnect = { NodeType.X, NodeType.Z }
 
-        earliest_found = None
         points_reached = 0
         points_relaxed = 0
 
-        while len(unrelaxed) != 0 and len(paths) == 0:
+        while len(unrelaxed) != 0 and optimum is None:
             current: BgCube = PathfinderDijkstra.__extract_closest_point(unrelaxed)
             current_point = (current.kind, current.position)
             current_path: Path = minimal_paths[ current_point ]
@@ -69,8 +68,7 @@ class PathfinderDijkstra:
                 if current != source:
                     completed_path.append( current )
                 completed_path.target = target
-                paths.append(completed_path)
-                earliest_found = points_relaxed
+                optimum = completed_path
 
             # Relaxation step on every neighbor
             for neighbor in BlockGraphHelper.get_candidate_constellation(current, node_types = interconnect):
@@ -107,16 +105,6 @@ class PathfinderDijkstra:
         points_present = int(n * (2 * n**2 + 1) / 3)
         console.info(f"Number of points present : {points_present}")
         console.info(f"Number of points relaxed : {points_relaxed}")
-        console.info(f"Earliest target achieved : {earliest_found}")
         console.info(f"Number of points reached : {points_reached}")
-        for kind in CubeKind:
-            if kind in [ CubeKind.OOO, CubeKind.YYY ]:
-                continue
 
-            if not any( point[0] == kind for point in minimal_paths.keys() ):
-                continue
-
-            points = list(filter(lambda p : p[0] == kind, minimal_paths.keys()))
-            console.debug(f"> Kind {kind} has {len(points)} points: {points}")
-
-        return paths
+        return optimum
