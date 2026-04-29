@@ -26,6 +26,11 @@ from qelebrimbor.helpers.spacetime import SpacetimeHelper
 import logging
 console = logging.getLogger(__name__)
 
+
+# TODO: it might be relevant to rename this to Length to avoid confusion
+type Distance = int
+
+
 @total_ordering
 class Path:
     def __init__(self, source: BgCube, target: BgCube):

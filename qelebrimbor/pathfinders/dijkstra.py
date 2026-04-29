@@ -5,9 +5,8 @@ from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
-from qelebrimbor.pathfinders.path import Path
+from qelebrimbor.pathfinders.path import Path, Distance
 
-type Distance = int
 
 import logging
 console = logging.getLogger(__name__)

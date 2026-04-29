@@ -6,8 +6,7 @@ from qelebrimbor.common.components import BgCube
 
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
-from qelebrimbor.pathfinders.dijkstra import Distance
-from qelebrimbor.pathfinders.path import Path
+from qelebrimbor.pathfinders.path import Path, Distance
 
 import logging
 console = logging.getLogger(__name__)
@@ -39,7 +38,7 @@ class PathfinderDFS:
         return current
 
     @staticmethod
-    def find_optimal_paths(source: BgCube, target: BgCube) -> list[Path]:
+    def find_optimal_paths(source: BgCube, target: BgCube, backtrack: bool = False) -> list[Path]:
         paths: list[Path] = []
 
         minimal_length_achieved = None
@@ -57,7 +56,7 @@ class PathfinderDFS:
         points_discovered = 0
         points_considered = 0
 
-        while len(unrelaxed) != 0 and len(paths) == 0:
+        while len(unrelaxed) != 0 and (backtrack or len(paths) == 0):
             current: BgCube = PathfinderDFS.__extract_closest_point(unrelaxed)
             current_point = (current.kind, current.position)
             current_path = minimal_paths[current_point]
