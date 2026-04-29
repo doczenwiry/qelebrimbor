@@ -48,6 +48,7 @@ class PathfinderDFS:
         :param target: The cube towards which to go.
         :param bnb: Controls whether a Branch-and-Bound refinement ought to be performed after finding the first path.
         This will incur an additional computational cost that may or may not fall into super-exponential territory.
+        Proof of the possibility would be nice. Refutation thereof would be better.
         :return:
         """
         optimum: Path | None = None
