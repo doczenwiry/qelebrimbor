@@ -1,6 +1,7 @@
-import os
+from os import path
 import pyzx
-import argparse
+from argparse import ArgumentParser
+from time import time
 
 from qelebrimbor.inflaters.breadth_first_search import ZxGraphInflaterBFS
 from qelebrimbor.inflaters.least_remaining_ports import ZxGraphInflaterPorts
@@ -10,9 +11,8 @@ from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 import logging
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger(__name__)
-logging.getLogger("qelebrimbor.pathfinders.depth_first_search").setLevel(logging.INFO)
 
-parser = argparse.ArgumentParser(
+parser = ArgumentParser(
     prog = "qb",
     description = "A tool to construct a Volumetric ZX-graph (a.k.a. BlockGraph) from an input ZX-graph. Currently accepted files are *.json containing a PyZX graph in JSON format."
 )
@@ -34,13 +34,25 @@ if __name__ == "__main__":
 
     vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_input)
 
-    root = max(vzx.get_zx_nodes(), key = lambda zxn: vzx.get_zx_degree(zxn.id))
-    inflater = ZxGraphInflaterPorts(vzx)
-    inflater.process(vzx, root = root)
+    start = time()
+
+    try:
+        root = max(vzx.get_zx_nodes(), key = lambda zxn: vzx.get_zx_degree(zxn.id))
+        inflater = ZxGraphInflaterPorts(vzx)
+        inflater.process(vzx, root = root)
+    except Exception as e:
+        console.error(f"Exception: {e}")
+
+    final = time()
+
+    console.info(f"Time to Inflate: {final - start} seconds")
+
+    unrealised_edges = sum(1 for edge in vzx.get_zx_edges() if not edge.is_realised())
+    console.info(f"Unrealised edges: {unrealised_edges} / {vzx.number_of_edges()}")
 
     if args.output_pyzx:
         pyzx_output = vzx.into_pyzx_graph()
-        output = os.path.splitext(args.filepath)[0] + str("-compiled.json")
+        output = path.splitext(args.filepath)[0] + str("-compiled.json")
         console.info(f"Writing to {output} from {args.filepath}")
         with open(output, 'w') as file:
             file.write(pyzx_output.to_json())

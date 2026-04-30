@@ -80,19 +80,13 @@ class ZxGraphInflaterBFS:
             source, target = (zx_edge.source, zx_edge.target) if zx_edge.source.is_realised() else (zx_edge.target, zx_edge.source)
 
             if source.is_realised() or target.is_realised():
-                if any(position in graph.occupied for position in self.__available_ports[source]):
-                    console.error(f"> DETECTION FAILURE: {source} [{self.__available_ports[source]}]")
-                    console.error(f">>> {list(filter(lambda position : position in graph.occupied, self.__available_ports[source]))}")
-                    console.error(f">>> {self.__required_ports[source]}")
-
                 if len(self.__available_ports[source]) < self.__required_ports[source]:
-                    console.error(f"> FAILURE to realise SP edge : {edge} [insufficient number of ports at {source.realising_cube}]")
-                    continue
+                    raise Exception(f"> FAILURE to realise SP edge : {edge} [cause:insufficient-ports]")
 
                 success = self.__attempt_node_realisation(source, target)
 
                 if not success:
-                    console.error(f"> FAILURE to realise FP edge : {edge}")
+                    raise Exception(f"> FAILURE to realise FP edge : {edge} [cause:pathfinder]")
 
                 self.__required_ports[source] -= 1
                 self.__required_ports[target] -= 1
@@ -100,7 +94,7 @@ class ZxGraphInflaterBFS:
                 self.__node_realisations += 1
 
             else:
-                console.error(f"> UNREALISABLE FP edge : {edge} [need one realised endpoint]")
+                raise Exception(f"> FAILURE to realise FP edge : {edge} [cause:unrealised-endpoints]")
 
         # Perform a pass of edge-realisations (a.k.a. cross edges)
         unrealised_edges = filter(
@@ -115,20 +109,15 @@ class ZxGraphInflaterBFS:
                 console.warning(f"> Second attempt to realise edge : {edge}")
                 continue
 
-            # if tuple(sorted(edge)) in [(24, 29), (58, 59), (60, 61), (71, 79), (70, 73)]:
-            #     console.warning(f">> HARDCODED IGNORING OF EDGE FROM EXAMPLE [{edge}].")
-            #     continue
-
             source, target = (zx_edge.source, zx_edge.target) if zx_edge.source.is_realised() else (zx_edge.target, zx_edge.source)
 
             if source.is_realised() and target.is_realised():
                 if len(self.__available_ports[source]) < self.__required_ports[source] and len(self.__available_ports[target]) < self.__required_ports[target]:
-                    console.error(f"> FAILURE to realise SP edge : {edge} [insufficient number of ports at {source.realising_cube}]")
-                    continue
+                    raise Exception(f"> FAILURE to realise SP edge : {edge} [cause:insufficient-ports]")
 
                 success = self.__attempt_edge_realisation(source, target)
                 if not success:
-                    console.error(f"> FAILURE to realise SP edge : {edge} [no path found by pathfinder]")
+                    raise Exception(f"> FAILURE to realise SP edge : {edge} [cause:pathfinder]")
 
                 self.__required_ports[source] -= 1
                 self.__required_ports[target] -= 1
@@ -136,7 +125,7 @@ class ZxGraphInflaterBFS:
                 self.__node_realisations += 1
 
             else:
-                console.error(f"> Unrealisable SP edge : {edge} [need two realised endpoints]")
+                raise Exception(f"> FAILURE to realise SP edge : {edge} [cause:unrealised-endpoints]")
 
         console.info(f"Number of node-realisations: {self.__node_realisations}")
         console.info(f"Number of edge-realisations: {self.__edge_realisations}")
@@ -149,7 +138,7 @@ class ZxGraphInflaterBFS:
         # Place a cube of a kind suitable for the type of the unrealised endpoint node can be placed.
         console.info(f"> Searching for node-realisation : {source} - {target}")
         console.info(f">> Source ports : {self.__required_ports[source]}/{len(self.__available_ports[source])}")
-        path = PathfinderDFS.find_closest_realisation(self.__graph, source.realising_cube, target)
+        path = PathfinderDFS.find_closest_realisation(self.__graph, source.realising_cube, target, reservations = self.__reservations)
 
         if path is None:
             console.error(f"Failed to find any path for node-realisation {source} - {target}")

@@ -8,6 +8,7 @@ from qelebrimbor.common.components import BgCube, ZxNode
 
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.pathfinders.path import Path, Distance
 
 import logging
@@ -46,6 +47,7 @@ class PathfinderDFS:
     @staticmethod
     def find_closest_realisation(
             graph: VolumetricZxGraph, source: BgCube, target: ZxNode,
+            reservations: dict[Coordinates, ZxNode],
             maximal_distance: int = None,
             tracing: bool = False
     ) -> Path | None:
@@ -55,7 +57,8 @@ class PathfinderDFS:
         unrelaxed.append( Path(source, source) )
         minimal_paths[ (source.kind, source.position) ] = Path(source = source, target = source)
 
-        console.info(f"Searching for placement from {source} to {target}.")
+        number_of_ports_required = graph.get_zx_degree(target.id)
+        console.info(f"Searching for placement from {source} to {target}. [ports required:{number_of_ports_required}]")
 
         target_suitable_kinds: list[CubeKind] = CubeKind.suitable_kinds(target.type)
 
@@ -90,17 +93,40 @@ class PathfinderDFS:
                     console.debug(f">> Position occupied : {neighbor.position}")
                     continue
 
+                # if neighbor.position in reservations:
+                #     # Allow taking the reservations if it is not critical to the holder.
+                #     holder = reservations[neighbor.position]
+                #     if holder.id != source.realised_node.id:
+                #         reserved_ports_positions = sum(1 for kv in reservations.items() if kv[1] == holder)
+                #         # number_of_ports_required = 0
+                #         # number_of_ports_required = sum(
+                #         #     1 for nb in graph.get_zx_neighbors(holder) if graph.get_zx_edge(holder.id, nb.id).is_realised()
+                #         # )
+                #         # critical = number_of_ports_required <= reserved_ports_positions
+                #         # console.warning(f"> Position reserved : {neighbor.position} by {holder} [rq:{number_of_ports_required},rv:{reserved_ports_positions},critical:{critical}]")
+                #
+                # #     if holder.id != source.realised_node.id:
+                # #         console.debug(f">> Position {neighbor.position} reserved by {holder} [critical:{critical}]")
+                # #         continue
+
                 extended_path = current_path.copy()
                 if terminal != source:
                     extended_path.append(terminal)
                 extended_path.target = neighbor
 
-                # If a suitable Cube has been reached for the target, stop there
+                # If a suitable Cube has been reached for the target, consider it further
                 console.debug(f"> Neighbor has kind : {neighbor.kind} vs {target_suitable_kinds}")
                 if neighbor.kind in target_suitable_kinds:
-
-                    optimum = extended_path
-                    continue
+                    open_ports = list(filter(
+                        lambda pos : pos not in extended_path.occupied and pos not in graph.occupied and pos not in reservations,
+                        SpacetimeHelper.get_constellation(neighbor.position, neighbor.kind.get_reach())
+                    ))
+                    number_of_open_ports = len(open_ports)
+                    # If the position offers enough open ports, consider it as the optimum
+                    console.debug(f"> Open ports found for {neighbor} : {open_ports} [req.{number_of_ports_required}]")
+                    if number_of_ports_required <= number_of_open_ports:
+                        optimum = extended_path
+                        continue
 
                 # Don't attempt to extend if the neighbor is a terminal cube.
                 if neighbor.kind in [ CubeKind.OOO , CubeKind.YYY ]:
