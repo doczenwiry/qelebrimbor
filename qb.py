@@ -59,10 +59,14 @@ if __name__ == "__main__":
 
     if args.validation:
         pyzx_output = vzx.into_pyzx_graph()
-        # TODO: understand why the following two are needed
+        # TODO: fix the labelling of BOUNDARIES in vzx.into_pyzx_graph(..) to match that of pyzx_input
         pyzx_input.auto_detect_io()
         pyzx_output.auto_detect_io()
-        console.info(f"Validation : {pyzx.compare_tensors(pyzx_input, pyzx_output)}")
+
+        composition = pyzx_input.copy()
+        composition.compose(pyzx_output.adjoint())
+        pyzx.full_reduce(composition)
+        console.info(f"Validation : {composition.is_id()}")
 
     if args.visualization:
         window_size = "full" if args.fullscreen else "auto"
