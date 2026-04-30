@@ -15,7 +15,7 @@ from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 import logging
 console = logging.getLogger("qelebrimbor.main")
 
-class ZxGraphInflater:
+class ZxGraphInflaterBFS:
     def __init__(self, graph: VolumetricZxGraph):
         self.__graph = graph
         self.__node_realisations = 0

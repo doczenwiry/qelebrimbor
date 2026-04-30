@@ -2,7 +2,8 @@ import os
 import pyzx
 import argparse
 
-from qelebrimbor.inflater import ZxGraphInflater
+from qelebrimbor.inflaters.breadth_first_search import ZxGraphInflaterBFS
+from qelebrimbor.inflaters.least_remaining_ports import ZxGraphInflaterPorts
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -34,7 +35,7 @@ if __name__ == "__main__":
     vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_input)
 
     root = max(vzx.get_zx_nodes(), key = lambda zxn: vzx.get_zx_degree(zxn.id))
-    inflater = ZxGraphInflater(vzx)
+    inflater = ZxGraphInflaterPorts(vzx)
     inflater.process(vzx, root = root)
 
     if args.output_pyzx:
