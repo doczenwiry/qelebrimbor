@@ -20,7 +20,7 @@ from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 class PlanarLayout(ZxLayout):
-    def __init__(self, graph: VolumetricZxGraph, scale: int = 10):
+    def __init__(self, graph: VolumetricZxGraph, scale: int = 1):
         self.placements: dict[ZxNode, tuple[float, float]] = dict()
         for node_id, position in nx.planar_layout(graph, scale = scale).items():
             x, y = position
