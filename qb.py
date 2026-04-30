@@ -32,10 +32,10 @@ if __name__ == "__main__":
         pyzx_input = pyzx.Graph().from_json(file.read())
 
     vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_input)
-    vzx.print_summary()
 
     root = max(vzx.get_zx_nodes(), key = lambda zxn: vzx.get_zx_degree(zxn.id))
-    ZxGraphInflater.process(vzx, root = root)
+    inflater = ZxGraphInflater(vzx)
+    inflater.process(vzx, root = root)
 
     if args.output_pyzx:
         pyzx_output = vzx.into_pyzx_graph()

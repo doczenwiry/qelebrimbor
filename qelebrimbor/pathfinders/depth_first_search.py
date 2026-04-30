@@ -42,6 +42,7 @@ class PathfinderDFS:
         PathfinderDFS.__remove_from_unrelaxed(current, min_distance, unrelaxed)
         return current
 
+    # TODO: consider the type of Edge between source and target (IDENTITY or HADAMARD)
     @staticmethod
     def find_closest_realisation(
             graph: VolumetricZxGraph, source: BgCube, target: ZxNode,

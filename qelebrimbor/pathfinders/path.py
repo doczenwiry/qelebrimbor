@@ -167,7 +167,7 @@ class Path:
             previous = current
         pipes.append( next(iter(BlockGraphHelper.infer_pipe_type(previous.kind, self.target.kind))) )
         return PathSpecification(
-            source_cube= self.source.id, target_cube= self.target.id,
+            source_cube= self.source, target_cube= self.target,
             extras = self.extras, pipes = pipes
         )
 
