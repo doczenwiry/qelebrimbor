@@ -1,20 +1,18 @@
 import heapq
+from collections import defaultdict
 from functools import total_ordering
 
 from recordclass import RecordClass
 
 from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import EdgeType
-from qelebrimbor.common.components import ZxNode, BgCube
+from qelebrimbor.common.components import ZxNode, BgCube, ZxEdge
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.path import Path
-# from qelebrimbor.deprecated.paths import PathSpecification
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.pathfinders.depth_first_search import PathfinderDFS
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
-console = logging.getLogger("qelebrimbor.main")
+console = logging.getLogger(__name__)
 
 @total_ordering
 class VertexNode(RecordClass):
@@ -129,27 +127,30 @@ class ZxGraphInflaterPorts:
                 continue
 
             if not source.is_realised():
-                raise Exception(f"> Vertex has unrealised node ... {source}")
+                console.error(f"> FAILURE to realise FP edge : {zx_edge} [cause:unrealised-source]")
 
             if not target.is_realised():
                 success = self.__attempt_node_realisation(source, target)
 
                 if not success:
                     if self.__vertices[zx_edge.source].remaining_ports < 0 or self.__vertices[zx_edge.target].remaining_ports < 0:
-                        raise Exception(f"> FAILURE to realise FP edge : {zx_edge} [cause:insufficient-ports]")
+                        cause = "insufficient-ports"
                     else:
-                        raise Exception(f"> FAILURE to realise FP edge : {zx_edge} [cause:unknown]")
+                        cause = "unknown"
+                    console.error(f"> FAILURE to realise FP edge : {zx_edge} [cause:{cause}]")
 
                 self.__node_realisations += 1
             else: # target.is_realised():
                 success = self.__attempt_edge_realisation(source, target)
 
                 if not success:
-                    if self.__vertices[zx_edge.source].remaining_ports < 0 or self.__vertices[
-                        zx_edge.target].remaining_ports < 0:
-                        raise Exception(f"> FAILURE to realise SP edge : {zx_edge} [cause:insufficient-ports]")
+                    source_vertex = self.__vertices[zx_edge.source]
+                    target_vertex = self.__vertices[zx_edge.target]
+                    if source_vertex.remaining_ports < 0 or target_vertex.remaining_ports < 0:
+                        cause = "insufficient-ports"
                     else:
-                        raise Exception(f"> FAILURE to realise SP edge : {zx_edge} [cause:unknown]")
+                        cause = "unknown"
+                    raise Exception(f"> FAILURE to realise SP edge : {zx_edge} [cause:{cause}]")
 
                 self.__edge_realisations += 1
 
@@ -166,10 +167,22 @@ class ZxGraphInflaterPorts:
         console.info(f"Number of edge-realisations: {self.__edge_realisations}")
         console.info(f"Number of unreachable nodes: {sum(1 for v in self.__vertices.values() if v.remaining_ports < 0)}")
 
+        report: dict[str, list[ZxEdge]] = defaultdict(list)
+
         for edge in graph.get_zx_edges():
             if not edge.is_realised():
-                if self.__vertices[edge.source].remaining_ports < 0 or self.__vertices[edge.target].remaining_ports < 0:
-                    console.warning(f"> Unrealised edge : {edge} [cause:insufficient-ports]")
+                cause = None
+                if edge.source.is_realised() or edge.target.is_realised():
+                    if self.__vertices[edge.source].remaining_ports < 0 or self.__vertices[edge.target].remaining_ports < 0:
+                        cause = "insufficient-ports"
+                else:
+                    cause = "disconnected-component"
+
+                if cause is not None:
+                    report[cause].append( edge )
+                    console.warning(f"> Unrealised edge : {edge} [cause:{cause}]")
+
+        return report
 
     def __attempt_node_realisation(self, source: ZxNode, target: ZxNode) -> bool:
         # Place a cube of a kind suitable for the type of the unrealised endpoint node can be placed.

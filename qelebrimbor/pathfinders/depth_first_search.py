@@ -43,6 +43,25 @@ class PathfinderDFS:
         PathfinderDFS.__remove_from_unrelaxed(current, min_distance, unrelaxed)
         return current
 
+    @staticmethod
+    def __is_position_reserved(graph: VolumetricZxGraph, reservations: dict[Coordinates, ZxNode] | None, requester: ZxNode, position: Coordinates):
+        if reservations is None:
+            return False
+
+        if position in reservations:
+            holder = reservations[position]
+            # TODO: allow taking the reservations if it is not critical to the holder ?
+            if holder != requester:
+                reserved_ports_positions = sum(1 for kv in reservations.items() if kv[1] == holder)
+                number_of_ports_required = sum(
+                    1 for nb in graph.get_zx_neighbors(holder) if graph.get_zx_edge(holder.id, nb.id).is_realised()
+                )
+                critical = number_of_ports_required >= reserved_ports_positions
+                console.warning(f">> Position {position} reserved by {holder} [critical={critical}]")
+                return True
+
+        return False
+
     # TODO: consider the type of Edge between source and target (IDENTITY or HADAMARD)
     @staticmethod
     def find_closest_realisation(
@@ -94,22 +113,9 @@ class PathfinderDFS:
                     console.debug(f">> Position occupied : {neighbor.position}")
                     continue
 
-                if reservations is not None and neighbor.position in reservations:
-                    # Allow taking the reservations if it is not critical to the holder.
-                    holder = reservations[neighbor.position]
-                    if holder.id != source.realised_node.id:
-                        console.debug(f">> Position {neighbor.position} reserved by {holder}")
-                        continue
-
-                #         reserved_ports_positions = sum(1 for kv in reservations.items() if kv[1] == holder)
-                #         # number_of_ports_required = 0
-                #         # number_of_ports_required = sum(
-                #         #     1 for nb in graph.get_zx_neighbors(holder) if graph.get_zx_edge(holder.id, nb.id).is_realised()
-                #         # )
-                #         # critical = number_of_ports_required <= reserved_ports_positions
-                #         # console.warning(f"> Position reserved : {neighbor.position} by {holder} [rq:{number_of_ports_required},rv:{reserved_ports_positions},critical:{critical}]")
-                #
-                    # if holder.id != source.realised_node.id:
+                # Ignore neighbor if it occupies a position that is reserved
+                if PathfinderDFS.__is_position_reserved(graph, reservations, source.realised_node, neighbor.position):
+                    continue
 
                 extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
                 console.debug(f"> Extended Path : {extended_path}")
@@ -138,7 +144,6 @@ class PathfinderDFS:
 
                 # Tracing exploration
                 if tracing:
-                    # labels[len(nodes)] = str(neighbor)
                     nodes[neighbor] = len(nodes)
                     trace.add_node( nodes[neighbor] )
                     trace.add_edge( nodes[terminal], nodes[neighbor] )
@@ -245,12 +250,9 @@ class PathfinderDFS:
                 if neighbor.position in current_path.occupied or neighbor.position in graph.occupied:
                     continue
 
-                if reservations is not None and neighbor.position in reservations:
-                    # Allow taking the reservations if it is not critical to the holder.
-                    holder = reservations[neighbor.position]
-                    if holder.id != source.realised_node.id:
-                        console.debug(f">> Position {neighbor.position} reserved by {holder}")
-                        continue
+                # Ignore neighbor if it would occupy a position that is reserved
+                if PathfinderDFS.__is_position_reserved(graph, reservations, source.realised_node, neighbor.position):
+                    continue
 
                 extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
                 extended_distance = extended_path.manhattan_length()
@@ -265,7 +267,6 @@ class PathfinderDFS:
 
                     # Tracing exploration
                     if tracing:
-                        # labels[len(nodes)] = str(neighbor)
                         nodes[neighbor] = len(nodes)
                         trace.add_node( nodes[neighbor] )
                         trace.add_edge( nodes[current], nodes[neighbor] )

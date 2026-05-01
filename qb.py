@@ -3,15 +3,17 @@ import pyzx
 from argparse import ArgumentParser
 from time import time
 
+from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.inflaters.breadth_first_search import ZxGraphInflaterBFS
 from qelebrimbor.inflaters.least_remaining_ports import ZxGraphInflaterPorts
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
-logging.basicConfig(level=logging.WARNING)
-console = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+console = logging.getLogger("qelebrimbor")
 logging.getLogger("qelebrimbor.pathfinders.depth_first_search").setLevel(logging.CRITICAL)
+logging.getLogger("qelebrimbor.inflaters.least_remaining_ports").setLevel(logging.CRITICAL)
 
 parser = ArgumentParser(
     prog = "qb",
@@ -40,21 +42,42 @@ if __name__ == "__main__":
     # try:
     root = max(vzx.get_zx_nodes(), key = lambda zxn: vzx.get_zx_degree(zxn.id))
     inflater = ZxGraphInflaterPorts(vzx)
-    inflater.process(vzx, root = root)
+    report = inflater.process(vzx, root = root)
     # except Exception as e:
     #     console.error(f"Exception: {e}")
 
     final = time()
 
-    console.info(f"Time to Inflate: {final - start} seconds")
+    print(f"Inflation runtime: {round(final - start, 6)} seconds.")
 
-    unrealised_edges = sum(1 for edge in vzx.get_zx_edges() if not edge.is_realised())
-    console.info(f"Unrealised edges: {unrealised_edges} / {vzx.number_of_edges()}")
+    realised_nodes = sum(1 for node in vzx.get_zx_nodes() if node.is_realised())
+    node_realisation_rate = round(realised_nodes / vzx.number_of_nodes() * 100, 2)
+    print(f"Realised nodes: {realised_nodes} / {vzx.number_of_nodes()} [{node_realisation_rate}%]")
+
+    realised_edges = sum(1 for edge in vzx.get_zx_edges() if edge.is_realised())
+    edge_realisation_rate = round(realised_edges / vzx.number_of_edges() * 100, 2)
+    print(f"Realised edges: {realised_edges} / {vzx.number_of_edges()} [{edge_realisation_rate}%]")
+    due_to_insufficient_ports = round(len(report["insufficient-ports"]) / vzx.number_of_edges() * 100, 2)
+    print(f"> Insufficient ports     : {due_to_insufficient_ports}%")
+    due_to_disconnected_component = round(len(report["disconnected-component"]) / vzx.number_of_edges() * 100, 2)
+    print(f"> Disconnected component : {due_to_disconnected_component}%")
+
+    spider_volume = sum(1 for _ in filter(
+        lambda bgc: bgc.kind not in [CubeKind.OOO , CubeKind.YYY] and bgc.realised_node is not None,
+        vzx.get_bg_cubes()
+    ))
+    excess_volume = sum(
+        1 for cube in vzx.get_bg_cubes() if cube.kind not in [CubeKind.OOO , CubeKind.YYY] and cube.realised_node is None
+    )
+    print(f"Complete volume  : {vzx.volume()}")
+    print(f"> Spider volume : {spider_volume}")
+    print(f"> Excess volume : +{excess_volume}")
+    print(f"INFLATION RATE  : +{round(excess_volume / spider_volume * 100, 2)}%")
 
     if args.output_pyzx:
         pyzx_output = vzx.into_pyzx_graph()
         output = path.splitext(args.filepath)[0] + str("-compiled.json")
-        console.info(f"Writing to {output} from {args.filepath}")
+        print(f"Writing to {output} from {args.filepath}")
         with open(output, 'w') as file:
             file.write(pyzx_output.to_json())
 
@@ -72,4 +95,5 @@ if __name__ == "__main__":
         composition = pyzx_input.copy()
         composition.compose(pyzx_output.adjoint())
         pyzx.full_reduce(composition)
-        console.info(f"Validation : {composition.is_id()}")
+        equivalent_graphs = "SUCCESS" if composition.is_id() else "FAILURE"
+        print(f"Equivalence between input and output ZX-graphs : {equivalent_graphs}")
