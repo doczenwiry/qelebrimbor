@@ -13,23 +13,25 @@ from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 import logging
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger("qelebrimbor")
-logging.getLogger("qelebrimbor.common.path").setLevel(logging.CRITICAL)
-logging.getLogger("qelebrimbor.helpers.blockgraph").setLevel(logging.CRITICAL)
-logging.getLogger("qelebrimbor.pathfinders.depth_first_search").setLevel(logging.DEBUG)
-logging.getLogger("qelebrimbor.inflaters.least_remaining_ports").setLevel(logging.DEBUG)
+logging.getLogger("qelebrimbor.pathfinders.depth_first_search").setLevel(logging.CRITICAL)
+logging.getLogger("qelebrimbor.inflaters.least_remaining_ports").setLevel(logging.INFO)
 
 parser = ArgumentParser(
     prog = "qb",
     description = "A tool to construct a Volumetric ZX-graph (a.k.a. BlockGraph) from an input ZX-graph. Currently accepted files are *.json containing a PyZX graph in JSON format."
 )
 parser.add_argument('filepath', help = "path to the file containing the input ZX-graph.")
-parser.add_argument('-V', '--validation', action = 'store_true', help = "validate equivalence of the final construct against the input ZX-graph.")
+parser.add_argument('-c', '--check-equivalence', action = 'store_true', help = "check equivalence of the final construct against the input ZX-graph.")
 parser.add_argument('-v', '--visualization', action='store_true', help = "display the visualisation of the constructed Volumetric ZX-graph at the end of the construction.")
+parser.add_argument('-V', '--force-visualization', action='store_true', help = "force the visualisation for constructed Volumetric ZX-graph with more than 100 cubes.")
 parser.add_argument('-f', '--fullscreen', action='store_true', help = "display the visualisation in a fullscreen window.")
+parser.add_argument('-w', '--write-construct', action='store_true', help = "write the constructed Volumetric ZX-graph to a file.")
+parser.add_argument('-s', '--summary', action='store_true', help = "print a summary of the construction process.")
+parser.add_argument('-r', '--report', action='store_true', help = "print a detailed report of the construction process.")
 parser.add_argument('--output_pyzx', action = 'store_true', help = "write the constructed Volumetric ZX-graph as a PyZX graph into a *.json file.")
 args = parser.parse_args()
 
-if __name__ == "__main__":
+def main():
     args = parser.parse_args()
 
     if args.filepath is None:
@@ -51,22 +53,16 @@ if __name__ == "__main__":
         console.error(f"Exception: {e}")
 
     final = time()
-
-    print(f"Inflation runtime: {round(final - start, 6)} seconds.")
+    runtime = round(final - start, 6)
 
     realised_nodes = sum(1 for node in vzx.get_zx_nodes() if node.is_realised())
     node_realisation_rate = round(realised_nodes / vzx.number_of_nodes() * 100, 2)
-    print(f"Realised nodes: {realised_nodes} / {vzx.number_of_nodes()} [{node_realisation_rate}%]")
-
     realised_edges = sum(1 for edge in vzx.get_zx_edges() if edge.is_realised())
     edge_realisation_rate = round(realised_edges / vzx.number_of_edges() * 100, 2)
-    print(f"Realised edges: {realised_edges} / {vzx.number_of_edges()} [{edge_realisation_rate}%]")
 
     if report is not None:
         due_to_insufficient_ports = round(len(report["insufficient-ports"]) / vzx.number_of_edges() * 100, 2)
-        print(f"> Insufficient ports     : {due_to_insufficient_ports}%")
         due_to_disconnected_component = round(len(report["disconnected-component"]) / vzx.number_of_edges() * 100, 2)
-        print(f"> Disconnected component : {due_to_disconnected_component}%")
 
     spider_volume = sum(1 for _ in filter(
         lambda bgc: bgc.kind not in [CubeKind.OOO , CubeKind.YYY] and bgc.realised_node is not None,
@@ -75,10 +71,32 @@ if __name__ == "__main__":
     excess_volume = sum(
         1 for cube in vzx.get_bg_cubes() if cube.kind not in [CubeKind.OOO , CubeKind.YYY] and cube.realised_node is None
     )
-    print(f"Complete volume  : {vzx.volume()}")
-    print(f"> Spider volume : {spider_volume}")
-    print(f"> Excess volume : +{excess_volume}")
-    print(f"INFLATION RATE  : +{round(excess_volume / spider_volume * 100, 2)}%")
+    inflation_rate = round(excess_volume / spider_volume * 100, 2)
+
+    if args.report:
+        print(f"Input file : {args.filepath}")
+        print(f"Inflation runtime: {runtime} seconds.")
+        print(f"Realised nodes: {realised_nodes} / {vzx.number_of_nodes()} [{node_realisation_rate}%]")
+        print(f"Realised edges: {realised_edges} / {vzx.number_of_edges()} [{edge_realisation_rate}%]")
+
+        if report is not None:
+            print(f"> Insufficient ports     : {due_to_insufficient_ports}%")
+            print(f"> Disconnected component : {due_to_disconnected_component}%")
+
+        print(f"Complete volume  : {vzx.volume()}")
+        print(f"> Spider volume : {spider_volume}")
+        print(f"> Excess volume : +{excess_volume}")
+        print(f"INFLATION RATE  : +{inflation_rate}%")
+
+    elif args.summary:
+        summary  = f"Summary for {args.filepath}: {runtime} seconds, "
+        summary += f"NRR:{node_realisation_rate}%, "
+        summary += f"ERR:{edge_realisation_rate}%, "
+        if report is not None:
+            summary += f"IPR:{due_to_insufficient_ports}%, "
+            summary += f"DCR:{due_to_disconnected_component}, "
+        summary += f"IR:+{inflation_rate}%"
+        print(summary)
 
     if args.output_pyzx:
         pyzx_output = vzx.into_pyzx_graph()
@@ -87,12 +105,15 @@ if __name__ == "__main__":
         with open(output, 'w') as file:
             file.write(pyzx_output.to_json())
 
-    if args.visualization:
-        window_size = "full" if args.fullscreen else "auto"
-        viewer = VolumetricZxGraphViewer(vzx, label = args.filepath, size = window_size)
-        viewer.display()
+    if args.visualization or args.force_visualization:
+        if args.force_visualization or vzx.volume() <= 100:
+            window_size = "full" if args.fullscreen else "auto"
+            viewer = VolumetricZxGraphViewer(vzx, label = args.filepath, size = window_size)
+            viewer.display()
+        else:
+            console.info("Visualization of a VolumetricZxGraph with more than 100 cubes is slow (Override with -V).")
 
-    if args.validation:
+    if args.check_equivalence:
         pyzx_output = vzx.into_pyzx_graph()
         # TODO: fix the labelling of BOUNDARIES in vzx.into_pyzx_graph(..) to match that of pyzx_input
         pyzx_input.auto_detect_io()
@@ -103,3 +124,6 @@ if __name__ == "__main__":
         pyzx.full_reduce(composition)
         equivalent_graphs = "SUCCESS" if composition.is_id() else "FAILURE"
         print(f"Equivalence between input and output ZX-graphs : {equivalent_graphs}")
+
+if __name__ == "__main__":
+    main()

@@ -4,5 +4,8 @@
 .idea/
 # Cache
 __pycache__/
+# Dataset
+benchmarking/datasets/small/*
+benchmarking/datasets/large/*
 # Texifier
 .texpadtmp/
