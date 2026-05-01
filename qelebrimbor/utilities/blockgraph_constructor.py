@@ -13,12 +13,11 @@
 #   limitations under the License.
 
 from qelebrimbor.common.components import BgCube
-from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
-from qelebrimbor.common.attributes_bg import CubeId, CubeKind
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.paths import PathSpecification
+from qelebrimbor.common.attributes_zx import NodeId, EdgeId
+from qelebrimbor.common.attributes_bg import CubeId, CubeKind
+from qelebrimbor.common.path import Path
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger(__name__)
@@ -27,7 +26,7 @@ class BlockGraphConstructor:
     @staticmethod
     def realise(graph: VolumetricZxGraph,
             nodes_specifications: dict[NodeId, BgCube],
-            edges_specifications: dict[EdgeId, PathSpecification]
+            edges_specifications: dict[EdgeId, Path]
     ):
         BlockGraphConstructor.realise_nodes(graph, nodes_specifications)
         BlockGraphConstructor.realise_edges(graph, edges_specifications)
@@ -47,7 +46,7 @@ class BlockGraphConstructor:
             graph.place_cube(BgCube(kind = kind, position = position))
 
     @staticmethod
-    def realise_edges(graph: VolumetricZxGraph, specifications: dict[EdgeId, PathSpecification]):
+    def realise_edges(graph: VolumetricZxGraph, specifications: dict[EdgeId, Path]):
         for edge, proposal in specifications.items():
             source, target = edge
 

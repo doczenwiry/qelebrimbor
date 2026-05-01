@@ -26,8 +26,8 @@ from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
-from qelebrimbor.pathfinders.path import Path
-from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
+from qelebrimbor.deprecated.path import Path
+from qelebrimbor.deprecated.pathfinder_dfs import PathFinderDFS
 
 def format_paths(paths: defaultdict[int, list[Path]]):
     report = ""

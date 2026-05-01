@@ -7,7 +7,7 @@ from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
-from qelebrimbor.pathfinders.path import Path, Distance
+from qelebrimbor.deprecated.path import Path, Distance
 
 
 import logging

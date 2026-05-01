@@ -12,11 +12,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
-from qelebrimbor.common.components import ZxNode, ZxEdge, BgCube
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.paths import PathSpecification
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.common.components import ZxNode, ZxEdge, BgCube
+from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
+from qelebrimbor.common.path import Path
 
 
 class Ring:
@@ -49,7 +48,7 @@ class Ring:
     def to_nodes_specifications(self, nodes: list[ZxNode]) -> dict[NodeId, BgCube]:
         return { nodes[nd].id : self.cubes[nd] for nd in range(len(nodes)) }
 
-    def to_edges_specifications(self, edges: list[ZxEdge]) -> dict[EdgeId, PathSpecification]:
+    def to_edges_specifications(self, edges: list[ZxEdge]) -> dict[EdgeId, Path]:
         edge_count = len(edges)
         cube_count = len(self.cubes)
 
@@ -60,11 +59,8 @@ class Ring:
             target = edges[i].target
             if source.id > target.id:
                 source, target = target, source
-            edges_specifications[ (source.id, target.id) ] = PathSpecification(
-                source_cube = source.realising_cube,
-                target_cube = target.realising_cube,
-                extras = [], pipes = [ edges[i].type ]
-            )
+            path = Path(start = source.realising_cube).extend(target.realising_cube, edges[i].type)
+            edges_specifications[ (source.id, target.id) ] = path
 
         start = edges[-1].target
         final = edges[-1].source
@@ -73,12 +69,11 @@ class Ring:
             start, final = final, start
         else:
             cubes = list(reversed(cubes))
-        edges_specifications[(start.id, final.id)] = PathSpecification(
-                source_cube = start.realising_cube,
-                target_cube = final.realising_cube,
-                extras = cubes,
-                pipes = [ edges[-1].type if i == 0 else EdgeType.IDENTITY for i in range(cube_count - edge_count + 1)]
-        )
+        path = Path(start = start.realising_cube)
+        for cube, pipe in zip(cubes, [ edges[-1].type if i == 0 else EdgeType.IDENTITY for i in range(cube_count - edge_count + 1)]):
+            path = path.extend(cube, pipe)
+        path = path.extend(final.realising_cube, EdgeType.IDENTITY)
+        edges_specifications[(start.id, final.id)] = path
 
         return edges_specifications
 

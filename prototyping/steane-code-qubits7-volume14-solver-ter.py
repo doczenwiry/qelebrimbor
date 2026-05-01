@@ -18,7 +18,7 @@ from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import EdgeType
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.paths import PathSpecification
+from qelebrimbor.common.path import Path
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
@@ -72,9 +72,9 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_edges(
         graph = vzx,
         specifications = {
-            (s,t): PathSpecification(
-                vzx.get_zx_node(s).realising_cube, vzx.get_zx_node(t).realising_cube,
-                pipes=[ EdgeType.IDENTITY ]
+            (s,t): Path(vzx.get_zx_node(s).realising_cube).extend(
+                cube = vzx.get_zx_node(t).realising_cube,
+                pipe_type = EdgeType.IDENTITY
             ) for (s,t) in [ (0,2), (1,4), (5,6) ]
         }
     )

@@ -36,12 +36,12 @@ if __name__ == "__main__":
 
     start = time()
 
-    try:
-        root = max(vzx.get_zx_nodes(), key = lambda zxn: vzx.get_zx_degree(zxn.id))
-        inflater = ZxGraphInflaterPorts(vzx)
-        inflater.process(vzx, root = root)
-    except Exception as e:
-        console.error(f"Exception: {e}")
+    # try:
+    root = max(vzx.get_zx_nodes(), key = lambda zxn: vzx.get_zx_degree(zxn.id))
+    inflater = ZxGraphInflaterPorts(vzx)
+    inflater.process(vzx, root = root)
+    # except Exception as e:
+    #     console.error(f"Exception: {e}")
 
     final = time()
 

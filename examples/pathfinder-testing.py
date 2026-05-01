@@ -3,7 +3,6 @@ from time import time
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.components import BgCube
-from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.pathfinders.dijkstra import PathfinderDijkstra
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
@@ -21,7 +20,7 @@ logging.getLogger("qelebrimbor.helpers.blockgraph").setLevel(logging.CRITICAL)
 logging.getLogger("qelebrimbor.pathfinders.depth_first_search").setLevel(logging.INFO)
 logging.getLogger("qelebrimbor.vedo").setLevel(logging.CRITICAL)
 
-PATHFINDER_UNDER_TEST = PathfinderDijkstra
+PATHFINDER_UNDER_TEST = PathfinderDFS
 DISTANCES = {
     PathfinderDFS : [1, 5, 10, 25, 50, 100, 200],
     PathfinderDijkstra : range(1, 4),
@@ -46,7 +45,7 @@ if __name__ == "__main__":
 
         console.info(f"Searching for path between {source} and {target} [distance={distance}].")
         start = time()
-        path = pathfinder.find_optimal_paths(source_cube, target_cube, tracing = True)
+        path = pathfinder.find_optimal_paths(vzx, source_cube, target_cube, tracing = True)
         final = time()
 
         if path is None:
@@ -56,11 +55,7 @@ if __name__ == "__main__":
         console.info(f"Found a locally-optimal path [runtime={round(final - start)}s].")
         console.info(f"> {path} [length={path.manhattan_length()}]\n")
 
-        proposal = PathSpecification(
-            source_cube, target_cube,
-            extras = path.extras, pipes = [ EdgeType.IDENTITY for _ in range(path.manhattan_length()) ]
-        )
-        vzx.realise_zx_edge(0, 1, proposal)
+        vzx.realise_zx_edge(0, 1, path)
 
         if VISUALISATION:
             viewer = VolumetricZxGraphViewer(vzx, label = f"distance={distance}", layout = PlanarLayout(vzx, scale = 1))

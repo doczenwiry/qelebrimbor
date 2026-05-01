@@ -12,20 +12,16 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from venv import CORE_VENV_DEPS
-
 import pyzx
-from mypy.modulefinder import PathSpec
 
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import EdgeType
 from qelebrimbor.common.components import BgCube
+from qelebrimbor.common.path import Path
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
-from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
 from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
-from qelebrimbor.utilities.ring_making import find_realisation, find_completion, extend_unrealised
+from qelebrimbor.utilities.ring_making import find_realisation, extend_unrealised
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -64,31 +60,40 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_edges(
         graph = vzx,
         specifications = {
-            (0, 2) : PathSpecification(
-                vzx.get_zx_node(0).realising_cube, vzx.get_zx_node(2).realising_cube,
-                extras = [ BgCube(kind = CubeKind.ZXX, position = Coordinates( 1,-2,-1)) ],
-                pipes = [ EdgeType.IDENTITY for _ in range(2) ]
+            (0, 2) : Path(vzx.get_zx_node(0).realising_cube).extend(
+                cube = BgCube(kind=CubeKind.ZXX, position=Coordinates(1, -2, -1)),
+                pipe_type = EdgeType.IDENTITY
+            ).extend(
+                cube = vzx.get_zx_node(2).realising_cube,
+                pipe_type = EdgeType.IDENTITY
             ),
-            (1, 4): PathSpecification(
-                vzx.get_zx_node(1).realising_cube, vzx.get_zx_node(4).realising_cube,
-                extras = [ BgCube(kind = CubeKind.ZXZ, position = Coordinates( 1,-1, 1)) ],
-                pipes = [EdgeType.IDENTITY for _ in range(2) ]
+            (1, 4): Path(vzx.get_zx_node(1).realising_cube).extend(
+                cube = BgCube(kind = CubeKind.ZXZ, position = Coordinates( 1,-1, 1)),
+                pipe_type = EdgeType.IDENTITY
+            ).extend(
+                cube = vzx.get_zx_node(4).realising_cube,
+                pipe_type = EdgeType.IDENTITY
             ),
-            (4, 5): PathSpecification(
-                vzx.get_zx_node(4).realising_cube, vzx.get_zx_node(5).realising_cube,
-                extras = [ BgCube(kind = CubeKind.ZXZ, position = Coordinates(-1,-1, 1)) ],
-                pipes = [EdgeType.IDENTITY for _ in range(2) ]
+            (4, 5): Path(vzx.get_zx_node(4).realising_cube).extend(
+                cube = BgCube(kind=CubeKind.ZXZ, position=Coordinates(-1, -1, 1)),
+                pipe_type = EdgeType.IDENTITY
+            ).extend(
+                cube = vzx.get_zx_node(5).realising_cube,
+                pipe_type = EdgeType.IDENTITY
             ),
-            (5,6) : PathSpecification(
-                vzx.get_zx_node(5).realising_cube, vzx.get_zx_node(6).realising_cube,
-                pipes = [ EdgeType.IDENTITY ]
+            (5,6) : Path(vzx.get_zx_node(5).realising_cube).extend(
+                cube = vzx.get_zx_node(6).realising_cube,
+                pipe_type = EdgeType.IDENTITY
             ),
-            (2,4) : PathSpecification(
-                vzx.get_zx_node(2).realising_cube, vzx.get_zx_node(4).realising_cube,
-                extras = [ BgCube(kind = CubeKind.ZXZ, position = Coordinates( 1,-2, 1)),
-                           BgCube(kind = CubeKind.XXZ, position = Coordinates( 0,-2, 1))
-                ],
-                pipes = [ EdgeType.IDENTITY for _ in range(3) ]
+            (2,4) : Path(vzx.get_zx_node(2).realising_cube).extend(
+                cube = BgCube(kind = CubeKind.ZXZ, position = Coordinates( 1,-2, 1)),
+                pipe_type=EdgeType.IDENTITY
+            ).extend(
+                cube = BgCube(kind = CubeKind.XXZ, position = Coordinates( 0,-2, 1)),
+                pipe_type=EdgeType.IDENTITY
+            ).extend(
+                cube = vzx.get_zx_node(4).realising_cube,
+                pipe_type = EdgeType.IDENTITY
             )
         }
     )

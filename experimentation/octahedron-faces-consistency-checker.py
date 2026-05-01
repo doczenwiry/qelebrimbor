@@ -27,8 +27,8 @@ from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
 from qelebrimbor.helpers.octahedron import OctahedronHelper
-from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
-from qelebrimbor.pathfinders.path import Path
+from qelebrimbor.deprecated.pathfinder_dfs import PathFinderDFS
+from qelebrimbor.deprecated.path import Path
 
 logging.getLogger('qelebrimbor.helpers').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.pathfinders').setLevel(logging.CRITICAL)

@@ -14,10 +14,7 @@
 
 from qelebrimbor.common.components import ZxNode, ZxEdge
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType
-from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.paths import PathSpecification
+from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer

@@ -1,13 +1,12 @@
 from collections import defaultdict
-from queue import PriorityQueue
 
 import networkx as nx
 
-from qelebrimbor.common.attributes_bg import CubeId, CubeKind
-from qelebrimbor.common.attributes_zx import NodeId, EdgeType
+from qelebrimbor.common.path import Path
+from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.common.attributes_zx import EdgeType
 from qelebrimbor.common.components import ZxNode, BgCube
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.paths import PathSpecification
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.pathfinders.depth_first_search import PathfinderDFS
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
@@ -147,19 +146,14 @@ class ZxGraphInflaterBFS:
         console.info(f"> Optimal path found : {path}")
 
         # Realise the target cube and the path connecting it to the source cube
-        self.__graph.realise_zx_node(target, path.target)
+        self.__graph.realise_zx_node(target, path.final)
         # TODO: use Path.to_specification(..)
-        self.__graph.realise_zx_edge(source.id, target.id,
-            proposal = PathSpecification(
-                source.realising_cube, target.realising_cube,
-                extras = path.extras, pipes = [ EdgeType.IDENTITY for _ in range(path.manhattan_length()) ]
-            )
-        )
+        self.__graph.realise_zx_edge(source.id, target.id, proposal = path)
 
         self.__reserve_positions(target)
 
         # Remove the reserved positions of ports from those available ones
-        for position in path.extras:
+        for position in path.extra_cubes:
             self.__occlude_positions(position)
         self.__occlude_positions(target.realising_cube.position)
 
@@ -179,13 +173,10 @@ class ZxGraphInflaterBFS:
 
         console.info(f"> Optimal path found : {path}")
 
-        self.__graph.realise_zx_edge(source.id, target.id, proposal = PathSpecification(
-            source.realising_cube, target.realising_cube,
-            extras = path.extras, pipes = [ EdgeType.IDENTITY for _ in range(path.manhattan_length()) ]
-        ))
+        self.__graph.realise_zx_edge(source.id, target.id, proposal = path)
 
         # Remove the reserved positions of ports from those available ones
-        for position in path.extras:
+        for position in path.extra_cubes:
             self.__occlude_positions(position)
 
         return True

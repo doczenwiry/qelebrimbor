@@ -20,7 +20,7 @@ console = getLogger(__name__)
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
-from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
+from qelebrimbor.deprecated.pathfinder_dfs import PathFinderDFS
 
 class VolumeFinder:
     @staticmethod

@@ -9,7 +9,7 @@ from qelebrimbor.common.components import BgCube, ZxNode
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.pathfinders.path import Path, Distance
+from qelebrimbor.common.path import Length, Path
 
 import logging
 
@@ -20,24 +20,24 @@ console = logging.getLogger(__name__)
 class PathfinderDFS:
     @staticmethod
     def __retrieve_closest_unrelaxed(
-            unrelaxed: dict[Distance, list[BgCube]]
-    ) -> tuple[BgCube, Distance]:
+            unrelaxed: dict[Length, list[BgCube]]
+    ) -> tuple[BgCube, Length]:
         pass
 
     @staticmethod
-    def __add_into_unrelaxed(cube: BgCube, distance: Distance, unrelaxed: dict[Distance, list[BgCube]]):
+    def __add_into_unrelaxed(cube: BgCube, distance: Length, unrelaxed: dict[Length, list[BgCube]]):
         if distance not in unrelaxed:
             unrelaxed[distance] = []
         unrelaxed[distance].append(cube)
 
     @staticmethod
-    def __remove_from_unrelaxed(cube: BgCube, distance: Distance, unrelaxed: dict[Distance, list[BgCube]]):
+    def __remove_from_unrelaxed(cube: BgCube, distance: Length, unrelaxed: dict[Length, list[BgCube]]):
         unrelaxed[distance].remove(cube)
         if len(unrelaxed[distance]) == 0:
             unrelaxed.pop(distance)
 
     @staticmethod
-    def __extract_closest_point(unrelaxed: dict[Distance, list[BgCube]]) -> BgCube:
+    def __extract_closest_point(unrelaxed: dict[Length, list[BgCube]]) -> BgCube:
         min_distance = min(unrelaxed.keys())
         current: BgCube = unrelaxed[min_distance][0]
         PathfinderDFS.__remove_from_unrelaxed(current, min_distance, unrelaxed)
@@ -54,8 +54,9 @@ class PathfinderDFS:
         optimum: Path | None = None
         minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
         unrelaxed: deque[Path] = deque()
-        unrelaxed.append( Path(source, source) )
-        minimal_paths[ (source.kind, source.position) ] = Path(source = source, target = source)
+        initial = Path(start = source)
+        unrelaxed.append( initial )
+        minimal_paths[ (source.kind, source.position) ] = initial
 
         number_of_ports_required = graph.get_zx_degree(target.id)
         console.info(f"Searching for placement from {source} to {target}. [ports required:{number_of_ports_required}]")
@@ -77,7 +78,7 @@ class PathfinderDFS:
 
         while len(unrelaxed) != 0 and optimum is None:
             current_path = unrelaxed.pop()
-            terminal = current_path.target
+            terminal = current_path.final
 
             console.debug(f"Current : {current_path}")
 
@@ -109,13 +110,11 @@ class PathfinderDFS:
                 # #         console.debug(f">> Position {neighbor.position} reserved by {holder} [critical:{critical}]")
                 # #         continue
 
-                extended_path = current_path.copy()
-                if terminal != source:
-                    extended_path.append(terminal)
-                extended_path.target = neighbor
+                extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
+                console.debug(f"> Extended Path : {extended_path}")
 
                 # If a suitable Cube has been reached for the target, consider it further
-                console.debug(f"> Neighbor has kind : {neighbor.kind} vs {target_suitable_kinds}")
+                console.debug(f"> Neighbor has kind {neighbor.kind} in {target_suitable_kinds} ?")
                 if neighbor.kind in target_suitable_kinds:
                     open_ports = list(filter(
                         lambda pos : pos not in extended_path.occupied and pos not in graph.occupied and pos not in reservations,
@@ -172,8 +171,10 @@ class PathfinderDFS:
     ) -> Path | None:
         """
         Perform path-finding using a Depth-First Search approach.
+        :param graph: The VolumetricZxGraph that represents the context within which the path finding is performed
         :param source: The cube from which to start.
         :param target: The cube towards which to go.
+        :param maximal_excess: The maximum number of additional cubes permitted on top of the Manhattan Length.
         :param bnb: Controls whether a Branch-and-Bound refinement ought to be performed after finding the first path.
         This will incur an additional computational cost that may or may not fall into super-exponential territory.
         Proof of the possibility would be nice. Refutation thereof would be better.
@@ -184,9 +185,9 @@ class PathfinderDFS:
 
         minimal_length_achieved: int | None = None
         minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
-        unrelaxed: dict[Distance, list[BgCube]] = defaultdict(list)
+        unrelaxed: dict[Length, list[BgCube]] = defaultdict(list)
         PathfinderDFS.__add_into_unrelaxed(source, 0, unrelaxed)
-        minimal_paths[ (source.kind, source.position) ] = Path(source = source, target = source)
+        minimal_paths[ (source.kind, source.position) ] = Path(start = source)
 
         manhattan_distance = source.position.get_manhattan_distance(target.position)
         console.info(f"Searching for path from {source} to {target} [distance={manhattan_distance}].")
@@ -212,7 +213,7 @@ class PathfinderDFS:
             current: BgCube = PathfinderDFS.__extract_closest_point(unrelaxed)
             current_point = (current.kind, current.position)
             current_path = minimal_paths[current_point]
-            terminal = current_path.target
+            terminal = current_path.final
 
             minimal_length_possible: int = Path.minimal_length_possible(terminal, target)
             manhattan_length_projected: int = current_path.manhattan_length() + minimal_length_possible
@@ -226,10 +227,7 @@ class PathfinderDFS:
 
             if BlockGraphHelper.connectable(current, target, EdgeType.IDENTITY):
                 console.debug(f"> Connectable to {target} : {BlockGraphHelper.connectable(current, target, EdgeType.IDENTITY)}")
-                completed_path = current_path.copy()
-                if current != source:
-                    completed_path.append(current)
-                completed_path.target = target
+                completed_path = current_path.extend(cube = target, pipe_type = EdgeType.IDENTITY)
                 if not minimal_length_achieved or completed_path.manhattan_length() < minimal_length_achieved:
                     minimal_length_achieved = completed_path.manhattan_length()
                     optimum = completed_path
@@ -245,10 +243,7 @@ class PathfinderDFS:
                 if neighbor.position in current_path.occupied or neighbor.position in graph.occupied:
                     continue
 
-                extended_path = current_path.copy()
-                if current != source:
-                    extended_path.append(current)
-                extended_path.target = neighbor
+                extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
                 extended_distance = extended_path.manhattan_length()
 
                 if neighbor not in minimal_paths or extended_distance < minimal_paths[neighbor_point].manhattan_length():

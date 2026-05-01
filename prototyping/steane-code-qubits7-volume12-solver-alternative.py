@@ -11,18 +11,19 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+from os import pipe
 
 import pyzx
 
+from qelebrimbor.common.path import Path
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.attributes_zx import EdgeType
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.paths import PathSpecification
 
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 
-from qelebrimbor.utilities.ring_making import find_realisation, find_completion, extend_unrealised
+from qelebrimbor.utilities.ring_making import extend_unrealised
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
@@ -58,10 +59,9 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_edges(
         graph= vzx,
         specifications = {
-            (s,t) : PathSpecification(
-                source_cube = vzx.get_zx_node(s).realising_cube,
-                target_cube = vzx.get_zx_node(t).realising_cube,
-                pipes = [ vzx.get_zx_edge(s,t).type ]
+            (s,t) : Path(vzx.get_zx_node(s).realising_cube).extend(
+                cube = vzx.get_zx_node(t).realising_cube,
+                pipe_type = vzx.get_zx_edge(s,t).type
             )
             for s, t in [ (2,5) , (0,7) , (0,4) , (1,4) ]
         }
@@ -69,17 +69,19 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_edges(
         graph= vzx,
         specifications = {
-            (1,5) : PathSpecification(
-                source_cube = vzx.get_zx_node(1).realising_cube,
-                target_cube = vzx.get_zx_node(5).realising_cube,
-                extras = [ BgCube(kind=CubeKind.XZZ, position=Coordinates(0,0,1)) ],
-                pipes = [ vzx.get_zx_edge(1,5).type , EdgeType.IDENTITY ]
+            (1,5) : Path(vzx.get_zx_node(1).realising_cube).extend(
+                cube = BgCube(kind=CubeKind.XZZ, position=Coordinates(0,0,1)),
+                pipe_type = vzx.get_zx_edge(1,5).type
+            ).extend(
+                cube = vzx.get_zx_node(5).realising_cube,
+                pipe_type = EdgeType.IDENTITY
             ),
-            (2,7) : PathSpecification(
-                source_cube=vzx.get_zx_node(2).realising_cube,
-                target_cube=vzx.get_zx_node(7).realising_cube,
-                extras=[BgCube(kind=CubeKind.ZXX, position=Coordinates(-1, 1, 2))],
-                pipes=[vzx.get_zx_edge(2, 7).type, EdgeType.IDENTITY]
+            (2,7) : Path(vzx.get_zx_node(2).realising_cube).extend(
+                cube = BgCube(kind=CubeKind.ZXX, position=Coordinates(-1, 1, 2)),
+                pipe_type = vzx.get_zx_edge(2, 7).type
+            ).extend(
+                cube = vzx.get_zx_node(7).realising_cube,
+                pipe_type = EdgeType.IDENTITY
             )
         }
     )
@@ -94,10 +96,9 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_edges(
         graph= vzx,
         specifications = {
-            (s,t) : PathSpecification(
-                source_cube = vzx.get_zx_node(s).realising_cube,
-                target_cube = vzx.get_zx_node(t).realising_cube,
-                pipes = [ vzx.get_zx_edge(s,t).type ]
+            (s,t) : Path(vzx.get_zx_node(s).realising_cube).extend(
+                cube = vzx.get_zx_node(t).realising_cube,
+                pipe_type = vzx.get_zx_edge(s,t).type
             )
             for s, t in [ (3,7) , (1,6) ]
         }
@@ -105,14 +106,15 @@ if __name__ == "__main__":
     BlockGraphConstructor.realise_edges(
         graph= vzx,
         specifications = {
-            (3,6) : PathSpecification(
-                source_cube = vzx.get_zx_node(3).realising_cube,
-                target_cube = vzx.get_zx_node(6).realising_cube,
-                extras = [
-                    BgCube(kind=CubeKind.ZXX, position=Coordinates(-1,-1, 1)),
-                    BgCube(kind=CubeKind.ZXZ, position=Coordinates(-1,-1, 0))
-                ],
-                pipes = [ vzx.get_zx_edge(3,6).type , EdgeType.IDENTITY, EdgeType.IDENTITY ]
+            (3,6) : Path(vzx.get_zx_node(3).realising_cube).extend(
+                cube = BgCube(kind=CubeKind.ZXX, position=Coordinates(-1, -1, 1)),
+                pipe_type = vzx.get_zx_edge(3,6).type
+            ).extend(
+                cube = BgCube(kind=CubeKind.ZXZ, position=Coordinates(-1, -1, 0)),
+                pipe_type = EdgeType.IDENTITY
+            ).extend(
+                cube = vzx.get_zx_node(6).realising_cube,
+                pipe_type = EdgeType.IDENTITY
             ),
         }
     )

@@ -26,10 +26,10 @@ from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 
+from qelebrimbor.common.path import Path
 from qelebrimbor.common.components import ZxNode, ZxEdge, BgCube, BgPipe
-from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeId, EdgeType, QubitId, LayerId
+from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType, QubitId, LayerId
 from qelebrimbor.common.attributes_bg import CubeId, CubeKind, PipeId
-from qelebrimbor.common.paths import PathSpecification
 
 from qelebrimbor.utilities.nmtfl_constraint import NoMoreThanFourLegsConstraint
 
@@ -360,7 +360,7 @@ class VolumetricZxGraph(nx.Graph):
 
         return cube_id
 
-    def realise_zx_edge(self, source: NodeId, target: NodeId, proposal: PathSpecification):
+    def realise_zx_edge(self, source: NodeId, target: NodeId, proposal: Path):
         if not self.get_zx_node(source).is_realised():
             raise Exception(f"{source} is not realised; cannot connect with a path.")
 
@@ -399,18 +399,18 @@ class VolumetricZxGraph(nx.Graph):
 
         return cube.id
 
-    def connect_path(self, proposal: PathSpecification) -> list[BgPipe]:
-        source_cube = proposal.source_cube
-        target_cube = proposal.target_cube
+    def connect_path(self, proposal: Path) -> list[BgPipe]:
+        source_cube = proposal.start
+        target_cube = proposal.final
         # Representation of the path that will go into edge_realisations
         pipe_ids: list[BgPipe] = []
 
         # Add all the extra cubes and pipes of the path to the BlockGraph
         previous_cube: BgCube = source_cube
 
-        for index in range(len(proposal.extras)):
-            extra_cube = proposal.extras[index]
-            extra_pipe_type = proposal.pipes[index]
+        for index in range(len(proposal.extra_cubes)):
+            extra_cube = proposal.extra_cubes[index]
+            extra_pipe_type = proposal.pipes_types[index]
 
             # Place the current cube and connect it to the previous cube.
             extra_cube_id = self.place_cube(extra_cube)
@@ -424,7 +424,7 @@ class VolumetricZxGraph(nx.Graph):
             previous_cube = extra_cube
 
         # Make the final connection
-        final_pipe_type = proposal.pipes[-1]
+        final_pipe_type = proposal.pipes_types[-1]
         self.connect_pipe(previous_cube, target_cube, final_pipe_type)
 
         pipe = BgPipe(source = previous_cube, target = target_cube, type = final_pipe_type)
@@ -480,11 +480,11 @@ class VolumetricZxGraph(nx.Graph):
 
         return False
 
-    def is_path_valid(self, edge: ZxEdge, proposal: PathSpecification) -> bool:
+    def is_path_valid(self, edge: ZxEdge, proposal: Path) -> bool:
         is_hadamard_path = False
 
-        start = proposal.source_cube
-        final = proposal.target_cube
+        start = proposal.start
+        final = proposal.final
 
         if not (self.is_realising_cube(edge.source, start) or self.is_realising_cube(edge.target, start)):
             raise Exception(f"Start cube {start} is not realising either endpoint of edge {edge} [proposal={proposal}].")
@@ -499,8 +499,8 @@ class VolumetricZxGraph(nx.Graph):
 
         extra_positions = set()
 
-        for index in range(len(proposal.extras)):
-            current: BgCube = proposal.extras[index]
+        for index in range(len(proposal.extra_cubes)):
+            current: BgCube = proposal.extra_cubes[index]
             current_reach = current.kind.get_reach()
 
             # Check that the cube type is either X or Z (Y and boundaries must be leaves)
@@ -530,7 +530,7 @@ class VolumetricZxGraph(nx.Graph):
                 return False
 
             # Check that the current pipe has a type consistent with what is allowed
-            current_pipe_type = proposal.pipes[index]
+            current_pipe_type = proposal.pipes_types[index]
             inferred = BlockGraphHelper.infer_pipe_type(previous.kind, current.kind)
             if not current_pipe_type in inferred:
                 console.warning(f"> Pipe type is not allowed between {previous} and {current} [{current_pipe_type} not in {inferred}].")
@@ -555,7 +555,7 @@ class VolumetricZxGraph(nx.Graph):
             return False
 
         # Check that the current pipe has a type consistent with what is allowed
-        current_pipe_type = proposal.pipes[-1]
+        current_pipe_type = proposal.pipes_types[-1]
         inferred = BlockGraphHelper.infer_pipe_type(previous.kind, final.kind)
         if current_pipe_type not in inferred:
             console.warning(f"> Pipe type is not allowed between {previous} and {final} [{current_pipe_type} not in {inferred}].")

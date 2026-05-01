@@ -15,11 +15,12 @@
 import numpy as np
 from functools import total_ordering
 
+from qelebrimbor.common.path import Path as NewPath
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
 from qelebrimbor.common.components import ZxNode, BgCube, ZxEdge
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.paths import PathSpecification
+from qelebrimbor.deprecated.paths import PathSpecification
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
@@ -131,41 +132,40 @@ class Path:
             nodes_specifications[nodes[nd].id] = self.extras[nd]
         return nodes_specifications
 
-    def to_edges_specifications(self, edges: list[ZxEdge]) -> dict[EdgeId, PathSpecification]:
+    def to_edges_specifications(self, edges: list[ZxEdge]) -> dict[EdgeId, NewPath]:
         edge_count = len(edges)
         extra_count = len(self.extras)
-        edges_specifications: dict[EdgeId, PathSpecification] = {}
+        edges_specifications: dict[EdgeId, NewPath] = {}
 
         previous_node = self.source.realised_node
         for edge in edges[:-1]: # range(edge_count-1):
             current_node = edge.source if edge.source != previous_node else edge.target
-            edges_specifications[ (previous_node.id, current_node.id) ] = PathSpecification(
-                source_cube = previous_node.realising_cube,
-                target_cube = current_node.realising_cube,
-                extras = [], pipes = [ edge.type ]
-            )
+            path = NewPath(start = previous_node.realising_cube).extend(current_node.realising_cube, edge.type)
+            edges_specifications[ (previous_node.id, current_node.id) ] = path
             previous_node = current_node
 
         final_edge = edges[-1]
         source = previous_node
         target = final_edge.source if final_edge.source != previous_node else final_edge.target
         extras = self.extras[edge_count-1 : extra_count]
-        edges_specifications[(source.id, target.id)] = PathSpecification(
-                source_cube = source.realising_cube,
-                target_cube = target.realising_cube,
-                extras = extras,
-                pipes = [ final_edge.type if i == 0 else EdgeType.IDENTITY for i in range(extra_count - edge_count + 2)]
-        )
+        path = NewPath(start = source.realising_cube)
+        for cube, pipe in zip(extras, [ final_edge.type if i == 0 else EdgeType.IDENTITY for i in range(extra_count - edge_count + 2)]):
+            path = path.extend(cube, pipe)
+        path = path.extend(target.realising_cube, EdgeType.IDENTITY)
+        edges_specifications[(source.id, target.id)] = path
 
         return edges_specifications
 
-    def to_specification(self) -> PathSpecification:
+    def to_specification(self, edge_type: EdgeType | None = None) -> PathSpecification:
         pipes = []
         previous = self.source
         for current in self.extras:
             pipes.append( next(iter(BlockGraphHelper.infer_pipe_type(previous.kind, current.kind))) )
             previous = current
-        pipes.append( next(iter(BlockGraphHelper.infer_pipe_type(previous.kind, self.target.kind))) )
+        if self.target.kind == CubeKind.OOO:
+            pipes.append( edge_type )
+        else:
+            pipes.append( next(iter(BlockGraphHelper.infer_pipe_type(previous.kind, self.target.kind))) )
         return PathSpecification(
             source_cube= self.source, target_cube= self.target,
             extras = self.extras, pipes = pipes

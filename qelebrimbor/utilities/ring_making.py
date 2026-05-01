@@ -12,23 +12,22 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from collections import defaultdict, deque
+from collections import defaultdict
 
-import itertools
-from typing import cast
-
-from qelebrimbor.common.components import BgCube, ZxNode, ZxEdge
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.paths import PathSpecification
+from qelebrimbor.common.attributes_zx import EdgeId
+from qelebrimbor.common.attributes_bg import CubeId, CubeKind
+from qelebrimbor.common.components import BgCube, ZxNode, ZxEdge
+from qelebrimbor.common.path import Path
+
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
+
 from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
-from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
-from qelebrimbor.common.attributes_bg import CubeId, CubeKind
+from qelebrimbor.deprecated.pathfinder_dfs import PathFinderDFS
 
 import logging
 console = logging.getLogger(__name__)
@@ -130,7 +129,7 @@ def extend_unrealised(graph: VolumetricZxGraph):
         for neighbor in filter(lambda nb : not nb.is_realised(), graph.get_zx_neighbors(node)):
             schedule[node].append( neighbor )
 
-    edges_specifications: dict[EdgeId, PathSpecification] = {}
+    edges_specifications: dict[EdgeId, Path] = {}
 
     for node, neighbors in schedule.items():
         cube = node.realising_cube
@@ -157,10 +156,6 @@ def extend_unrealised(graph: VolumetricZxGraph):
             neighbor_cube = BgCube(neighbor_kinds[0], neighbor_position)
             graph.realise_zx_node(neighbor, neighbor_cube)
             source, target = (node, neighbor) if node.id < neighbor.id else (neighbor, node)
-            edges_specifications[ source.id, target.id ] = PathSpecification(
-                source_cube = source.realising_cube,
-                target_cube = target.realising_cube,
-                pipes = [ edge_type ]
-            )
+            edges_specifications[ source.id, target.id ] = Path(start = source.realising_cube).extend(target.realising_cube, edge_type)
 
     BlockGraphConstructor.realise_edges(graph, edges_specifications)

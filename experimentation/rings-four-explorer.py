@@ -24,8 +24,8 @@ from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
 
-from qelebrimbor.pathfinders.pathfinder_dfs import PathFinderDFS
-from qelebrimbor.pathfinders.path import Path
+from qelebrimbor.deprecated.pathfinder_dfs import PathFinderDFS
+from qelebrimbor.deprecated.path import Path
 
 getLogger('qelebrimbor.helpers').setLevel(CRITICAL)
 getLogger('qelebrimbor.pathfinders').setLevel(CRITICAL)

@@ -17,11 +17,10 @@ from collections import defaultdict
 
 import pyzx
 
-from qelebrimbor.common.attributes_bg import CubeId, CubeKind
-from qelebrimbor.common.attributes_zx import EdgeId
-from qelebrimbor.common.components import BgCube, ZxEdge
+from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.paths import PathSpecification
+from qelebrimbor.common.path import Path
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.utilities.ring_making import find_realisation, find_completion
@@ -74,7 +73,9 @@ def place_determined(graph: VolumetricZxGraph):
                 ))
                 neighbor_cube = BgCube(CubeKind.convert(neighbor_type, neighbor_reach), port_position)
                 neighbor_cube_id = graph.realise_zx_node(neighbor, neighbor_cube)
-                graph.realise_zx_edge(node, neighbor, PathSpecification(cube, neighbor_cube, extras = [], pipes = [edge_type]))
+                path = Path(start = cube)
+                path = path.extend(neighbor_cube, edge_type)
+                graph.realise_zx_edge(node, neighbor, path)
 
 # TODO: sort the mess that multiple realising_cubes introduce here
 def reserve_positions(graph: VolumetricZxGraph, reservations: dict[Coordinates, BgCube]):
