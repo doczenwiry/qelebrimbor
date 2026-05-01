@@ -44,14 +44,14 @@ class PathfinderDFS:
         return current
 
     @staticmethod
-    def __is_position_reserved(graph: VolumetricZxGraph, reservations: dict[Coordinates, ZxNode] | None, requester: ZxNode, position: Coordinates):
+    def __is_position_reserved(graph: VolumetricZxGraph, reservations: dict[Coordinates, ZxNode] | None, requester: ZxNode, target: ZxNode | None, position: Coordinates):
         if reservations is None:
             return False
 
         if position in reservations:
             holder = reservations[position]
             # TODO: allow taking the reservations if it is not critical to the holder ?
-            if holder != requester:
+            if holder != requester and (not target or holder != target):
                 reserved_ports_positions = sum(1 for kv in reservations.items() if kv[1] == holder)
                 number_of_ports_required = sum(
                     1 for nb in graph.get_zx_neighbors(holder) if graph.get_zx_edge(holder.id, nb.id).is_realised()
@@ -114,7 +114,7 @@ class PathfinderDFS:
                     continue
 
                 # Ignore neighbor if it occupies a position that is reserved
-                if PathfinderDFS.__is_position_reserved(graph, reservations, source.realised_node, neighbor.position):
+                if PathfinderDFS.__is_position_reserved(graph, reservations, source.realised_node, None, neighbor.position):
                     continue
 
                 extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
@@ -230,7 +230,9 @@ class PathfinderDFS:
                 pruning_performed += 1
                 continue
 
-            console.debug(f"Current : {current} [mlp-rest:{minimal_length_possible},mlp-total:{manhattan_length_projected},path:{current_path}]")
+            manhattan_length = current_path.manhattan_length()
+            remaining_distance = current.position.get_manhattan_distance(target.position)
+            console.debug(f"Current [{manhattan_length}/{remaining_distance}]: {current} [mlp-rest:{minimal_length_possible},mlp-total:{manhattan_length_projected},path:{current_path}]")
 
             if BlockGraphHelper.connectable(current, target, EdgeType.IDENTITY):
                 console.debug(f"> Connectable to {target} : {BlockGraphHelper.connectable(current, target, EdgeType.IDENTITY)}")
@@ -251,7 +253,7 @@ class PathfinderDFS:
                     continue
 
                 # Ignore neighbor if it would occupy a position that is reserved
-                if PathfinderDFS.__is_position_reserved(graph, reservations, source.realised_node, neighbor.position):
+                if PathfinderDFS.__is_position_reserved(graph, reservations, source.realised_node, target.realised_node, neighbor.position):
                     continue
 
                 extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)

@@ -3,6 +3,7 @@ import pyzx
 from argparse import ArgumentParser
 from time import time
 
+from qelebrimbor.common.components import ZxEdge
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.inflaters.breadth_first_search import ZxGraphInflaterBFS
 from qelebrimbor.inflaters.least_remaining_ports import ZxGraphInflaterPorts
@@ -12,8 +13,10 @@ from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 import logging
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger("qelebrimbor")
-logging.getLogger("qelebrimbor.pathfinders.depth_first_search").setLevel(logging.CRITICAL)
-logging.getLogger("qelebrimbor.inflaters.least_remaining_ports").setLevel(logging.CRITICAL)
+logging.getLogger("qelebrimbor.common.path").setLevel(logging.CRITICAL)
+logging.getLogger("qelebrimbor.helpers.blockgraph").setLevel(logging.CRITICAL)
+logging.getLogger("qelebrimbor.pathfinders.depth_first_search").setLevel(logging.DEBUG)
+logging.getLogger("qelebrimbor.inflaters.least_remaining_ports").setLevel(logging.DEBUG)
 
 parser = ArgumentParser(
     prog = "qb",
@@ -39,12 +42,13 @@ if __name__ == "__main__":
 
     start = time()
 
-    # try:
-    root = max(vzx.get_zx_nodes(), key = lambda zxn: vzx.get_zx_degree(zxn.id))
-    inflater = ZxGraphInflaterPorts(vzx)
-    report = inflater.process(vzx, root = root)
-    # except Exception as e:
-    #     console.error(f"Exception: {e}")
+    report: dict[str, list[ZxEdge]] | None = None
+    try:
+        root = max(vzx.get_zx_nodes(), key = lambda zxn: vzx.get_zx_degree(zxn.id))
+        inflater = ZxGraphInflaterPorts(vzx)
+        report = inflater.process(vzx, root = root)
+    except Exception as e:
+        console.error(f"Exception: {e}")
 
     final = time()
 
@@ -57,10 +61,12 @@ if __name__ == "__main__":
     realised_edges = sum(1 for edge in vzx.get_zx_edges() if edge.is_realised())
     edge_realisation_rate = round(realised_edges / vzx.number_of_edges() * 100, 2)
     print(f"Realised edges: {realised_edges} / {vzx.number_of_edges()} [{edge_realisation_rate}%]")
-    due_to_insufficient_ports = round(len(report["insufficient-ports"]) / vzx.number_of_edges() * 100, 2)
-    print(f"> Insufficient ports     : {due_to_insufficient_ports}%")
-    due_to_disconnected_component = round(len(report["disconnected-component"]) / vzx.number_of_edges() * 100, 2)
-    print(f"> Disconnected component : {due_to_disconnected_component}%")
+
+    if report is not None:
+        due_to_insufficient_ports = round(len(report["insufficient-ports"]) / vzx.number_of_edges() * 100, 2)
+        print(f"> Insufficient ports     : {due_to_insufficient_ports}%")
+        due_to_disconnected_component = round(len(report["disconnected-component"]) / vzx.number_of_edges() * 100, 2)
+        print(f"> Disconnected component : {due_to_disconnected_component}%")
 
     spider_volume = sum(1 for _ in filter(
         lambda bgc: bgc.kind not in [CubeKind.OOO , CubeKind.YYY] and bgc.realised_node is not None,

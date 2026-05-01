@@ -41,7 +41,9 @@ class ZxGraphInflaterPorts:
 
         self.__vertices: dict[ZxNode, VertexNode] = {}
         for node in graph.get_zx_nodes():
-            self.__vertices[node] = VertexNode(node = node, required_ports = graph.get_zx_degree(node.id), available_ports = set())
+            self.__vertices[node] = VertexNode(
+                node = node, required_ports = graph.get_zx_degree(node.id), available_ports = set()
+            )
 
         self.__reservations: dict[Coordinates, ZxNode] = dict()
 
@@ -50,10 +52,6 @@ class ZxGraphInflaterPorts:
             holder = self.__vertices[self.__reservations[position]]
             holder.available_ports.remove(position)
             self.__reservations.pop(position)
-            if holder.remaining_ports == 0:
-                console.warning(f"O> Time to prioritize {holder}")
-            elif holder.remaining_ports < 0:
-                console.error(f"O> TOO LATE for {holder}")
 
     def __reserve_ports(self, node: ZxNode):
         cube = node.realising_cube
@@ -68,10 +66,15 @@ class ZxGraphInflaterPorts:
                 self.__reservations[position] = node
                 vertex.available_ports.add(position)
 
-        if vertex.remaining_ports == 0:
-            console.warning(f"R> Time to prioritize {vertex}")
-        elif vertex.remaining_ports < 0:
-            console.error(f"R> TOO LATE for {vertex}")
+    def __verify_ports(self):
+        for vertex in self.__vertices.values():
+            if not vertex.node.is_realised():
+                continue
+
+            if vertex.remaining_ports == 0:
+                console.warning(f"VP> Time to prioritize {vertex}")
+            elif vertex.remaining_ports < 0:
+                console.error(f"VP> TOO LATE for {vertex}")
 
     # TODO: > represent the spacetime available and pathfind to the border of the blockgraph ?
 
@@ -85,6 +88,7 @@ class ZxGraphInflaterPorts:
         )
         graph.realise_zx_node(root, root_cube)
 
+        attempted: set[ZxEdge] = set()
         queue: list[VertexNode] = []
         heapq.heappush( queue, self.__vertices[root] )
         self.__reserve_ports(root)
@@ -129,10 +133,18 @@ class ZxGraphInflaterPorts:
             if not source.is_realised():
                 console.error(f"> FAILURE to realise FP edge : {zx_edge} [cause:unrealised-source]")
 
-            if not target.is_realised():
-                success = self.__attempt_node_realisation(source, target)
+            realisation_successful: bool
 
-                if not success:
+            if zx_edge in attempted:
+                continue
+
+            source_vertex = self.__vertices[source]
+            target_vertex = self.__vertices[target]
+
+            if not target.is_realised():
+                realisation_successful = self.__attempt_node_realisation(source, target)
+
+                if not realisation_successful:
                     if self.__vertices[zx_edge.source].remaining_ports < 0 or self.__vertices[zx_edge.target].remaining_ports < 0:
                         cause = "insufficient-ports"
                     else:
@@ -141,21 +153,22 @@ class ZxGraphInflaterPorts:
 
                 self.__node_realisations += 1
             else: # target.is_realised():
-                success = self.__attempt_edge_realisation(source, target)
+                realisation_successful = self.__attempt_edge_realisation(source, target)
 
-                if not success:
-                    source_vertex = self.__vertices[zx_edge.source]
-                    target_vertex = self.__vertices[zx_edge.target]
+                if not realisation_successful:
                     if source_vertex.remaining_ports < 0 or target_vertex.remaining_ports < 0:
                         cause = "insufficient-ports"
                     else:
                         cause = "unknown"
-                    raise Exception(f"> FAILURE to realise SP edge : {zx_edge} [cause:{cause}]")
+                    console.error(f"> FAILURE to realise SP edge : {zx_edge} [cause:{cause}]")
 
                 self.__edge_realisations += 1
 
-            self.__vertices[source].required_ports -= 1
-            self.__vertices[target].required_ports -= 1
+            attempted.add(zx_edge)
+
+            if realisation_successful:
+                self.__vertices[source].required_ports -= 1
+                self.__vertices[target].required_ports -= 1
 
             if current.required_ports > 0:
                 heapq.heappush(queue, current)
@@ -172,15 +185,19 @@ class ZxGraphInflaterPorts:
         for edge in graph.get_zx_edges():
             if not edge.is_realised():
                 cause = None
+                extra = ""
                 if edge.source.is_realised() or edge.target.is_realised():
-                    if self.__vertices[edge.source].remaining_ports < 0 or self.__vertices[edge.target].remaining_ports < 0:
+                    source_vertex = self.__vertices[edge.source]
+                    target_vertex = self.__vertices[edge.target]
+                    if source_vertex.remaining_ports < 0 or target_vertex.remaining_ports < 0:
                         cause = "insufficient-ports"
+                        extra = f":{source_vertex}/{target_vertex}"
                 else:
                     cause = "disconnected-component"
 
                 if cause is not None:
                     report[cause].append( edge )
-                    console.warning(f"> Unrealised edge : {edge} [cause:{cause}]")
+                    console.warning(f"> Unrealised edge : {edge} [cause:{cause}{extra}]")
 
         return report
 
@@ -216,6 +233,8 @@ class ZxGraphInflaterPorts:
             self.__occlude_ports(cube.position)
         self.__occlude_ports(target.realising_cube.position)
 
+        self.__verify_ports()
+
         return True
 
     def __attempt_edge_realisation(self, source: ZxNode, target: ZxNode) -> bool:
@@ -234,7 +253,10 @@ class ZxGraphInflaterPorts:
             console.error(f"Insufficient number of ports to realise {source} - {target}")
             return False
 
-        path = PathfinderDFS.find_optimal_paths(self.__graph, source.realising_cube, target.realising_cube)
+        path = PathfinderDFS.find_optimal_paths(
+            graph = self.__graph, source = source.realising_cube, target = target.realising_cube,
+            reservations = self.__reservations
+        )
 
         if path is None:
             console.error(f"Failed to find any path for edge-realisation {source} - {target}")
@@ -247,5 +269,7 @@ class ZxGraphInflaterPorts:
         # Remove the reserved positions of ports from those available ones
         for cube in path.extra_cubes:
             self.__occlude_ports(cube.position)
+
+        self.__verify_ports()
 
         return True
