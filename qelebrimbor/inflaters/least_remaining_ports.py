@@ -71,15 +71,12 @@ class ZxGraphInflaterPorts:
                 vertex.available_ports.add(position)
 
         if vertex.remaining_ports == 0:
-            console.warning(f"R> Time to prioritize {node} [{vertex.required_ports}/{len(vertex.available_ports)}]")
+            console.warning(f"R> Time to prioritize {vertex}")
         elif vertex.remaining_ports < 0:
-            console.error(f"R> TOO LATE for {node} [{vertex.required_ports}/{len(vertex.available_ports)}]")
+            console.error(f"R> TOO LATE for {vertex}")
 
-    # TODO: detects whether the source and/or target are unreachable in the BlockGraph.
     # TODO: > represent the spacetime available and pathfind to the border of the blockgraph ?
-    # TODO: > reserve needed positions for connection ?
 
-    FAIL_ON_EDGES = [ (38, 41) ]
     def process(self, graph: VolumetricZxGraph, root: ZxNode, root_kind: CubeKind | None = None):
         console.info(f"Starting inflation from root {root}")
 
@@ -101,21 +98,21 @@ class ZxGraphInflaterPorts:
             heapq.heapify(queue)
             current: VertexNode = heapq.heappop(queue)
             source = current.node
-            console.info(f"Processing vertex {source} [{current}]")
-            console.info(f"> Chosen among : {list(filter(lambda vt: vt.remaining_ports == current.remaining_ports, queue))}")
+            console.warning(f"Processing vertex {current}")
+            console.warning(f"> Chosen among : {list(filter(lambda vt: vt.remaining_ports == current.remaining_ports, queue))}")
             # TODO: this will fail to reach cross-edges
             target: ZxNode
             candidate: ZxNode | None = None
             try:
                 candidate = next(filter(lambda nb: not nb.is_realised(), graph.get_zx_neighbors(source)))
             except StopIteration:
-                console.info(f"> No unrealised neighbor found [{source}].")
+                console.warning(f"> No unrealised neighbor found [{source}].")
 
             if candidate is None:
                 try:
                     candidate = next(filter(lambda nb: not graph.get_zx_edge(source.id, nb.id).is_realised(), graph.get_zx_neighbors(source)))
                 except StopIteration:
-                    console.info(f"> No unrealised edge found [{source}].")
+                    console.warning(f"> No unrealised edge found [{source}].")
                     continue
 
             if candidate is None:
@@ -123,7 +120,7 @@ class ZxGraphInflaterPorts:
 
             target = candidate
 
-            console.info(f"Processing edge {source} - {target}")
+            console.debug(f"> Processing edge {source} - {target}")
 
             zx_edge = graph.get_zx_edge(source.id, target.id)
 
@@ -138,14 +135,21 @@ class ZxGraphInflaterPorts:
                 success = self.__attempt_node_realisation(source, target)
 
                 if not success:
-                    raise Exception(f"> FAILURE to realise FP edge : {zx_edge} [cause:pathfinder]")
+                    if self.__vertices[zx_edge.source].remaining_ports < 0 or self.__vertices[zx_edge.target].remaining_ports < 0:
+                        raise Exception(f"> FAILURE to realise FP edge : {zx_edge} [cause:insufficient-ports]")
+                    else:
+                        raise Exception(f"> FAILURE to realise FP edge : {zx_edge} [cause:unknown]")
 
                 self.__node_realisations += 1
             else: # target.is_realised():
                 success = self.__attempt_edge_realisation(source, target)
 
                 if not success:
-                    raise Exception(f"> FAILURE to realise FP edge : {zx_edge} [cause:pathfinder]")
+                    if self.__vertices[zx_edge.source].remaining_ports < 0 or self.__vertices[
+                        zx_edge.target].remaining_ports < 0:
+                        raise Exception(f"> FAILURE to realise SP edge : {zx_edge} [cause:insufficient-ports]")
+                    else:
+                        raise Exception(f"> FAILURE to realise SP edge : {zx_edge} [cause:unknown]")
 
                 self.__edge_realisations += 1
 
@@ -165,22 +169,21 @@ class ZxGraphInflaterPorts:
         for edge in graph.get_zx_edges():
             if not edge.is_realised():
                 if self.__vertices[edge.source].remaining_ports < 0 or self.__vertices[edge.target].remaining_ports < 0:
-                    console.warning(f"> Unrealised edge : {edge} [cause:not-implemented]")
+                    console.warning(f"> Unrealised edge : {edge} [cause:insufficient-ports]")
 
     def __attempt_node_realisation(self, source: ZxNode, target: ZxNode) -> bool:
         # Place a cube of a kind suitable for the type of the unrealised endpoint node can be placed.
         console.info(f"> Searching for node-realisation : {source} - {target}")
         source_vertex = self.__vertices[source]
-        console.info(f">> Source ports : {source_vertex.required_ports}/{source_vertex.available_ports}")
+        console.debug(f">> Source ports : {source_vertex.required_ports}/{source_vertex.available_ports}")
 
         if source_vertex.remaining_ports < 0:
             console.error(f"Insufficient number of ports to realise {source} - {target}")
             return False
 
         path = PathfinderDFS.find_closest_realisation(
-            graph = self.__graph,
-            source = source.realising_cube, target = target,
-            reservations = self.__reservations.copy()
+            graph = self.__graph, source = source.realising_cube, target = target,
+            reservations = self.__reservations
         )
 
         if path is None:
@@ -191,13 +194,7 @@ class ZxGraphInflaterPorts:
 
         # Realise the target cube and the path connecting it to the source cube
         self.__graph.realise_zx_node(target, path.final)
-        # TODO: use Path.to_specification(..)
         self.__graph.realise_zx_edge(source.id, target.id, path)
-        #     proposal = PathSpecification(
-        #         source.realising_cube, target.realising_cube,
-        #         extras = path.extra_cubes, pipes = [EdgeType.IDENTITY for _ in range(path.manhattan_length())]
-        #     )
-        # )
 
         self.__reserve_ports(target)
 
@@ -213,12 +210,8 @@ class ZxGraphInflaterPorts:
         console.info(f"> Searching for edge-realisation : {source} - {target}")
         source_vertex = self.__vertices[source]
         target_vertex = self.__vertices[target]
-        console.info(f">> Source ports : {source_vertex.required_ports}/{source_vertex.available_ports}")
-        console.info(f">> Target ports : {target_vertex.required_ports}/{target_vertex.available_ports}")
-
-        edge = tuple(sorted([source.id, target.id]))
-        if edge in ZxGraphInflaterPorts.FAIL_ON_EDGES:
-            raise Exception(f"Triggered failure on edge {source} - {target}")
+        console.debug(f">> Source ports : {source_vertex.required_ports}/{source_vertex.available_ports}")
+        console.debug(f">> Target ports : {target_vertex.required_ports}/{target_vertex.available_ports}")
 
         if source_vertex.remaining_ports < 0:
             console.error(f"Insufficient number of ports to realise {source} - {target}")

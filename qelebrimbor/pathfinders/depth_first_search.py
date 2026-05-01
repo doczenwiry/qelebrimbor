@@ -47,7 +47,7 @@ class PathfinderDFS:
     @staticmethod
     def find_closest_realisation(
             graph: VolumetricZxGraph, source: BgCube, target: ZxNode,
-            reservations: dict[Coordinates, ZxNode],
+            reservations: dict[Coordinates, ZxNode] = None,
             maximal_distance: int = None,
             tracing: bool = False
     ) -> Path | None:
@@ -94,10 +94,13 @@ class PathfinderDFS:
                     console.debug(f">> Position occupied : {neighbor.position}")
                     continue
 
-                # if neighbor.position in reservations:
-                #     # Allow taking the reservations if it is not critical to the holder.
-                #     holder = reservations[neighbor.position]
-                #     if holder.id != source.realised_node.id:
+                if reservations is not None and neighbor.position in reservations:
+                    # Allow taking the reservations if it is not critical to the holder.
+                    holder = reservations[neighbor.position]
+                    if holder.id != source.realised_node.id:
+                        console.debug(f">> Position {neighbor.position} reserved by {holder}")
+                        continue
+
                 #         reserved_ports_positions = sum(1 for kv in reservations.items() if kv[1] == holder)
                 #         # number_of_ports_required = 0
                 #         # number_of_ports_required = sum(
@@ -106,9 +109,7 @@ class PathfinderDFS:
                 #         # critical = number_of_ports_required <= reserved_ports_positions
                 #         # console.warning(f"> Position reserved : {neighbor.position} by {holder} [rq:{number_of_ports_required},rv:{reserved_ports_positions},critical:{critical}]")
                 #
-                # #     if holder.id != source.realised_node.id:
-                # #         console.debug(f">> Position {neighbor.position} reserved by {holder} [critical:{critical}]")
-                # #         continue
+                    # if holder.id != source.realised_node.id:
 
                 extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
                 console.debug(f"> Extended Path : {extended_path}")
@@ -117,7 +118,7 @@ class PathfinderDFS:
                 console.debug(f"> Neighbor has kind {neighbor.kind} in {target_suitable_kinds} ?")
                 if neighbor.kind in target_suitable_kinds:
                     open_ports = list(filter(
-                        lambda pos : pos not in extended_path.occupied and pos not in graph.occupied and pos not in reservations,
+                        lambda pos : pos not in extended_path.occupied and pos not in graph.occupied and (not reservations or pos not in reservations),
                         SpacetimeHelper.get_constellation(neighbor.position, neighbor.kind.get_reach())
                     ))
                     number_of_open_ports = len(open_ports)
@@ -165,6 +166,7 @@ class PathfinderDFS:
     @staticmethod
     def find_optimal_paths(
             graph: VolumetricZxGraph, source: BgCube, target: BgCube,
+            reservations: dict[Coordinates, ZxNode] = None,
             maximal_excess: int = 10,
             bnb: bool = False,
             tracing: bool = False
@@ -242,6 +244,13 @@ class PathfinderDFS:
                 # Ignore neighbor if it introduces a loop
                 if neighbor.position in current_path.occupied or neighbor.position in graph.occupied:
                     continue
+
+                if reservations is not None and neighbor.position in reservations:
+                    # Allow taking the reservations if it is not critical to the holder.
+                    holder = reservations[neighbor.position]
+                    if holder.id != source.realised_node.id:
+                        console.debug(f">> Position {neighbor.position} reserved by {holder}")
+                        continue
 
                 extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
                 extended_distance = extended_path.manhattan_length()

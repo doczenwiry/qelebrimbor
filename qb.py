@@ -9,8 +9,9 @@ from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 console = logging.getLogger(__name__)
+logging.getLogger("qelebrimbor.pathfinders.depth_first_search").setLevel(logging.CRITICAL)
 
 parser = ArgumentParser(
     prog = "qb",
@@ -57,6 +58,11 @@ if __name__ == "__main__":
         with open(output, 'w') as file:
             file.write(pyzx_output.to_json())
 
+    if args.visualization:
+        window_size = "full" if args.fullscreen else "auto"
+        viewer = VolumetricZxGraphViewer(vzx, label = args.filepath, size = window_size)
+        viewer.display()
+
     if args.validation:
         pyzx_output = vzx.into_pyzx_graph()
         # TODO: fix the labelling of BOUNDARIES in vzx.into_pyzx_graph(..) to match that of pyzx_input
@@ -67,8 +73,3 @@ if __name__ == "__main__":
         composition.compose(pyzx_output.adjoint())
         pyzx.full_reduce(composition)
         console.info(f"Validation : {composition.is_id()}")
-
-    if args.visualization:
-        window_size = "full" if args.fullscreen else "auto"
-        viewer = VolumetricZxGraphViewer(vzx, label = args.filepath, size = window_size)
-        viewer.display()
