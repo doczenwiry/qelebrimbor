@@ -2,6 +2,8 @@ from os import path
 import pyzx
 from argparse import ArgumentParser
 from time import time
+import networkx as nx
+
 
 from qelebrimbor.common.components import ZxEdge
 from qelebrimbor.common.attributes_bg import CubeKind
@@ -13,8 +15,8 @@ from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 import logging
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger("qelebrimbor")
-logging.getLogger("qelebrimbor.pathfinders.depth_first_search").setLevel(logging.CRITICAL)
-logging.getLogger("qelebrimbor.inflaters.least_remaining_ports").setLevel(logging.INFO)
+# logging.getLogger("qelebrimbor.pathfinders.depth_first_search").setLevel(logging.CRITICAL)
+# logging.getLogger("qelebrimbor.inflaters.least_remaining_ports").setLevel(logging.INFO)
 
 parser = ArgumentParser(
     prog = "qb",
@@ -31,6 +33,19 @@ parser.add_argument('-r', '--report', action='store_true', help = "print a detai
 parser.add_argument('--output_pyzx', action = 'store_true', help = "write the constructed Volumetric ZX-graph as a PyZX graph into a *.json file.")
 args = parser.parse_args()
 
+def __format_percentage(value: float  | None) -> str:
+    if value is None:
+        return "n/a %"
+    else:
+        rounded = round(100.0 * value, 1)
+        if 0.0 < value < 0.0001:
+            printed = "0.01"
+        elif 0.9999 < value < 1.0:
+            printed = "99.99"
+        else:
+            printed = str(rounded)
+        return f"{printed}%"
+
 def main():
     args = parser.parse_args()
 
@@ -45,57 +60,64 @@ def main():
     start = time()
 
     report: dict[str, list[ZxEdge]] | None = None
-    try:
-        root = max(vzx.get_zx_nodes(), key = lambda zxn: vzx.get_zx_degree(zxn.id))
-        inflater = ZxGraphInflaterPorts(vzx)
-        report = inflater.process(vzx, root = root)
-    except Exception as e:
-        console.error(f"Exception: {e}")
+    inflater = ZxGraphInflaterPorts(vzx)
+
+    for component in sorted(nx.connected_components(vzx), key = lambda cc: len(cc), reverse = True):
+        console.info(f"> Connected component [{len(component)}] : {component}")
+        try:
+            root = max(map(
+                lambda id: vzx.get_zx_node(id), component),
+                key = lambda zxn: vzx.get_zx_degree(zxn.id)
+            )
+            report = inflater.process(vzx, root = root)
+        except Exception as e:
+            console.error(f"Exception: {e}")
 
     final = time()
     runtime = round(final - start, 6)
 
-    realised_nodes = sum(1 for node in vzx.get_zx_nodes() if node.is_realised())
-    node_realisation_rate = round(realised_nodes / vzx.number_of_nodes() * 100, 2)
-    realised_edges = sum(1 for edge in vzx.get_zx_edges() if edge.is_realised())
-    edge_realisation_rate = round(realised_edges / vzx.number_of_edges() * 100, 2)
+    realised_nodes: int = sum(1 for node in vzx.get_zx_nodes() if node.is_realised())
+    realised_edges: int = sum(1 for edge in vzx.get_zx_edges() if edge.is_realised())
+    node_realisation_rate: float = realised_nodes / vzx.number_of_nodes()
+    edge_realisation_rate: float = realised_edges / vzx.number_of_edges()
 
     if report is not None:
-        due_to_insufficient_ports = round(len(report["insufficient-ports"]) / vzx.number_of_edges() * 100, 2)
-        due_to_disconnected_component = round(len(report["disconnected-component"]) / vzx.number_of_edges() * 100, 2)
+        due_to_insufficient_ports: float = len(report["insufficient-ports"]) / vzx.number_of_edges()
+        due_to_disconnected_component: float = len(report["disconnected-component"]) / vzx.number_of_edges()
 
-    spider_volume = sum(1 for _ in filter(
+    spider_volume: int = sum(1 for _ in filter(
         lambda bgc: bgc.kind not in [CubeKind.OOO , CubeKind.YYY] and bgc.realised_node is not None,
         vzx.get_bg_cubes()
     ))
-    excess_volume = sum(
+    excess_volume: int = sum(
         1 for cube in vzx.get_bg_cubes() if cube.kind not in [CubeKind.OOO , CubeKind.YYY] and cube.realised_node is None
     )
-    inflation_rate = round(excess_volume / spider_volume * 100, 2)
+    inflation_rate: float = excess_volume / spider_volume
 
     if args.report:
         print(f"Input file : {args.filepath}")
         print(f"Inflation runtime: {runtime} seconds.")
-        print(f"Realised nodes: {realised_nodes} / {vzx.number_of_nodes()} [{node_realisation_rate}%]")
-        print(f"Realised edges: {realised_edges} / {vzx.number_of_edges()} [{edge_realisation_rate}%]")
+        print(f"Realised nodes: {realised_nodes} / {vzx.number_of_nodes()} [{__format_percentage(node_realisation_rate)}]")
+        print(f"Realised edges: {realised_edges} / {vzx.number_of_edges()} [{__format_percentage(edge_realisation_rate)}]")
 
         if report is not None:
-            print(f"> Insufficient ports     : {due_to_insufficient_ports}%")
-            print(f"> Disconnected component : {due_to_disconnected_component}%")
+            print(f"> Insufficient ports     : {__format_percentage(due_to_insufficient_ports)}")
+            print(f"> Disconnected component : {__format_percentage(due_to_disconnected_component)}")
 
         print(f"Complete volume  : {vzx.volume()}")
         print(f"> Spider volume : {spider_volume}")
         print(f"> Excess volume : +{excess_volume}")
-        print(f"INFLATION RATE  : +{inflation_rate}%")
+        print(f"INFLATION RATE  : +{__format_percentage(inflation_rate)}")
 
     elif args.summary:
-        summary  = f"Summary for {args.filepath}: {runtime} seconds, "
-        summary += f"NRR:{node_realisation_rate}%, "
-        summary += f"ERR:{edge_realisation_rate}%, "
+        summary  = f"Summary for {args.filepath}; "
+        summary += f"Runtime:{runtime} seconds, "
+        summary += f"NRR:{__format_percentage(node_realisation_rate)}, "
+        summary += f"ERR:{__format_percentage(edge_realisation_rate)}, "
         if report is not None:
-            summary += f"IPR:{due_to_insufficient_ports}%, "
-            summary += f"DCR:{due_to_disconnected_component}, "
-        summary += f"IR:+{inflation_rate}%"
+            summary += f"IPR:{__format_percentage(due_to_insufficient_ports)}, "
+            summary += f"DCR:{__format_percentage(due_to_disconnected_component)}, "
+        summary += f"IR:+{__format_percentage(inflation_rate)}%"
         print(summary)
 
     if args.output_pyzx:
@@ -111,7 +133,7 @@ def main():
             viewer = VolumetricZxGraphViewer(vzx, label = args.filepath, size = window_size)
             viewer.display()
         else:
-            console.info("Visualization of a VolumetricZxGraph with more than 100 cubes is slow (Override with -V).")
+            print("> Visualization of a VolumetricZxGraph with more than 100 cubes is slow (Override with -V).")
 
     if args.check_equivalence:
         pyzx_output = vzx.into_pyzx_graph()
