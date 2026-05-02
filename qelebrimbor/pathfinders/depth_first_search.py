@@ -25,10 +25,9 @@ from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.common.path import Length, Path
 
-import logging
-
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
+import logging
 console = logging.getLogger(__name__)
 
 class PathfinderDFS:
@@ -76,112 +75,6 @@ class PathfinderDFS:
 
         return False
 
-    # TODO: consider the type of Edge between source and target (IDENTITY or HADAMARD)
-    @staticmethod
-    def find_closest_realisation(
-            graph: VolumetricZxGraph, source: BgCube, target: ZxNode,
-            reservations: dict[Coordinates, ZxNode] = None,
-            maximal_distance: int = None,
-            tracing: bool = False
-    ) -> Path | None:
-        optimum: Path | None = None
-        minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
-        unrelaxed: deque[Path] = deque()
-        initial = Path(start = source)
-        unrelaxed.append( initial )
-        minimal_paths[ (source.kind, source.position) ] = initial
-
-        number_of_ports_required = graph.get_zx_degree(target.id)
-        console.info(f"Searching for placement from {source} to {target}. [ports required:{number_of_ports_required}]")
-
-        target_suitable_kinds: list[CubeKind] = CubeKind.suitable_kinds(target.type)
-
-        pruning_performed = 0
-        points_discovered = 0
-        points_considered = 0
-
-        # Tracing exploration
-        nodes : dict[BgCube, NodeId] = dict()
-        labels: dict[NodeId, str] = dict()
-        trace: nx.Graph = nx.Graph()
-        if tracing:
-            trace.add_node( 0 )
-            labels[len(nodes)] = str(source)
-            nodes[source] = 0
-
-        while len(unrelaxed) != 0 and optimum is None:
-            current_path = unrelaxed.pop()
-            terminal = current_path.final
-
-            console.debug(f"Current : {current_path}")
-
-            for neighbor in BlockGraphHelper.get_candidate_constellation(terminal):
-                neighbor_point = (neighbor.kind, neighbor.position)
-                console.debug(f"> Neighbor : {neighbor}")
-
-                if maximal_distance and maximal_distance < source.position.get_manhattan_distance(neighbor.position):
-                    continue
-
-                # Ignore neighbor if it introduces a loop
-                if neighbor.position in current_path.occupied or neighbor.position in graph.occupied:
-                    console.debug(f">> Position occupied : {neighbor.position}")
-                    continue
-
-                # Ignore neighbor if it occupies a position that is reserved
-                if PathfinderDFS.__is_position_reserved(graph, reservations, source.realised_node, None, neighbor.position):
-                    continue
-
-                extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
-                console.debug(f"> Extended Path : {extended_path}")
-
-                # If a suitable Cube has been reached for the target, consider it further
-                console.debug(f"> Neighbor has kind {neighbor.kind} in {target_suitable_kinds} ?")
-                if neighbor.kind in target_suitable_kinds:
-                    open_ports = list(filter(
-                        lambda pos : pos not in extended_path.occupied and pos not in graph.occupied and (not reservations or pos not in reservations),
-                        SpacetimeHelper.get_constellation(neighbor.position, neighbor.kind.get_reach())
-                    ))
-                    number_of_open_ports = len(open_ports)
-                    # If the position offers enough open ports, consider it as the optimum
-                    console.debug(f"> Open ports found for {neighbor} : {open_ports} [req.{number_of_ports_required}]")
-                    if number_of_ports_required <= number_of_open_ports:
-                        optimum = extended_path
-                        continue
-
-                # Don't attempt to extend if the neighbor is a terminal cube.
-                if neighbor.kind in [ CubeKind.OOO , CubeKind.YYY ]:
-                    continue
-
-                # Update position of neighbor in unrelaxed as its distance is being updated
-                if neighbor not in minimal_paths:
-                    unrelaxed.append( extended_path )
-
-                # Tracing exploration
-                if tracing:
-                    nodes[neighbor] = len(nodes)
-                    trace.add_node( nodes[neighbor] )
-                    trace.add_edge( nodes[terminal], nodes[neighbor] )
-
-                points_discovered += 1
-
-                # Update minimal distance discovered
-                minimal_paths[neighbor_point] = extended_path
-
-            points_considered += 1
-
-        console.debug(f"> Number of points considered : {points_considered}")
-        console.debug(f"> Number of pruning performed : {pruning_performed}")
-        console.debug(f"> Number of points discovered : {points_discovered}")
-
-        if tracing:
-            layout = nx.drawing.layout.bfs_layout(trace, start = 0)
-            nx.draw(trace, layout, node_size = 1)
-            nx.draw_networkx_labels(trace, layout, labels)
-            console.debug(f"> Number of nodes : {len(trace.nodes)}")
-            plt.show()
-
-        return optimum
-
     @staticmethod
     def find_optimal_paths(
             graph: VolumetricZxGraph, source: BgCube, target: BgCube,
@@ -192,9 +85,10 @@ class PathfinderDFS:
     ) -> Path | None:
         """
         Perform path-finding using a Depth-First Search approach.
-        :param graph: The VolumetricZxGraph that represents the context within which the path finding is performed
+        :param graph: The VolumetricZxGraph that represents the context within which the path finding is performed.
         :param source: The cube from which to start.
         :param target: The cube towards which to go.
+        :param reservations: The positions that correspond to the ports of an adjacent cube that might need it.
         :param maximal_excess: The maximum number of additional cubes permitted on top of the Manhattan Length.
         :param bnb: Controls whether a Branch-and-Bound refinement ought to be performed after finding the first path.
         This will incur an additional computational cost that may or may not fall into super-exponential territory.

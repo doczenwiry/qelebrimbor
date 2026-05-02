@@ -25,6 +25,7 @@ from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.components import ZxNode, BgCube, ZxEdge
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
+from qelebrimbor.pathfinders.breadth_first_search import PlacementFinderBFS
 from qelebrimbor.pathfinders.depth_first_search import PathfinderDFS
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -255,7 +256,7 @@ class ZxGraphInflaterPorts:
             console.error(f"Insufficient number of ports to realise {source} - {target}")
             return False
 
-        path = PathfinderDFS.find_closest_realisation(
+        path = PlacementFinderBFS.find_closest_realisation(
             graph = self.__graph, source = source.realising_cube, target = target,
             reservations = self.__reservations
         )

@@ -22,6 +22,7 @@ from qelebrimbor.common.attributes_zx import EdgeType
 from qelebrimbor.common.components import ZxNode, BgCube
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
+from qelebrimbor.pathfinders.breadth_first_search import PlacementFinderBFS
 from qelebrimbor.pathfinders.depth_first_search import PathfinderDFS
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -151,7 +152,7 @@ class ZxGraphInflaterBFS:
         # Place a cube of a kind suitable for the type of the unrealised endpoint node can be placed.
         console.info(f"> Searching for node-realisation : {source} - {target}")
         console.info(f">> Source ports : {self.__required_ports[source]}/{len(self.__available_ports[source])}")
-        path = PathfinderDFS.find_closest_realisation(self.__graph, source.realising_cube, target, reservations = self.__reservations)
+        path = PlacementFinderBFS.find_closest_realisation(self.__graph, source.realising_cube, target, reservations = self.__reservations)
 
         if path is None:
             console.error(f"Failed to find any path for node-realisation {source} - {target}")
