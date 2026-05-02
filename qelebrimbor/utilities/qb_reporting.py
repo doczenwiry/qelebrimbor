@@ -70,9 +70,8 @@ def print_report(vzx: VolumetricZxGraph, runtime: float, report: dict[str, list[
         print(f"Realised nodes: {realised_nodes} / {vzx.number_of_nodes()} [{node_realisation_rate}]")
         print(f"Realised edges: {realised_edges} / {vzx.number_of_edges()} [{edge_realisation_rate}]")
 
-        if report is not None:
-            print(f"> Insufficient ports     : {due_to_insufficient_ports}")
-            print(f"> Disconnected component : {due_to_disconnected_component}")
+        print(f"> Insufficient ports     : {due_to_insufficient_ports}")
+        print(f"> Disconnected component : {due_to_disconnected_component}")
 
         print(f"Complete volume  : {total_volume}")
         print(f"> Spider volume : {spider_volume}")
@@ -82,9 +81,8 @@ def print_report(vzx: VolumetricZxGraph, runtime: float, report: dict[str, list[
         summary  = f"Runtime:{"{:.6f}".format(runtime)} seconds, "
         summary += f"NRR:{node_realisation_rate}, "
         summary += f"ERR:{edge_realisation_rate}, "
-        if report is not None:
-            summary += f"IPR:{due_to_insufficient_ports}, "
-            summary += f"DCR:{due_to_disconnected_component}, "
+        summary += f"IPR:{due_to_insufficient_ports}, "
+        summary += f"DCR:{due_to_disconnected_component}, "
         summary += f"IR:+{inflation_rate}, "
         summary += f"TV:{str(total_volume).rjust(4, ' ')}, "
         summary += f"SV:{str(spider_volume).rjust(4, ' ')}, "

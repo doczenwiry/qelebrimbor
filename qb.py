@@ -62,18 +62,28 @@ def main():
 
     vzx = PYZX.from_pyzx_graph(pyzx_input)
 
+    # Inflation stage
+
     start = time()
 
-    inflater = ZxGraphInflaterPorts(graph = vzx)
-    completion_status = inflater.process()
+    completion_status = None
+    try:
+        inflater = ZxGraphInflaterRings(graph = vzx)
+        completion_status = inflater.process()
+    except:
+        console.error(f"Construction failed.")
 
     final = time()
     runtime = round(final - start, 6)
+
+    # Reporting stage
 
     if arguments.report:
         print_report(vzx, runtime, completion_status)
     elif arguments.summary:
         print_report(vzx, runtime, completion_status, detailed = False)
+
+    # Outputting stage
 
     if arguments.output_pyzx:
         output = path.splitext(arguments.filepath)[0] + str(".compiled.json")
@@ -90,6 +100,25 @@ def main():
         print(f"Writing VZX output to {output}.")
         VZX.into_file(vzx, output)
 
+    # Equivalence checking stage
+
+    if arguments.check_equivalence:
+        pyzx_output = PYZX.into_pyzx_graph(vzx)
+        # TODO: fix the labelling of BOUNDARIES in vzx.into_pyzx_graph(..) to match that of pyzx_input
+        pyzx_input.auto_detect_io()
+        pyzx_output.auto_detect_io()
+
+        try:
+            composition = pyzx_input.copy()
+            composition.compose(pyzx_output.adjoint())
+            pyzx.full_reduce(composition)
+            equivalent_graphs = "SUCCESS" if composition.is_id() else "FAILURE"
+        except TypeError:
+            equivalent_graphs = "FAILURE"
+        print(f"Equivalence between input and output ZX-graphs [composition-with-adjoint method] : {equivalent_graphs}")
+
+    # Visualisation stage
+
     if arguments.visualization or arguments.force_visualization:
         if arguments.force_visualization or vzx.volume() <= 100:
             window_size = "full" if arguments.fullscreen else "auto"
@@ -98,18 +127,6 @@ def main():
             viewer.display()
         else:
             print("> Visualization of a VolumetricZxGraph with more than 100 cubes is slow (Override with -V).")
-
-    if arguments.check_equivalence:
-        pyzx_output = PYZX.into_pyzx_graph(vzx)
-        # TODO: fix the labelling of BOUNDARIES in vzx.into_pyzx_graph(..) to match that of pyzx_input
-        pyzx_input.auto_detect_io()
-        pyzx_output.auto_detect_io()
-
-        composition = pyzx_input.copy()
-        composition.compose(pyzx_output.adjoint())
-        pyzx.full_reduce(composition)
-        equivalent_graphs = "SUCCESS" if composition.is_id() else "FAILURE"
-        print(f"Equivalence between input and output ZX-graphs [composition-with-adjoint method] : {equivalent_graphs}")
 
 if __name__ == "__main__":
     main()

@@ -20,11 +20,11 @@ from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.attributes_zx import EdgeType
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.formats.pyzx import PYZX
 
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 
 from qelebrimbor.utilities.ring_making import extend_unrealised
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     with open("../assets/pyzx/steane/steane-code-qubits7-spiders8.json", 'r') as file:
         pyzx_input = pyzx.Graph().from_json(file.read())
 
-    vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_input)
+    vzx = PYZX.from_pyzx_graph(pyzx_input)
 
     BlockGraphConstructor.realise_nodes(
         graph= vzx,
@@ -129,5 +129,6 @@ if __name__ == "__main__":
     viewer = VolumetricZxGraphViewer(vzx, label = "steane-code-7", layout = hexagon)
     viewer.display()
 
-    pyzx_output = vzx.into_pyzx_graph(filepath ="../assets/pyzx/steane/steane-code-qubits7-spiders8-alt-blockgraph.json")
+    pyzx_output = PYZX.into_pyzx_graph(vzx)
     pyzx.draw(pyzx_output, labels = True)
+    PYZX.into_file(vzx, filepath ="../assets/pyzx/steane/steane-code-qubits7-spiders8-alt-blockgraph.json")

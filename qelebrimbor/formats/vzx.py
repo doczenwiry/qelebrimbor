@@ -49,7 +49,7 @@ class VZX:
             file.write(f"\n{VZX.__HEADERS['vzx']['NODES']}\n")
             file.writelines(
                 [
-                    f"{node.id};{node.type.name};{node.qubit};{node.layer};{node.realising_cube.id}\n"
+                    f"{node.id};{node.type.name};{node.qubit};{node.layer};{node.realising_cube.id if node.realising_cube else -1}\n"
                     for node in graph.get_zx_nodes()
                 ]
             )

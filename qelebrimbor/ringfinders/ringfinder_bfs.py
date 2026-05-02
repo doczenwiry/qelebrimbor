@@ -41,7 +41,7 @@ class RingFinderBFS:
         queue: deque[Ring] = deque()
         queue.append( Ring(anchor) )
 
-        console.info(f"Starting at {anchor} [n={n}, e={e}] {len(rings) < number_sought}")
+        console.info(f"Starting at {anchor} [n={n}, e={e}]")
         console.info(f"> Nodes : {nodes}")
 
         while len(queue) > 0 and len(rings) != number_sought:

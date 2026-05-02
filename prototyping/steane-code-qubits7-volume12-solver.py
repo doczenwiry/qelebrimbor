@@ -14,6 +14,7 @@
 
 import pyzx
 
+from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
 from qelebrimbor.utilities.ring_making import find_realisation, find_completion, extend_unrealised
 from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
@@ -29,7 +30,7 @@ if __name__ == "__main__":
     with open("../assets/pyzx/steane/steane-code-qubits7-spiders8.json", 'r') as file:
         pyzx_input = pyzx.Graph().from_json(file.read())
 
-    vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_input)
+    vzx = PYZX.from_pyzx_graph(pyzx_input)
 
     MinimalCycleBasisAnalyser.analyse(vzx)
     cycles = MinimalCycleBasisAnalyser.decompose_nodes(vzx)

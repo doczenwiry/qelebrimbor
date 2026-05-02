@@ -19,6 +19,7 @@ from qelebrimbor.common.attributes_zx import EdgeType
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.path import Path
+from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     with open("../assets/pyzx/steane/steane-code-qubits7-spiders7.json", 'r') as file:
         pyzx_graph = pyzx.Graph().from_json(file.read())
 
-    vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)
+    vzx = PYZX.from_pyzx_graph(pyzx_graph)
 
     MinimalCycleBasisAnalyser.analyse(vzx)
     cycles = MinimalCycleBasisAnalyser.decompose_nodes(vzx)
