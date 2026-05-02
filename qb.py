@@ -17,19 +17,17 @@ import pyzx
 from argparse import ArgumentParser
 from time import time
 
-from termcolor import colored
-
-from qelebrimbor.common.components import ZxEdge
-from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
 from qelebrimbor.formats.vzx import VZX
 from qelebrimbor.inflaters.breadth_first_search import ZxGraphInflaterBFS
 from qelebrimbor.inflaters.least_remaining_ports import ZxGraphInflaterPorts
 from qelebrimbor.inflaters.rings import ZxGraphInflaterRings
+
+from qelebrimbor.utilities.qb_reporting import print_report
+
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -53,74 +51,6 @@ parser.add_argument('-V', '--force-visualization', action='store_true', help = "
 parser.add_argument('-w', '--output-vzx', action='store_true', help = "save the Volumetric ZX-graph to a *.vzx file.")
 args = parser.parse_args()
 
-def __format_percentage(value: float | None, optimum: float) -> str:
-    if value is None:
-        output = "n/a"
-    else:
-        rounded = round(100.0 * value, 2)
-        if 0.0 < value < 0.0001:
-            printed = "0.01"
-        elif 0.9999 < value < 1.0:
-            printed = "99.99"
-        else:
-            printed = "{:.2f}".format(rounded)
-        output = f"{printed.rjust(6, ' ')}%"
-
-    if value == optimum:
-        output = colored(output, 'green', attrs = ['bold'], force_color = True)
-    else:
-        output = colored(output, 'red', attrs = ['bold'], force_color = True)
-
-    return output
-
-def print_report(vzx: VolumetricZxGraph, runtime: float, report: dict[str, list[ZxEdge]] | None, detailed: bool = True):
-    realised_nodes: int = sum(1 for node in vzx.get_zx_nodes() if node.is_realised())
-    realised_edges: int = sum(1 for edge in vzx.get_zx_edges() if edge.is_realised())
-    node_realisation_rate: str = __format_percentage(realised_nodes / vzx.number_of_nodes(), optimum = 1.0)
-    edge_realisation_rate: str = __format_percentage(realised_edges / vzx.number_of_edges(), optimum = 1.0)
-
-    due_to_insufficient_ports = __format_percentage(
-        value = len(report["insufficient-ports"]) / vzx.number_of_edges() if report else 0.0, optimum = 0.0
-    )
-
-    due_to_disconnected_component = __format_percentage(
-        value = len(report["disconnected-component"]) / vzx.number_of_edges() if report else 0.0, optimum = 0.0
-    )
-
-    spider_volume: int = sum(1 for _ in filter(
-        lambda bgc: bgc.kind not in [CubeKind.OOO , CubeKind.YYY] and bgc.realised_node is not None,
-        vzx.get_bg_cubes()
-    ))
-    excess_volume: int = sum(
-        1 for cube in vzx.get_bg_cubes() if cube.kind not in [CubeKind.OOO , CubeKind.YYY] and cube.realised_node is None
-    )
-    inflation_rate: str | None = __format_percentage(
-        value = excess_volume / spider_volume if spider_volume > 0.0 else None, optimum = 0.0
-    )
-
-    if detailed:
-        print(f"Inflation runtime: {"{:.6f}".format(runtime)} seconds.")
-        print(f"Realised nodes: {realised_nodes} / {vzx.number_of_nodes()} [{node_realisation_rate}]")
-        print(f"Realised edges: {realised_edges} / {vzx.number_of_edges()} [{edge_realisation_rate}]")
-
-        if report is not None:
-            print(f"> Unrealised due to insufficient ports     : {due_to_insufficient_ports}")
-            print(f"> Unrealised due to disconnected component : {due_to_disconnected_component}")
-
-        print(f"Complete volume  : {vzx.volume()}")
-        print(f"> Spider volume : {spider_volume}")
-        print(f"> Excess volume : +{excess_volume}")
-        print(f"INFLATION RATE  : +{inflation_rate}")
-    else:
-        summary  = f"Runtime:{"{:.6f}".format(runtime)} seconds, "
-        summary += f"NRR:{node_realisation_rate}, "
-        summary += f"ERR:{edge_realisation_rate}, "
-        if report is not None:
-            summary += f"IPR:{due_to_insufficient_ports}, "
-            summary += f"DCR:{due_to_disconnected_component}, "
-        summary += f"IR:+{inflation_rate}"
-        print(summary)
-
 def main():
     arguments = parser.parse_args()
 
@@ -135,7 +65,7 @@ def main():
     start = time()
 
     inflater = ZxGraphInflaterPorts(graph = vzx)
-    completion_status: dict[str, list[ZxEdge]] = inflater.process()
+    completion_status = inflater.process()
 
     final = time()
     runtime = round(final - start, 6)
