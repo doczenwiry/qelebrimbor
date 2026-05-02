@@ -12,34 +12,96 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import logging as lgr
-
-from qelebrimbor.common.attributes_zx import NodeType, EdgeType
-from qelebrimbor.common.components import BgCube
-
-console = lgr.getLogger(__name__)
-
 from typing import Iterable
 from queue import PriorityQueue
 from collections import defaultdict
 
+from qelebrimbor.common.path import Path, Length
+from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.common.components import BgCube, ZxNode, ZxEdge
+
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
-from qelebrimbor.deprecated.path import Path
+import logging as lgr
+
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+
+console = lgr.getLogger(__name__)
 
 class PathFinderDFS:
     @staticmethod
+    def __retrieve_closest_unrelaxed(
+            unrelaxed: dict[Length, list[BgCube]]
+    ) -> tuple[BgCube, Length]:
+        pass
+
+    @staticmethod
+    def __add_into_unrelaxed(cube: BgCube, distance: Length, unrelaxed: dict[Length, list[BgCube]]):
+        if distance not in unrelaxed:
+            unrelaxed[distance] = []
+        unrelaxed[distance].append(cube)
+
+    @staticmethod
+    def __remove_from_unrelaxed(cube: BgCube, distance: Length, unrelaxed: dict[Length, list[BgCube]]):
+        unrelaxed[distance].remove(cube)
+        if len(unrelaxed[distance]) == 0:
+            unrelaxed.pop(distance)
+
+    @staticmethod
+    def __extract_closest_point(unrelaxed: dict[Length, list[BgCube]]) -> BgCube:
+        min_distance = min(unrelaxed.keys())
+        current: BgCube = unrelaxed[min_distance][0]
+        PathFinderDFS.__remove_from_unrelaxed(current, min_distance, unrelaxed)
+        return current
+
+    @staticmethod
+    def __is_position_reserved(graph: VolumetricZxGraph, reservations: dict[Coordinates, BgCube] | None, position: Coordinates, source: BgCube, target: BgCube):
+        if reservations is None:
+            return False
+
+        if position in reservations:
+            holder = reservations[position]
+            # TODO: allow taking the reservations if it is not critical to the holder ?
+            if holder != source and holder != target:
+                reserved_ports_positions = sum(1 for kv in reservations.items() if kv[1] == holder)
+                number_of_ports_required = sum(
+                    1 for nb in graph.get_zx_neighbors(holder.realised_node) if graph.get_zx_edge(holder.realised_node.id, nb.id).is_realised()
+                )
+                critical = number_of_ports_required >= reserved_ports_positions
+                console.warning(f">> Position {position} requested is reserved by {holder} [critical={critical}]")
+                return critical
+
+        return False
+
+    @staticmethod
+    def __has_enough_ports(graph: VolumetricZxGraph, reservations: dict[Coordinates, BgCube] | None, requester: BgCube, node: ZxNode):
+        count_required_ports = graph.get_zx_degree(node.id)
+        count_available_ports: int = sum(
+            1 for pos in SpacetimeHelper.get_constellation(requester.position, requester.kind.get_reach())
+            if pos not in graph.occupied and pos not in reservations
+        )
+
+        if node.id == 24:
+            raise Exception(f"__has_enough_ports({requester.position}) : {count_available_ports} {count_required_ports}")
+
+        return count_available_ports - 1 >= count_required_ports
+
+    @staticmethod
     def find_minimal_paths(
-        start: BgCube, final: BgCube,
-        node_types: list[NodeType] | None = None, edge_types: list[EdgeType] | None = None,
+        source: BgCube, target: BgCube,
+        zx_nodes: list[ZxNode] | None = None, zx_edges: list[ZxEdge] | None = None,
         unavailable_positions: set[Coordinates] | None = None,
-        maximal_overhead: int = 6
-    ) -> list[Path]:
-        node_type_restrictions: list[NodeType] = node_types if node_types else []
-        edge_type_restrictions: list[EdgeType] = edge_types if edge_types else []
+        graph: VolumetricZxGraph | None = None,
+        reservations: dict[Coordinates, BgCube] | None = None,
+        maximal_excess: int = 6
+    ) -> Path | None:
+        node_type_restrictions: list[NodeType] = list(map(lambda zxn: zxn.type, zx_nodes)) if zx_nodes else []
+        edge_type_restrictions: list[EdgeType] = list(map(lambda zxe: zxe.type, zx_edges)) if zx_edges else []
+
+        console.debug(f"WORKING WITH {node_type_restrictions} {edge_type_restrictions}")
 
         unavailable = unavailable_positions or set()
 
@@ -49,56 +111,94 @@ class PathFinderDFS:
         nt = len(node_type_restrictions)
         et = len(edge_type_restrictions)
 
-        paths: list[Path] = []
+        optimum: Path | None = None
+
+        minimal_length_achieved: int | None = None
+        minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
+        unrelaxed: dict[Length, list[BgCube]] = defaultdict(list)
+        PathFinderDFS.__add_into_unrelaxed(source, 0, unrelaxed)
+        minimal_paths[ (source.kind, source.position) ] = Path(start = source)
+
+        manhattan_distance = source.position.get_manhattan_distance(target.position)
+        console.info(f"Searching for path from {source} to {target} [distance={manhattan_distance}]. {type(node_type_restrictions)}")
+
+        maximal_distance = manhattan_distance + maximal_excess
+
+        pruning_performed = 0
+        points_discovered = 0
+        points_considered = 0
 
         minimal_number_of_cubes = nt if nt % 2 == 0 else nt + 1
-        maximal_volume = max(start.position.get_manhattan_distance(final.position), minimal_number_of_cubes) + maximal_overhead + 2
+        maximal_volume = max(source.position.get_manhattan_distance(target.position), minimal_number_of_cubes) + maximal_excess + 2
 
-        initial = Path( start , final )
-        queue: PriorityQueue[Path] = PriorityQueue[Path]()
-        queue.put( initial )
-
-        console.info(f"Searching for paths from {start} to {final} [{node_types}].")
+        console.info(f"Searching for paths from {source} to {target} [{zx_nodes}].")
         console.info(f"> Maximal volume allowed : {maximal_volume}")
         console.info(f"> Unavailable positions  : {unavailable}")
 
-        while not queue.empty():
-            path: Path = queue.get()
-            terminal = path.get_terminal()
-            length = len(path.extras) + 1
-            console.debug(f"Current path : {path.extras}")
-            node_type_required = { node_type_restrictions[length-1] } if length <= nt else { NodeType.X, NodeType.Y, NodeType.Z, NodeType.O }
-            pipe_type_required =   edge_type_restrictions[length-1]   if length <= et else EdgeType.IDENTITY
+        while len(unrelaxed) > 0 and optimum is None:
+            current: BgCube = PathFinderDFS.__extract_closest_point(unrelaxed)
+            current_point = (current.kind, current.position)
+            current_path = minimal_paths[current_point]
+            terminal = current_path.final
+
+            minimal_length_possible: int = Path.minimal_length_possible(terminal, target)
+            manhattan_length_projected: int = current_path.manhattan_length() + minimal_length_possible
+
+            # # Branch-and-bound
+            # if minimal_length_achieved and minimal_length_achieved <= manhattan_length_projected:
+            #     pruning_performed += 1
+            #     continue
+
+            length = current_path.manhattan_length()
+            remaining_distance = current.position.get_manhattan_distance(target.position)
+            console.debug(f"Current [{length}/{remaining_distance}]: {current} [mlp-rest:{minimal_length_possible},mlp-total:{manhattan_length_projected},path:{current_path}]")
+
+            if BlockGraphHelper.connectable(current, target, EdgeType.IDENTITY) and len(current_path.extra_cubes) >= nt:
+                console.debug(f"> Connectable to {target} : {BlockGraphHelper.connectable(current, target, EdgeType.IDENTITY)}")
+                completed_path = current_path.extend(cube = target, pipe_type = EdgeType.IDENTITY)
+                if not minimal_length_achieved or completed_path.manhattan_length() < minimal_length_achieved:
+                    minimal_length_achieved = completed_path.manhattan_length()
+                    optimum = completed_path
+
+            node_type_required = { node_type_restrictions[length] } if length < nt else { NodeType.X, NodeType.Z }
+            pipe_type_required =   edge_type_restrictions[length]   if length < et else EdgeType.IDENTITY
             console.debug(f"> Types required : {node_type_required}")
-            for candidate in BlockGraphHelper.get_candidate_constellation(terminal, node_types = node_type_required, pipe_type = pipe_type_required):
-                if path.has_reached_target() and path.manhattan_length() >= nt:
-                    manhattan_length = path.manhattan_length()
-                    path_overhead = path.overhead()
+            for neighbor in BlockGraphHelper.get_candidate_constellation(terminal, node_types = node_type_required, pipe_type = pipe_type_required):
+                neighbor_point = (neighbor.kind, neighbor.position)
+                console.debug(f"> Neighbor : {neighbor}")
 
-                    console.debug(f"> Target reached : {candidate} [+{path_overhead}]")
-                    console.debug(f">> {path}")
-
-                    if manhattan_length < maximal_volume:
-                        maximal_volume = manhattan_length
-                        paths.clear()
-
-                    if manhattan_length == maximal_volume:
-                        paths.append( path )
-
-                if candidate.kind in [ CubeKind.YYY, CubeKind.OOO ]:
+                if maximal_distance < source.position.get_manhattan_distance(neighbor.position):
                     continue
 
-                if path.occupies(candidate.position) or candidate.position in unavailable:
+                # Ignore neighbor if it introduces a loop
+                if neighbor.position in current_path.occupied or neighbor.position in graph.occupied:
                     continue
 
-                extended: Path = path.copy()
-                extended.append(candidate)
+                if graph:
+                    # Ignore neighbor if it would occupy a position that is reserved
+                    if PathFinderDFS.__is_position_reserved(graph, reservations, neighbor.position, source, target):
+                        continue
 
-                if extended.manhattan_length() + extended.manhattan_distance_remaining() < maximal_volume:
-                    console.debug(f"> {candidate}")
-                    queue.put( extended )
+                    # if not PathFinderDFS.__has_enough_ports(graph, reservations, candidate, zx_nodes[length-1]):
+                    #     continue
 
-        return paths
+                extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
+                extended_distance = extended_path.manhattan_length()
+
+                if neighbor not in minimal_paths or extended_distance < minimal_paths[neighbor_point].manhattan_length():
+                    # Update position of neighbor in unrelaxed as its distance is being updated
+                    if neighbor in minimal_paths:
+                        PathFinderDFS.__remove_from_unrelaxed(
+                            neighbor, minimal_paths[neighbor_point].manhattan_length(), unrelaxed
+                        )
+                    PathFinderDFS.__add_into_unrelaxed(neighbor, Path.minimal_length_possible(neighbor, target), unrelaxed)
+
+                    points_discovered += 1
+
+                    # Update minimal distance discovered
+                    minimal_paths[neighbor_point] = extended_path
+
+        return optimum
 
     @staticmethod
     def find_paths(

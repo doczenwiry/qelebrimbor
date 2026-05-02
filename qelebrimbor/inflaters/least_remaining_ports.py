@@ -13,6 +13,8 @@
 #   limitations under the License.
 
 import heapq
+from typing import cast
+
 import networkx as nx
 from collections import defaultdict, deque
 from functools import total_ordering
@@ -125,7 +127,7 @@ class ZxGraphInflaterPorts:
         return found
 
     def process(self) -> dict[str, list[ZxEdge]]:
-        for component in sorted(nx.connected_components(self.__graph), key = lambda cc: len(cc), reverse = True):
+        for component in sorted(nx.connected_components(cast(nx.Graph, self.__graph)), key = lambda cc: len(cc), reverse = True):
             console.info(f"> Connected component [{len(component)}] : {component}")
             try:
                 root = max(

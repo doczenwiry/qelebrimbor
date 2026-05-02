@@ -98,8 +98,8 @@ class Path:
 
         return overhead
 
-    def manhattan_length(self):
-        return len(self.extra_cubes) + 1
+    def manhattan_length(self) -> int:
+        return len(self.extra_cubes) + 1 if self.start != self.final else 0
 
     def occupies(self, position: Coordinates):
         return position in self.occupied

@@ -99,9 +99,9 @@ def find_completion(
     if reservations is not None:
         unavailable_positions.update(reservations.keys())
     completions = PathFinderDFS.find_minimal_paths(
-        start = start_cube, final = final_cube,
-        node_types = [ node.type for node in zx_nodes ],
-        edge_types = [ edge.type for edge in zx_edges ],
+        source= start_cube, target= final_cube,
+        zx_nodes = zx_nodes,
+        zx_edges = zx_edges,
         unavailable_positions = unavailable_positions,
         maximal_overhead = maximal_overhead
     )
