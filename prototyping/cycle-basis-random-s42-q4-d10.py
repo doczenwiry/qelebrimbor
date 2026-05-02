@@ -21,6 +21,7 @@ from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.path import Path
+from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.utilities.ring_making import find_realisation, find_completion
@@ -105,13 +106,12 @@ def reserve_positions(graph: VolumetricZxGraph, reservations: dict[Coordinates, 
 random.seed(SEED)
 if __name__ == "__main__":
     circuit = f"random-s{SEED}-q{QUBITS}-d{LAYERS}"
-    zx = pyzx.generate.cnots(qubits = QUBITS, depth = LAYERS)
-    # pyzx.draw(zx, labels = True)
+    pyzx_input = pyzx.generate.cnots(qubits = QUBITS, depth = LAYERS)
 
     with open(f"../assets/pyzx/{circuit}.json", 'w') as file:
-        file.write(zx.to_json())
+        file.write(pyzx_input.to_json())
 
-    vzx = VolumetricZxGraph.from_pyzx_graph(zx)
+    vzx = PYZX.from_pyzx_graph(pyzx_input)
 
     CycleBasisAnalyser.analyse(vzx)
 

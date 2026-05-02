@@ -30,6 +30,11 @@ class PYZX:
             file.write(PYZX.into_pyzx_graph(graph, planar_scale).to_json())
 
     @staticmethod
+    def from_file(filepath: str) -> VolumetricZxGraph:
+        with open(filepath, 'r') as file:
+            return PYZX.from_pyzx_graph(pyzx.Graph().from_json(file.read()))
+
+    @staticmethod
     def into_pyzx_graph(graph: VolumetricZxGraph, planar_scale: int = 1):
         pyzx_graph = pyzx.Graph()
         layout: dict[BgCube, tuple[float, float]] = dict()

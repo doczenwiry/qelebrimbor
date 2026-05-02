@@ -17,6 +17,7 @@ from time import time
 
 import pyzx
 
+from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
 from qelebrimbor.utilities.ring_making import find_realisation, find_completion, extend_unrealised
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
@@ -38,7 +39,7 @@ if __name__ == "__main__":
     with open(f"../assets/pyzx/random/{circuit}.json", 'w') as file:
         file.write(pyzx_input.to_json())
 
-    vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_input)
+    vzx = PYZX.from_pyzx_graph(pyzx_input)
     CycleBasisAnalyser.analyse(vzx)
     cycles = CycleBasisAnalyser.decompose_nodes(vzx)
 
@@ -89,6 +90,8 @@ if __name__ == "__main__":
     viewer = VolumetricZxGraphViewer(vzx, label = circuit)
     viewer.display()
 
-    pyzx_output = vzx.into_pyzx_graph(filepath =f"../assets/pyzx/random/{circuit}-blockgraph.json")
+    pyzx_output = PYZX.into_pyzx_graph(vzx)
     pyzx.draw(pyzx_input, labels=True)
     pyzx.draw(pyzx_output, labels=True)
+
+    PYZX.into_file(vzx, filepath =f"../assets/pyzx/random/{circuit}-blockgraph.json")

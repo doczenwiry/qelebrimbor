@@ -36,10 +36,7 @@ logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
 logging.getLogger('qelebrimbor.vedo').setLevel(logging.INFO)
 
 if __name__ == "__main__":
-    with open("../assets/pyzx/steane/steane-code-qubits7-spiders7.json", 'r') as file:
-        pyzx_input = pyzx.Graph().from_json(file.read())
-
-    vzx = PYZX.from_pyzx_graph(pyzx_input)
+    vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders7.json")
 
     MinimalCycleBasisAnalyser.analyse(vzx)
     cycles = MinimalCycleBasisAnalyser.decompose_nodes(vzx)
@@ -107,6 +104,4 @@ if __name__ == "__main__":
     viewer = VolumetricZxGraphViewer(graph= vzx, label ="steane-code-7", layout = hexagon)
     viewer.display()
 
-    pyzx_output = PYZX.into_pyzx_graph(vzx)
-    pyzx.draw(pyzx_output, labels = True)
-    PYZX.into_file(vzx, filepath ="../assets/pyzx/steane/steane-code-qubits7-spiders7-alt-blockgraph.json")
+    PYZX.into_file(vzx, filepath ="../assets/pyzx/steane/steane-code-qubits7-spiders7-alt-blockgraph.pyzx.json")

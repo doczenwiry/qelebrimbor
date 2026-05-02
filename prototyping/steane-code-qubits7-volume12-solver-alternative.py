@@ -40,10 +40,7 @@ logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(loggi
 logging.getLogger('qelebrimbor.vedo').setLevel(logging.CRITICAL)
 
 if __name__ == "__main__":
-    with open("../assets/pyzx/steane/steane-code-qubits7-spiders8.json", 'r') as file:
-        pyzx_input = pyzx.Graph().from_json(file.read())
-
-    vzx = PYZX.from_pyzx_graph(pyzx_input)
+    vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders8.json")
 
     BlockGraphConstructor.realise_nodes(
         graph= vzx,
@@ -129,6 +126,4 @@ if __name__ == "__main__":
     viewer = VolumetricZxGraphViewer(vzx, label = "steane-code-7", layout = hexagon)
     viewer.display()
 
-    pyzx_output = PYZX.into_pyzx_graph(vzx)
-    pyzx.draw(pyzx_output, labels = True)
     PYZX.into_file(vzx, filepath ="../assets/pyzx/steane/steane-code-qubits7-spiders8-alt-blockgraph.json")
