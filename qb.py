@@ -21,6 +21,7 @@ import networkx as nx
 
 from qelebrimbor.common.components import ZxEdge
 from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.formats.tqec import TQEC
 from qelebrimbor.inflaters.breadth_first_search import ZxGraphInflaterBFS
 from qelebrimbor.inflaters.least_remaining_ports import ZxGraphInflaterPorts
 from qelebrimbor.inflaters.rings import ZxGraphInflaterRings
@@ -129,15 +130,15 @@ def main():
         print(summary)
 
     if args.output_pyzx:
-        pyzx_output = vzx.into_pyzx_graph()
-        output = path.splitext(args.filepath)[0] + str("-compiled.pyzx.json")
-        print(f"Writing to {output} from {args.filepath}")
+        output = path.splitext(args.filepath)[0] + str(".compiled.json")
+        print(f"Writing PyZX output to {output}")
         with open(output, 'w') as file:
-            file.write(pyzx_output.to_json())
+            file.write(vzx.into_pyzx_graph().to_json())
 
     if args.output_tqec:
         output = path.splitext(args.filepath)[0] + str(".tqec")
-        print(f"Writing to TQEC format : {output} [currently not implemented].")
+        print(f"Writing TQEC output to {output}.")
+        TQEC.into_tqec_file(vzx, output)
 
     if args.visualization or args.force_visualization:
         if args.force_visualization or vzx.volume() <= 100:
