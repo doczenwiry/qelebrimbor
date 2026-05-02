@@ -16,12 +16,13 @@ from os import path
 import pyzx
 from argparse import ArgumentParser
 from time import time
-import networkx as nx
 
 
 from qelebrimbor.common.components import ZxEdge
 from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
+from qelebrimbor.formats.vzx import VZX
 from qelebrimbor.inflaters.breadth_first_search import ZxGraphInflaterBFS
 from qelebrimbor.inflaters.least_remaining_ports import ZxGraphInflaterPorts
 from qelebrimbor.inflaters.rings import ZxGraphInflaterRings
@@ -42,13 +43,13 @@ parser = ArgumentParser(
 parser.add_argument('filepath', help = "path to the file containing the input ZX-graph.")
 parser.add_argument('-c', '--check-equivalence', action = 'store_true', help = "check equivalence of the final construct against the input ZX-graph.")
 parser.add_argument('-f', '--fullscreen', action='store_true', help = "display the visualisation in a fullscreen window.")
-parser.add_argument('-p', '--output_pyzx', action = 'store_true', help = "write the constructed Volumetric ZX-graph as a PyZX graph into a *.json file.")
+parser.add_argument('-p', '--output-pyzx', action = 'store_true', help = "save the Volumetric ZX-graph as a PyZX graph to a *.pyzx.json file.")
 parser.add_argument('-r', '--report', action='store_true', help = "print a detailed report of the construction process.")
 parser.add_argument('-s', '--summary', action='store_true', help = "print a summary of the construction process.")
-parser.add_argument('-t', '--output_tqec', action = 'store_true', help = "write the constructed Volumetric ZX-graph as a TQEC output file.")
+parser.add_argument('-t', '--output-tqec', action = 'store_true', help = "save the Volumetric ZX-graph to a *.tqec file.")
 parser.add_argument('-v', '--visualization', action='store_true', help = "display the visualisation of the constructed Volumetric ZX-graph at the end of the construction.")
 parser.add_argument('-V', '--force-visualization', action='store_true', help = "force the visualisation for constructed Volumetric ZX-graph with more than 100 cubes.")
-parser.add_argument('-w', '--write-construct', action='store_true', help = "write the constructed Volumetric ZX-graph to a file.")
+parser.add_argument('-w', '--output-vzx', action='store_true', help = "save the Volumetric ZX-graph to a *.vzx file.")
 args = parser.parse_args()
 
 def __format_percentage(value: float  | None) -> str:
@@ -64,25 +65,7 @@ def __format_percentage(value: float  | None) -> str:
             printed = str(rounded)
         return f"{printed}%"
 
-def main():
-    args = parser.parse_args()
-
-    if args.filepath is None:
-        raise Exception("Filepath to a *.json file required.")
-
-    with open(args.filepath, 'r') as file:
-        pyzx_input = pyzx.Graph().from_json(file.read())
-
-    vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_input)
-
-    start = time()
-
-    inflater = ZxGraphInflaterPorts(graph = vzx)
-    report: dict[str, list[ZxEdge]] = inflater.process()
-
-    final = time()
-    runtime = round(final - start, 6)
-
+def print_report(vzx: VolumetricZxGraph, runtime: float, report: dict[str, list[ZxEdge]] | None, detailed: bool = True):
     realised_nodes: int = sum(1 for node in vzx.get_zx_nodes() if node.is_realised())
     realised_edges: int = sum(1 for edge in vzx.get_zx_edges() if edge.is_realised())
     node_realisation_rate: float = realised_nodes / vzx.number_of_nodes()
@@ -103,7 +86,7 @@ def main():
     )
     inflation_rate: float | None = excess_volume / spider_volume if spider_volume > 0.0 else None
 
-    if args.report:
+    if detailed:
         print(f"Input file : {args.filepath}")
         print(f"Inflation runtime: {runtime} seconds.")
         print(f"Realised nodes: {realised_nodes} / {vzx.number_of_nodes()} [{__format_percentage(node_realisation_rate)}]")
@@ -117,9 +100,8 @@ def main():
         print(f"> Spider volume : {spider_volume}")
         print(f"> Excess volume : +{excess_volume}")
         print(f"INFLATION RATE  : +{__format_percentage(inflation_rate)}")
-
-    elif args.summary:
-        summary  = f"Summary for {args.filepath}; "
+    else:
+        summary = f"Summary for {args.filepath}; "
         summary += f"Runtime:{runtime} seconds, "
         summary += f"NRR:{__format_percentage(node_realisation_rate)}, "
         summary += f"ERR:{__format_percentage(edge_realisation_rate)}, "
@@ -129,28 +111,56 @@ def main():
         summary += f"IR:+{__format_percentage(inflation_rate)}"
         print(summary)
 
-    if args.output_pyzx:
-        output = path.splitext(args.filepath)[0] + str(".compiled.json")
-        print(f"Writing PyZX output to {output}")
-        with open(output, 'w') as file:
-            file.write(vzx.into_pyzx_graph().to_json())
+def main():
+    arguments = parser.parse_args()
 
-    if args.output_tqec:
-        output = path.splitext(args.filepath)[0] + str(".tqec")
+    if arguments.filepath is None:
+        raise Exception("Filepath to a *.json file required.")
+
+    with open(arguments.filepath, 'r') as file:
+        pyzx_input = pyzx.Graph().from_json(file.read())
+
+    vzx = PYZX.from_pyzx_graph(pyzx_input)
+
+    start = time()
+
+    inflater = ZxGraphInflaterPorts(graph = vzx)
+    completion_status: dict[str, list[ZxEdge]] = inflater.process()
+
+    final = time()
+    runtime = round(final - start, 6)
+
+    if arguments.report:
+        print_report(vzx, runtime, completion_status)
+    elif arguments.summary:
+        print_report(vzx, runtime, completion_status, detailed = False)
+
+    if arguments.output_pyzx:
+        output = path.splitext(arguments.filepath)[0] + str(".compiled.json")
+        print(f"Writing PyZX output to {output}")
+        PYZX.into_file(vzx, output)
+
+    if arguments.output_tqec:
+        output = path.splitext(arguments.filepath)[0] + str(".tqec")
         print(f"Writing TQEC output to {output}.")
         TQEC.into_tqec_file(vzx, output)
 
-    if args.visualization or args.force_visualization:
-        if args.force_visualization or vzx.volume() <= 100:
-            window_size = "full" if args.fullscreen else "auto"
+    if arguments.output_vzx:
+        output = path.splitext(arguments.filepath)[0] + str(".vzx")
+        print(f"Writing VZX output to {output}.")
+        VZX.into_file(vzx, output)
+
+    if arguments.visualization or arguments.force_visualization:
+        if arguments.force_visualization or vzx.volume() <= 100:
+            window_size = "full" if arguments.fullscreen else "auto"
             layout = CircuitLayout(vzx, vertical=len(vzx.get_zx_qubits()) < len(vzx.get_zx_layers()))
-            viewer = VolumetricZxGraphViewer(vzx, label = args.filepath, layout = layout, size = window_size)
+            viewer = VolumetricZxGraphViewer(vzx, label = arguments.filepath, layout = layout, size = window_size)
             viewer.display()
         else:
             print("> Visualization of a VolumetricZxGraph with more than 100 cubes is slow (Override with -V).")
 
-    if args.check_equivalence:
-        pyzx_output = vzx.into_pyzx_graph()
+    if arguments.check_equivalence:
+        pyzx_output = PYZX.into_pyzx_graph(vzx)
         # TODO: fix the labelling of BOUNDARIES in vzx.into_pyzx_graph(..) to match that of pyzx_input
         pyzx_input.auto_detect_io()
         pyzx_output.auto_detect_io()
@@ -159,7 +169,7 @@ def main():
         composition.compose(pyzx_output.adjoint())
         pyzx.full_reduce(composition)
         equivalent_graphs = "SUCCESS" if composition.is_id() else "FAILURE"
-        print(f"Equivalence between input and output ZX-graphs : {equivalent_graphs}")
+        print(f"Equivalence between input and output ZX-graphs [composition-with-adjoint method] : {equivalent_graphs}")
 
 if __name__ == "__main__":
     main()

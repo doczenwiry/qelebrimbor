@@ -19,6 +19,8 @@ from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
+from qelebrimbor.formats.vzx import VZX
+
 import logging
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger(__name__)
@@ -39,29 +41,29 @@ if __name__ == '__main__':
 
     window_size = "full" if args.fullscreen else "auto"
 
-    console.info(f"Visualisation of {args.filepath}.")
+    print(f"Visualisation of {args.filepath}.")
 
-    vzx: VolumetricZxGraph
+    use_ang_format: bool
     if args.filepath.endswith(".vzx"):
-        vzx = VolumetricZxGraph.from_file(args.filepath)
+        use_ang_format = False
     elif args.filepath.endswith(".ang"):
-        vzx = VolumetricZxGraph.from_topologiq_file(args.filepath)
+        use_ang_format = True
     else:
         raise Exception(f"Unknown file type: {args.filepath} [must be *.vzx or *.ang]")
 
-    vzx.log_summary()
+    vzx: VolumetricZxGraph = VZX.from_file(args.filepath, ang_format = use_ang_format)
+    # vzx.print_summary()
 
     excess_volume = 0
     for edge in vzx.get_zx_edges():
-        console.info(f"Edge {edge} : {list(edge.realisation)}")
         volume = len(list(edge.realisation)) - 1
         if volume > 0:
-            console.info(f"Edge {edge} [+v={volume}] : {list(edge.realisation)}")
+            print(f"Edge {edge} [+v={volume}] : {list(edge.realisation)}")
         excess_volume += volume
 
-    boundaries = len(list(vzx.get_bg_cubes(kind= CubeKind.OOO)))
-    console.info(f"Total volume : {vzx.number_of_cubes() - boundaries}")
-    console.info(f"Excess volume: +{excess_volume}")
+    boundaries = sum(1 for _ in vzx.get_bg_cubes(kind = CubeKind.OOO))
+    print(f"Total volume : {vzx.number_of_cubes() - boundaries}")
+    print(f"Excess volume: +{excess_volume}")
 
     circuit_layout = CircuitLayout(vzx, vertical =len(vzx.get_zx_qubits()) < len(vzx.get_zx_layers()))
     viewer = VolumetricZxGraphViewer(vzx, label = args.filepath, layout = circuit_layout, size = window_size)
