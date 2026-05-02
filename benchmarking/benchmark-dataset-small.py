@@ -67,5 +67,5 @@ if __name__ == "__main__":
     else:
         print(f"Existing dataset found in {DATASET_DIRECTORY}.")
 
-    for input_file in filter(lambda name: name.endswith(".json"), os.listdir(DATASET_DIRECTORY)):
+    for input_file in get_dataset_filepaths():
         os.system(f"python ../qb.py -s {DATASET_DIRECTORY}/{input_file} 2> /dev/null")
