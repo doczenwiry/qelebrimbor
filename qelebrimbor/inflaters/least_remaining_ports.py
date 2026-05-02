@@ -13,7 +13,8 @@
 #   limitations under the License.
 
 import heapq
-from collections import defaultdict
+import networkx as nx
+from collections import defaultdict, deque
 from functools import total_ordering
 
 from recordclass import RecordClass
@@ -92,13 +93,64 @@ class ZxGraphInflaterPorts:
 
     # TODO: > represent the spacetime available and pathfind to the border of the blockgraph ?
 
-    def process(self, graph: VolumetricZxGraph, root: ZxNode, root_kind: CubeKind | None = None):
-        console.info(f"Starting inflation from root {root}")
+    def __find_root_placement(self, required_ports: int) -> tuple[Coordinates, Coordinates]:
+        start = SpacetimeHelper.ORIGIN
 
+        queue: deque[Coordinates] = deque([start])
+        found: tuple[Coordinates, Coordinates] | None = None
+
+        visited: set[Coordinates] = set()
+        while found is None: #and len(queue) > 0:
+            current = queue.popleft()
+
+            if current in visited:
+                continue
+
+            if current not in self.__graph.occupied and current not in self.__reservations:
+                # if current position offers a reach with enough open ports, assign it to placement
+                for reach in SpacetimeHelper.PLANES:
+                    count_available_ports: int = sum(
+                        1 for pos in SpacetimeHelper.get_constellation(current, reach) if pos not in self.__graph.occupied
+                    )
+                    if count_available_ports >= required_ports:
+                        found = current, reach
+                continue
+
+            for neighbor in SpacetimeHelper.get_constellation(current):
+                queue.append(neighbor)
+
+            visited.add(current)
+
+        return found
+
+    def process(self) -> dict[str, list[ZxEdge]]:
+        index = 0
+        for component in sorted(nx.connected_components(self.__graph), key=lambda cc: len(cc), reverse=True):
+            console.info(f"> Connected component [{len(component)}] : {component}")
+            try:
+                root = max(map(
+                    lambda id: self.__graph.get_zx_node(id), component),
+                    key=lambda zxn: self.__graph.get_zx_degree(zxn.id)
+                )
+                self.process_component(self.__graph, root=root)
+            except Exception as e:
+                console.error(f"Exception: {e}")
+            console.info("\n")
+            index += 1
+            if index == 2:
+                break
+
+        return self.prepare_report()
+
+    def process_component(self, graph: VolumetricZxGraph, root: ZxNode, root_kind: CubeKind | None = None):
         # Realise the root of the construction.
+        position, reach = self.__find_root_placement(graph.get_zx_degree(root.id))
+
+        console.info(f"Starting inflation from root {root} @ {position} with {CubeKind.convert(root.type, reach)}")
+
         root_cube = BgCube(
-            kind = root_kind if root_kind else CubeKind.suitable_kinds(root.type)[0],
-            position = SpacetimeHelper.ORIGIN
+            kind = root_kind if root_kind else CubeKind.convert(root.type, reach),
+            position = position
         )
         graph.realise_zx_node(root, root_cube)
 
@@ -194,27 +246,6 @@ class ZxGraphInflaterPorts:
         console.info(f"Number of edge-realisations: {self.__edge_realisations}")
         console.info(f"Number of unreachable nodes: {sum(1 for v in self.__vertices.values() if v.remaining_ports < 0)}")
 
-        report: dict[str, list[ZxEdge]] = defaultdict(list)
-
-        for edge in graph.get_zx_edges():
-            if not edge.is_realised():
-                cause = None
-                extra = ""
-                if edge.source.is_realised() or edge.target.is_realised():
-                    source_vertex = self.__vertices[edge.source]
-                    target_vertex = self.__vertices[edge.target]
-                    if source_vertex.remaining_ports < 0 or target_vertex.remaining_ports < 0:
-                        cause = "insufficient-ports"
-                        extra = f":{source_vertex}/{target_vertex}"
-                else:
-                    cause = "disconnected-component"
-
-                if cause is not None:
-                    report[cause].append( edge )
-                    console.warning(f"> Unrealised edge : {edge} [cause:{cause}{extra}]")
-
-        return report
-
     def __attempt_node_realisation(self, source: ZxNode, target: ZxNode) -> bool:
         # Place a cube of a kind suitable for the type of the unrealised endpoint node can be placed.
         console.info(f"> Searching for node-realisation : {source} - {target}")
@@ -287,3 +318,25 @@ class ZxGraphInflaterPorts:
         self.__verify_ports()
 
         return True
+
+    def prepare_report(self):
+        report: dict[str, list[ZxEdge]] = defaultdict(list)
+
+        for edge in self.__graph.get_zx_edges():
+            if not edge.is_realised():
+                cause = None
+                extra = ""
+                if edge.source.is_realised() or edge.target.is_realised():
+                    source_vertex = self.__vertices[edge.source]
+                    target_vertex = self.__vertices[edge.target]
+                    if source_vertex.remaining_ports < 0 or target_vertex.remaining_ports < 0:
+                        cause = "insufficient-ports"
+                        extra = f":{source_vertex}/{target_vertex}"
+                else:
+                    cause = "disconnected-component"
+
+                if cause is not None:
+                    report[cause].append( edge )
+                    console.warning(f"> Unrealised edge : {edge} [cause:{cause}{extra}]")
+
+        return report

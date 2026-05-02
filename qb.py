@@ -23,7 +23,9 @@ from qelebrimbor.common.components import ZxEdge
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.inflaters.breadth_first_search import ZxGraphInflaterBFS
 from qelebrimbor.inflaters.least_remaining_ports import ZxGraphInflaterPorts
+from qelebrimbor.inflaters.rings import ZxGraphInflaterRings
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
+from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
@@ -73,19 +75,8 @@ def main():
 
     start = time()
 
-    report: dict[str, list[ZxEdge]] | None = None
-    inflater = ZxGraphInflaterPorts(vzx)
-
-    for component in sorted(nx.connected_components(vzx), key = lambda cc: len(cc), reverse = True):
-        console.info(f"> Connected component [{len(component)}] : {component}")
-        try:
-            root = max(map(
-                lambda id: vzx.get_zx_node(id), component),
-                key = lambda zxn: vzx.get_zx_degree(zxn.id)
-            )
-            report = inflater.process(vzx, root = root)
-        except Exception as e:
-            console.error(f"Exception: {e}")
+    inflater = ZxGraphInflaterPorts(graph = vzx)
+    report: dict[str, list[ZxEdge]] = inflater.process()
 
     final = time()
     runtime = round(final - start, 6)
@@ -95,9 +86,11 @@ def main():
     node_realisation_rate: float = realised_nodes / vzx.number_of_nodes()
     edge_realisation_rate: float = realised_edges / vzx.number_of_edges()
 
+    due_to_insufficient_ports: float | None = None
+    due_to_disconnected_component: float | None = None
     if report is not None:
-        due_to_insufficient_ports: float = len(report["insufficient-ports"]) / vzx.number_of_edges()
-        due_to_disconnected_component: float = len(report["disconnected-component"]) / vzx.number_of_edges()
+        due_to_insufficient_ports = len(report["insufficient-ports"]) / vzx.number_of_edges()
+        due_to_disconnected_component = len(report["disconnected-component"]) / vzx.number_of_edges()
 
     spider_volume: int = sum(1 for _ in filter(
         lambda bgc: bgc.kind not in [CubeKind.OOO , CubeKind.YYY] and bgc.realised_node is not None,
@@ -106,7 +99,7 @@ def main():
     excess_volume: int = sum(
         1 for cube in vzx.get_bg_cubes() if cube.kind not in [CubeKind.OOO , CubeKind.YYY] and cube.realised_node is None
     )
-    inflation_rate: float = excess_volume / spider_volume
+    inflation_rate: float | None = excess_volume / spider_volume if spider_volume > 0.0 else None
 
     if args.report:
         print(f"Input file : {args.filepath}")
@@ -144,7 +137,8 @@ def main():
     if args.visualization or args.force_visualization:
         if args.force_visualization or vzx.volume() <= 100:
             window_size = "full" if args.fullscreen else "auto"
-            viewer = VolumetricZxGraphViewer(vzx, label = args.filepath, size = window_size)
+            layout = CircuitLayout(vzx, vertical=len(vzx.get_zx_qubits()) < len(vzx.get_zx_layers()))
+            viewer = VolumetricZxGraphViewer(vzx, label = args.filepath, layout = layout, size = window_size)
             viewer.display()
         else:
             print("> Visualization of a VolumetricZxGraph with more than 100 cubes is slow (Override with -V).")
