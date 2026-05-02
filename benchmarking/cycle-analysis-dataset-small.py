@@ -12,9 +12,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import os
+from collections import defaultdict
 
 from benchmarking import benchmark
+
+from qelebrimbor.formats.pyzx import PYZX
+from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -23,13 +26,18 @@ if __name__ == "__main__":
     print(f"Benchmarking dataset {benchmark.DATASET}")
 
     if not benchmark.dataset_detected():
+        print(f"Generating dataset into {benchmark.DATASET_DIRECTORY}")
         benchmark.generate_dataset()
     else:
-        print(f"Existing dataset found in {benchmark.DATASET_DIRECTORY}.")
+        print(f"Detected dataset in {benchmark.DATASET_DIRECTORY}.")
 
     dataset_filepaths = benchmark.get_dataset_filepaths()
     longest_file_name = max(map(len, dataset_filepaths))
 
     for input_path in dataset_filepaths:
-        print(f"Benchmarking {input_path.ljust(longest_file_name, ' ')} :", end = ' ')
-        os.system(f"python ../qb.py -s {input_path} 2> /dev/null")
+        vzx = PYZX.from_file(input_path)
+        cycles = MinimalCycleBasisAnalyser.decompose_nodes(vzx)
+        result: dict[int, int] = defaultdict(int)
+        for cycle in cycles:
+            result[len(cycle)] += 1
+        print(f"Cycle analysis {input_path.ljust(longest_file_name, ' ')} : {list(result.items())}")
