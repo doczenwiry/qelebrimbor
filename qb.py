@@ -124,7 +124,7 @@ def main():
         if report is not None:
             summary += f"IPR:{__format_percentage(due_to_insufficient_ports)}, "
             summary += f"DCR:{__format_percentage(due_to_disconnected_component)}, "
-        summary += f"IR:+{__format_percentage(inflation_rate)}%"
+        summary += f"IR:+{__format_percentage(inflation_rate)}"
         print(summary)
 
     if args.output_pyzx:

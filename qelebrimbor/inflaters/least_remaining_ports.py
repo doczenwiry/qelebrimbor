@@ -110,7 +110,8 @@ class ZxGraphInflaterPorts:
                 # if current position offers a reach with enough open ports, assign it to placement
                 for reach in SpacetimeHelper.PLANES:
                     count_available_ports: int = sum(
-                        1 for pos in SpacetimeHelper.get_constellation(current, reach) if pos not in self.__graph.occupied
+                        1 for pos in SpacetimeHelper.get_constellation(current, reach)
+                        if pos not in self.__graph.occupied and pos not in self.__reservations
                     )
                     if count_available_ports >= required_ports:
                         found = current, reach
@@ -124,21 +125,17 @@ class ZxGraphInflaterPorts:
         return found
 
     def process(self) -> dict[str, list[ZxEdge]]:
-        index = 0
-        for component in sorted(nx.connected_components(self.__graph), key=lambda cc: len(cc), reverse=True):
+        for component in sorted(nx.connected_components(self.__graph), key = lambda cc: len(cc), reverse = True):
             console.info(f"> Connected component [{len(component)}] : {component}")
             try:
-                root = max(map(
-                    lambda id: self.__graph.get_zx_node(id), component),
-                    key=lambda zxn: self.__graph.get_zx_degree(zxn.id)
+                root = max(
+                    map(self.__graph.get_zx_node, component),
+                    key = lambda zxn: self.__graph.get_zx_degree(zxn.id)
                 )
                 self.process_component(self.__graph, root=root)
             except Exception as e:
                 console.error(f"Exception: {e}")
             console.info("\n")
-            index += 1
-            if index == 2:
-                break
 
         return self.prepare_report()
 
