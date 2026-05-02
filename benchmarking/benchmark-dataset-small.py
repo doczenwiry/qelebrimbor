@@ -38,12 +38,12 @@ DEPTHS = DATASET_PARAMETERS[DATASET]['DEPTHS']
 
 def get_dataset_filepaths() -> list[str]:
     return sorted(list(map(
-        lambda parameters: f"random-cnots-q{parameters[1]}-d{parameters[2]}-s{parameters[0]}.json",
+        lambda parameters: f"random-cnots-q{parameters[1]}-d{parameters[2]}-s{parameters[0]}.pyzx.json",
         itertools.product(SEEDS, QUBITS, DEPTHS)
     )))
 
 def dataset_detected():
-    present_inputs = set(filter(lambda name: name.endswith(".json"), os.listdir(DATASET_DIRECTORY)))
+    present_inputs = set(filter(lambda name: name.endswith(".pyzx.json"), os.listdir(DATASET_DIRECTORY)))
     dataset_inputs = set(get_dataset_filepaths())
 
     return dataset_inputs.issubset(present_inputs)
@@ -56,7 +56,7 @@ def generate_dataset():
         circuit = f"random-cnots-q{qubits}-d{depth}-s{seed}"
         zx = pyzx.generate.cnots(qubits = qubits, depth = depth)
 
-        with open(f"{DATASET_DIRECTORY}/{circuit}.json", 'w') as file:
+        with open(f"{DATASET_DIRECTORY}/{circuit}.pyzx.json", 'w') as file:
             file.write(zx.to_json())
 
 if __name__ == "__main__":

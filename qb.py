@@ -40,13 +40,14 @@ parser = ArgumentParser(
 )
 parser.add_argument('filepath', help = "path to the file containing the input ZX-graph.")
 parser.add_argument('-c', '--check-equivalence', action = 'store_true', help = "check equivalence of the final construct against the input ZX-graph.")
+parser.add_argument('-f', '--fullscreen', action='store_true', help = "display the visualisation in a fullscreen window.")
+parser.add_argument('-p', '--output_pyzx', action = 'store_true', help = "write the constructed Volumetric ZX-graph as a PyZX graph into a *.json file.")
+parser.add_argument('-r', '--report', action='store_true', help = "print a detailed report of the construction process.")
+parser.add_argument('-s', '--summary', action='store_true', help = "print a summary of the construction process.")
+parser.add_argument('-t', '--output_tqec', action = 'store_true', help = "write the constructed Volumetric ZX-graph as a TQEC output file.")
 parser.add_argument('-v', '--visualization', action='store_true', help = "display the visualisation of the constructed Volumetric ZX-graph at the end of the construction.")
 parser.add_argument('-V', '--force-visualization', action='store_true', help = "force the visualisation for constructed Volumetric ZX-graph with more than 100 cubes.")
-parser.add_argument('-f', '--fullscreen', action='store_true', help = "display the visualisation in a fullscreen window.")
 parser.add_argument('-w', '--write-construct', action='store_true', help = "write the constructed Volumetric ZX-graph to a file.")
-parser.add_argument('-s', '--summary', action='store_true', help = "print a summary of the construction process.")
-parser.add_argument('-r', '--report', action='store_true', help = "print a detailed report of the construction process.")
-parser.add_argument('--output_pyzx', action = 'store_true', help = "write the constructed Volumetric ZX-graph as a PyZX graph into a *.json file.")
 args = parser.parse_args()
 
 def __format_percentage(value: float  | None) -> str:
@@ -129,10 +130,14 @@ def main():
 
     if args.output_pyzx:
         pyzx_output = vzx.into_pyzx_graph()
-        output = path.splitext(args.filepath)[0] + str("-compiled.json")
+        output = path.splitext(args.filepath)[0] + str("-compiled.pyzx.json")
         print(f"Writing to {output} from {args.filepath}")
         with open(output, 'w') as file:
             file.write(pyzx_output.to_json())
+
+    if args.output_tqec:
+        output = path.splitext(args.filepath)[0] + str(".tqec")
+        print(f"Writing to TQEC format : {output} [currently not implemented].")
 
     if args.visualization or args.force_visualization:
         if args.force_visualization or vzx.volume() <= 100:
