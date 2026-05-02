@@ -17,6 +17,7 @@ import pyzx
 from argparse import ArgumentParser
 from time import time
 
+from termcolor import colored
 
 from qelebrimbor.common.components import ZxEdge
 from qelebrimbor.common.attributes_bg import CubeKind
@@ -52,30 +53,39 @@ parser.add_argument('-V', '--force-visualization', action='store_true', help = "
 parser.add_argument('-w', '--output-vzx', action='store_true', help = "save the Volumetric ZX-graph to a *.vzx file.")
 args = parser.parse_args()
 
-def __format_percentage(value: float  | None) -> str:
+def __format_percentage(value: float | None, optimum: float) -> str:
     if value is None:
-        return "n/a %"
+        output = "n/a"
     else:
-        rounded = round(100.0 * value, 1)
+        rounded = round(100.0 * value, 2)
         if 0.0 < value < 0.0001:
             printed = "0.01"
         elif 0.9999 < value < 1.0:
             printed = "99.99"
         else:
-            printed = str(rounded)
-        return f"{printed}%"
+            printed = "{:.2f}".format(rounded)
+        output = f"{printed.rjust(6, ' ')}%"
+
+    if value == optimum:
+        output = colored(output, 'green', attrs = ['bold'], force_color = True)
+    else:
+        output = colored(output, 'red', attrs = ['bold'], force_color = True)
+
+    return output
 
 def print_report(vzx: VolumetricZxGraph, runtime: float, report: dict[str, list[ZxEdge]] | None, detailed: bool = True):
     realised_nodes: int = sum(1 for node in vzx.get_zx_nodes() if node.is_realised())
     realised_edges: int = sum(1 for edge in vzx.get_zx_edges() if edge.is_realised())
-    node_realisation_rate: float = realised_nodes / vzx.number_of_nodes()
-    edge_realisation_rate: float = realised_edges / vzx.number_of_edges()
+    node_realisation_rate: str = __format_percentage(realised_nodes / vzx.number_of_nodes(), optimum = 1.0)
+    edge_realisation_rate: str = __format_percentage(realised_edges / vzx.number_of_edges(), optimum = 1.0)
 
-    due_to_insufficient_ports: float | None = None
-    due_to_disconnected_component: float | None = None
-    if report is not None:
-        due_to_insufficient_ports = len(report["insufficient-ports"]) / vzx.number_of_edges()
-        due_to_disconnected_component = len(report["disconnected-component"]) / vzx.number_of_edges()
+    due_to_insufficient_ports = __format_percentage(
+        value = len(report["insufficient-ports"]) / vzx.number_of_edges() if report else 0.0, optimum = 0.0
+    )
+
+    due_to_disconnected_component = __format_percentage(
+        value = len(report["disconnected-component"]) / vzx.number_of_edges() if report else 0.0, optimum = 0.0
+    )
 
     spider_volume: int = sum(1 for _ in filter(
         lambda bgc: bgc.kind not in [CubeKind.OOO , CubeKind.YYY] and bgc.realised_node is not None,
@@ -84,31 +94,31 @@ def print_report(vzx: VolumetricZxGraph, runtime: float, report: dict[str, list[
     excess_volume: int = sum(
         1 for cube in vzx.get_bg_cubes() if cube.kind not in [CubeKind.OOO , CubeKind.YYY] and cube.realised_node is None
     )
-    inflation_rate: float | None = excess_volume / spider_volume if spider_volume > 0.0 else None
+    inflation_rate: str | None = __format_percentage(
+        value = excess_volume / spider_volume if spider_volume > 0.0 else None, optimum = 0.0
+    )
 
     if detailed:
-        print(f"Input file : {args.filepath}")
-        print(f"Inflation runtime: {runtime} seconds.")
-        print(f"Realised nodes: {realised_nodes} / {vzx.number_of_nodes()} [{__format_percentage(node_realisation_rate)}]")
-        print(f"Realised edges: {realised_edges} / {vzx.number_of_edges()} [{__format_percentage(edge_realisation_rate)}]")
+        print(f"Inflation runtime: {"{:.6f}".format(runtime)} seconds.")
+        print(f"Realised nodes: {realised_nodes} / {vzx.number_of_nodes()} [{node_realisation_rate}]")
+        print(f"Realised edges: {realised_edges} / {vzx.number_of_edges()} [{edge_realisation_rate}]")
 
         if report is not None:
-            print(f"> Insufficient ports     : {__format_percentage(due_to_insufficient_ports)}")
-            print(f"> Disconnected component : {__format_percentage(due_to_disconnected_component)}")
+            print(f"> Unrealised due to insufficient ports     : {due_to_insufficient_ports}")
+            print(f"> Unrealised due to disconnected component : {due_to_disconnected_component}")
 
         print(f"Complete volume  : {vzx.volume()}")
         print(f"> Spider volume : {spider_volume}")
         print(f"> Excess volume : +{excess_volume}")
-        print(f"INFLATION RATE  : +{__format_percentage(inflation_rate)}")
+        print(f"INFLATION RATE  : +{inflation_rate}")
     else:
-        summary = f"Summary for {args.filepath}; "
-        summary += f"Runtime:{runtime} seconds, "
-        summary += f"NRR:{__format_percentage(node_realisation_rate)}, "
-        summary += f"ERR:{__format_percentage(edge_realisation_rate)}, "
+        summary  = f"Runtime:{"{:.6f}".format(runtime)} seconds, "
+        summary += f"NRR:{node_realisation_rate}, "
+        summary += f"ERR:{edge_realisation_rate}, "
         if report is not None:
-            summary += f"IPR:{__format_percentage(due_to_insufficient_ports)}, "
-            summary += f"DCR:{__format_percentage(due_to_disconnected_component)}, "
-        summary += f"IR:+{__format_percentage(inflation_rate)}"
+            summary += f"IPR:{due_to_insufficient_ports}, "
+            summary += f"DCR:{due_to_disconnected_component}, "
+        summary += f"IR:+{inflation_rate}"
         print(summary)
 
 def main():

@@ -67,5 +67,9 @@ if __name__ == "__main__":
     else:
         print(f"Existing dataset found in {DATASET_DIRECTORY}.")
 
-    for input_file in get_dataset_filepaths():
+    dataset_filepaths = get_dataset_filepaths()
+    longest_file_name = max(map(len, dataset_filepaths))
+
+    for input_file in dataset_filepaths:
+        print(f"Benchmarking {DATASET_DIRECTORY}/{input_file.ljust(longest_file_name, ' ')} :", end = ' ')
         os.system(f"python ../qb.py -s {DATASET_DIRECTORY}/{input_file} 2> /dev/null")
