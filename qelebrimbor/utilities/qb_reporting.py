@@ -21,7 +21,7 @@ from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 def __format_percentage(value: float | None, optimum: float) -> str:
     if value is None:
-        output = "n/a"
+        output = "  n/a  "
     else:
         rounded = round(100.0 * value, 2)
         if 0.0 < value < 0.0001:

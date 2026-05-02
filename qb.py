@@ -17,6 +17,8 @@ import pyzx
 from argparse import ArgumentParser
 from time import time
 
+import sys
+
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
 from qelebrimbor.formats.vzx import VZX
@@ -32,8 +34,9 @@ from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 import logging
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger("qelebrimbor")
-# logging.getLogger("qelebrimbor.pathfinders.depth_first_search").setLevel(logging.CRITICAL)
-# logging.getLogger("qelebrimbor.inflaters.least_remaining_ports").setLevel(logging.INFO)
+logging.getLogger("qelebrimbor.pathfinders.depth_first_search").setLevel(logging.CRITICAL)
+logging.getLogger("qelebrimbor.utilities.blockgraph_constructor").setLevel(logging.CRITICAL)
+logging.getLogger("qelebrimbor.inflaters.rings").setLevel(logging.INFO)
 
 parser = ArgumentParser(
     prog = "qb",
@@ -66,15 +69,14 @@ def main():
 
     start = time()
 
-    completion_status = None
-    try:
-        inflater = ZxGraphInflaterRings(graph = vzx)
-        completion_status = inflater.process()
-    except:
-        console.error(f"Construction failed.")
+    inflater = ZxGraphInflaterRings(graph = vzx)
+    completion_status = inflater.process()
 
     final = time()
     runtime = round(final - start, 6)
+
+    sys.stdout.flush()
+    sys.stderr.flush()
 
     # Reporting stage
 

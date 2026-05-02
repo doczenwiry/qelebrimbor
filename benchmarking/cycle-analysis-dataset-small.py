@@ -14,7 +14,7 @@
 
 from collections import defaultdict
 
-from benchmarking import benchmark
+import benchmark
 
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser

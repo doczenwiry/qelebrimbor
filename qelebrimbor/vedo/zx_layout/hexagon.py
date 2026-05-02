@@ -16,14 +16,15 @@ import numpy as np
 
 from qelebrimbor.common.components import ZxNode
 from qelebrimbor.common.attributes_zx import NodeId, NodeType
-from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
+
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger(__name__)
 
 class HexagonLayout(ZxLayout):
-    def __init__(self, graph: VolumetricZxGraphViewer, nodes: list[NodeId], extras: dict[NodeId, tuple[float, float]]):
+    def __init__(self, graph: VolumetricZxGraph, nodes: list[NodeId], extras: dict[NodeId, tuple[float, float]]):
         self.placements: dict[ZxNode, tuple[float, float]] = {}
 
         step = 2.0 * np.pi / 6.0

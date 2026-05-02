@@ -14,7 +14,7 @@
 
 import os
 
-from benchmarking import benchmark
+import benchmark
 
 import logging
 logging.basicConfig(level=logging.INFO)

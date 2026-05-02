@@ -20,7 +20,7 @@ from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.deprecated.pathfinder_dfs import PathFinderDFS
 from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
-from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
+from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 console = logging.getLogger(__name__)
@@ -32,17 +32,22 @@ class ZxGraphInflaterRings:
         self.__edge_realisations = 0
 
     def process(self):
-        cycles = CycleBasisAnalyser.decompose_nodes(self.__graph)
+        cycles = MinimalCycleBasisAnalyser.decompose_nodes(self.__graph)
 
         console.info(f"Found {len(cycles)} cycles")
         count = 0
         for cycle in cycles:
             console.info(f"> Cycle : {cycle}")
-            if count == 0:
-                self.__attempt_ring_realisation(cycle)
-            else:
-                self.__attempt_ring_completion(cycle, maximal_overhead = 10)
+            try:
+                if count == 0:
+                    self.__attempt_ring_realisation(cycle)
+                else:
+                    self.__attempt_ring_completion(cycle, maximal_overhead = 10)
+            except:
+                console.error(f"FAILURE of attempt to construct cycle {cycle}")
             count += 1
+            if count == 7:
+                break
 
     def __attempt_ring_realisation(self, zx_nodes: list[ZxNode], maximal_overhead: int = 6):
         nc = len(zx_nodes)
