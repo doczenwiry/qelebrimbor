@@ -15,6 +15,7 @@
 from logging import basicConfig, getLogger, INFO, CRITICAL
 
 from qelebrimbor.common.components import BgCube
+from qelebrimbor.helpers.calculator import ManhattanCalculator
 
 basicConfig(level = INFO)
 console = getLogger(__name__)
@@ -132,8 +133,8 @@ if __name__ == "__main__":
             positions = sorted(OctahedronHelper.get_face_positions(manhattan_distance, target_face), key = SORTING_FUNCTIONS[target_face])
             for target_position in positions:
                 target = BgCube(target_kind, target_position)
-                minimal_lengths[target_position] = Path.minimal_length_possible(source, target)
-                minimal_overheads[target_position] = Path.minimal_overhead_possible(source, target)
+                minimal_lengths[target_position] = ManhattanCalculator.minimal_manhattan_length(source, target)
+                minimal_overheads[target_position] = ManhattanCalculator.minimal_manhattan_excess(source, target)
 
                 count += 1
 

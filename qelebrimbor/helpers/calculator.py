@@ -1,0 +1,77 @@
+#   Copyright 2026 Seweryn Dynerowicz
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#          http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+import numpy as np
+
+from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.common.components import BgCube
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
+
+
+class ManhattanCalculator:
+    @staticmethod
+    def minimal_manhattan_volume(source: BgCube, target: BgCube) -> int:
+        return ManhattanCalculator.minimal_manhattan_length(source, target) + 1
+
+    @staticmethod
+    def minimal_manhattan_length(source: BgCube, target: BgCube) -> int:
+        return source.position.get_manhattan_distance(target.position) + ManhattanCalculator.minimal_manhattan_excess(source, target)
+
+    @staticmethod
+    def minimal_manhattan_excess(source: BgCube, target: BgCube) -> int:
+        if source.kind in [ CubeKind.OOO , CubeKind.YYY ] or target.kind in [ CubeKind.OOO , CubeKind.YYY ]:
+            return 0
+
+        overhead = 0
+
+        source_reach = source.kind.get_reach()
+        target_reach = target.kind.get_reach()
+
+        manhattan = source.position.get_manhattan_distance(target.position)
+        relative = target.position - source.position
+
+        if np.sign( source_reach.dot(relative) ) == -1:
+            source_reach *= -1
+        if np.sign( target_reach.dot(relative) ) == -1:
+            target_reach *= -1
+
+        # TODO: work out the formalisation and justification of the cases for all the overhead values.
+        if source.kind == target.kind:
+            if manhattan >= 1 and relative == source_reach.scale(manhattan):
+                overhead += 2
+
+            if manhattan >= 2:
+                if any(relative == source_reach.scale(manhattan - 1) + step
+                       for step in SpacetimeHelper.get_step_constellation(source_reach)
+                ):
+                    overhead += 2
+
+            if manhattan >= 3:
+                if any(relative == source_reach.scale(manhattan-2) + step + source_reach.cross(step)
+                       for step in SpacetimeHelper.get_step_constellation(source_reach)
+                ):
+                    overhead += 2
+        else:
+            differences = source.kind.differences(target.kind)
+            overhead += sum(2 for i in range(3) if differences[i] == 1 and relative[i] == 0)
+            if manhattan == 1:
+                if source.kind.get_type() == target.kind.get_type():
+                    overhead += 2
+                elif source_reach == target_reach != relative:
+                    overhead += 2
+            elif manhattan == 2 and source.kind.get_type() != target.kind.get_type():
+                if source_reach == target_reach != relative and source_reach.dot(relative) == 0 and relative.dot(relative) != 4:
+                    overhead += 2
+
+        return overhead

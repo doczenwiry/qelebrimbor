@@ -12,26 +12,27 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import logging
 from typing import Iterable
-
-from qelebrimbor.common.components import BgCube
-
-logging.basicConfig(level=logging.INFO)
-console = logging.getLogger(__name__)
-
 from functools import cmp_to_key
 from collections import defaultdict
 
+from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.helpers.calculator import ManhattanCalculator
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
 from qelebrimbor.helpers.octahedron import OctahedronHelper
+
+from qelebrimbor.pathfinders.depth_first_search import PathfinderDFS
+
 from qelebrimbor.deprecated.pathfinder_dfs import PathFinderDFS
 from qelebrimbor.deprecated.path import Path
 
+import logging
+logging.basicConfig(level=logging.INFO)
+console = logging.getLogger(__name__)
+logging.getLogger("qelebrimbor.deprecated.pathfinder_dfs").setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.helpers').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.pathfinders').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.utilities').setLevel(logging.INFO)
 
 MOVE_ABOVE = SpacetimeHelper.XM + SpacetimeHelper.ZP
@@ -159,11 +160,13 @@ def check_consistency(kinds: Iterable[CubeKind], faces: Iterable[Octant], manhat
             positions = sorted(OctahedronHelper.get_face_positions(manhattan_distance, target_face), key = SORTING_FUNCTIONS[target_face])
             for target_position in positions:
                 target = BgCube(target_kind, target_position)
-                paths = PathFinderDFS.find_minimal_paths(source= source, target= target, maximal_overhead = 8)
-                explored_overhead = paths[0].overhead()
+                path = PathFinderDFS.find_minimal_paths(source = source, target = target, maximal_excess = 8)
+                if path is None:
+                    raise Exception(f"No path found between {source} and {target}")
+                explored_overhead = path.overhead()
                 statistics[explored_overhead] += 1
                 explored_overheads[target_position] = explored_overhead
-                computed_overheads[target_position] = Path.minimal_overhead_possible(source, target)
+                computed_overheads[target_position] = ManhattanCalculator.minimal_manhattan_excess(source, target)
 
                 count += 1
 
@@ -184,7 +187,7 @@ def check_consistency(kinds: Iterable[CubeKind], faces: Iterable[Octant], manhat
     console.info(f"INCONSISTENCIES : {inconsistencies}")
 
 if __name__ == "__main__":
-    manhattan_distance_checked = 3
+    manhattan_distance_checked = 6
     kinds_checked = [CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX, CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ]
     faces_checked = [Octant.PPP, Octant.PPM, Octant.MPP, Octant.MPM, Octant.MMP, Octant.MMM, Octant.PMP, Octant.PMM]
 

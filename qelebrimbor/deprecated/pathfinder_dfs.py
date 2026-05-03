@@ -171,10 +171,14 @@ class PathFinderDFS:
                     continue
 
                 # Ignore neighbor if it introduces a loop
-                if neighbor.position in current_path.occupied or neighbor.position in graph.occupied:
+                if neighbor.position in current_path.occupied:
                     continue
 
                 if graph:
+                    # Ignore neighbor if the position is already occupied by the Blockgraph
+                    if neighbor.position in graph.occupied:
+                        continue
+
                     # Ignore neighbor if it would occupy a position that is reserved
                     if PathFinderDFS.__is_position_reserved(graph, reservations, neighbor.position, source, target):
                         continue

@@ -12,24 +12,25 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from logging import basicConfig, getLogger, INFO, CRITICAL
-
-from qelebrimbor.common.components import BgCube
-
-basicConfig(level=INFO)
-console = getLogger(__name__)
-getLogger('qelebrimbor.helpers').setLevel(CRITICAL)
-getLogger('qelebrimbor.pathfinders').setLevel(CRITICAL)
-getLogger('qelebrimbor.utilities').setLevel(INFO)
-
 from functools import cmp_to_key
 from collections import defaultdict
 
+from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.helpers.calculator import ManhattanCalculator
+
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
 from qelebrimbor.helpers.octahedron import OctahedronHelper
+
 from qelebrimbor.deprecated.path import Path
+
+import logging
+console = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+logging.getLogger('qelebrimbor.helpers').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.pathfinders').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor.utilities').setLevel(logging.INFO)
 
 MOVE_ABOVE = SpacetimeHelper.XM + SpacetimeHelper.ZP
 MOVE_RIGHT = SpacetimeHelper.XM + SpacetimeHelper.YP
@@ -132,7 +133,7 @@ if __name__ == "__main__":
             positions.update(OctahedronHelper.get_face_positions(manhattan_distance, target_face_m))
             for target_position in positions:
                 target = BgCube(target_kind, target_position)
-                minimal_overhead = Path.minimal_overhead_possible(source, target)
+                minimal_overhead = ManhattanCalculator.minimal_manhattan_excess(source, target)
                 statistics[minimal_overhead] += 1
                 overheads[target_position] = minimal_overhead
 
