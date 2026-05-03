@@ -64,6 +64,7 @@ class ZxGraphInflaterPorts:
             )
 
         self.__reservations: dict[Coordinates, ZxNode] = dict()
+        self.__pathfinder = PathfinderDFS(self.__graph, self.__reservations)
 
     def __occlude_ports(self, position: Coordinates):
         if position in self.__reservations:
@@ -298,9 +299,7 @@ class ZxGraphInflaterPorts:
             console.error(f"Insufficient number of ports to realise {source} - {target}")
             return False
 
-        path = PathfinderDFS.find_optimal_paths(
-            source.realising_cube, target.realising_cube, graph = self.__graph, reservations = self.__reservations
-        )
+        path = self.__pathfinder.find_optimal_paths(source.realising_cube, target.realising_cube)
 
         if path is None:
             console.error(f"Failed to find any path for edge-realisation {source} - {target}")

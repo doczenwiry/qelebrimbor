@@ -30,18 +30,23 @@ import logging
 console = logging.getLogger(__name__)
 
 class PathfinderDFS:
-    @staticmethod
-    def __is_position_reserved(graph: VolumetricZxGraph, reservations: dict[Coordinates, ZxNode] | None, requester: ZxNode, target: ZxNode | None, position: Coordinates):
-        if reservations is None:
-            return False
+    def __init__(self,
+             graph: VolumetricZxGraph = None, reservations: dict[Coordinates, ZxNode] = None,
+             branch_and_bound: bool = False, tracing: bool = False
+    ):
+        self.__graph = graph if graph else VolumetricZxGraph()
+        self.__reservations = reservations if reservations else dict()
+        self.__branch_and_bound = branch_and_bound
+        self.__tracing = tracing
 
-        if position in reservations:
-            holder = reservations[position]
+    def __is_position_reserved(self, requester: ZxNode, target: ZxNode | None, position: Coordinates):
+        if position in self.__reservations:
+            holder = self.__reservations[position]
             # TODO: allow taking the reservations if it is not critical to the holder ?
             if holder != requester and (not target or holder != target):
-                reserved_ports_positions = sum(1 for kv in reservations.items() if kv[1] == holder)
+                reserved_ports_positions = sum(1 for kv in self.__reservations.items() if kv[1] == holder)
                 number_of_ports_required = sum(
-                    1 for nb in graph.get_zx_neighbors(holder) if graph.get_zx_edge(holder.id, nb.id).is_realised()
+                    1 for nb in self.__graph.get_zx_neighbors(holder) if self.__graph.get_zx_edge(holder.id, nb.id).is_realised()
                 )
                 critical = number_of_ports_required >= reserved_ports_positions
                 console.warning(f">> Position {position} reserved by {holder} [critical={critical}]")
@@ -49,15 +54,7 @@ class PathfinderDFS:
 
         return False
 
-    @staticmethod
-    def find_optimal_paths(
-            source: BgCube, target: BgCube,
-            graph: VolumetricZxGraph = None,
-            reservations: dict[Coordinates, ZxNode] = None,
-            maximal_excess: int = 10,
-            bnb: bool = False,
-            tracing: bool = False
-    ) -> Path | None:
+    def find_optimal_paths(self, source: BgCube, target: BgCube, maximal_excess: int = 10) -> Path | None:
         """
         Perform path-finding using a Depth-First Search approach.
         :param source: The cube from which to start.
@@ -68,7 +65,6 @@ class PathfinderDFS:
         :param bnb: Controls whether a Branch-and-Bound refinement ought to be performed after finding the first path.
         This will incur an additional computational cost that may or may not fall into super-exponential territory.
         Proof of the possibility would be nice. Refutation thereof would be better.
-        :param tracing: Controls whether to keep track of the order of relaxations performed by the pathfinder. Performance metric.
         :return:
         """
         optimum: Path | None = None
@@ -81,7 +77,7 @@ class PathfinderDFS:
         minimal_paths[ (source.kind, source.position) ] = initial
 
         vertex: tuple[Length, Path] = (ManhattanCalculator.minimal_manhattan_length(source, target), initial)
-        heapq.heappush( unrelaxed, vertex )
+        heapq.heappush(unrelaxed, vertex)
 
         maximal_distance = source.position.get_manhattan_distance(target.position) + maximal_excess
         console.info(f"Searching for path from {source} to {target} [max distance={maximal_distance}].")
@@ -90,11 +86,11 @@ class PathfinderDFS:
 
         pruning_performed = 0
 
-        tracer: SpacetimeTracer | None = SpacetimeTracer() if tracing else None
+        tracer: SpacetimeTracer | None = SpacetimeTracer() if self.__tracing else None
         if tracer:
             tracer.add_node(source)
 
-        while len(unrelaxed) != 0 and (bnb or optimum is None):
+        while len(unrelaxed) != 0 and (self.__branch_and_bound or optimum is None):
             heapq.heapify(unrelaxed)
             vertex: tuple[Length, Path] = heapq.heappop(unrelaxed)
             manhattan_length_remaining, current = vertex
@@ -133,14 +129,19 @@ class PathfinderDFS:
                 if neighbor.position in current.occupied:
                     continue
 
-                if graph:
+                if self.__graph:
                     # Ignore neighbor if its position is already occupied
-                    if neighbor.position in graph.occupied:
+                    if neighbor.position in self.__graph.occupied:
                         continue
 
                     # Ignore neighbor if it would occupy a position that is reserved
-                    if PathfinderDFS.__is_position_reserved(graph, reservations, source.realised_node, target.realised_node, neighbor.position):
+                    if self.__is_position_reserved(source.realised_node, target.realised_node, neighbor.position):
                         continue
+
+                # Tracing exploration
+                if tracer:
+                    tracer.add_node(neighbor)
+                    tracer.add_edge(terminal, neighbor)
 
                 extended_path = current.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
                 extended_distance = extended_path.manhattan_length()
@@ -152,11 +153,6 @@ class PathfinderDFS:
                     manhattan_length_remaining: int = ManhattanCalculator.minimal_manhattan_length(neighbor, target)
                     unrelaxed.append( (manhattan_length_remaining, extended_path) )
 
-                    # Tracing exploration
-                    if tracer:
-                        tracer.add_node(neighbor)
-                        tracer.add_edge(terminal, neighbor)
-
                     # Update minimal distance discovered
                     minimal_paths[neighbor_point] = extended_path
 
@@ -164,7 +160,7 @@ class PathfinderDFS:
         if tracer:
             tracer.report(cubes_to_label= [source, target])
 
-        if bnb:
+        if self.__branch_and_bound:
             console.info(f"Number of pruning performed : {pruning_performed}")
 
         return optimum

@@ -35,6 +35,8 @@ class ZxGraphInflaterBFS:
         self.__edge_realisations = 0
 
         self.__reservations: dict[Coordinates, ZxNode] = dict()
+
+        self.__pathfinder = PathfinderDFS(graph, self.__reservations)
         self.__available_ports: dict[ZxNode, list[Coordinates]] = defaultdict(list)
 
         self.__required_ports: dict[ZxNode, int] = dict()
@@ -117,7 +119,7 @@ class ZxGraphInflaterBFS:
         # Perform a pass of edge-realisations (a.k.a. cross edges)
         unrealised_edges = filter(
             lambda edge: not self.__graph.get_zx_edge(*edge).is_realised(),
-            nx.edge_bfs(self.__graph, root.id)
+            nx.edge_bfs(cast(nx.Graph, self.__graph), root_node.id)
         )
 
         for edge in unrealised_edges:
@@ -184,7 +186,7 @@ class ZxGraphInflaterBFS:
         console.info(f">> Source ports : {self.__required_ports[source]}/{len(self.__available_ports[source])}")
         console.info(f">> Target ports : {self.__required_ports[target]}/{len(self.__available_ports[target])}")
 
-        path = PathfinderDFS.find_optimal_paths(source.realising_cube, target.realising_cube, graph = self.__graph)
+        path = self.__pathfinder.find_optimal_paths(source.realising_cube, target.realising_cube)
 
         if path is None:
             console.error(f"Failed to find any path for edge-realisation {source} - {target}")
