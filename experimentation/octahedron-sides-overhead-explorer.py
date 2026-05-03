@@ -23,13 +23,10 @@ from qelebrimbor.helpers.calculator import ManhattanCalculator
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
 from qelebrimbor.helpers.octahedron import OctahedronHelper
 
-from qelebrimbor.deprecated.path import Path
-
 import logging
 console = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-logging.getLogger('qelebrimbor.helpers').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.pathfinders').setLevel(logging.CRITICAL)
+logging.getLogger('qelebrimbor').setLevel(logging.CRITICAL)
 logging.getLogger('qelebrimbor.utilities').setLevel(logging.INFO)
 
 MOVE_ABOVE = SpacetimeHelper.XM + SpacetimeHelper.ZP

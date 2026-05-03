@@ -21,6 +21,7 @@ from qelebrimbor.common.components import BgCube
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 from qelebrimbor.spacetime.pathfinders.depth_first_search import PathfinderDFS
+from qelebrimbor.spacetime.pathfinders.dijkstra import PathfinderDijkstra
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 

@@ -30,7 +30,6 @@ from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
 from qelebrimbor.helpers.octahedron import OctahedronHelper
-from qelebrimbor.deprecated.path import Path
 
 MOVE_ABOVE = SpacetimeHelper.XM + SpacetimeHelper.ZP
 MOVE_RIGHT = SpacetimeHelper.XM + SpacetimeHelper.YP

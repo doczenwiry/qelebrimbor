@@ -12,16 +12,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from collections import defaultdict
-import networkx as nx
-import matplotlib.pyplot as plt
+import heapq
 
 from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType
+from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.common.path import Path, Length
+from qelebrimbor.spacetime.tracer import SpacetimeTracer
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
-from qelebrimbor.deprecated.path import Path, Distance
 
 
 import logging
@@ -30,25 +29,25 @@ console = logging.getLogger(__name__)
 class PathfinderDijkstra:
     @staticmethod
     def __retrieve_closest_unrelaxed(
-            unrelaxed: dict[Distance, list[BgCube]]
-    ) -> tuple[BgCube, Distance]:
+            unrelaxed: dict[int, list[BgCube]]
+    ) -> tuple[BgCube, int]:
         pass
 
     @staticmethod
-    def __add_into_unrelaxed(cube: BgCube, distance: Distance, unrelaxed: dict[Distance, list[BgCube]]):
+    def __add_into_unrelaxed(cube: BgCube, distance: int, unrelaxed: dict[int, list[BgCube]]):
         if distance in unrelaxed:
             unrelaxed[distance].append(cube)
         else:
             unrelaxed[distance] = [ cube ]
 
     @staticmethod
-    def __remove_from_unrelaxed(cube: BgCube, distance: Distance, unrelaxed: dict[Distance, list[BgCube]]):
+    def __remove_from_unrelaxed(cube: BgCube, distance: int, unrelaxed: dict[int, list[BgCube]]):
         unrelaxed[distance].remove(cube)
         if len(unrelaxed[distance]) == 0:
             unrelaxed.pop(distance)
 
     @staticmethod
-    def __extract_closest_point(unrelaxed: dict[Distance, list[BgCube]]) -> BgCube:
+    def __extract_closest_point(unrelaxed: dict[int, list[BgCube]]) -> BgCube:
         min_distance = min(unrelaxed.keys())
         current: BgCube = unrelaxed[min_distance][0]
         PathfinderDijkstra.__remove_from_unrelaxed(current, min_distance, unrelaxed)
@@ -60,9 +59,14 @@ class PathfinderDijkstra:
         minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
 
         # TODO: switch to a more efficient data-structure (i.e. fibo-heap)
-        unrelaxed: dict[Distance, list[BgCube]] = defaultdict(list)
-        PathfinderDijkstra.__add_into_unrelaxed(source, 0, unrelaxed)
-        minimal_paths[ (source.kind, source.position) ] = Path(source = source, target = source)
+        # unrelaxed: dict[int, list[BgCube]] = defaultdict(list)
+        unrelaxed: list[tuple[Length, Path]] = []
+
+        initial = Path(start = source)
+        minimal_paths[ (source.kind, source.position) ] = initial
+
+        vertex: tuple[Length, Path] = (initial.manhattan_length(), initial)
+        heapq.heappush(unrelaxed, vertex)
 
         manhattan_distance = source.position.get_manhattan_distance(target.position)
         console.info(f"Searching for path from {source} to {target} [distance={manhattan_distance}].")
@@ -71,88 +75,60 @@ class PathfinderDijkstra:
 
         interconnect = { NodeType.X, NodeType.Z }
 
-        points_reached = 0
-        points_relaxed = 0
-
         # Tracing exploration
-        nodes : dict[BgCube, NodeId] = dict()
-        labels: dict[NodeId, str] = dict()
-        trace: nx.Graph = nx.Graph()
-        if tracing:
-            trace.add_node( 0 )
-            labels[len(nodes)] = str(source)
-            nodes[source] = 0
+        tracer: SpacetimeTracer | None = SpacetimeTracer() if tracing else None
+        if tracer:
+            tracer.add_node(source)
 
         while len(unrelaxed) != 0 and optimum is None:
-            current: BgCube = PathfinderDijkstra.__extract_closest_point(unrelaxed)
-            current_point = (current.kind, current.position)
-            current_path: Path = minimal_paths[ current_point ]
-            console.debug(f"Current : {current} [{current_path}]")
+            heapq.heapify(unrelaxed)
+            vertex: tuple[Length, Path] = heapq.heappop(unrelaxed)
+            manhattan_length, current_path = vertex
+            terminal = current_path.final
 
-            if BlockGraphHelper.connectable(current, target, EdgeType.IDENTITY):
-                console.info(f">> Current {current} be connected to target {target} [{current_path}]")
-                completed_path = current_path.copy()
-                if current != source:
-                    completed_path.append( current )
-                completed_path.target = target
+            # current: BgCube = PathfinderDijkstra.__extract_closest_point(unrelaxed)
+            # current_point = (terminal.kind, terminal.position)
+            # current_path: Path = minimal_paths[ current_point ]
+            console.debug(f"Current : {current_path}")
+
+            if BlockGraphHelper.connectable(terminal, target, EdgeType.IDENTITY):
+                console.info(f">> Terminal {terminal} be connected to target {target} [{current_path}]")
+                completed_path = current_path.extend(target, pipe_type = EdgeType.IDENTITY)
 
                 # Tracing exploration
-                if tracing:
-                    labels[len(nodes)] = str(target)
-                    nodes[target] = len(nodes)
-                    trace.add_node( nodes[target] )
-                    trace.add_edge( nodes[current], nodes[target] )
+                if tracer:
+                    tracer.add_node( target )
+                    tracer.add_edge( terminal, target )
 
                 optimum = completed_path
 
             # Relaxation step on every neighbor
-            for neighbor in BlockGraphHelper.get_candidate_constellation(current, node_types = interconnect):
+            for neighbor in BlockGraphHelper.get_candidate_constellation(terminal, node_types = interconnect):
                 neighbor_point = (neighbor.kind, neighbor.position)
                 console.debug(f"> Neighbor : {neighbor}")
                 # Ignore neighbor if it introduces a loop
                 if neighbor.position in current_path.occupied:
                     continue
 
-                extended_path = current_path.copy()
-                if current != source:
-                    extended_path.append( current )
-                extended_path.target = neighbor
+                extended_path = current_path.extend(neighbor, pipe_type = EdgeType.IDENTITY)
                 extended_distance = extended_path.manhattan_length()
                 console.debug(f">> {current_path}   =Relax=   {extended_path}")
 
                 if neighbor not in minimal_paths or extended_distance < minimal_paths[neighbor_point].manhattan_length():
-                    # Update position of neighbor in unrelaxed as its distance is being updated
-                    if neighbor in minimal_paths:
-                        PathfinderDijkstra.__remove_from_unrelaxed(
-                            neighbor, minimal_paths[neighbor_point].manhattan_length(), unrelaxed
-                        )
-                    PathfinderDijkstra.__add_into_unrelaxed(neighbor, extended_distance, unrelaxed)
+                    # Filtering out the neighbor from unrelaxed
+                    unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].final != neighbor ]
+                    unrelaxed.append( (extended_path.manhattan_length(), extended_path) )
 
                     # Tracing exploration
-                    if tracing:
-                        # labels[len(nodes)] = str(neighbor)
-                        nodes[neighbor] = len(nodes)
-                        trace.add_node( nodes[neighbor] )
-                        trace.add_edge( nodes[current], nodes[neighbor] )
-
-                    points_reached += 1
+                    if tracer:
+                        tracer.add_node(neighbor)
+                        tracer.add_edge(terminal, neighbor)
 
                     # Update minimal distance discovered
                     minimal_paths[neighbor_point] = extended_path
 
-            points_relaxed += 1
-
-        n = manhattan_distance + 1
-        points_present = int(n * (2 * n**2 + 1) / 3)
-        console.info(f"Number of points present : {points_present}")
-        console.info(f"Number of points relaxed : {points_relaxed}")
-        console.info(f"Number of points reached : {points_reached}")
-
-        if tracing:
-            layout = nx.drawing.layout.bfs_layout(trace, start = 0)
-            nx.draw(trace, layout, node_size = 1)
-            nx.draw_networkx_labels(trace, layout, labels)
-            console.info(f"> Number of nodes : {len(trace.nodes)}")
-            plt.show()
+        # Tracing exploration
+        if tracer:
+            tracer.report(cubes_to_label = [ source, target ])
 
         return optimum

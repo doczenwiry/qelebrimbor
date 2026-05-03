@@ -21,7 +21,7 @@ from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.components import ZxNode, BgCube
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.spacetime.pathfinders.breadth_first_search import PlacementFinderBFS
+from qelebrimbor.spacetime.placefinders.breadth_first_search import PlacementFinderBFS
 from qelebrimbor.spacetime.pathfinders.depth_first_search import PathfinderDFS
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 

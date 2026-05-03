@@ -72,10 +72,10 @@ class PathfinderDFS:
         :return:
         """
         optimum: Path | None = None
-
-        minimal_length_achieved: int | None = None
         minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
+
         unrelaxed: list[tuple[Length, Path]] = []
+        minimal_length_achieved: int | None = None
 
         initial = Path(start = source)
         minimal_paths[ (source.kind, source.position) ] = initial

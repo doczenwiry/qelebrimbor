@@ -16,7 +16,7 @@ import unittest
 from itertools import product
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.spacetime.pathfinders.metric.color_shufflings import ColorShuffling
+from qelebrimbor.spacetime.metric.color_shufflings import ColorShuffling
 
 class TestColorShuffling(unittest.TestCase):
     def test_identity(self):
