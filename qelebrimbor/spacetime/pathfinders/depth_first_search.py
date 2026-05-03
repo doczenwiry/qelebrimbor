@@ -89,8 +89,6 @@ class PathfinderDFS:
         interconnect = { NodeType.X, NodeType.Z }
 
         pruning_performed = 0
-        points_discovered = 0
-        points_considered = 0
 
         tracer: SpacetimeTracer | None = SpacetimeTracer() if tracing else None
         if tracer:
@@ -159,18 +157,14 @@ class PathfinderDFS:
                         tracer.add_node(neighbor)
                         tracer.add_edge(terminal, neighbor)
 
-                    points_discovered += 1
-
                     # Update minimal distance discovered
                     minimal_paths[neighbor_point] = extended_path
 
-            points_considered += 1
-
-        console.info(f"> Number of points considered : {points_considered}")
-        console.info(f"> Number of pruning performed : {pruning_performed}")
-        console.info(f"> Number of points discovered : {points_discovered}")
-
+        # Tracing exploration
         if tracer:
-            tracer.draw(cubes = [ source, target ])
+            tracer.report(cubes_to_label= [source, target])
+
+        if bnb:
+            console.info(f"Number of pruning performed : {pruning_performed}")
 
         return optimum

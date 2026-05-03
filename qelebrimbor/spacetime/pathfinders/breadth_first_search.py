@@ -69,10 +69,6 @@ class PlacementFinderBFS:
 
         target_suitable_kinds: list[CubeKind] = CubeKind.suitable_kinds(target.type)
 
-        pruning_performed = 0
-        points_discovered = 0
-        points_considered = 0
-
         # Tracing exploration
         tracer: SpacetimeTracer | None = SpacetimeTracer() if tracing else None
         if tracer:
@@ -130,19 +126,11 @@ class PlacementFinderBFS:
                     tracer.add_node(neighbor)
                     tracer.add_edge(terminal, neighbor)
 
-                points_discovered += 1
-
                 # Update minimal distance discovered
                 minimal_paths[neighbor_point] = extended_path
 
-            points_considered += 1
-
-        console.debug(f"> Number of points considered : {points_considered}")
-        console.debug(f"> Number of pruning performed : {pruning_performed}")
-        console.debug(f"> Number of points discovered : {points_discovered}")
-
         # Tracing exploration
         if tracer:
-            tracer.draw(cubes = [ source ])
+            tracer.report(cubes_to_label= [source])
 
         return optimum

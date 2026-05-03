@@ -53,13 +53,15 @@ if __name__ == "__main__":
         console.info(f"Benchmarking pathfinder with distance {d}.")
 
         start = time()
-        path = PathfinderDFS.find_optimal_paths(cube0, cube1, graph = vzx, tracing = True)
+        path = PathfinderDFS.find_optimal_paths(cube0, cube1, graph = vzx, bnb = True, tracing = True)
         final = time()
 
         if path is None:
             continue
 
         vzx.realise_zx_edge( node0.id, node1.id, path )
+
+        console.info("")
 
         d = 1
         l = path.manhattan_length()
