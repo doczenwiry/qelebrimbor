@@ -18,6 +18,7 @@ from pyzx import VertexType
 import networkx as nx
 
 from qelebrimbor.common.components import BgCube
+from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeId, EdgeType
@@ -122,7 +123,7 @@ if __name__ == "__main__":
     missing = 0
     for c in range(len(zx_rings)):
         pyzx_ring = zx_rings[c]
-        graph = VolumetricZxGraph.from_pyzx_graph(pyzx_ring)
+        graph = PYZX.from_pyzx_graph(pyzx_ring)
         zx.draw(pyzx_ring, labels=True)
         print(f"Case #{c} [PS:{count_plane_switches(graph)}]")
         if c in bg_cases:

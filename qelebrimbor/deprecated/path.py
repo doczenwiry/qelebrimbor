@@ -32,7 +32,6 @@ console = logging.getLogger(__name__)
 type Distance = int
 
 
-@total_ordering
 class Path:
     def __init__(self, source: BgCube, target: BgCube):
         self.source = source

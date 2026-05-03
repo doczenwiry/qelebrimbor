@@ -13,9 +13,9 @@
 #   limitations under the License.
 
 import unittest
-from itertools import product, repeat
+from itertools import product
 
-from qelebrimbor.pathfinders.metric.path_weight import PathWeight
+from qelebrimbor.spacetime.pathfinders import PathWeight
 
 class TestPathWeights(unittest.TestCase):
     def test_identity(self):

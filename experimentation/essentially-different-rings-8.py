@@ -12,16 +12,19 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import pyzx as zx
-from pyzx import VertexType
+import pyzx
 import networkx as nx
 
 from qelebrimbor.common.components import BgCube
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import NodeId, EdgeId, NodeType, EdgeType
 from qelebrimbor.common.coordinates import Coordinates
+
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Step
+
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+
+from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 N = 8
@@ -29,8 +32,8 @@ QUBITS = [0, 0, 0, 1, 2, 2, 2, 1]
 LAYERS = [0, 1, 2, 2, 2, 1, 0, 0]
 
 def generate_ring(n, zs: list[NodeId]):
-    ring = zx.Graph()
-    vtypes = [ VertexType.Z if i in zs else VertexType.X for i in range(n) ]
+    ring = pyzx.Graph()
+    vtypes = [ pyzx.VertexType.Z if i in zs else pyzx.VertexType.X for i in range(n) ]
 
     for i in range(len(vtypes)):
         ring.add_vertex(ty = vtypes[i], qubit = QUBITS[i], row = LAYERS[i])
@@ -195,8 +198,8 @@ if __name__ == "__main__":
     missing = 0
     for c in range(len(zx_rings)):
         pyzx_ring = zx_rings[c]
-        graph = VolumetricZxGraph.from_pyzx_graph(pyzx_ring)
-        zx.draw(pyzx_ring, labels=True)
+        graph = PYZX.from_pyzx_graph(pyzx_ring)
+        pyzx.draw(pyzx_ring, labels=True)
         print(f"Case #{c} [PS:{count_plane_switches(graph)}]")
         if c in bg_cases:
             if c in skipped_cases:

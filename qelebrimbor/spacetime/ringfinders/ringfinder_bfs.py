@@ -19,7 +19,7 @@ from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
-from qelebrimbor.ringfinders.ring import Ring
+from qelebrimbor.spacetime.ringfinders.ring import Ring
 
 import logging
 console = logging.getLogger(__name__)

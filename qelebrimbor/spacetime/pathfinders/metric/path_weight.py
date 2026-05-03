@@ -16,7 +16,7 @@ from itertools import product, combinations
 from dataclasses import dataclass
 from functools import total_ordering
 
-from qelebrimbor.pathfinders.metric.color_shufflings import ColorShuffling
+from qelebrimbor.spacetime.pathfinders.metric.color_shufflings import ColorShuffling
 
 @dataclass
 @total_ordering

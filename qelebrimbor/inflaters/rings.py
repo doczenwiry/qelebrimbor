@@ -22,7 +22,7 @@ from qelebrimbor.common.attributes_bg import CubeId
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.deprecated.pathfinder_dfs import PathFinderDFS
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
+from qelebrimbor.spacetime.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
@@ -187,7 +187,7 @@ class ZxGraphInflaterRings:
             return False
 
         completion = PathFinderDFS.find_minimal_paths(
-            source= start_cube, target= final_cube,
+            source = start_cube, target = final_cube,
             zx_nodes = zx_nodes,
             zx_edges = zx_edges,
             unavailable_positions = unavailable_positions,

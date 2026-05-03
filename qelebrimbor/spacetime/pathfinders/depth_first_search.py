@@ -14,19 +14,15 @@
 
 import heapq
 
-import matplotlib.pyplot as plt
-import networkx as nx
-
 from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType
+from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.components import BgCube, ZxNode
 
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.calculator import ManhattanCalculator
-from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.common.path import Length, Path
-from qelebrimbor.pathfinders.tracer import PathfinderTracer
+from qelebrimbor.spacetime.tracer import SpacetimeTracer
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -55,7 +51,8 @@ class PathfinderDFS:
 
     @staticmethod
     def find_optimal_paths(
-            graph: VolumetricZxGraph, source: BgCube, target: BgCube,
+            source: BgCube, target: BgCube,
+            graph: VolumetricZxGraph = None,
             reservations: dict[Coordinates, ZxNode] = None,
             maximal_excess: int = 10,
             bnb: bool = False,
@@ -63,9 +60,9 @@ class PathfinderDFS:
     ) -> Path | None:
         """
         Perform path-finding using a Depth-First Search approach.
-        :param graph: The VolumetricZxGraph that represents the context within which the path finding is performed.
         :param source: The cube from which to start.
         :param target: The cube towards which to go.
+        :param graph: The VolumetricZxGraph that represents the context within which the path finding is performed.
         :param reservations: The positions that correspond to the ports of an adjacent cube that might need it.
         :param maximal_excess: The maximum number of additional cubes permitted on top of the Manhattan Length.
         :param bnb: Controls whether a Branch-and-Bound refinement ought to be performed after finding the first path.
@@ -95,7 +92,7 @@ class PathfinderDFS:
         points_discovered = 0
         points_considered = 0
 
-        tracer: PathfinderTracer | None = PathfinderTracer() if tracing else None
+        tracer: SpacetimeTracer | None = SpacetimeTracer() if tracing else None
         if tracer:
             tracer.add_node(source)
 
@@ -135,12 +132,17 @@ class PathfinderDFS:
                     continue
 
                 # Ignore neighbor if it introduces a loop
-                if neighbor.position in current.occupied or neighbor.position in graph.occupied:
+                if neighbor.position in current.occupied:
                     continue
 
-                # Ignore neighbor if it would occupy a position that is reserved
-                if PathfinderDFS.__is_position_reserved(graph, reservations, source.realised_node, target.realised_node, neighbor.position):
-                    continue
+                if graph:
+                    # Ignore neighbor if its position is already occupied
+                    if neighbor.position in graph.occupied:
+                        continue
+
+                    # Ignore neighbor if it would occupy a position that is reserved
+                    if PathfinderDFS.__is_position_reserved(graph, reservations, source.realised_node, target.realised_node, neighbor.position):
+                        continue
 
                 extended_path = current.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
                 extended_distance = extended_path.manhattan_length()

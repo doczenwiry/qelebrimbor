@@ -15,9 +15,11 @@
 import random
 import pyzx as zx
 
+from qelebrimbor.formats.pyzx import PYZX
+
 from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
+
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 SEED = 42
 QUBITS = 4
@@ -28,10 +30,10 @@ logging.basicConfig(level=logging.INFO)
 
 random.seed(SEED)
 if __name__ == "__main__":
-    pyzx_graph = zx.generate.cnots(qubits = QUBITS, depth = LAYERS)
-    zx.draw(pyzx_graph, labels = True)
-    zx.full_reduce(pyzx_graph)
-    vzx = VolumetricZxGraph.from_pyzx_graph(pyzx_graph)
+    pyzx_input = zx.generate.cnots(qubits = QUBITS, depth = LAYERS)
+    zx.draw(pyzx_input, labels = True)
+    zx.full_reduce(pyzx_input)
+    vzx = PYZX.from_pyzx_graph(pyzx_input)
 
     CycleBasisAnalyser.analyse(vzx)
 

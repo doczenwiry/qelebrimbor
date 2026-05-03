@@ -17,17 +17,21 @@ from time import time
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.components import BgCube
+
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.pathfinders.depth_first_search import PathfinderDFS
+
+from qelebrimbor.spacetime.pathfinders.depth_first_search import PathfinderDFS
+
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("qelebrimbor").setLevel(logging.CRITICAL)
-logging.getLogger("qelebrimbor.pathfinders").setLevel(logging.INFO)
+logging.getLogger("qelebrimbor.spacetime").setLevel(logging.INFO)
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
 if __name__ == "__main__":
@@ -49,7 +53,7 @@ if __name__ == "__main__":
         console.info(f"Benchmarking pathfinder with distance {d}.")
 
         start = time()
-        path = PathfinderDFS.find_optimal_paths(vzx, cube0, cube1, tracing = True)
+        path = PathfinderDFS.find_optimal_paths(cube0, cube1, graph = vzx, tracing = True)
         final = time()
 
         if path is None:

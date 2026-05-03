@@ -70,9 +70,9 @@ class Ring:
         else:
             cubes = list(reversed(cubes))
         path = Path(start = start.realising_cube)
-        for cube, pipe in zip(cubes, [ edges[-1].type if i == 0 else EdgeType.IDENTITY for i in range(cube_count - edge_count + 1)]):
+        for cube, pipe in zip(cubes, [ EdgeType.IDENTITY for i in range(cube_count - edge_count + 1)]):
             path = path.extend(cube, pipe)
-        path = path.extend(final.realising_cube, EdgeType.IDENTITY)
+        path = path.extend(final.realising_cube, edges[-1].type)
         edges_specifications[(start.id, final.id)] = path
 
         return edges_specifications

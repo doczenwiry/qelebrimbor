@@ -19,21 +19,17 @@ from collections import defaultdict
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
+
 from qelebrimbor.helpers.calculator import ManhattanCalculator
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
 from qelebrimbor.helpers.octahedron import OctahedronHelper
 
-from qelebrimbor.pathfinders.depth_first_search import PathfinderDFS
-
-from qelebrimbor.deprecated.pathfinder_dfs import PathFinderDFS
-from qelebrimbor.deprecated.path import Path
+from qelebrimbor.spacetime.pathfinders.depth_first_search import PathfinderDFS
 
 import logging
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger(__name__)
-logging.getLogger("qelebrimbor.deprecated.pathfinder_dfs").setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.helpers').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.utilities').setLevel(logging.INFO)
+logging.getLogger('qelebrimbor').setLevel(logging.CRITICAL)
 
 MOVE_ABOVE = SpacetimeHelper.XM + SpacetimeHelper.ZP
 MOVE_RIGHT = SpacetimeHelper.XM + SpacetimeHelper.YP
@@ -160,7 +156,7 @@ def check_consistency(kinds: Iterable[CubeKind], faces: Iterable[Octant], manhat
             positions = sorted(OctahedronHelper.get_face_positions(manhattan_distance, target_face), key = SORTING_FUNCTIONS[target_face])
             for target_position in positions:
                 target = BgCube(target_kind, target_position)
-                path = PathFinderDFS.find_minimal_paths(source = source, target = target, maximal_excess = 8)
+                path = PathfinderDFS.find_optimal_paths(source, target)
                 if path is None:
                     raise Exception(f"No path found between {source} and {target}")
                 explored_overhead = path.overhead()

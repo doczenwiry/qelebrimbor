@@ -13,17 +13,16 @@
 #   limitations under the License.
 
 from collections import defaultdict
+from typing import cast
 
 import networkx as nx
 
-from qelebrimbor.common.path import Path
 from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import EdgeType
 from qelebrimbor.common.components import ZxNode, BgCube
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.pathfinders.breadth_first_search import PlacementFinderBFS
-from qelebrimbor.pathfinders.depth_first_search import PathfinderDFS
+from qelebrimbor.spacetime.pathfinders.breadth_first_search import PlacementFinderBFS
+from qelebrimbor.spacetime.pathfinders.depth_first_search import PathfinderDFS
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
@@ -66,17 +65,22 @@ class ZxGraphInflaterBFS:
     # TODO: > represent the spacetime available and pathfind to the border of the blockgraph ?
     # TODO: > reserve needed positions for connection ?
 
-    def process(self, graph: VolumetricZxGraph, root: ZxNode, root_kind: CubeKind | None = None):
+    def process(self, root: tuple[ZxNode, CubeKind] | None = None):
         console.info(f"Starting inflation from root {root}")
+
+        if root:
+            root_node, root_kind = root
+        else:
+            root_node = max(self.__graph.get_zx_nodes(), key=lambda zxn: self.__graph.get_zx_degree(zxn.id))
+            root_kind = CubeKind.suitable_kinds(root_node.type)[0]
 
         # Realise the root of the construction.
         root_cube = BgCube(
-            kind = root_kind if root_kind else CubeKind.suitable_kinds(root.type)[0],
+            kind = root_kind,
             position = SpacetimeHelper.ORIGIN
         )
-        graph.realise_zx_node(root, root_cube)
-
-        self.__reserve_positions(root)
+        self.__graph.realise_zx_node(root_node, root_cube)
+        self.__reserve_positions(root_node)
 
         # Form the backbone with the bfs_edges
         # > Reserve needed positions based on remaining missing neighbors
@@ -84,8 +88,8 @@ class ZxGraphInflaterBFS:
         # > Perform realisations in order of decreasing Manhattan Distance between the endpoint cubes
 
         # Perform a pass of node-realisations (a.k.a. first-pass edges)
-        for edge in nx.bfs_edges(graph, root.id):
-            zx_edge = graph.get_zx_edge(*edge)
+        for edge in nx.bfs_edges(cast(nx.Graph, self.__graph), root_node.id):
+            zx_edge = self.__graph.get_zx_edge(*edge)
 
             if zx_edge.is_realised():
                 console.warning(f"> Second attempt to realise edge : {edge}")
@@ -112,12 +116,12 @@ class ZxGraphInflaterBFS:
 
         # Perform a pass of edge-realisations (a.k.a. cross edges)
         unrealised_edges = filter(
-            lambda edge: not graph.get_zx_edge(*edge).is_realised(),
-            nx.edge_bfs(graph, root.id)
+            lambda edge: not self.__graph.get_zx_edge(*edge).is_realised(),
+            nx.edge_bfs(self.__graph, root.id)
         )
 
         for edge in unrealised_edges:
-            zx_edge = graph.get_zx_edge(*edge)
+            zx_edge = self.__graph.get_zx_edge(*edge)
 
             if zx_edge.is_realised():
                 console.warning(f"> Second attempt to realise edge : {edge}")
@@ -144,7 +148,7 @@ class ZxGraphInflaterBFS:
         console.info(f"Number of node-realisations: {self.__node_realisations}")
         console.info(f"Number of edge-realisations: {self.__edge_realisations}")
 
-        for edge in graph.get_zx_edges():
+        for edge in self.__graph.get_zx_edges():
             if not edge.is_realised():
                 console.warning(f"> Unrealised edge : {edge}")
 
@@ -180,7 +184,7 @@ class ZxGraphInflaterBFS:
         console.info(f">> Source ports : {self.__required_ports[source]}/{len(self.__available_ports[source])}")
         console.info(f">> Target ports : {self.__required_ports[target]}/{len(self.__available_ports[target])}")
 
-        path = PathfinderDFS.find_optimal_paths(self.__graph, source.realising_cube, target.realising_cube)
+        path = PathfinderDFS.find_optimal_paths(source.realising_cube, target.realising_cube, graph = self.__graph)
 
         if path is None:
             console.error(f"Failed to find any path for edge-realisation {source} - {target}")

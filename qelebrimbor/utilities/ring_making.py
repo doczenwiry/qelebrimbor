@@ -23,7 +23,7 @@ from qelebrimbor.common.path import Path
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
-from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
+from qelebrimbor.spacetime.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -103,7 +103,7 @@ def find_completion(
         zx_nodes = zx_nodes,
         zx_edges = zx_edges,
         unavailable_positions = unavailable_positions,
-        maximal_overhead = maximal_overhead
+        maximal_excess = maximal_overhead
     )
 
     console.info(f"Found {len(completions)} completions for chain {chain}")

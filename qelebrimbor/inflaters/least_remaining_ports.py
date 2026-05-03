@@ -25,8 +25,8 @@ from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.components import ZxNode, BgCube, ZxEdge
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.pathfinders.breadth_first_search import PlacementFinderBFS
-from qelebrimbor.pathfinders.depth_first_search import PathfinderDFS
+from qelebrimbor.spacetime.pathfinders.breadth_first_search import PlacementFinderBFS
+from qelebrimbor.spacetime.pathfinders.depth_first_search import PathfinderDFS
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
@@ -299,8 +299,7 @@ class ZxGraphInflaterPorts:
             return False
 
         path = PathfinderDFS.find_optimal_paths(
-            graph = self.__graph, source = source.realising_cube, target = target.realising_cube,
-            reservations = self.__reservations
+            source.realising_cube, target.realising_cube, graph = self.__graph, reservations = self.__reservations
         )
 
         if path is None:

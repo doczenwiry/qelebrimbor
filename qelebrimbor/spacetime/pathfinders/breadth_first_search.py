@@ -13,17 +13,16 @@
 #   limitations under the License.
 
 from collections import deque
-import matplotlib.pyplot as plt
-import networkx as nx
 
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import NodeId, EdgeType
+from qelebrimbor.common.attributes_zx import EdgeType
 from qelebrimbor.common.components import BgCube, ZxNode
 
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.common.path import Path
+from qelebrimbor.spacetime.tracer import SpacetimeTracer
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -56,7 +55,7 @@ class PlacementFinderBFS:
             graph: VolumetricZxGraph, source: BgCube, target: ZxNode,
             reservations: dict[Coordinates, ZxNode] = None,
             maximal_distance: int = None,
-            trace: nx.Graph | None = None
+            tracing: bool = False
     ) -> Path | None:
         optimum: Path | None = None
         minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
@@ -75,12 +74,9 @@ class PlacementFinderBFS:
         points_considered = 0
 
         # Tracing exploration
-        if trace:
-            nodes : dict[BgCube, NodeId] = dict()
-            labels: dict[NodeId, str] = dict()
-            trace.add_node( 0 )
-            labels[len(nodes)] = str(source)
-            nodes[source] = 0
+        tracer: SpacetimeTracer | None = SpacetimeTracer() if tracing else None
+        if tracer:
+            tracer.add_node(source)
 
         while len(unrelaxed) != 0 and optimum is None:
             current_path = unrelaxed.pop()
@@ -130,10 +126,9 @@ class PlacementFinderBFS:
                     unrelaxed.append( extended_path )
 
                 # Tracing exploration
-                if tracing:
-                    nodes[neighbor] = len(nodes)
-                    trace.add_node( nodes[neighbor] )
-                    trace.add_edge( nodes[terminal], nodes[neighbor] )
+                if tracer:
+                    tracer.add_node(neighbor)
+                    tracer.add_edge(terminal, neighbor)
 
                 points_discovered += 1
 
@@ -146,11 +141,8 @@ class PlacementFinderBFS:
         console.debug(f"> Number of pruning performed : {pruning_performed}")
         console.debug(f"> Number of points discovered : {points_discovered}")
 
-        if tracing:
-            layout = nx.drawing.layout.bfs_layout(trace, start = 0)
-            nx.draw(trace, layout, node_size = 1)
-            nx.draw_networkx_labels(trace, layout, labels)
-            console.debug(f"> Number of nodes : {len(trace.nodes)}")
-            plt.show()
+        # Tracing exploration
+        if tracer:
+            tracer.draw(cubes = [ source ])
 
         return optimum

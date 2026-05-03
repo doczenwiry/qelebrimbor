@@ -12,8 +12,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from typing import Iterable
-from queue import PriorityQueue
 from collections import defaultdict
 
 from qelebrimbor.common.path import Path, Length
@@ -23,6 +21,7 @@ from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.components import BgCube, ZxNode, ZxEdge
 
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
+from qelebrimbor.helpers.calculator import ManhattanCalculator
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 import logging as lgr
@@ -141,7 +140,7 @@ class PathFinderDFS:
             current_path = minimal_paths[current_point]
             terminal = current_path.final
 
-            minimal_length_possible: int = Path.minimal_length_possible(terminal, target)
+            minimal_length_possible: int = ManhattanCalculator.minimal_manhattan_length(terminal, target)
             manhattan_length_projected: int = current_path.manhattan_length() + minimal_length_possible
 
             # # Branch-and-bound
@@ -195,7 +194,7 @@ class PathFinderDFS:
                         PathFinderDFS.__remove_from_unrelaxed(
                             neighbor, minimal_paths[neighbor_point].manhattan_length(), unrelaxed
                         )
-                    PathFinderDFS.__add_into_unrelaxed(neighbor, Path.minimal_length_possible(neighbor, target), unrelaxed)
+                    PathFinderDFS.__add_into_unrelaxed(neighbor, ManhattanCalculator.minimal_manhattan_length(neighbor, target), unrelaxed)
 
                     points_discovered += 1
 
@@ -204,64 +203,64 @@ class PathFinderDFS:
 
         return optimum
 
-    @staticmethod
-    def find_paths(
-            final: tuple[CubeKind, Coordinates],
-            start: tuple[CubeKind, Coordinates] = (CubeKind.XZZ, SpacetimeHelper.ORIGIN),
-            maximal_overheads: Iterable[int] | None = None
-    ):
-        if maximal_overheads is None:
-            return PathFinderDFS.__core_find_paths(final, start)
-        else:
-            for mo in maximal_overheads:
-                paths = PathFinderDFS.__core_find_paths(final, start, mo)
-                if len(paths) > 0:
-                    return paths
+    # @staticmethod
+    # def find_paths(
+    #         final: tuple[CubeKind, Coordinates],
+    #         start: tuple[CubeKind, Coordinates] = (CubeKind.XZZ, SpacetimeHelper.ORIGIN),
+    #         maximal_overheads: Iterable[int] | None = None
+    # ):
+    #     if maximal_overheads is None:
+    #         return PathFinderDFS.__core_find_paths(final, start)
+    #     else:
+    #         for mo in maximal_overheads:
+    #             paths = PathFinderDFS.__core_find_paths(final, start, mo)
+    #             if len(paths) > 0:
+    #                 return paths
+    #
+    #     return {}
 
-        return {}
-
-    @staticmethod
-    def __core_find_paths(
-            final: tuple[CubeKind, Coordinates],
-            start: tuple[CubeKind, Coordinates] = (CubeKind.XZZ, SpacetimeHelper.ORIGIN),
-            maximal_overhead: int = 6
-    ) -> defaultdict[int, list[Path]]:
-        paths = defaultdict(list)
-
-        start_kind, start_position = start
-        final_kind, final_position = final
-
-        maximal_volume = start_position.get_manhattan_distance(final_position) + maximal_overhead
-
-        initial = Path( start , final )
-        queue: PriorityQueue[Path] = PriorityQueue[Path]()
-        queue.put( initial )
-
-        console.info(f"Searching for paths from {start_kind}@{start_position} to {final_kind}@{final_position}.")
-
-        while not queue.empty():
-            path = queue.get()
-            current = path.extras[-1]
-            kind, position = current
-            console.debug(f"Current : {kind}@{position}")
-            for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(current):
-                if path.occupies(next_position):
-                    continue
-
-                if next_kind in [ CubeKind.YYY , CubeKind.OOO ]:
-                    continue
-
-                extended: Path = path.copy()
-                extended.append( BgCube(next_kind,next_position) )
-
-                if extended.has_reached_target():
-                    extended_overhead = extended.overhead()
-                    console.info(f"> Target reached : {next_kind}@{next_position} [+{extended_overhead}]")
-                    console.debug(f">> {extended}")
-                    paths[ extended_overhead ].append( extended )
-
-                if extended.manhattan_length() + extended.manhattan_distance_remaining() < maximal_volume:
-                    console.debug(f"> {next_kind}@{next_position}")
-                    queue.put( extended )
-
-        return paths
+    # @staticmethod
+    # def __core_find_paths(
+    #         final: tuple[CubeKind, Coordinates],
+    #         start: tuple[CubeKind, Coordinates] = (CubeKind.XZZ, SpacetimeHelper.ORIGIN),
+    #         maximal_overhead: int = 6
+    # ) -> defaultdict[int, list[Path]]:
+    #     paths = defaultdict(list)
+    #
+    #     start_kind, start_position = start
+    #     final_kind, final_position = final
+    #
+    #     maximal_volume = start_position.get_manhattan_distance(final_position) + maximal_overhead
+    #
+    #     initial = Path( start , final )
+    #     queue: PriorityQueue[Path] = PriorityQueue[Path]()
+    #     queue.put( initial )
+    #
+    #     console.info(f"Searching for paths from {start_kind}@{start_position} to {final_kind}@{final_position}.")
+    #
+    #     while not queue.empty():
+    #         path = queue.get()
+    #         current = path.extras[-1]
+    #         kind, position = current
+    #         console.debug(f"Current : {kind}@{position}")
+    #         for next_kind, next_position in BlockGraphHelper.get_candidate_constellation(current):
+    #             if path.occupies(next_position):
+    #                 continue
+    #
+    #             if next_kind in [ CubeKind.YYY , CubeKind.OOO ]:
+    #                 continue
+    #
+    #             extended: Path = path.copy()
+    #             extended.append( BgCube(next_kind,next_position) )
+    #
+    #             if extended.has_reached_target():
+    #                 extended_overhead = extended.overhead()
+    #                 console.info(f"> Target reached : {next_kind}@{next_position} [+{extended_overhead}]")
+    #                 console.debug(f">> {extended}")
+    #                 paths[ extended_overhead ].append( extended )
+    #
+    #             if extended.manhattan_length() + extended.manhattan_distance_remaining() < maximal_volume:
+    #                 console.debug(f"> {next_kind}@{next_position}")
+    #                 queue.put( extended )
+    #
+    #     return paths

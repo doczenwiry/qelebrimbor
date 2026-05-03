@@ -15,7 +15,7 @@
 from qelebrimbor.common.components import ZxNode, ZxEdge
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.attributes_zx import NodeType, EdgeType
-from qelebrimbor.ringfinders.ringfinder_bfs import RingFinderBFS
+from qelebrimbor.spacetime.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.cycle import CycleLayout
