@@ -15,7 +15,7 @@
 from collections import defaultdict
 
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.attributes_zx import EdgeId
+from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
 from qelebrimbor.common.attributes_bg import CubeId, CubeKind
 from qelebrimbor.common.components import BgCube, ZxNode, ZxEdge
 from qelebrimbor.common.path import Path
@@ -77,8 +77,8 @@ def extract_chain(graph: VolumetricZxGraph, cycle: list[ZxNode]) -> list[ZxNode]
 def find_completion(
         graph: VolumetricZxGraph, cycle: list[ZxNode],
         maximal_overhead: int = 0,
-        reservations: dict[Coordinates, CubeId] | None = None
-):
+        reservations: dict[Coordinates, ZxNode] | None = None
+) -> bool:
     nc = len(cycle)
     chain = extract_chain(graph, cycle)
     start = chain[0]
@@ -95,31 +95,52 @@ def find_completion(
     console.info(f"Searching completion from {start_cube} to {final_cube}.")
     console.info(f"> Nodes : {zx_nodes}")
     console.info(f"> Edges : {zx_edges}")
-    unavailable_positions = graph.occupied.copy()
-    if reservations is not None:
-        unavailable_positions.update(reservations.keys())
-    completions = PathFinderDFS.find_minimal_paths(
-        source= start_cube, target= final_cube,
+    completion = PathFinderDFS.find_minimal_paths(
+        source = start_cube, target = final_cube,
         zx_nodes = zx_nodes,
         zx_edges = zx_edges,
-        unavailable_positions = unavailable_positions,
+        graph = graph,
+        reservations = reservations,
         maximal_excess = maximal_overhead
     )
 
-    console.info(f"Found {len(completions)} completions for chain {chain}")
+    if completion is None:
+        return False
 
-    completion = completions[0]
-    console.info(f"Completion : {completion.source} - {completion.extras} - {completion.target}")
+    console.info(f"Completion : {completion.start} - {completion.extra_cubes} - {completion.final}")
 
-    nodes_specifications = completion.to_nodes_specifications(zx_nodes)
+    nodes_specifications: dict[NodeId, BgCube] = {}
+    for nd in range(len(zx_nodes)):
+        nodes_specifications[zx_nodes[nd].id] = completion.extra_cubes[nd]
     console.info(f"> Nodes specifications : {nodes_specifications}")
     BlockGraphConstructor.realise_nodes(graph, nodes_specifications)
 
-    edges_specifications = completion.to_edges_specifications(zx_edges)
+    edge_count = len(zx_edges)
+    extra_count = len(completion.extra_cubes)
+    edges_specifications: dict[EdgeId, Path] = {}
+
+    previous_node = completion.start.realised_node
+    for edge in zx_edges[:-1]:
+        current_node = edge.source if edge.source != previous_node else edge.target
+        path = Path(start=previous_node.realising_cube).extend(current_node.realising_cube, edge.type)
+        edges_specifications[(previous_node.id, current_node.id)] = path
+        previous_node = current_node
+
+    final_edge = zx_edges[-1]
+    source = previous_node
+    target = final_edge.source if final_edge.source != previous_node else final_edge.target
+    extras = completion.extra_cubes[edge_count - 1: extra_count]
+    path = Path(start=source.realising_cube)
+    for cube, pipe in zip(extras, [final_edge.type if i == 0 else EdgeType.IDENTITY for i in
+                                   range(extra_count - edge_count + 2)]):
+        path = path.extend(cube, pipe)
+    path = path.extend(target.realising_cube, EdgeType.IDENTITY)
+    edges_specifications[(source.id, target.id)] = path
+
     console.info(f"> Edges specifications :")
     for edge, proposal in edges_specifications.items():
         console.info(f">> {edge} : {proposal}")
-    BlockGraphConstructor.realise_edges(graph, edges_specifications)
+    BlockGraphConstructor.realise_edges(graph=graph, specifications=edges_specifications)
 
     return True
 
