@@ -34,6 +34,15 @@ class PathfinderDFS:
              graph: VolumetricZxGraph = None, reservations: dict[Coordinates, ZxNode] = None,
              branch_and_bound: bool = False, tracing: bool = False
     ):
+        """
+        Create a PathfinderDFS to search for optimal paths between cubes in spacetime.
+        :param graph: The VolumetricZxGraph serving as the context for the search.
+        :param reservations: The reserved positions in spacetime.
+        :param branch_and_bound: Controls whether a Branch-and-Bound is performed to improve the first path found.
+        This will incur an additional computational cost that may or may not fall into super-exponential territory.
+        Proof of the possibility would be nice. Refutation thereof would be better.
+        :param tracing:
+        """
         self.__graph = graph if graph else VolumetricZxGraph()
         self.__reservations = reservations if reservations else dict()
         self.__branch_and_bound = branch_and_bound
@@ -54,18 +63,13 @@ class PathfinderDFS:
 
         return False
 
-    def find_optimal_paths(self, source: BgCube, target: BgCube, maximal_excess: int = 10) -> Path | None:
+    def find_optimal_paths(self, source: BgCube, target: BgCube, maximal_excess: int | None = None) -> Path | None:
         """
         Perform path-finding using a Depth-First Search approach.
         :param source: The cube from which to start.
         :param target: The cube towards which to go.
-        :param graph: The VolumetricZxGraph that represents the context within which the path finding is performed.
-        :param reservations: The positions that correspond to the ports of an adjacent cube that might need it.
         :param maximal_excess: The maximum number of additional cubes permitted on top of the Manhattan Length.
-        :param bnb: Controls whether a Branch-and-Bound refinement ought to be performed after finding the first path.
-        This will incur an additional computational cost that may or may not fall into super-exponential territory.
-        Proof of the possibility would be nice. Refutation thereof would be better.
-        :return:
+        :return: A Path or None if no path is found.
         """
         optimum: Path | None = None
         minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
@@ -79,8 +83,13 @@ class PathfinderDFS:
         vertex: tuple[Length, Path] = (ManhattanCalculator.minimal_manhattan_length(source, target), initial)
         heapq.heappush(unrelaxed, vertex)
 
-        maximal_distance = source.position.get_manhattan_distance(target.position) + maximal_excess
-        console.info(f"Searching for path from {source} to {target} [max distance={maximal_distance}].")
+        if maximal_excess:
+            maximal_distance = source.position.get_manhattan_distance(target.position) + maximal_excess
+            extra = f"[max distance={maximal_distance}]"
+        else:
+            maximal_distance = None
+            extra = ""
+        console.info(f"Searching for path from {source} to {target} {extra}")
 
         interconnect = { NodeType.X, NodeType.Z }
 
@@ -122,7 +131,7 @@ class PathfinderDFS:
             for neighbor in BlockGraphHelper.get_candidate_constellation(terminal, node_types = interconnect):
                 neighbor_point = (neighbor.kind, neighbor.position)
 
-                if maximal_distance < source.position.get_manhattan_distance(neighbor.position):
+                if maximal_distance and maximal_distance < source.position.get_manhattan_distance(neighbor.position):
                     continue
 
                 # Ignore neighbor if it introduces a loop
@@ -150,6 +159,7 @@ class PathfinderDFS:
                     # Filtering out the neighbor from unrelaxed
                     unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].final != neighbor ]
 
+                    # Compute the minimal manhattan length required to connect neighbor to target (heuristic).
                     manhattan_length_remaining: int = ManhattanCalculator.minimal_manhattan_length(neighbor, target)
                     unrelaxed.append( (manhattan_length_remaining, extended_path) )
 
