@@ -139,8 +139,8 @@ class PathfinderDFS:
                     continue
 
                 if self.__graph:
-                    # Ignore neighbor if its position is already occupied
-                    if neighbor.position in self.__graph.occupied:
+                    # Ignore neighbor if its position is already occupied in spacetime
+                    if not self.__graph.spacetime.available(neighbor.position):
                         continue
 
                     # Ignore neighbor if it would occupy a position that is reserved

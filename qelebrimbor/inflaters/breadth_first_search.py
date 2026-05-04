@@ -57,7 +57,7 @@ class ZxGraphInflaterBFS:
             if position in self.__reservations:
                 console.warning(f"Position {position} already reserved by {self.__reservations[position]} [requester={cube}]")
                 continue
-            if position not in self.__graph.occupied:
+            if self.__graph.spacetime.available(position):
                 self.__reservations[position] = node
                 self.__available_ports[node].append(position)
             if self.__required_ports[node] == len(self.__available_ports[node]):

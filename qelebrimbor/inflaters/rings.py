@@ -12,9 +12,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from functools import total_ordering
-from recordclass import RecordClass
-
 from qelebrimbor.common.path import Path
 from qelebrimbor.common.components import ZxNode, ZxEdge, BgCube
 from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
@@ -131,9 +128,6 @@ class ZxGraphInflaterRings:
         console.info(f"Searching completion from {start_cube} to {final_cube}.")
         console.info(f"> Nodes : {zx_nodes}")
         console.info(f"> Edges : {zx_edges}")
-        unavailable_positions = self.__graph.occupied.copy()
-        if reservations is not None:
-            unavailable_positions.update(reservations.keys())
 
         if not self.__ports_tracker.reachable(start_cube) or not self.__ports_tracker.reachable(final_cube):
             return False

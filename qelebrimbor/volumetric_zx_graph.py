@@ -28,6 +28,7 @@ from qelebrimbor.common.path import Path
 from qelebrimbor.common.components import ZxNode, ZxEdge, BgCube, BgPipe
 from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType, QubitId, LayerId
 from qelebrimbor.common.attributes_bg import CubeId, CubeKind, PipeId
+from qelebrimbor.spacetime.fabric import SpacetimeFabric
 
 from qelebrimbor.utilities.nmtfl_constraint import NoMoreThanFourLegsConstraint
 
@@ -81,8 +82,8 @@ class VolumetricZxGraph(nx.Graph):
         self.__zx_qubits: dict[QubitId, list[NodeId]] = defaultdict(list)
         self.__zx_layers: dict[LayerId, list[NodeId]] = defaultdict(list)
 
-        # Keeps track of the coordinates in 3D that are occupied by some cube
-        self.occupied: set[Coordinates] = set()
+        # Keeps track of the contents in spacetime
+        self.spacetime: SpacetimeFabric = SpacetimeFabric()
 
         if nodes is not None:
             for node, node_type in nodes:
@@ -267,7 +268,7 @@ class VolumetricZxGraph(nx.Graph):
         console.debug(f"Realising edge {zx_edge} with pipes : {pipe_ids}")
 
     def place_cube(self, cube: BgCube) -> CubeId:
-        if cube.position in self.occupied:
+        if not self.spacetime.available(cube.position):
             raise Exception(f"Proposed position for {cube} is already occupied by another cube.")
 
         cube.id = self.__next_cube_id
@@ -276,7 +277,7 @@ class VolumetricZxGraph(nx.Graph):
         self.blockgraph.add_node(cube.id)
         self.blockgraph.nodes[cube.id][VolumetricZxGraph.KEY_BG_CUBE] = cube
 
-        self.occupied.add(cube.position)
+        self.spacetime.claim(cube)
 
         return cube.id
 
@@ -389,8 +390,8 @@ class VolumetricZxGraph(nx.Graph):
                 console.warning(f"> CubeKind.OOO and CubeKind.YYY can only appear at the ends of a path : {current}.")
                 return False
 
-            # Check that the current_position is not already occupied
-            if current.position in self.occupied:
+            # Check that the current_position is available in spacetime
+            if not self.spacetime.available(current.position):
                 console.warning(f"> Current position is already occupied : {current}")
                 return False
 

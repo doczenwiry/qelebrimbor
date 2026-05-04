@@ -88,7 +88,7 @@ class PlacementFinderBFS:
                     continue
 
                 # Ignore neighbor if it introduces a loop
-                if neighbor.position in current_path.occupied or neighbor.position in graph.occupied:
+                if neighbor.position in current_path.occupied or not graph.spacetime.available(neighbor.position):
                     console.debug(f">> Position occupied : {neighbor.position}")
                     continue
 
@@ -103,7 +103,7 @@ class PlacementFinderBFS:
                 console.debug(f"> Neighbor has kind {neighbor.kind} in {target_suitable_kinds} ?")
                 if neighbor.kind in target_suitable_kinds:
                     open_ports = list(filter(
-                        lambda pos : pos not in extended_path.occupied and pos not in graph.occupied and (not reservations or pos not in reservations),
+                        lambda pos : pos not in extended_path.occupied and graph.spacetime.available(pos) and (not reservations or pos not in reservations),
                         SpacetimeHelper.get_constellation(neighbor.position, neighbor.kind.get_reach())
                     ))
                     number_of_open_ports = len(open_ports)

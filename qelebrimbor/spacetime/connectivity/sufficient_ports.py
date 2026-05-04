@@ -81,7 +81,7 @@ class OpenPortsTracker:
                 console.warning(f"Position {position} already reserved by {holder} [requester={cube}]")
                 continue
 
-            if position not in self.__graph.occupied:
+            if self.__graph.spacetime.available(position):
                 self.__reservations[position] = cube
                 vertex.available.add(position)
 

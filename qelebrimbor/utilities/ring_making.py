@@ -157,7 +157,7 @@ def extend_unrealised(graph: VolumetricZxGraph):
         cube_reach = cube.kind.get_reach()
         for neighbor in neighbors:
             available = filter(
-                lambda pos : pos not in graph.occupied,
+                lambda pos : graph.spacetime.available(pos),
                 SpacetimeHelper.get_constellation(cube.position, cube_reach)
             )
             edge_type = graph.get_zx_edge(node.id, neighbor.id).type

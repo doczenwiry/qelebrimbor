@@ -81,7 +81,7 @@ class ZxGraphInflaterPorts:
                 console.warning(f"Position {position} already reserved by {self.__reservations[position]} [requester={cube}]")
                 continue
 
-            if position not in self.__graph.occupied:
+            if self.__graph.spacetime.available(position):
                 self.__reservations[position] = node
                 vertex.available_ports.add(position)
 
@@ -110,12 +110,12 @@ class ZxGraphInflaterPorts:
             if current in visited:
                 continue
 
-            if current not in self.__graph.occupied and current not in self.__reservations:
+            if self.__graph.spacetime.available(current) and current not in self.__reservations:
                 # if current position offers a reach with enough open ports, assign it to placement
                 for reach in SpacetimeHelper.PLANES:
                     count_available_ports: int = sum(
                         1 for pos in SpacetimeHelper.get_constellation(current, reach)
-                        if pos not in self.__graph.occupied and pos not in self.__reservations
+                        if self.__graph.spacetime.available(pos) and pos not in self.__reservations
                     )
                     if count_available_ports >= required_ports:
                         found = current, reach

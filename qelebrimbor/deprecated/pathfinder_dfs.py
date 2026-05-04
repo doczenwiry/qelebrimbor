@@ -80,7 +80,7 @@ class PathFinderDFS:
         count_required_ports = graph.get_zx_degree(node.id)
         count_available_ports: int = sum(
             1 for pos in SpacetimeHelper.get_constellation(requester.position, requester.kind.get_reach())
-            if pos not in graph.occupied and pos not in reservations
+            if graph.spacetime.available(pos) and pos not in reservations
         )
 
         if node.id == 24:
@@ -167,8 +167,8 @@ class PathFinderDFS:
                     continue
 
                 if graph:
-                    # Ignore neighbor if the position is already occupied by the Blockgraph
-                    if neighbor.position in graph.occupied:
+                    # Ignore neighbor if the position is already occupied in spacetime
+                    if not graph.spacetime.available(neighbor.position):
                         continue
 
                     # Ignore neighbor if it would occupy a position that is reserved

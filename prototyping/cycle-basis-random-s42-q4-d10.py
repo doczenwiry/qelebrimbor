@@ -53,7 +53,7 @@ def place_determined(graph: VolumetricZxGraph):
             if cube is not None:
                 cube_reach = cube.kind.get_reach()
                 for port in SpacetimeHelper.get_constellation(cube.position, cube_reach):
-                    if port not in graph.occupied:
+                    if graph.spacetime.available(port):
                         open_ports[cube].append(port)
 
             if sum(len(pts) for pts in open_ports.values()) == 1:
@@ -90,7 +90,7 @@ def reserve_positions(graph: VolumetricZxGraph, reservations: dict[Coordinates, 
             if cube is not None:
                 cube_reach = cube.kind.get_reach()
                 for port in SpacetimeHelper.get_constellation(cube.position, cube_reach):
-                    if port not in graph.occupied:
+                    if graph.spacetime.available(port):
                         if port in open_ports and port in reservations and cube != reservations[port]:
                             console.warning(f"Multiple cubes [{open_ports[port]},{cube}] realising the same node have the a port in common. Overwriting.")
                         open_ports[port] = cube

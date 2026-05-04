@@ -82,7 +82,11 @@ class PathfinderDijkstra:
                 console.debug(f"> Neighbor : {neighbor}")
 
                 # Ignore neighbor if it introduces a loop or its position is already occupied
-                if neighbor.position in current_path.occupied or neighbor.position in self.__graph.occupied:
+
+                if neighbor.position in current_path.occupied:
+                    continue
+
+                if self.__graph and not self.__graph.spacetime.available(neighbor.position):
                     continue
 
                 # Tracing exploration
