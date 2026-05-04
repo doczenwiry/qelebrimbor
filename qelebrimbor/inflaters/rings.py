@@ -22,6 +22,7 @@ from qelebrimbor.common.attributes_bg import CubeId
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.deprecated.pathfinder_dfs import PathFinderDFS
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
+from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
 from qelebrimbor.spacetime.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
@@ -30,62 +31,14 @@ from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 import logging
 console = logging.getLogger(__name__)
 
-@total_ordering
-class Vertex(RecordClass):
-    cube: BgCube
-    required_ports: int
-    available_ports: set[Coordinates]
-
-    @property
-    def remaining_ports(self):
-        return len(self.available_ports) - self.required_ports
-
-    def __lt__(self, other):
-        return self.remaining_ports < other.remaining_ports if self.remaining_ports != other.remaining_ports else self.required_ports <= other.required_ports
-
-    def __str__(self):
-        return f"{self.cube} [rq:{self.required_ports},av:{len(self.available_ports)}]"
-
-    def __repr__(self):
-        return str(self)
-
 class ZxGraphInflaterRings:
     def __init__(self, graph: VolumetricZxGraph):
         self.__graph = graph
         self.__node_realisations = 0
         self.__edge_realisations = 0
 
-        self.__vertices: dict[BgCube, Vertex] = {}
+        self.__ports_tracker: OpenPortsTracker = OpenPortsTracker(graph)
         self.__reservations: dict[Coordinates, BgCube] = dict()
-
-    def __occlude_ports(self, position: Coordinates):
-        if position in self.__reservations:
-            holder = self.__vertices[self.__reservations[position]]
-            holder.available_ports.remove(position)
-            self.__reservations.pop(position)
-
-    def __reserve_ports(self, cube: BgCube):
-        vertex = Vertex(
-            cube = cube, required_ports = self.__graph.get_zx_degree(cube.realised_node.id), available_ports = set()
-        )
-        constellation = SpacetimeHelper.get_constellation(cube.position, cube.kind.get_reach())
-        for position in constellation:
-            if position in self.__reservations:
-                console.warning(f"Position {position} already reserved by {self.__reservations[position]} [requester={cube}]")
-                continue
-
-            if position not in self.__graph.occupied:
-                self.__reservations[position] = cube
-                vertex.available_ports.add(position)
-
-        self.__vertices[cube] = vertex
-
-    def __verify_ports(self):
-        for vertex in self.__vertices.values():
-            if vertex.remaining_ports == 0:
-                console.warning(f"VP> Time to prioritize {vertex}")
-            elif vertex.remaining_ports < 0:
-                console.error(f"VP> TOO LATE for {vertex}")
 
     def process(self):
         MinimalCycleBasisAnalyser.analyse(self.__graph)
@@ -101,7 +54,7 @@ class ZxGraphInflaterRings:
             except Exception as e:
                 console.error(f"FAILURE of attempt to construct cycle {zx_cycle}")
 
-            self.__verify_ports()
+            self.__ports_tracker.verify_ports()
 
     def __attempt_ring_realisation(self, zx_nodes: list[ZxNode], maximal_overhead: int = 6):
         nc = len(zx_nodes)
@@ -123,10 +76,10 @@ class ZxGraphInflaterRings:
         BlockGraphConstructor.realise_nodes(graph=self.__graph, specifications=nodes_specifications)
 
         for node_id, bg_cube in nodes_specifications.items():
-            self.__occlude_ports(bg_cube.position)
+            self.__ports_tracker.occlude_ports(bg_cube.position)
 
         for node in zx_nodes:
-            self.__reserve_ports(node.realising_cube)
+            self.__ports_tracker.reserve_ports(node.realising_cube)
 
         edges_specifications = ring.to_edges_specifications(zx_edges)
         console.info(f"> Edges specifications :")
@@ -137,8 +90,8 @@ class ZxGraphInflaterRings:
         for edge_id, path in edges_specifications.items():
             source = self.__graph.get_zx_node(edge_id[0]).realising_cube
             target = self.__graph.get_zx_node(edge_id[1]).realising_cube
-            self.__vertices[source].required_ports -= 1
-            self.__vertices[target].required_ports -= 1
+            self.__ports_tracker.close_ports(source, 1)
+            self.__ports_tracker.close_ports(target, 1)
 
     def __extract_chain(self, cycle: list[ZxNode]) -> list[ZxNode]:
         nc = len(cycle)
@@ -182,7 +135,7 @@ class ZxGraphInflaterRings:
         if reservations is not None:
             unavailable_positions.update(reservations.keys())
 
-        if self.__vertices[start_cube].remaining_ports < 0 or self.__vertices[final_cube].remaining_ports < 0:
+        if not self.__ports_tracker.reachable(start_cube) or not self.__ports_tracker.reachable(final_cube):
             return False
 
         completion = PathFinderDFS.find_minimal_paths(
@@ -208,10 +161,10 @@ class ZxGraphInflaterRings:
         BlockGraphConstructor.realise_nodes(self.__graph, nodes_specifications)
 
         for node_id, bg_cube in nodes_specifications.items():
-            self.__occlude_ports(bg_cube.position)
+            self.__ports_tracker.occlude_ports(bg_cube.position)
 
         for node in zx_nodes:
-            self.__reserve_ports(node.realising_cube)
+            self.__ports_tracker.reserve_ports(node.realising_cube)
 
         edge_count = len(zx_edges)
         extra_count = len(completion.extra_cubes)
@@ -242,10 +195,10 @@ class ZxGraphInflaterRings:
         for edge_id, path in edges_specifications.items():
             source = self.__graph.get_zx_node(edge_id[0]).realising_cube
             target = self.__graph.get_zx_node(edge_id[1]).realising_cube
-            self.__vertices[source].required_ports -= 1
-            self.__vertices[target].required_ports -= 1
+            self.__ports_tracker.close_ports(source, 1)
+            self.__ports_tracker.close_ports(target, 1)
 
             for cube in path.extra_cubes:
-                self.__occlude_ports(cube.position)
+                self.__ports_tracker.occlude_ports(cube.position)
 
         return True
