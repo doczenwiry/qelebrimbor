@@ -100,7 +100,6 @@ def find_completion(
         zx_nodes = zx_nodes,
         zx_edges = zx_edges,
         graph = graph,
-        reservations = reservations,
         maximal_excess = maximal_overhead
     )
 
