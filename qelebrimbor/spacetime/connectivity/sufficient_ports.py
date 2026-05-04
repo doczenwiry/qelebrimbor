@@ -48,9 +48,7 @@ class OpenPortsTracker:
     def __init__(self, graph: VolumetricZxGraph):
         self.__graph = graph
         self.__spacetime = graph.spacetime
-        self.__reservations: dict[Coordinates, BgCube] = dict()
         self.__open_ports: dict[BgCube, Vertex] = dict()
-        pass
 
     def tracked_cubes(self) -> Iterator[BgCube]:
         return iter(self.__open_ports.keys())
@@ -77,22 +75,18 @@ class OpenPortsTracker:
         vertex = Vertex(cube = cube, required = self.__graph.get_zx_degree(cube.realised_node.id), available = set())
         constellation = SpacetimeHelper.get_constellation(cube.position, cube.kind.get_reach())
         for position in constellation:
-            if position in self.__reservations:
-                holder = self.__reservations[position]
-                console.warning(f"Position {position} already reserved by {holder} [requester={cube}]")
-                continue
-
-            if self.__spacetime.available(position):
-                self.__reservations[position] = cube
+            if self.__spacetime.reserve(cube, position):
                 vertex.available.add(position)
+            else:
+                console.warning(f"Position {position} is not available in spacetime [requester={cube}]")
 
         self.__open_ports[cube] = vertex
 
     def occlude_ports(self, position: Coordinates):
-        if position in self.__reservations:
-            holder = self.__reservations[position]
+        if self.__spacetime.is_reserved(position):
+            holder = self.__spacetime.holder(position)
             self.__open_ports[holder].available.remove(position)
-            self.__reservations.pop(position)
+            self.__spacetime.close(position)
 
     def verify_ports(self):
         for vertex in self.__open_ports.values():

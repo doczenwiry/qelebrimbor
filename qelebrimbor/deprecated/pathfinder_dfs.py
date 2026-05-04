@@ -57,21 +57,19 @@ class PathFinderDFS:
         return current
 
     @staticmethod
-    def __is_position_reserved(graph: VolumetricZxGraph, reservations: dict[Coordinates, BgCube] | None, position: Coordinates, source: BgCube, target: BgCube):
-        if reservations is None:
-            return False
-
-        if position in reservations:
-            holder = reservations[position]
+    def __is_position_reserved(graph: VolumetricZxGraph, position: Coordinates, source: BgCube, target: BgCube):
+        spacetime = graph.spacetime
+        if spacetime.is_reserved(position):
+            holder = spacetime.holder(position)
             # TODO: allow taking the reservations if it is not critical to the holder ?
             if holder != source and holder != target:
-                reserved_ports_positions = sum(1 for kv in reservations.items() if kv[1] == holder)
-                number_of_ports_required = sum(
-                    1 for nb in graph.get_zx_neighbors(holder.realised_node) if graph.get_zx_edge(holder.realised_node.id, nb.id).is_realised()
-                )
-                critical = number_of_ports_required >= reserved_ports_positions
-                console.warning(f">> Position {position} requested is reserved by {holder} [critical={critical}]")
-                return critical
+                # reserved_ports_positions = sum(1 for kv in reservations.items() if kv[1] == holder)
+                # number_of_ports_required = sum(
+                #     1 for nb in graph.get_zx_neighbors(holder.realised_node) if graph.get_zx_edge(holder.realised_node.id, nb.id).is_realised()
+                # )
+                # critical = number_of_ports_required >= reserved_ports_positions
+                console.warning(f">> Position {position} requested is reserved by {holder}")
+                return True
 
         return False
 
@@ -93,7 +91,6 @@ class PathFinderDFS:
         source: BgCube, target: BgCube,
         zx_nodes: list[ZxNode] | None = None, zx_edges: list[ZxEdge] | None = None,
         graph: VolumetricZxGraph | None = None,
-        reservations: dict[Coordinates, BgCube] | None = None,
         maximal_excess: int = 6
     ) -> Path | None:
         node_type_restrictions: list[NodeType] = list(map(lambda zxn: zxn.type, zx_nodes)) if zx_nodes else []
@@ -172,7 +169,7 @@ class PathFinderDFS:
                         continue
 
                     # Ignore neighbor if it would occupy a position that is reserved
-                    if PathFinderDFS.__is_position_reserved(graph, reservations, neighbor.position, source, target):
+                    if PathFinderDFS.__is_position_reserved(graph, neighbor.position, source, target):
                         continue
 
                     # if not PathFinderDFS.__has_enough_ports(graph, reservations, candidate, zx_nodes[length-1]):

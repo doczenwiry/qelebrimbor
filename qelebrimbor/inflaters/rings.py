@@ -36,21 +36,23 @@ class ZxGraphInflaterRings:
         self.__edge_realisations = 0
 
         self.__ports_tracker: OpenPortsTracker = OpenPortsTracker(graph)
-        self.__reservations: dict[Coordinates, BgCube] = dict()
 
     def process(self):
         MinimalCycleBasisAnalyser.analyse(self.__graph)
         zx_cycles = MinimalCycleBasisAnalyser.decompose_nodes(self.__graph)
 
+        index = 0
         for zx_cycle in zx_cycles:
-            console.info(f"> Cycle : {zx_cycle}")
+            console.info(f"> Cycle {index} : {zx_cycle}")
+            index += 1
             try:
                 if all(not zxn.is_realised() for zxn in zx_cycle):
                     self.__attempt_ring_realisation(zx_cycle)
                 else:
                     self.__attempt_ring_completion(zx_cycle, maximal_excess= 10)
             except Exception as e:
-                console.error(f"FAILURE of attempt to construct cycle {zx_cycle}")
+                console.error(f"FAILURE : {e}")
+                break
 
             self.__ports_tracker.verify_ports()
 
@@ -107,8 +109,7 @@ class ZxGraphInflaterRings:
 
     def __attempt_ring_completion(self,
         cycle: list[ZxNode],
-        maximal_excess: int = 0,
-        reservations: dict[Coordinates, CubeId] | None = None
+        maximal_excess: int = 0
     ):
         nc = len(cycle)
         chain = self.__extract_chain(cycle)
@@ -138,7 +139,6 @@ class ZxGraphInflaterRings:
             zx_nodes = zx_nodes,
             zx_edges = zx_edges,
             graph = self.__graph,
-            reservations = self.__reservations,
             maximal_excess = maximal_excess
         )
 

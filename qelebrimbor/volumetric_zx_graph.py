@@ -268,8 +268,9 @@ class VolumetricZxGraph(nx.Graph):
         console.debug(f"Realising edge {zx_edge} with pipes : {pipe_ids}")
 
     def place_cube(self, cube: BgCube) -> CubeId:
-        if not self.spacetime.available(cube.position):
-            raise Exception(f"Proposed position for {cube} is already occupied by another cube.")
+        if self.spacetime.is_occupied(cube.position):
+            occupant = self.spacetime.occupant(cube.position)
+            raise Exception(f"Proposed position for {cube} is already occupied by {occupant}.")
 
         cube.id = self.__next_cube_id
         self.__next_cube_id += 1
@@ -391,8 +392,9 @@ class VolumetricZxGraph(nx.Graph):
                 return False
 
             # Check that the current_position is available in spacetime
-            if not self.spacetime.available(current.position):
-                console.warning(f"> Current position is already occupied : {current}")
+            if self.spacetime.is_occupied(current.position):
+                occupant = self.spacetime.occupant(current.position)
+                console.warning(f"> Current position {current.position} is already occupied by {occupant}")
                 return False
 
             # Check that the current_position is not already occupied by an extra cube
