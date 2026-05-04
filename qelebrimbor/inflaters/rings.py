@@ -42,10 +42,12 @@ class ZxGraphInflaterRings:
         CycleBasisAnalyser.analyse(self.__graph, minimal = True)
         zx_cycles = CycleBasisAnalyser.decompose_nodes(self.__graph, minimal = True)
 
-        index = 0
-        for zx_cycle in zx_cycles:
-            console.info(f"> Cycle {index} : {zx_cycle}")
-            index += 1
+        realised: set[int] = set()
+
+        index: int = 0
+        for count in range(len(zx_cycles)):
+            zx_cycle = zx_cycles[index]
+            console.info(f"> Cycle {index} : {zx_cycles[index]}")
 
             if all(not zxn.is_realised() for zxn in zx_cycle):
                 if not self.__attempt_ring_realisation(zx_cycle):
@@ -56,9 +58,42 @@ class ZxGraphInflaterRings:
                     console.error(f"Failure to realise ring : {zx_cycle}")
                     break
 
+            count += 1
+            realised.add(index)
+
             self.__ports_tracker.verify_ports()
 
+            index = self.__select_candidate(realised, zx_cycles)
+
+            if count == 2:
+                break
+
         console.info(f"All {len(zx_cycles)} cycles processed.")
+
+    def __select_candidate(self, realised: set[int], cycles: list[list[ZxNode]]):
+        minimal_distance = None
+        selected = -1
+
+        for index in range(len(cycles)):
+            if index in realised:
+                continue
+
+            cycle = cycles[index]
+
+            if any(node.is_realised() for node in cycle):
+                console.info(f"Cycle {cycle} intersects current construct.")
+                chain = self.__extract_chain(cycle)
+                source = chain[0].realising_cube
+                target = chain[-1].realising_cube
+                extras = chain[1:-1]
+                distance = source.position.get_manhattan_distance(target.position)
+                console.info(f"> Endpoints {source} - {target} : distance={distance}, chain={len(extras)}")
+
+                if minimal_distance is None or distance < minimal_distance:
+                    minimal_distance = distance
+                    selected = index
+
+        return selected
 
     def __attempt_ring_realisation(self, zx_nodes: list[ZxNode], maximal_overhead: int = 6) -> bool:
         nc = len(zx_nodes)
@@ -79,8 +114,6 @@ class ZxGraphInflaterRings:
         console.info(f"> Nodes specifications : {nodes_specifications}")
         success = BlockGraphConstructor.realise_nodes(graph=self.__graph, specifications=nodes_specifications)
 
-        console.info(f"> Nodes realisations : {success}")
-
         if not success:
             return False
 
@@ -95,8 +128,6 @@ class ZxGraphInflaterRings:
         for edge, proposal in edges_specifications.items():
             console.info(f">> {edge} : {proposal}")
         success = BlockGraphConstructor.realise_edges(graph=self.__graph, specifications=edges_specifications)
-
-        console.info(f"> Edges realisations : {success}")
 
         if not success:
             return False

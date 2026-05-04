@@ -192,6 +192,9 @@ class VolumetricZxGraph(nx.Graph):
     def get_bg_cube(self, cube_id: CubeId) -> BgCube:
         return self.blockgraph.nodes[cube_id][VolumetricZxGraph.KEY_BG_CUBE]
 
+    def has_bg_pipe(self, source_id: CubeId, target_id: CubeId) -> bool:
+        return self.blockgraph.has_edge(source_id, target_id)
+
     def get_bg_pipe(self, source_id: CubeId, target_id: CubeId) -> BgPipe:
         return self.blockgraph.edges[source_id, target_id][VolumetricZxGraph.KEY_BG_PIPE]
 

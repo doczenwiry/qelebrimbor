@@ -89,8 +89,14 @@ class OpenPortsTracker:
             self.__spacetime.close(position)
 
     def verify_ports(self):
+        prioritized = 0
+        unreachable = 0
         for vertex in self.__open_ports.values():
             if vertex.remaining == 0:
                 console.warning(f"Time to prioritize {vertex}")
+                prioritized += 1
             elif vertex.remaining < 0:
                 console.error(f"TOO LATE FOR {vertex}")
+                unreachable += 1
+        if prioritized == 0 == unreachable:
+            console.info(f"All tracked cubes have enough ports.")

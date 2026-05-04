@@ -13,6 +13,9 @@
 #   limitations under the License.
 
 from os import path
+from typing import cast
+
+import networkx as nx
 import pyzx
 from argparse import ArgumentParser
 from time import time
@@ -59,6 +62,9 @@ def main():
         pyzx_input = pyzx.Graph().from_json(file.read())
 
     vzx = PYZX.from_pyzx_graph(pyzx_input)
+
+    if nx.number_connected_components(cast(nx.Graph, vzx)) > 1:
+        print("WARNING: The input ZX-graph has more than one connected component.")
 
     # Inflation stage
 

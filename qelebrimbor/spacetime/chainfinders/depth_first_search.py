@@ -22,15 +22,29 @@ from qelebrimbor.common.components import BgCube, ZxNode, ZxEdge
 
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.calculator import ManhattanCalculator
-from qelebrimbor.helpers.spacetime import SpacetimeHelper
-
-import logging as lgr
+from qelebrimbor.spacetime.fabric import SpacetimeFabric
+from qelebrimbor.spacetime.tracer import SpacetimeTracer
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
-console = lgr.getLogger(__name__)
+import logging
+console = logging.getLogger(__name__)
 
-class PathFinderDFS:
+class ChainfinderDFS:
+    def __init__(self, graph: VolumetricZxGraph = None, branch_and_bound: bool = False, tracing: bool = False):
+        """
+        Create a PathfinderDFS to search for optimal paths between cubes in spacetime.
+        :param graph: The VolumetricZxGraph serving as the context for the search.
+        :param branch_and_bound: Controls whether a Branch-and-Bound is performed to improve the first path found.
+        This will incur an additional computational cost that may or may not fall into super-exponential territory.
+        Proof of the possibility would be nice. Refutation thereof would be better.
+        :param tracing:
+        """
+        self.__graph = graph if graph else VolumetricZxGraph()
+        self.__spacetime = graph.spacetime if graph else SpacetimeFabric()
+        self.__branch_and_bound = branch_and_bound
+        self.__tracing = tracing
+
     @staticmethod
     def __retrieve_closest_unrelaxed(
             unrelaxed: dict[Length, list[BgCube]]
@@ -53,53 +67,19 @@ class PathFinderDFS:
     def __extract_closest_point(unrelaxed: dict[Length, list[BgCube]]) -> BgCube:
         min_distance = min(unrelaxed.keys())
         current: BgCube = unrelaxed[min_distance][0]
-        PathFinderDFS.__remove_from_unrelaxed(current, min_distance, unrelaxed)
+        ChainfinderDFS.__remove_from_unrelaxed(current, min_distance, unrelaxed)
         return current
 
-    @staticmethod
-    def __is_position_reserved(graph: VolumetricZxGraph, position: Coordinates, source: BgCube, target: BgCube):
-        spacetime = graph.spacetime
-        if spacetime.is_reserved(position):
-            holder = spacetime.holder(position)
-            # TODO: allow taking the reservations if it is not critical to the holder ?
-            if holder != source and holder != target:
-                # reserved_ports_positions = sum(1 for kv in reservations.items() if kv[1] == holder)
-                # number_of_ports_required = sum(
-                #     1 for nb in graph.get_zx_neighbors(holder.realised_node) if graph.get_zx_edge(holder.realised_node.id, nb.id).is_realised()
-                # )
-                # critical = number_of_ports_required >= reserved_ports_positions
-                console.warning(f">> Position {position} requested is reserved by {holder}")
-                return True
-
-        return False
-
-    @staticmethod
-    def __has_enough_ports(graph: VolumetricZxGraph, reservations: dict[Coordinates, BgCube] | None, requester: BgCube, node: ZxNode):
-        count_required_ports = graph.get_zx_degree(node.id)
-        count_available_ports: int = sum(
-            1 for pos in SpacetimeHelper.get_constellation(requester.position, requester.kind.get_reach())
-            if graph.spacetime.available(pos) and pos not in reservations
-        )
-
-        if node.id == 24:
-            raise Exception(f"__has_enough_ports({requester.position}) : {count_available_ports} {count_required_ports}")
-
-        return count_available_ports - 1 >= count_required_ports
-
-    @staticmethod
-    def find_minimal_paths(
-        source: BgCube, target: BgCube,
-        zx_nodes: list[ZxNode] | None = None, zx_edges: list[ZxEdge] | None = None,
-        graph: VolumetricZxGraph | None = None,
-        maximal_excess: int = 6
+    def find_optimum(self,
+            source: BgCube, target: BgCube,
+            zx_nodes: list[ZxNode] | None = None, zx_edges: list[ZxEdge] | None = None,
+            maximal_excess: int = None
     ) -> Path | None:
         node_type_restrictions: list[NodeType] = list(map(lambda zxn: zxn.type, zx_nodes)) if zx_nodes else []
         edge_type_restrictions: list[EdgeType] = list(map(lambda zxe: zxe.type, zx_edges)) if zx_edges else []
 
-        console.debug(f"WORKING WITH {node_type_restrictions} {edge_type_restrictions}")
-
         if any(tr in {NodeType.O, NodeType.Y} for tr in node_type_restrictions):
-            raise Exception(f"Path cannot contain cubes of NodeType.O or NodeType.Y.")
+            raise Exception(f"Restrictions cannot contain cubes of NodeType.O or NodeType.Y.")
 
         nt = len(node_type_restrictions)
         et = len(edge_type_restrictions)
@@ -109,23 +89,21 @@ class PathFinderDFS:
         minimal_length_achieved: int | None = None
         minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
         unrelaxed: dict[Length, list[BgCube]] = defaultdict(list)
-        PathFinderDFS.__add_into_unrelaxed(source, 0, unrelaxed)
+        ChainfinderDFS.__add_into_unrelaxed(source, 0, unrelaxed)
         minimal_paths[ (source.kind, source.position) ] = Path(start = source)
 
         manhattan_distance = source.position.get_manhattan_distance(target.position)
 
-        maximal_distance = manhattan_distance + maximal_excess
+        maximal_distance = manhattan_distance + maximal_excess if maximal_excess else None
 
-        points_discovered = 0
+        tracer: SpacetimeTracer | None = SpacetimeTracer() if self.__tracing else None
+        if tracer:
+            tracer.add_node(source)
 
-        minimal_number_of_cubes = nt if nt % 2 == 0 else nt + 1
-        maximal_volume = max(source.position.get_manhattan_distance(target.position), minimal_number_of_cubes) + maximal_excess + 2
-
-        console.info(f"Searching for paths from {source} to {target} [{zx_nodes}].")
-        console.info(f"> Maximal volume allowed : {maximal_volume}")
+        console.info(f"Searching for paths from {source} to {target} [restrictions:{zx_nodes}].")
 
         while len(unrelaxed) > 0 and optimum is None:
-            current: BgCube = PathFinderDFS.__extract_closest_point(unrelaxed)
+            current: BgCube = ChainfinderDFS.__extract_closest_point(unrelaxed)
             current_point = (current.kind, current.position)
             current_path = minimal_paths[current_point]
             terminal = current_path.final
@@ -141,9 +119,17 @@ class PathFinderDFS:
             remaining_distance = current.position.get_manhattan_distance(target.position)
             console.debug(f"Current [{length}/{remaining_distance}]: {current} [mlp-rest:{minimal_length_possible},mlp-total:{manhattan_length_projected},path:{current_path}]")
 
-            if BlockGraphHelper.connectable(current, target, EdgeType.IDENTITY) and len(current_path.extra_cubes) >= nt:
-                console.debug(f"> Connectable to {target} : {BlockGraphHelper.connectable(current, target, EdgeType.IDENTITY)}")
+            if BlockGraphHelper.connectable(current, target, EdgeType.IDENTITY) and len(current_path.extra_cubes) >= nt and not self.__graph.has_bg_pipe(current.id, target.id):
+                console.debug(f"> Connectable to {target}")
                 completed_path = current_path.extend(cube = target, pipe_type = EdgeType.IDENTITY)
+
+                console.debug(f"> Completed path [{minimal_length_achieved}]: {completed_path}")
+
+                # Tracing exploration
+                if tracer:
+                    tracer.add_node(target)
+                    tracer.add_edge(terminal, target)
+
                 if not minimal_length_achieved or completed_path.manhattan_length() < minimal_length_achieved:
                     minimal_length_achieved = completed_path.manhattan_length()
                     optimum = completed_path
@@ -155,39 +141,38 @@ class PathFinderDFS:
                 neighbor_point = (neighbor.kind, neighbor.position)
                 console.debug(f"> Neighbor : {neighbor}")
 
-                if maximal_distance < source.position.get_manhattan_distance(neighbor.position):
+                if maximal_distance and maximal_distance < source.position.get_manhattan_distance(neighbor.position):
                     continue
 
                 # Ignore neighbor if it introduces a loop
                 if neighbor.position in current_path.occupied:
                     continue
 
-                if graph:
-                    # Ignore neighbor if the position is already occupied in spacetime
-                    if graph.spacetime.is_occupied(neighbor.position):
-                        continue
+                # Ignore neighbor if the position is already occupied in spacetime
+                if self.__spacetime.is_occupied(neighbor.position):
+                    continue
 
-                    # # Ignore neighbor if it would occupy a position that is reserved
-                    # if PathFinderDFS.__is_position_reserved(graph, neighbor.position, source, target):
-                    #     continue
-
-                    # if not PathFinderDFS.__has_enough_ports(graph, reservations, candidate, zx_nodes[length-1]):
-                    #     continue
+                # Tracing exploration
+                if tracer:
+                    tracer.add_node(neighbor)
+                    tracer.add_edge(terminal, neighbor)
 
                 extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
                 extended_distance = extended_path.manhattan_length()
 
-                if neighbor not in minimal_paths or extended_distance < minimal_paths[neighbor_point].manhattan_length():
+                if neighbor_point not in minimal_paths or extended_distance < minimal_paths[neighbor_point].manhattan_length():
                     # Update position of neighbor in unrelaxed as its distance is being updated
                     if neighbor in minimal_paths:
-                        PathFinderDFS.__remove_from_unrelaxed(
+                        ChainfinderDFS.__remove_from_unrelaxed(
                             neighbor, minimal_paths[neighbor_point].manhattan_length(), unrelaxed
                         )
-                    PathFinderDFS.__add_into_unrelaxed(neighbor, ManhattanCalculator.minimal_manhattan_length(neighbor, target), unrelaxed)
-
-                    points_discovered += 1
+                    ChainfinderDFS.__add_into_unrelaxed(neighbor, ManhattanCalculator.minimal_manhattan_length(neighbor, target), unrelaxed)
 
                     # Update minimal distance discovered
                     minimal_paths[neighbor_point] = extended_path
+
+        # Tracing exploration
+        if tracer:
+            tracer.report(cubes_to_label= [source, target])
 
         return optimum

@@ -12,6 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import sys
 from time import time
 
 from qelebrimbor.common.attributes_bg import CubeKind
@@ -29,14 +30,15 @@ from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 
 import logging
-console = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
-logging.getLogger("qelebrimbor").setLevel(logging.CRITICAL)
+logging.basicConfig(level=logging.CRITICAL)
 logging.getLogger("qelebrimbor.spacetime").setLevel(logging.INFO)
-logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
 if __name__ == "__main__":
     for d in [ 1, 5, 10, 25, 100, 200 ]:
+        print(f"Benchmarking pathfinder with distance {d}.")
+
+        sys.stdout.flush()
+
         vzx = VolumetricZxGraph(
             nodes = [ (0, NodeType.X), (1, NodeType.Z) ],
             edges = [ (0, 1, EdgeType.IDENTITY) ],
@@ -51,8 +53,6 @@ if __name__ == "__main__":
         vzx.realise_zx_node( node0, cube0 )
         vzx.realise_zx_node( node1, cube1 )
 
-        console.info(f"Benchmarking pathfinder with distance {d}.")
-
         pathfinder = PathfinderDFS(vzx, branch_and_bound = True, tracing = True)
         # pathfinder = PathfinderDijkstra(vzx, tracing = True)
 
@@ -65,7 +65,9 @@ if __name__ == "__main__":
 
         vzx.realise_zx_edge( node0.id, node1.id, path )
 
-        console.info(f"Runtime : {round(final - start, 2)} seconds.")
+        sys.stderr.flush()
+
+        print(f"Runtime : {round(final - start, 2)} seconds.")
 
         d = 1
         l = path.manhattan_length()

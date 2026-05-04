@@ -117,7 +117,7 @@ class PathfinderDFS:
 
             console.debug(f"{'>' * (current.manhattan_length()+1)} Current [mlp:{manhattan_length_projected}] : {current}")
 
-            if BlockGraphHelper.connectable(terminal, target, EdgeType.IDENTITY):
+            if BlockGraphHelper.connectable(terminal, target, EdgeType.IDENTITY) and not self.__graph.has_bg_pipe(terminal, target):
                 console.debug(f"> Connectable to {target} : {BlockGraphHelper.connectable(terminal, target, EdgeType.IDENTITY)}")
                 completed_path = current.extend(cube = target, pipe_type = EdgeType.IDENTITY)
 
