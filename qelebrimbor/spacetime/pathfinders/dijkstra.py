@@ -30,7 +30,7 @@ import logging
 console = logging.getLogger(__name__)
 
 class PathfinderDijkstra:
-    def __init__(self, graph: VolumetricZxGraph, tracing: bool = False):
+    def __init__(self, graph: VolumetricZxGraph = None, tracing: bool = False):
         self.__graph = graph
         self.__tracing = tracing
 

@@ -38,7 +38,7 @@ logging.getLogger("matplotlib").setLevel(logging.WARNING)
 if __name__ == "__main__":
     for d in [ 1, 5, 10, 25, 100, 200 ]:
         vzx = VolumetricZxGraph(
-            nodes = [ (0, NodeType.X), (1, NodeType.X) ],
+            nodes = [ (0, NodeType.X), (1, NodeType.Z) ],
             edges = [ (0, 1, EdgeType.IDENTITY) ],
             qubits = { 0 : 0, 1 : 0 },
             layers = { 0 : 0, 1 : 1 },
@@ -47,14 +47,14 @@ if __name__ == "__main__":
         node0 = vzx.get_zx_node(0)
         cube0 = BgCube(CubeKind.XZZ, SpacetimeHelper.ORIGIN)
         node1 = vzx.get_zx_node(1)
-        cube1 = BgCube(CubeKind.XZZ, d * SpacetimeHelper.XP)
+        cube1 = BgCube(CubeKind.ZXX, d * SpacetimeHelper.XP)
         vzx.realise_zx_node( node0, cube0 )
         vzx.realise_zx_node( node1, cube1 )
 
         console.info(f"Benchmarking pathfinder with distance {d}.")
 
-        pathfinder = PathfinderDFS(branch_and_bound = True, tracing = True)
-        # pathfinder = PathfinderDijkstra(tracing = True)
+        pathfinder = PathfinderDFS(vzx, branch_and_bound = True, tracing = True)
+        # pathfinder = PathfinderDijkstra(vzx, tracing = True)
 
         start = time()
         path = pathfinder.find_optimal_paths(cube0, cube1)

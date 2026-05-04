@@ -100,7 +100,6 @@ class ZxGraphInflaterRings:
                     self.__attempt_ring_completion(zx_cycle, maximal_excess= 10)
             except Exception as e:
                 console.error(f"FAILURE of attempt to construct cycle {zx_cycle}")
-                raise e
 
             self.__verify_ports()
 
@@ -190,7 +189,6 @@ class ZxGraphInflaterRings:
             source = start_cube, target = final_cube,
             zx_nodes = zx_nodes,
             zx_edges = zx_edges,
-            unavailable_positions = unavailable_positions,
             graph = self.__graph,
             reservations = self.__reservations,
             maximal_excess = maximal_excess
