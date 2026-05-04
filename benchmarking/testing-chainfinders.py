@@ -11,14 +11,15 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+import itertools
 import sys
 from time import time
+from random import seed, randint
 
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.components import BgCube
-from qelebrimbor.common.path import Path
+from qelebrimbor.helpers.calculator import ManhattanCalculator
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
@@ -28,66 +29,70 @@ from qelebrimbor.vedo.zx_layout.planar import PlanarLayout
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
-from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 
 import logging
 logging.basicConfig(level=logging.CRITICAL)
-# logging.getLogger("qelebrimbor.spacetime").setLevel(logging.DEBUG)
 
-if __name__ == "__main__":
-    print(f"Benchmarking chainfinder.")
+seed(42)
 
-    sys.stdout.flush()
-
-    vzx = VolumetricZxGraph(
-        nodes = [ (0, NodeType.X), (1, NodeType.X), (2, NodeType.Z), (3, NodeType.Z), (4, NodeType.X) ],
-        edges = [ (0, 1, EdgeType.IDENTITY), (1, 2, EdgeType.IDENTITY), (2, 3, EdgeType.IDENTITY), (1, 4, EdgeType.IDENTITY), (4, 2, EdgeType.IDENTITY) ]
+def check_restrictions(distance: int, number_of_restrictions: int = 0):
+    all_permutations = list(
+        itertools.chain.from_iterable(
+            itertools.permutations(combination)
+            for combination in itertools.combinations_with_replacement([NodeType.X, NodeType.Z], number_of_restrictions)
+        )
     )
 
-    node0 = vzx.get_zx_node(0)
-    node1 = vzx.get_zx_node(1)
-    node2 = vzx.get_zx_node(2)
-    node3 = vzx.get_zx_node(3)
-    node4 = vzx.get_zx_node(4)
+    inconsistencies = 0
 
-    cube0 = BgCube(CubeKind.ZXZ, SpacetimeHelper.ORIGIN)
-    cube1 = BgCube(CubeKind.ZXZ, 1 * SpacetimeHelper.XM)
-    cube2 = BgCube(CubeKind.XXZ, 2 * SpacetimeHelper.XM)
-    cube3 = BgCube(CubeKind.XXZ, 3 * SpacetimeHelper.XM)
-    cube4 = BgCube(CubeKind.ZXZ, SpacetimeHelper.XM + SpacetimeHelper.ZP)
+    print(f"Benchmarking chainfinder for distance {distance} [restrictions:{number_of_restrictions}, combinations:{len(all_permutations)}].")
+    for restrictions in all_permutations:
+        chain_restrictions = list(zip(restrictions, [ EdgeType.IDENTITY for _ in range(number_of_restrictions) ]))
 
-    vzx.realise_zx_node( node0, cube0 )
-    vzx.realise_zx_node( node1, cube1 )
-    vzx.realise_zx_node( node2, cube2 )
-    vzx.realise_zx_node( node3, cube3 )
-    vzx.realise_zx_node( node4, cube4 )
-
-    for source, target in [ (0,1), (1,2), (2,3), (1,4) ]:
-        source_cube = vzx.get_zx_node(source).realising_cube
-        target_cube = vzx.get_zx_node(target).realising_cube
-        vzx.realise_zx_edge(
-            source = source, target = target,
-            proposal = Path(source_cube).extend(target_cube, EdgeType.IDENTITY)
+        printable_restrictions = list(map(
+            lambda restriction: f"({restriction[1].name[0]},{restriction[0].name})", chain_restrictions)
         )
+        # print(f"Chain-restrictions {printable_restrictions}")
+        sys.stdout.flush()
 
-    chainfinder = ChainfinderDFS(vzx, branch_and_bound = True, tracing = True)
+        vzx = VolumetricZxGraph(nodes, edges)
 
-    start = time()
-    chain = chainfinder.find_optimum(cube4, cube2)
-    final = time()
+        node0 = vzx.get_zx_node(0)
+        node1 = vzx.get_zx_node(1)
 
-    if chain:
-        print(f"Optimal chain found : {chain}")
-        vzx.realise_zx_edge(node4.id, node2.id, chain)
+        vzx.realise_zx_node(node = node0, cube = BgCube(CubeKind.ZXZ, SpacetimeHelper.ORIGIN))
+        vzx.realise_zx_node(node = node1, cube = BgCube(CubeKind.ZZX, distance * SpacetimeHelper.XM))
+
+        chainfinder = ChainfinderDFS(vzx, branch_and_bound = True, tracing = False)
+        start = time()
+        chain = chainfinder.find_optimum(node0.realising_cube, node1.realising_cube, restrictions = chain_restrictions)
+        final = time()
+
+        if chain is None:
+            # print(f"Failed to find optimal chain.")
+            continue
+
+        vzx.realise_zx_edge(chain.start.realised_node.id, chain.final.realised_node.id, chain)
         ml = chain.manhattan_length()
-    else:
-        print(f"Failed to find optimal chain.")
-        ml = -1
+        md = chain.start.position.get_manhattan_distance(chain.final.position)
 
-    sys.stderr.flush()
+        mce = ManhattanCalculator.minimal_manhattan_excess(chain.start, chain.final)
+        # print(f"> Excess volume : {ml - md} [MC:{mce}] ({round(final - start, 2)} seconds)")
 
-    print(f"Runtime : {round(final - start, 2)} seconds.")
+        if mce != ml - md:
+            inconsistencies += 1
 
-    md = cube0.position.get_manhattan_distance(cube1.position)
-    viewer = VolumetricZxGraphViewer(vzx, label = f"manhattan distance = {md}, manhattan length = {ml}, time={round(final - start, 2)}s", layout = PlanarLayout(vzx, scale = 2))
-    viewer.display()
+        # viewer = VolumetricZxGraphViewer(
+        #     graph = vzx,
+        #     label = f"manhattan distance = {md}, manhattan length = {ml}, excess volume = +{ml - md}, time={round(final - start, 2)}s",
+        #     layout = PlanarLayout(vzx, scale = 2)
+        # )
+        # viewer.display()
+
+    print(f"Inconsistencies w.r.t. minimal Manhattan Calculator : {inconsistencies}")
+
+if __name__ == "__main__":
+    nodes = [ (0, NodeType.X), (1, NodeType.X) ]
+    edges = [ (0, 1, EdgeType.IDENTITY) ]
+
+    check_restrictions(6, 6)

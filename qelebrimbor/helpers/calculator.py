@@ -15,15 +15,26 @@
 import numpy as np
 
 from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import NodeType
+from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 
 class ManhattanCalculator:
     @staticmethod
+    def manhattan_distance(source: BgCube, target: BgCube) -> int:
+        return sum([ abs(s - o) for s, o in zip(source.position, target.position) ])
+
+    @staticmethod
     def minimal_manhattan_volume(source: BgCube, target: BgCube) -> int:
         return ManhattanCalculator.minimal_manhattan_length(source, target) + 1
+
+    @staticmethod
+    def minimal_manhattan_chain(source: BgCube, target: BgCube, restrictions: list[tuple[NodeType, EdgeType]] | None = None) -> int:
+        if not restrictions or ManhattanCalculator.manhattan_distance(source, target) > len(restrictions):
+            return ManhattanCalculator.minimal_manhattan_length(source, target)
+        else:
+            raise NotImplementedError(f"Computation subject to restrictions along the way not implemented yet [HARD].")
 
     @staticmethod
     def minimal_manhattan_length(source: BgCube, target: BgCube) -> int:
