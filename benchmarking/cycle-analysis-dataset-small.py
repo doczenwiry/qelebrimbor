@@ -17,7 +17,7 @@ from collections import defaultdict
 import benchmark
 
 from qelebrimbor.formats.pyzx import PYZX
-from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
+from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     for input_path in dataset_filepaths:
         vzx = PYZX.from_file(input_path)
-        cycles = MinimalCycleBasisAnalyser.decompose_nodes(vzx)
+        cycles = CycleBasisAnalyser.decompose_nodes(vzx, minimal = True)
         result: dict[int, int] = defaultdict(int)
         for cycle in cycles:
             result[len(cycle)] += 1

@@ -14,7 +14,7 @@
 
 from qelebrimbor.formats.pyzx import PYZX
 
-from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
+from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
 from qelebrimbor.utilities.ring_making import find_realisation, find_completion, extend_unrealised
 
 from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
@@ -30,8 +30,8 @@ logging.getLogger("qelebrimbor.utilities.ring_making").setLevel(logging.INFO)
 if __name__ == "__main__":
     vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders8.json")
 
-    MinimalCycleBasisAnalyser.analyse(vzx)
-    cycles = MinimalCycleBasisAnalyser.decompose_nodes(vzx)
+    CycleBasisAnalyser.analyse(vzx, minimal = True)
+    cycles = CycleBasisAnalyser.decompose_nodes(vzx, minimal = True)
 
     index = 0
     cycle = cycles[index]

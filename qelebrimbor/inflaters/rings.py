@@ -22,7 +22,7 @@ from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
 from qelebrimbor.spacetime.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
-from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
+from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
 from qelebrimbor.utilities.ring_making import extract_chain
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -39,8 +39,8 @@ class ZxGraphInflaterRings:
         self.__ports_tracker: OpenPortsTracker = OpenPortsTracker(graph)
 
     def process(self):
-        MinimalCycleBasisAnalyser.analyse(self.__graph)
-        zx_cycles = MinimalCycleBasisAnalyser.decompose_nodes(self.__graph)
+        CycleBasisAnalyser.analyse(self.__graph, minimal = True)
+        zx_cycles = CycleBasisAnalyser.decompose_nodes(self.__graph, minimal = True)
 
         index = 0
         for zx_cycle in zx_cycles:

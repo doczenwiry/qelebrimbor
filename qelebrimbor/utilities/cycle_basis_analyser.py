@@ -12,35 +12,36 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from typing import cast
 import networkx as nx
 
-from qelebrimbor.common.attributes_zx import NodeId, EdgeId
 from qelebrimbor.common.components import ZxEdge, ZxNode
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger(__name__)
-console.setLevel(logging.INFO)
 
 class CycleBasisAnalyser:
     @staticmethod
-    def analyse(vzx: VolumetricZxGraph):
+    def analyse(vzx: VolumetricZxGraph, minimal: bool = False):
         console.info(f"Cycle basis :")
-        cycles = CycleBasisAnalyser.decompose_nodes(vzx)
+        cycles = CycleBasisAnalyser.decompose_nodes(vzx, minimal)
         for index in range(len(cycles)):
             console.info(f"Index {index} : {cycles[index]}")
 
     @staticmethod
-    def decompose_nodes(vzx: VolumetricZxGraph) -> list[list[ZxNode]]:
+    def decompose_nodes(vzx: VolumetricZxGraph, minimal: bool = False) -> list[list[ZxNode]]:
+        nxg = cast(nx.Graph, vzx)
+        cycle_basis = nx.minimum_cycle_basis(nxg) if minimal else nx.cycle_basis(nxg)
         return list(map(
-            lambda cycle: [ node for node in map(vzx.get_zx_node, cycle) ],
-            sorted(nx.cycle_basis(vzx), key = lambda cycle: len(cycle), reverse = True)
+            lambda cycle: list(map(vzx.get_zx_node, cycle)),
+            sorted(cycle_basis, key = len, reverse = True)
         ))
 
     @staticmethod
-    def decompose_edges(vzx: VolumetricZxGraph) -> list[list[ZxEdge]]:
+    def decompose_edges(vzx: VolumetricZxGraph, minimal: bool = False) -> list[list[ZxEdge]]:
         decomposition: list[list[ZxEdge]] = []
-        for cycle in CycleBasisAnalyser.decompose_nodes(vzx):
+        for cycle in CycleBasisAnalyser.decompose_nodes(vzx, minimal):
             nc = len(cycle)
             current: list[ZxEdge] = []
             for index in range(len(cycle)):

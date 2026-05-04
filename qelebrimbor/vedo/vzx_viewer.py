@@ -15,7 +15,6 @@
 from vedo import settings, Plotter, ButtonWidget, Text3D  # type: ignore[import-untyped]
 
 from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
-from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
 from qelebrimbor.vedo.miscellaneous import VdCubeReference
 from qelebrimbor.vedo.scene_manager_bg import BgSceneManager
 from qelebrimbor.vedo.scene_manager_zx import ZxSceneManager
@@ -71,13 +70,13 @@ class VolumetricZxGraphViewer(Plotter):
 
         self.__hovered_object = None
 
+        self.__cycle_highlighting = False
         self.__available_cycle_analysers = [
-            MinimalCycleBasisAnalyser.decompose_edges(self.__vzx_graph),
-            CycleBasisAnalyser.decompose_edges(self.__vzx_graph)
+            CycleBasisAnalyser.decompose_edges(self.__vzx_graph),
+            CycleBasisAnalyser.decompose_edges(self.__vzx_graph, minimal = True)
         ]
-        self.__selected_cycle_analyser = 0
         self.__selected_cycle_index = -1
-        self.__available_cycles = self.__available_cycle_analysers[self.__selected_cycle_analyser]
+        self.__available_cycles = self.__available_cycle_analysers[0]
 
         # Set the global callbacks
         self.add_callback("key press", self.__on_key_pressed)
@@ -126,9 +125,10 @@ class VolumetricZxGraphViewer(Plotter):
             self.__bg_scene_manager.alter_pipes_appearance(bg_pipe, highlight = highlighting)
 
     def __shift_selected_cycle(self, shift: int):
-        self.__alter_selected_cycle_appearance(highlighting=False)
-        self.__selected_cycle_index = (self.__selected_cycle_index + shift) % len(self.__available_cycles)
-        self.__alter_selected_cycle_appearance(highlighting=True)
+        if len(self.__available_cycles) > 0:
+            self.__alter_selected_cycle_appearance(highlighting=False)
+            self.__selected_cycle_index = (self.__selected_cycle_index + shift) % len(self.__available_cycles)
+            self.__alter_selected_cycle_appearance(highlighting=True)
 
     def __alter_selected_cycle_appearance(self, highlighting: bool):
         if self.__selected_cycle_index != -1:
@@ -141,16 +141,24 @@ class VolumetricZxGraphViewer(Plotter):
             self.close()
         elif event.keypress == "grave":
             self.__alter_selected_cycle_appearance(highlighting = False)
-            self.__selected_cycle_index = -1
+            self.__cycle_highlighting = False
         elif event.keypress == "Up":
-            self.__shift_selected_cycle(shift = +1)
+            if self.__cycle_highlighting:
+                self.__shift_selected_cycle(shift = +1)
         elif event.keypress == "Down":
-            self.__shift_selected_cycle(shift = -1)
+            if self.__cycle_highlighting:
+                self.__shift_selected_cycle(shift = -1)
+        elif event.keypress == "c":
+            self.__cycle_highlighting = True
+            self.__alter_selected_cycle_appearance(highlighting=False)
+            self.__available_cycles = self.__available_cycle_analysers[0]
+            self.__selected_cycle_index = 0 if len(self.__available_cycles) > 0 else -1
+            self.__alter_selected_cycle_appearance(highlighting=True)
         elif event.keypress == "m":
+            self.__cycle_highlighting = True
             self.__alter_selected_cycle_appearance(highlighting = False)
-            self.__selected_cycle_analyser = (self.__selected_cycle_analyser + 1) % len(self.__available_cycle_analysers)
-            self.__available_cycles = self.__available_cycle_analysers[self.__selected_cycle_analyser]
-            self.__selected_cycle_index = 0
+            self.__available_cycles = self.__available_cycle_analysers[1]
+            self.__selected_cycle_index = 0 if len(self.__available_cycles) > 0 else -1
             self.__alter_selected_cycle_appearance(highlighting = True)
         elif event.keypress == "u":
             # TODO: hide the unrealised part of the zx-graph

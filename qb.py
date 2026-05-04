@@ -22,8 +22,6 @@ import sys
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
 from qelebrimbor.formats.vzx import VZX
-from qelebrimbor.inflaters.breadth_first_search import ZxGraphInflaterBFS
-from qelebrimbor.inflaters.least_remaining_ports import ZxGraphInflaterPorts
 from qelebrimbor.inflaters.rings import ZxGraphInflaterRings
 
 from qelebrimbor.utilities.qb_reporting import print_report
@@ -33,7 +31,6 @@ from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 
 import logging
 logging.basicConfig(level=logging.INFO)
-console = logging.getLogger("qelebrimbor")
 logging.getLogger("qelebrimbor").setLevel(logging.CRITICAL)
 
 parser = ArgumentParser(
