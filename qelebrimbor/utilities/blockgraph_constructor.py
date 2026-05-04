@@ -32,11 +32,16 @@ class BlockGraphConstructor:
         BlockGraphConstructor.realise_edges(graph, edges_specifications)
 
     @staticmethod
-    def realise_nodes(graph: VolumetricZxGraph, specifications: dict[NodeId, BgCube]):
-        for node in graph.get_zx_nodes():
-            if not node.is_realised() and node.id in specifications:
-                console.debug(f"Node: {node} -> {specifications[node.id]}")
-                graph.realise_zx_node(node, specifications[node.id])
+    def realise_nodes(graph: VolumetricZxGraph, specifications: dict[NodeId, BgCube]) -> bool:
+        for node_id, bg_cube in specifications.items():
+            zx_node = graph.get_zx_node(node_id)
+            if zx_node.is_realised():
+                console.error(f"Node {zx_node} is already realised")
+                return False
+
+            console.debug(f"Node {zx_node} -> {bg_cube}")
+            graph.realise_zx_node(zx_node, bg_cube)
+        return True
 
     @staticmethod
     def place_cubes(graph: VolumetricZxGraph, specifications: list[tuple[CubeKind, CubeId, Coordinates]]):
@@ -46,7 +51,7 @@ class BlockGraphConstructor:
             graph.place_cube(BgCube(kind = kind, position = position))
 
     @staticmethod
-    def realise_edges(graph: VolumetricZxGraph, specifications: dict[EdgeId, Path]):
+    def realise_edges(graph: VolumetricZxGraph, specifications: dict[EdgeId, Path]) -> bool:
         for edge, proposal in specifications.items():
             source, target = edge
 
@@ -61,3 +66,5 @@ class BlockGraphConstructor:
                 graph.realise_zx_edge(source, target, proposal)
             else:
                 raise Exception(f"> Invalid path proposal for edge {edge} [{proposal}]")
+
+        return True

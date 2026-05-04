@@ -23,6 +23,7 @@ from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
 from qelebrimbor.spacetime.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.least_cycle_analyser import MinimalCycleBasisAnalyser
+from qelebrimbor.utilities.ring_making import extract_chain
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
@@ -45,18 +46,21 @@ class ZxGraphInflaterRings:
         for zx_cycle in zx_cycles:
             console.info(f"> Cycle {index} : {zx_cycle}")
             index += 1
-            try:
-                if all(not zxn.is_realised() for zxn in zx_cycle):
-                    self.__attempt_ring_realisation(zx_cycle)
-                else:
-                    self.__attempt_ring_completion(zx_cycle, maximal_excess= 10)
-            except Exception as e:
-                console.error(f"FAILURE : {e}")
-                break
+
+            if all(not zxn.is_realised() for zxn in zx_cycle):
+                if not self.__attempt_ring_realisation(zx_cycle):
+                    console.error(f"Failure to realise ring : {zx_cycle}")
+                    break
+            else:
+                if not self.__attempt_ring_completion(zx_cycle, maximal_excess= 10):
+                    console.error(f"Failure to realise ring : {zx_cycle}")
+                    break
 
             self.__ports_tracker.verify_ports()
 
-    def __attempt_ring_realisation(self, zx_nodes: list[ZxNode], maximal_overhead: int = 6):
+        console.info(f"All {len(zx_cycles)} cycles processed.")
+
+    def __attempt_ring_realisation(self, zx_nodes: list[ZxNode], maximal_overhead: int = 6) -> bool:
         nc = len(zx_nodes)
 
         zx_edges = [
@@ -73,7 +77,12 @@ class ZxGraphInflaterRings:
 
         nodes_specifications = ring.to_nodes_specifications(zx_nodes)
         console.info(f"> Nodes specifications : {nodes_specifications}")
-        BlockGraphConstructor.realise_nodes(graph=self.__graph, specifications=nodes_specifications)
+        success = BlockGraphConstructor.realise_nodes(graph=self.__graph, specifications=nodes_specifications)
+
+        console.info(f"> Nodes realisations : {success}")
+
+        if not success:
+            return False
 
         for node_id, bg_cube in nodes_specifications.items():
             self.__ports_tracker.occlude_ports(bg_cube.position)
@@ -85,13 +94,20 @@ class ZxGraphInflaterRings:
         console.info(f"> Edges specifications :")
         for edge, proposal in edges_specifications.items():
             console.info(f">> {edge} : {proposal}")
-        BlockGraphConstructor.realise_edges(graph=self.__graph, specifications=edges_specifications)
+        success = BlockGraphConstructor.realise_edges(graph=self.__graph, specifications=edges_specifications)
+
+        console.info(f"> Edges realisations : {success}")
+
+        if not success:
+            return False
 
         for edge_id, path in edges_specifications.items():
             source = self.__graph.get_zx_node(edge_id[0]).realising_cube
             target = self.__graph.get_zx_node(edge_id[1]).realising_cube
             self.__ports_tracker.close_ports(source, 1)
             self.__ports_tracker.close_ports(target, 1)
+
+        return True
 
     def __extract_chain(self, cycle: list[ZxNode]) -> list[ZxNode]:
         nc = len(cycle)
@@ -119,8 +135,7 @@ class ZxGraphInflaterRings:
         zx_nodes = chain[1:-1]
         zx_edges = [ self.__graph.get_zx_edge(chain[i].id, chain[(i + 1) % nc].id) for i in range(len(zx_nodes)+1) ]
 
-        console.info(f"Breakdown of {cycle} :")
-        console.info(f"> {start} - {zx_nodes} - {final}")
+        console.info(f"Breakdown : {start} - {zx_nodes} - {final}")
 
         if not start.is_realised() or not final.is_realised():
             return False
@@ -143,10 +158,10 @@ class ZxGraphInflaterRings:
         )
 
         if completion is None:
-            console.error(f"Failed to find any completion for cycle {cycle}")
+            console.error(f"Failed to find a path for {start} - {zx_nodes} - {final}")
             return False
 
-        console.info(f"Completion : {completion}")
+        console.info(f"Completion found : {completion}")
 
         nodes_specifications: dict[NodeId, BgCube] = dict()
         for idx in range(len(zx_nodes)):
@@ -168,32 +183,33 @@ class ZxGraphInflaterRings:
         previous_node = completion.start.realised_node
         for edge in zx_edges[:-1]:
             current_node = edge.source if edge.source != previous_node else edge.target
-            path = Path(start = previous_node.realising_cube).extend(current_node.realising_cube, edge.type)
-            edges_specifications[ (previous_node.id, current_node.id) ] = path
+            partial = Path(start = previous_node.realising_cube).extend(current_node.realising_cube, edge.type)
+            edges_specifications[ (previous_node.id, current_node.id) ] = partial
             previous_node = current_node
 
         final_edge = zx_edges[-1]
         source = previous_node
         target = final_edge.source if final_edge.source != previous_node else final_edge.target
         extras = completion.extra_cubes[edge_count-1 : extra_count]
-        path = Path(start = source.realising_cube)
-        for cube, pipe in zip(extras, [ final_edge.type if i == 0 else EdgeType.IDENTITY for i in range(extra_count - edge_count + 2)]):
-            path = path.extend(cube, pipe)
-        path = path.extend(target.realising_cube, EdgeType.IDENTITY)
-        edges_specifications[(source.id, target.id)] = path
+        partial = Path(start = source.realising_cube)
+        for cube, pipe in zip(extras, [ EdgeType.IDENTITY for i in range(len(extras)) ]):
+            partial = partial.extend(cube, pipe)
+        partial = partial.extend(target.realising_cube, final_edge.type)
+        edges_specifications[(source.id, target.id)] = partial
 
         console.info(f"> Edges specifications :")
         for edge, proposal in edges_specifications.items():
             console.info(f">> {edge} : {proposal}")
+
         BlockGraphConstructor.realise_edges(graph=self.__graph, specifications=edges_specifications)
 
-        for edge_id, path in edges_specifications.items():
+        for edge_id, completion in edges_specifications.items():
             source = self.__graph.get_zx_node(edge_id[0]).realising_cube
             target = self.__graph.get_zx_node(edge_id[1]).realising_cube
             self.__ports_tracker.close_ports(source, 1)
             self.__ports_tracker.close_ports(target, 1)
 
-            for cube in path.extra_cubes:
+            for cube in completion.extra_cubes:
                 self.__ports_tracker.occlude_ports(cube.position)
 
         return True

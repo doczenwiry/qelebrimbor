@@ -165,12 +165,12 @@ class PathFinderDFS:
 
                 if graph:
                     # Ignore neighbor if the position is already occupied in spacetime
-                    if not graph.spacetime.available(neighbor.position):
+                    if graph.spacetime.is_occupied(neighbor.position):
                         continue
 
-                    # Ignore neighbor if it would occupy a position that is reserved
-                    if PathFinderDFS.__is_position_reserved(graph, neighbor.position, source, target):
-                        continue
+                    # # Ignore neighbor if it would occupy a position that is reserved
+                    # if PathFinderDFS.__is_position_reserved(graph, neighbor.position, source, target):
+                    #     continue
 
                     # if not PathFinderDFS.__has_enough_ports(graph, reservations, candidate, zx_nodes[length-1]):
                     #     continue

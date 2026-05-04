@@ -34,9 +34,7 @@ from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 import logging
 logging.basicConfig(level=logging.INFO)
 console = logging.getLogger("qelebrimbor")
-logging.getLogger("qelebrimbor.pathfinders.depth_first_search").setLevel(logging.CRITICAL)
-logging.getLogger("qelebrimbor.utilities.blockgraph_constructor").setLevel(logging.CRITICAL)
-logging.getLogger("qelebrimbor.inflaters.rings").setLevel(logging.INFO)
+logging.getLogger("qelebrimbor").setLevel(logging.CRITICAL)
 
 parser = ArgumentParser(
     prog = "qb",
