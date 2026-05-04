@@ -47,6 +47,7 @@ class Vertex(RecordClass):
 class OpenPortsTracker:
     def __init__(self, graph: VolumetricZxGraph):
         self.__graph = graph
+        self.__spacetime = graph.spacetime
         self.__reservations: dict[Coordinates, BgCube] = dict()
         self.__open_ports: dict[BgCube, Vertex] = dict()
         pass
@@ -81,7 +82,7 @@ class OpenPortsTracker:
                 console.warning(f"Position {position} already reserved by {holder} [requester={cube}]")
                 continue
 
-            if self.__graph.spacetime.available(position):
+            if self.__spacetime.available(position):
                 self.__reservations[position] = cube
                 vertex.available.add(position)
 

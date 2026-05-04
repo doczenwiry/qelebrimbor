@@ -31,6 +31,7 @@ console = logging.getLogger(__name__)
 class ZxGraphInflaterRings:
     def __init__(self, graph: VolumetricZxGraph):
         self.__graph = graph
+        self.__spacetime = graph.spacetime
         self.__node_realisations = 0
         self.__edge_realisations = 0
 

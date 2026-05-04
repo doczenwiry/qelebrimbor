@@ -22,6 +22,7 @@ from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.calculator import ManhattanCalculator
 from qelebrimbor.common.path import Length, Path
+from qelebrimbor.spacetime.fabric import SpacetimeFabric
 from qelebrimbor.spacetime.tracer import SpacetimeTracer
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
@@ -44,6 +45,7 @@ class PathfinderDFS:
         :param tracing:
         """
         self.__graph = graph if graph else VolumetricZxGraph()
+        self.__spacetime = graph.spacetime if graph else SpacetimeFabric()
         self.__reservations = reservations if reservations else dict()
         self.__branch_and_bound = branch_and_bound
         self.__tracing = tracing
@@ -138,14 +140,13 @@ class PathfinderDFS:
                 if neighbor.position in current.occupied:
                     continue
 
-                if self.__graph:
-                    # Ignore neighbor if its position is already occupied in spacetime
-                    if not self.__graph.spacetime.available(neighbor.position):
-                        continue
+                # Ignore neighbor if its position is already occupied in spacetime
+                if not self.__spacetime.available(neighbor.position):
+                    continue
 
-                    # Ignore neighbor if it would occupy a position that is reserved
-                    if self.__is_position_reserved(source.realised_node, target.realised_node, neighbor.position):
-                        continue
+                # Ignore neighbor if it would occupy a position that is reserved
+                if self.__is_position_reserved(source.realised_node, target.realised_node, neighbor.position):
+                    continue
 
                 # Tracing exploration
                 if tracer:

@@ -54,6 +54,7 @@ class VertexNode(RecordClass):
 class ZxGraphInflaterPorts:
     def __init__(self, graph: VolumetricZxGraph):
         self.__graph = graph
+        self.__spacetime = graph.spacetime
         self.__node_realisations = 0
         self.__edge_realisations = 0
 
@@ -81,7 +82,7 @@ class ZxGraphInflaterPorts:
                 console.warning(f"Position {position} already reserved by {self.__reservations[position]} [requester={cube}]")
                 continue
 
-            if self.__graph.spacetime.available(position):
+            if self.__spacetime.available(position):
                 self.__reservations[position] = node
                 vertex.available_ports.add(position)
 
@@ -110,12 +111,12 @@ class ZxGraphInflaterPorts:
             if current in visited:
                 continue
 
-            if self.__graph.spacetime.available(current) and current not in self.__reservations:
+            if self.__spacetime.available(current) and current not in self.__reservations:
                 # if current position offers a reach with enough open ports, assign it to placement
                 for reach in SpacetimeHelper.PLANES:
                     count_available_ports: int = sum(
                         1 for pos in SpacetimeHelper.get_constellation(current, reach)
-                        if self.__graph.spacetime.available(pos) and pos not in self.__reservations
+                        if self.__spacetime.available(pos) and pos not in self.__reservations
                     )
                     if count_available_ports >= required_ports:
                         found = current, reach

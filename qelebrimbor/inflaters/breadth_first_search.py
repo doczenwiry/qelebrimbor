@@ -31,6 +31,7 @@ console = logging.getLogger("qelebrimbor.main")
 class ZxGraphInflaterBFS:
     def __init__(self, graph: VolumetricZxGraph):
         self.__graph = graph
+        self.__spacetime = graph.spacetime
         self.__node_realisations = 0
         self.__edge_realisations = 0
 
@@ -57,7 +58,7 @@ class ZxGraphInflaterBFS:
             if position in self.__reservations:
                 console.warning(f"Position {position} already reserved by {self.__reservations[position]} [requester={cube}]")
                 continue
-            if self.__graph.spacetime.available(position):
+            if self.__spacetime.available(position):
                 self.__reservations[position] = node
                 self.__available_ports[node].append(position)
             if self.__required_ports[node] == len(self.__available_ports[node]):
