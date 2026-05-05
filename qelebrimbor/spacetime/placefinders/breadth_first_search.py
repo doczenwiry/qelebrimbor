@@ -30,7 +30,7 @@ from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 import logging
 console = logging.getLogger(__name__)
 
-class PlacementFinderBFS:
+class PlacefinderBFS:
     def __init__(self, graph: VolumetricZxGraph, ports_tracker: OpenPortsTracker, tracing: bool = False):
         self.__graph = graph
         self.__spacetime = graph.spacetime

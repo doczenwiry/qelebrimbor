@@ -19,10 +19,9 @@ import networkx as nx
 
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.components import ZxNode, BgCube
-from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
-from qelebrimbor.spacetime.placefinders.breadth_first_search import PlacementFinderBFS
+from qelebrimbor.spacetime.placefinders.breadth_first_search import PlacefinderBFS
 from qelebrimbor.spacetime.pathfinders.depth_first_search import PathfinderDFS
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -35,6 +34,7 @@ class ZxGraphInflaterBFS:
         self.__spacetime = graph.spacetime
 
         self.__ports_tracker = OpenPortsTracker(graph)
+        self.__placefinder = PlacefinderBFS(graph, self.__ports_tracker)
         self.__pathfinder = PathfinderDFS(graph)
 
     # TODO: detects whether the source and/or target are unreachable in the BlockGraph.
@@ -117,7 +117,7 @@ class ZxGraphInflaterBFS:
         # Place a cube of a kind suitable for the type of the unrealised endpoint node can be placed.
         console.info(f"> Searching for node-realisation : {source} - {target}")
         console.info(f">> Source ports : {self.__ports_tracker.report(source.realising_cube)}")
-        path = PlacementFinderBFS.find_closest_realisation(source.realising_cube, target)
+        path = self.__placefinder.find_closest_realisation(source.realising_cube, target)
 
         if path is None:
             console.error(f"Failed to find any path for node-realisation {source} - {target}")
