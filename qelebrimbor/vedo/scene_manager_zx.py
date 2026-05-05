@@ -48,6 +48,7 @@ class ZxSceneManager:
 
         self.__selected_object = None
         self.__show_unrealised = False
+        self.__show_manhattan_excess = False
         self.toggle_unrealised_appearance()
 
     def toggle_unrealised_appearance(self):
@@ -66,6 +67,12 @@ class ZxSceneManager:
         for edge in self.__vzx_graph.get_zx_edges():
             if not edge.is_realised():
                 self.__edges[ edge ].alpha(edge_alpha)
+
+    def toggle_manhattan_excess_volume(self):
+        self.__show_manhattan_excess = not self.__show_manhattan_excess
+
+        for edge in self.__edges.values():
+            edge.toggle_excess_volume(shown = self.__show_manhattan_excess)
 
     def alter_node_appearance(self, node: ZxNode, highlight: bool = False):
         if node is not None:

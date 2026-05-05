@@ -44,8 +44,8 @@ class VdNode(Assembly):
         self.__background = Disc(pos = disc_position, r1 = 0.0, r2 = 1.30 * radius, c = 'white')
         self.add( self.__background )
 
-        self.__text = Text3D(str(node.id), s = radius, pos = text_position, font = 'Calco', justify = 'centered', c = 'white').z(0.02)
-        self.add( self.__text )
+        self.__node_id = Text3D(str(node.id), s = radius, pos = text_position, font ='Calco', justify ='centered', c ='white').z(0.02)
+        self.add(self.__node_id)
 
     def alter_highlighting(self, color: str):
         self.__background.color(color)
@@ -67,13 +67,37 @@ class VdEdge(Assembly):
 
         # Create the line of this edge
         self.__edge = Line(p0 = source_position, p1 = target_position, lw = 8, c = color).z(0.01)
-        self.add( self.__edge )
+        self.add(self.__edge)
 
         console.debug(f"ZxEdge {edge.source}L{source_placement}@{source_position} - {edge.target}L{target_placement}@{target_position}")
+        console.debug(f"> Manhattan Excess Volume : {edge.excess_volume}")
+
+        # Create the Manhattan Excess annotation
+        if edge.excess_volume > 0:
+            middle_position = (source_position + target_position) / 2.0
+            if edge.source.qubit != -1 and edge.target.qubit != -1 and edge.source.qubit == edge.target.qubit:
+                middle_position += Coordinates(2.0, 0.0, 0.0)
+            elif edge.source.layer != -1 and edge.target.layer != -1 and edge.source.layer == edge.target.layer:
+                middle_position += Coordinates(0.0, 2.0, 0.0)
+            self.__manhattan_excess = Text3D(
+                txt = f"+{edge.excess_volume}", s = 1, pos = middle_position,
+                font = 'Roboto', depth = 5.0, justify = 'centered', c = 'black'
+            ).z(0.5)
+        else:
+            self.__manhattan_excess = None
 
         # Create the background of this edge for highlighting
         self.__background = Line(p0 = source_position, p1 = target_position, lw = 16, c = 'white')
-        self.add( self.__background )
+        self.add(self.__background)
+
+    def toggle_excess_volume(self, shown: bool = False):
+        if self.__manhattan_excess:
+            if shown:
+                self.add(self.__manhattan_excess)
+                self.__background.linecolor('red')
+            else:
+                self.remove(self.__manhattan_excess)
+                self.__background.linecolor('white')
 
     def alter_highlighting(self, color: str):
         self.__background.linecolor(color)

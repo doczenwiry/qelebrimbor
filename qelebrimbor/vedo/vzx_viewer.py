@@ -139,6 +139,9 @@ class VolumetricZxGraphViewer(Plotter):
     def __on_key_pressed(self, event):
         if event.keypress == "Escape":
             self.close()
+        elif event.keypress == "e":
+            self.__zx_scene_manager.toggle_manhattan_excess_volume()
+        # Keypresses dealing with cycle highlighting
         elif event.keypress == "grave":
             self.__alter_selected_cycle_appearance(highlighting = False)
             self.__cycle_highlighting = False
@@ -160,6 +163,7 @@ class VolumetricZxGraphViewer(Plotter):
             self.__available_cycles = self.__available_cycle_analysers[1]
             self.__selected_cycle_index = 0 if len(self.__available_cycles) > 0 else -1
             self.__alter_selected_cycle_appearance(highlighting = True)
+        # Keypresses dealing with toggling unrealised parts of the ZX-graph
         elif event.keypress == "u":
             # TODO: hide the unrealised part of the zx-graph
             self.__zx_scene_manager.toggle_unrealised_appearance()
