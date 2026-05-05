@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
         number_of_connected_components = nx.number_connected_components(cast(nx.Graph, vzx))
         if CycleAnalyser.has_cycles(vzx) and number_of_connected_components == 1:
-            print(f"Benchmarking {input_path.ljust(longest_file_name, ' ')} :", end = ' ')
+            print(f"> {input_path.ljust(longest_file_name, ' ')} :", end = ' ')
 
             try:
                 subprocess.run([f"python ../qb.py -s {benchmark.DATASET_DIRECTORY}/{input_path} 2> /dev/null"], shell = True, timeout = 20)

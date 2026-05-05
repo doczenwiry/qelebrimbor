@@ -11,15 +11,56 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-from mypy.types import PartialType
+
 from termcolor import colored
 
+from qelebrimbor import inflaters
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import NodeType
 from qelebrimbor.common.components import ZxEdge
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
+import logging
+console = logging.getLogger(__name__)
+
+
+def __get_insufficient_ports_rate(graph: VolumetricZxGraph) -> float:
+    all_realised_spiders = set(filter(
+        lambda zxn: zxn.is_realised() and zxn.type in { NodeType.X, NodeType.Z },
+        graph.get_zx_nodes()
+    ))
+    cubes_with_insufficient_ports: int = 0
+    for node in all_realised_spiders:
+        unrealised_edges = sum(
+            1 for neighbor in graph.get_zx_neighbors(node) if not graph.get_zx_edge(node.id, neighbor.id).is_realised()
+        )
+        cube = node.realising_cube
+        open_ports = sum(
+            1 for position in SpacetimeHelper.get_constellation(cube.position, cube.kind.get_reach())
+            if not graph.spacetime.is_occupied(position)
+        )
+        if open_ports < unrealised_edges:
+            console.debug(f"Node {node} has insufficient ports [ue:{unrealised_edges}, op:{open_ports}]")
+            cubes_with_insufficient_ports += 1
+    return cubes_with_insufficient_ports / len(all_realised_spiders)
+
+def __get_unrealised_endpoints_rate(graph: VolumetricZxGraph, unrealised: int) -> float:
+    if not (0 <= unrealised <= 2):
+        raise Exception(f"Requested invalid number of unrealised endpoints [{unrealised}]")
+
+    all_unrealised_edges = set(filter(
+        lambda zxe: not zxe.is_realised(),
+        graph.get_zx_edges()
+    ))
+
+    unrealised_endpoints: int = 0
+    for edge in all_unrealised_edges:
+        if (0 if edge.source.is_realised() else 1) + (0 if edge.target.is_realised() else 1) == unrealised:
+            unrealised_endpoints += 1
+
+    return unrealised_endpoints / len(all_unrealised_edges)
 
 def __format_percentage(value: float | None, optimum: float) -> str:
     if value is None:
@@ -47,12 +88,18 @@ def print_report(vzx: VolumetricZxGraph, runtime: float, report: dict[str, list[
     node_realisation_rate: str = __format_percentage(realised_nodes / vzx.number_of_nodes(), optimum = 1.0)
     edge_realisation_rate: str = __format_percentage(realised_edges / vzx.number_of_edges(), optimum = 1.0)
 
-    due_to_insufficient_ports = __format_percentage(
-        value = len(report["insufficient-ports"]) / vzx.number_of_edges() if report else 0.0, optimum = 0.0
+    insufficient_ports_rate = __format_percentage(
+        value = __get_insufficient_ports_rate(graph = vzx), optimum = 0.0
     )
 
-    due_to_disconnected_component = __format_percentage(
-        value = len(report["disconnected-component"]) / vzx.number_of_edges() if report else 0.0, optimum = 0.0
+    unrealised_0_endpoints_rate = __format_percentage(
+        value = __get_unrealised_endpoints_rate(graph = vzx, unrealised = 0), optimum = 0.0
+    )
+    unrealised_1_endpoints_rate = __format_percentage(
+        value = __get_unrealised_endpoints_rate(graph = vzx, unrealised = 1), optimum = 0.0
+    )
+    unrealised_2_endpoints_rate = __format_percentage(
+        value = __get_unrealised_endpoints_rate(graph = vzx, unrealised = 2), optimum = 0.0
     )
 
     total_volume = vzx.volume()
@@ -83,9 +130,9 @@ def print_report(vzx: VolumetricZxGraph, runtime: float, report: dict[str, list[
         print(f"> Cycle Edge Realisation Rate : {cerr}")
 
         print(f"Realised nodes: {realised_nodes} / {vzx.number_of_nodes()} [{node_realisation_rate}]")
+        print(f"> Insufficient Ports Rate   : {insufficient_ports_rate}")
         print(f"Realised edges: {realised_edges} / {vzx.number_of_edges()} [{edge_realisation_rate}]")
-        print(f"> Insufficient Ports     : {due_to_insufficient_ports}")
-        print(f"> Disconnected Component : {due_to_disconnected_component}")
+        print(f"> Unrealised Endpoints Rate : 0[{unrealised_0_endpoints_rate}] 1[{unrealised_1_endpoints_rate}] 2[{unrealised_2_endpoints_rate}]")
 
         print(f"Complete volume : {total_volume}")
         print(f"> Spider Volume : {spider_volume}")
@@ -101,8 +148,8 @@ def print_report(vzx: VolumetricZxGraph, runtime: float, report: dict[str, list[
         summary += f"PIR:+{partial_inflation_rate}, "
         summary += f"NRR:{node_realisation_rate}, "
         summary += f"ERR:{edge_realisation_rate}, "
-        summary += f"IPR:{due_to_insufficient_ports}, "
-        summary += f"DCR:{due_to_disconnected_component}, "
+        summary += f"IPR:{insufficient_ports_rate}, "
+        summary += f"UER:{unrealised_0_endpoints_rate}/{unrealised_1_endpoints_rate}/{unrealised_2_endpoints_rate}, "
         summary += f"TV:{str(total_volume).rjust(4, ' ')}, "
         summary += f"SV:{str(spider_volume).rjust(4, ' ')}, "
         summary += f"EV:{str(excess_volume).rjust(4, ' ')}"

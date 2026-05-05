@@ -95,7 +95,6 @@ class CycleAnalyser:
         for cycle in CycleAnalyser.decompose_nodes(graph, minimal = minimal):
             all_cycle_nodes.update(cycle)
         realised_nodes: int = sum(1 for node in all_cycle_nodes if node.is_realised())
-        console.critical(f"CNRR: {realised_nodes} / {len(all_cycle_nodes)}")
         return realised_nodes / len(all_cycle_nodes)
 
     @staticmethod
@@ -104,5 +103,4 @@ class CycleAnalyser:
         for cycle in CycleAnalyser.decompose_edges(graph, minimal = minimal):
             all_cycle_edges.update(cycle)
         realised_edges: int = sum(1 for edge in all_cycle_edges if edge.is_realised())
-        console.critical(f"CERR: {realised_edges} / {len(all_cycle_edges)}")
         return realised_edges / len(all_cycle_edges)
