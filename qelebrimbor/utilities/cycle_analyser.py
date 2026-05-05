@@ -67,18 +67,6 @@ class CycleAnalyser:
         console.debug(f"> Breaking down cycle {cycle}")
         nc = len(cycle)
 
-        node_realisation_status = [
-            (node, node.is_realised()) for node in cycle
-        ]
-        console.info(f"> Node realisation status : {node_realisation_status}")
-        edge_realisation_status = [
-            (edge, edge.is_realised()) for edge in [
-                graph.get_zx_edge(cycle[idx].id, cycle[(idx + 1) % len(cycle)].id) for idx in range(len(cycle))
-            ]
-        ]
-        console.info(f"> Edge realisation status : {edge_realisation_status}")
-
-
         # Identify the start of the chain where the preceding edge is realised but the following one is not
         index = 0
         preceding: ZxEdge = graph.get_zx_edge(cycle[index].id, cycle[(index-1)% nc].id)

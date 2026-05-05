@@ -86,7 +86,7 @@ class ZxGraphInflaterRings:
             if all( self.__graph.get_zx_edge(cycle[index].id, cycle[(index+1) % len(cycle)].id).is_realised()
                     for index in range(len(cycle))
             ):
-                console.info(f"> Cycle {cycle} is already complete. Skipping.")
+                console.debug(f"> Cycle {cycle} is already complete. Skipping.")
                 continue
 
             if any(node.is_realised() for node in cycle):
@@ -158,16 +158,20 @@ class ZxGraphInflaterRings:
     def __attempt_ring_completion(self,
         cycle: list[ZxNode],
         maximal_excess: int = 0
-    ):
-        nc = len(cycle)
+    ) -> int:
         chain = CycleAnalyser.breakdown(self.__graph, cycle)
+        return self.__attempt_chain_realisation(chain, maximal_excess)
+
+    def __attempt_chain_realisation(self, chain: list[ZxNode], maximal_excess: int = 0) -> int:
         start = chain[0]
         final = chain[-1]
 
         zx_nodes = chain[1:-1]
-        zx_edges = [ self.__graph.get_zx_edge(chain[i].id, chain[(i + 1) % nc].id) for i in range(len(zx_nodes)+1) ]
+        zx_edges = [ self.__graph.get_zx_edge(chain[i].id, chain[(i + 1) % len(chain)].id) for i in range(len(zx_nodes)+1) ]
 
-        console.debug(f"Breakdown : {start} - {zx_nodes} - {final}")
+        console.info(f"> Breaking down into chain : {chain}")
+        console.debug(f">> Nodes : {zx_nodes}")
+        console.debug(f">> Edges : {zx_edges}")
 
         if not start.is_realised() or not final.is_realised():
             return -1
@@ -245,4 +249,4 @@ class ZxGraphInflaterRings:
         for node_id, bg_cube in nodes_specifications.items():
             self.__ports_tracker.occlude_ports(bg_cube.position)
 
-        return completion.manhattan_length() - len(zx_nodes)
+        return completion.manhattan_length() - len(zx_nodes) - 1
