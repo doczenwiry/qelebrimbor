@@ -135,8 +135,8 @@ class ZxGraphInflaterRings:
         for edge_id, path in edges_specifications.items():
             source = self.__graph.get_zx_node(edge_id[0]).realising_cube
             target = self.__graph.get_zx_node(edge_id[1]).realising_cube
-            self.__ports_tracker.close_ports(source, 1)
-            self.__ports_tracker.close_ports(target, 1)
+            self.__ports_tracker.connect_ports(source, 1)
+            self.__ports_tracker.connect_ports(target, 1)
 
         return True
 
@@ -237,8 +237,8 @@ class ZxGraphInflaterRings:
         for edge_id, completion in edges_specifications.items():
             source = self.__graph.get_zx_node(edge_id[0]).realising_cube
             target = self.__graph.get_zx_node(edge_id[1]).realising_cube
-            self.__ports_tracker.close_ports(source, 1)
-            self.__ports_tracker.close_ports(target, 1)
+            self.__ports_tracker.connect_ports(source, 1)
+            self.__ports_tracker.connect_ports(target, 1)
 
             for cube in completion.extra_cubes:
                 self.__ports_tracker.occlude_ports(cube.position)

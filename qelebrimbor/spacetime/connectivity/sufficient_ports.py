@@ -54,10 +54,13 @@ class OpenPortsTracker:
         return iter(self.__open_ports.keys())
 
     def report(self, cube: BgCube):
-        return str(self.__open_ports[cube])
+        if cube in self.__open_ports:
+            return str(self.__open_ports[cube])
+        else:
+            return "<not-tracked>"
 
     def required(self, cube: BgCube):
-        return self.__open_ports[cube].required
+        return self.__open_ports[cube].required if cube in self.__open_ports else 0
 
     def available(self, cube: BgCube):
         return len(self.__open_ports[cube].available)
@@ -68,8 +71,16 @@ class OpenPortsTracker:
     def remaining(self, cube: BgCube):
         return self.__open_ports[cube].remaining
 
-    def close_ports(self, cube: BgCube, amount: int):
-        self.__open_ports[cube].required -= amount
+    def is_critical(self, holder: BgCube, position: Coordinates):
+        return self.__open_ports[holder].remaining <= 1
+
+    def connect_ports(self, cube: BgCube, amount: int):
+        if self.__open_ports[cube].required > 1:
+            self.__open_ports[cube].required -= amount
+        else:
+            for position in self.__open_ports[cube].available:
+                self.__spacetime.release(cube, position)
+            self.__open_ports.pop(cube)
 
     def reserve_ports(self, cube: BgCube):
         vertex = Vertex(cube = cube, required = self.__graph.get_zx_degree(cube.realised_node.id), available = set())
@@ -78,9 +89,12 @@ class OpenPortsTracker:
             if self.__spacetime.reserve(cube, position):
                 vertex.available.add(position)
             else:
-                console.warning(f"Position {position} is not available in spacetime [requester={cube}]")
+                holder = self.__spacetime.holder(position) if self.__spacetime.is_reserved(position) else None
+                occupant = self.__spacetime.occupant(position) if self.__spacetime.is_occupied(position) else None
+                console.warning(f"Position {position} is not available in spacetime [requester={cube}, holder={holder}, occupant={occupant}]")
 
         self.__open_ports[cube] = vertex
+        console.info(f"Reserved ports for {vertex}")
 
     def occlude_ports(self, position: Coordinates):
         if self.__spacetime.is_reserved(position):
@@ -92,6 +106,7 @@ class OpenPortsTracker:
         prioritized = 0
         unreachable = 0
         for vertex in self.__open_ports.values():
+            console.debug(f"Verifying {vertex}")
             if vertex.remaining == 0:
                 console.warning(f"Time to prioritize {vertex}")
                 prioritized += 1

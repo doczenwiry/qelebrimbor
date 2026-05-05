@@ -22,6 +22,7 @@ from qelebrimbor.common.components import BgCube, ZxNode
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.common.path import Path
+from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
 from qelebrimbor.spacetime.tracer import SpacetimeTracer
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
@@ -30,47 +31,29 @@ import logging
 console = logging.getLogger(__name__)
 
 class PlacementFinderBFS:
-    @staticmethod
-    def __is_position_reserved(graph: VolumetricZxGraph, reservations: dict[Coordinates, ZxNode] | None, requester: ZxNode, target: ZxNode | None, position: Coordinates):
-        if reservations is None:
-            return False
-
-        if position in reservations:
-            holder = reservations[position]
-            # TODO: allow taking the reservations if it is not critical to the holder ?
-            if holder != requester and (not target or holder != target):
-                reserved_ports_positions = sum(1 for kv in reservations.items() if kv[1] == holder)
-                number_of_ports_required = sum(
-                    1 for nb in graph.get_zx_neighbors(holder) if graph.get_zx_edge(holder.id, nb.id).is_realised()
-                )
-                critical = number_of_ports_required >= reserved_ports_positions
-                console.warning(f">> Position {position} reserved by {holder} [critical={critical}]")
-                return True
-
-        return False
+    def __init__(self, graph: VolumetricZxGraph, ports_tracker: OpenPortsTracker, tracing: bool = False):
+        self.__graph = graph
+        self.__spacetime = graph.spacetime
+        self.__ports_tracker = ports_tracker
+        self.__tracing = tracing
 
     # TODO: consider the type of Edge between source and target (IDENTITY or HADAMARD)
-    @staticmethod
-    def find_closest_realisation(
-            graph: VolumetricZxGraph, source: BgCube, target: ZxNode,
-            reservations: dict[Coordinates, ZxNode] = None,
-            maximal_distance: int = None,
-            tracing: bool = False
-    ) -> Path | None:
+    def find_closest_realisation(self, source: BgCube, target: ZxNode, maximal_distance: int = None) -> Path | None:
         optimum: Path | None = None
         minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
         unrelaxed: deque[Path] = deque()
+
         initial = Path(start = source)
         unrelaxed.append( initial )
         minimal_paths[ (source.kind, source.position) ] = initial
 
-        number_of_ports_required = graph.get_zx_degree(target.id)
-        console.info(f"Searching for placement from {source} to {target}. [ports required:{number_of_ports_required}]")
+        number_of_ports_required = self.__graph.get_zx_degree(target.id)
+        console.info(f"Searching for placement from {source} to {target} [ports required:{number_of_ports_required}]")
 
         target_suitable_kinds: list[CubeKind] = CubeKind.suitable_kinds(target.type)
 
         # Tracing exploration
-        tracer: SpacetimeTracer | None = SpacetimeTracer() if tracing else None
+        tracer: SpacetimeTracer | None = SpacetimeTracer() if self.__tracing else None
         if tracer:
             tracer.add_node(source)
 
@@ -78,23 +61,33 @@ class PlacementFinderBFS:
             current_path = unrelaxed.pop()
             terminal = current_path.final
 
-            console.debug(f"Current : {current_path}")
+            console.debug(f"Current path : {current_path}")
 
             for neighbor in BlockGraphHelper.get_candidate_constellation(terminal):
                 neighbor_point = (neighbor.kind, neighbor.position)
                 console.debug(f"> Neighbor : {neighbor}")
 
-                if maximal_distance and maximal_distance < source.position.get_manhattan_distance(neighbor.position):
+                if maximal_distance and maximal_distance < current_path.manhattan_length():
                     continue
 
                 # Ignore neighbor if it introduces a loop
-                if neighbor.position in current_path.occupied or not graph.spacetime.available(neighbor.position):
-                    console.debug(f">> Position occupied : {neighbor.position}")
+                if current_path.occupies(neighbor.position):
+                    console.debug(f">> Position already occupied by path : {neighbor.position}")
                     continue
 
-                # Ignore neighbor if it occupies a position that is reserved
-                if PlacementFinderBFS.__is_position_reserved(graph, reservations, source.realised_node, None, neighbor.position):
+                if self.__spacetime.is_occupied(neighbor.position):
+                    occupant = self.__spacetime.occupant(neighbor.position)
+                    console.debug(f">> Position {neighbor.position} already occupied in spacetime [{occupant}]")
                     continue
+
+                if self.__spacetime.is_reserved(neighbor.position):
+                    holder = self.__spacetime.holder(neighbor.position)
+                    console.debug(f">> Position {neighbor.position} already reserved in spacetime [critical:{holder}]")
+                    if holder != source and self.__ports_tracker.is_critical(holder, neighbor.position):
+                        holder = self.__spacetime.holder(neighbor.position)
+                        console.debug(f">> Position {neighbor.position} already reserved in spacetime [critical:{holder}]")
+                        console.debug(f">>> Open ports : {self.__ports_tracker.report(holder)}")
+                        continue
 
                 extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
                 console.debug(f"> Extended Path : {extended_path}")
@@ -103,13 +96,13 @@ class PlacementFinderBFS:
                 console.debug(f"> Neighbor has kind {neighbor.kind} in {target_suitable_kinds} ?")
                 if neighbor.kind in target_suitable_kinds:
                     open_ports = list(filter(
-                        lambda pos : pos not in extended_path.occupied and graph.spacetime.available(pos) and (not reservations or pos not in reservations),
+                        lambda pos : not extended_path.occupies(pos) and not self.__spacetime.is_occupied(pos),
                         SpacetimeHelper.get_constellation(neighbor.position, neighbor.kind.get_reach())
                     ))
                     number_of_open_ports = len(open_ports)
                     # If the position offers enough open ports, consider it as the optimum
                     console.debug(f"> Open ports found for {neighbor} : {open_ports} [req.{number_of_ports_required}]")
-                    if number_of_ports_required <= number_of_open_ports:
+                    if number_of_ports_required - 1 <= number_of_open_ports:
                         optimum = extended_path
                         continue
 
