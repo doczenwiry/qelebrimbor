@@ -34,11 +34,19 @@ class SpacetimeFabric:
         return position in self.__reserved_positions
 
     def reserve(self, cube: BgCube, position: Coordinates) -> bool:
-        if position in self.__reserved_positions:
+        if position in self.__reserved_positions or position in self.__occupied_positions:
             return False
 
         self.__reserved_positions[position] = cube
         return True
+
+    def release(self, cube: BgCube, position: Coordinates) -> bool:
+        if position in self.__reserved_positions and self.__reserved_positions[position] == cube:
+            self.__reserved_positions.pop(position)
+            return True
+        else:
+            console.error(f"Cube {cube} attempted to release a position it doesn't hold.")
+            return False
 
     def close(self, position: Coordinates):
         if position not in self.__reserved_positions:

@@ -71,9 +71,12 @@ class Path:
 
     def __str__(self):
         content = f"{self.start}"
-        # if len(self.extra_cubes) != 0:
-        content += f" -> {self.extra_cubes}"
-        content += f" -> {self.final}"
+        if self.start == self.final:
+            content += " {self-loop}"
+        else:
+            if len(self.extra_cubes) != 0:
+                content += f" -> {self.extra_cubes}"
+            content += f" -> {self.final}"
         return content
 
     def __repr__(self):

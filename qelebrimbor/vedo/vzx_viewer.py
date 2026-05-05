@@ -186,8 +186,8 @@ class VolumetricZxGraphViewer(Plotter):
             try:
                 # TODO: lock the orientation of the BG_CUBEFACE to match that of VdCubes in BG_VIEWPORT correctly.
                 self.at(BG_CUBEFACE).camera.SetViewUp(self.at(BG_VIEWPORT).camera.GetViewUp())
-            except IndexError as ie:
-                console.error(f"Index Error: {ie} [window already closed].")
+            except IndexError:
+                pass
 
             self.render()
 

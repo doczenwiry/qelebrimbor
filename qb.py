@@ -25,7 +25,9 @@ import sys
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
 from qelebrimbor.formats.vzx import VZX
+from qelebrimbor.inflaters.breadth_first_search import ZxGraphInflaterBFS
 from qelebrimbor.inflaters.rings import ZxGraphInflaterRings
+from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
 
 from qelebrimbor.utilities.qb_reporting import print_report
 
@@ -33,8 +35,7 @@ from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 
 import logging
-logging.basicConfig(level=logging.INFO)
-logging.getLogger("qelebrimbor").setLevel(logging.CRITICAL)
+logging.basicConfig(level=logging.CRITICAL)
 
 parser = ArgumentParser(
     prog = "qb",
@@ -44,7 +45,6 @@ parser.add_argument('filepath', help = "path to the file containing the input ZX
 parser.add_argument('-c', '--check-equivalence', action = 'store_true', help = "check equivalence of the final construct against the input ZX-graph.")
 parser.add_argument('-f', '--fullscreen', action='store_true', help = "display the visualisation in a fullscreen window.")
 parser.add_argument('-p', '--output-pyzx', action = 'store_true', help = "save the Volumetric ZX-graph as a PyZX graph to a *.pyzx.json file.")
-parser.add_argument('-r', '--report', action='store_true', help = "print a detailed report of the construction process.")
 parser.add_argument('-s', '--summary', action='store_true', help = "print a summary of the construction process.")
 parser.add_argument('-t', '--output-tqec', action = 'store_true', help = "save the Volumetric ZX-graph to a *.tqec file.")
 parser.add_argument('-v', '--visualization', action='store_true', help = "display the visualisation of the constructed Volumetric ZX-graph at the end of the construction.")
@@ -63,16 +63,25 @@ def main():
 
     vzx = PYZX.from_pyzx_graph(pyzx_input)
 
-    if nx.number_connected_components(cast(nx.Graph, vzx)) > 1:
+    number_of_connected_components = nx.number_connected_components(cast(nx.Graph, vzx))
+    if number_of_connected_components > 1:
         print("WARNING: The input ZX-graph has more than one connected component.")
 
     # Inflation stage
+    if not CycleBasisAnalyser.has_cycles(vzx):
+        print("WARNING: The input ZX-graph has no cycles: cannot use rings strategy. Falling back to BFS.")
+        inflater = ZxGraphInflaterBFS(graph = vzx)
+    else:
+        inflater = ZxGraphInflaterRings(graph = vzx)
+
+    sys.stdout.flush()
+    sys.stderr.flush()
 
     start = time()
-
-    inflater = ZxGraphInflaterRings(graph = vzx)
-    completion_status = inflater.process()
-
+    try:
+        completion_status = inflater.process()
+    except:
+        completion_status = None
     final = time()
     runtime = round(final - start, 6)
 
@@ -80,14 +89,12 @@ def main():
     sys.stderr.flush()
 
     # Reporting stage
-
-    if arguments.report:
-        print_report(vzx, runtime, completion_status)
-    elif arguments.summary:
+    if arguments.summary:
         print_report(vzx, runtime, completion_status, detailed = False)
+    else:
+        print_report(vzx, runtime, completion_status)
 
     # Outputting stage
-
     if arguments.output_pyzx:
         output = path.splitext(arguments.filepath)[0] + str(".compiled.json")
         print(f"Writing PyZX output to {output}")
@@ -104,7 +111,6 @@ def main():
         VZX.into_file(vzx, output)
 
     # Equivalence checking stage
-
     if arguments.check_equivalence:
         pyzx_output = PYZX.into_pyzx_graph(vzx)
         # TODO: fix the labelling of BOUNDARIES in vzx.into_pyzx_graph(..) to match that of pyzx_input
@@ -121,7 +127,6 @@ def main():
         print(f"Equivalence between input and output ZX-graphs [composition-with-adjoint method] : {equivalent_graphs}")
 
     # Visualisation stage
-
     if arguments.visualization or arguments.force_visualization:
         if arguments.force_visualization or vzx.volume() <= 100:
             window_size = "full" if arguments.fullscreen else "auto"

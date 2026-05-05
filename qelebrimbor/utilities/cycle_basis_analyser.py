@@ -23,6 +23,14 @@ console = logging.getLogger(__name__)
 
 class CycleBasisAnalyser:
     @staticmethod
+    def has_cycles(graph: VolumetricZxGraph) -> bool:
+        try:
+            nx.find_cycle(cast(nx.Graph, graph))
+            return True
+        except nx.NetworkXNoCycle:
+            return False
+
+    @staticmethod
     def analyse(vzx: VolumetricZxGraph, minimal: bool = False):
         console.info(f"Cycle basis :")
         cycles = CycleBasisAnalyser.decompose_nodes(vzx, minimal)
