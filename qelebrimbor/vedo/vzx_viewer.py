@@ -182,11 +182,16 @@ class VolumetricZxGraphViewer(Plotter):
                 self.__hovered_object = event.object
                 self.__alter_highlighting(self.__hovered_object, highlighting = True)
 
-            self.at(BG_CUBEFACE).camera.SetViewUp(self.at(BG_VIEWPORT).camera.GetViewUp())
+            try:
+                # TODO: lock the orientation of the BG_CUBEFACE to match that of VdCubes in BG_VIEWPORT correctly.
+                self.at(BG_CUBEFACE).camera.SetViewUp(self.at(BG_VIEWPORT).camera.GetViewUp())
+            except IndexError as ie:
+                console.error(f"Index Error: {ie} [window already closed].")
+
             self.render()
 
     def display(self):
         self.at(ZX_VIEWPORT).show()
         self.at(BG_VIEWPORT).show()
         self.at(BG_CUBEFACE).show()
-        self.interactive().close()
+        self.interactive()
