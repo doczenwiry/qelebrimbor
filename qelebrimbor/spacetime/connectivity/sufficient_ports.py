@@ -25,10 +25,12 @@ from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 import logging
 console = logging.getLogger(__name__)
 
+type Port = Coordinates
+
 class Vertex(RecordClass):
     cube: BgCube
     required: int
-    available: set[Coordinates]
+    available: set[Port]
 
     @property
     def reachable(self):
@@ -74,13 +76,29 @@ class OpenPortsTracker:
     def is_critical(self, holder: BgCube, position: Coordinates):
         return self.__open_ports[holder].remaining <= 1
 
-    def connect_ports(self, cube: BgCube, amount: int):
-        if self.__open_ports[cube].required > 1:
-            self.__open_ports[cube].required -= amount
+    def connect_ports(self, source: tuple[BgCube, Port], target: tuple[BgCube, Port]):
+        source_cube, source_port = source
+        target_cube, target_port = target
+        if source_port in self.__open_ports[source_cube].available:
+            if self.__open_ports[source_cube].required > 1:
+                self.__open_ports[source_cube].required -= 1
+                self.__open_ports[source_cube].available.remove(source_port)
+            else:
+                for position in self.__open_ports[source_cube].available:
+                    self.__spacetime.release(source_cube, position)
+                self.__open_ports.pop(source_cube)
         else:
-            for position in self.__open_ports[cube].available:
-                self.__spacetime.release(cube, position)
-            self.__open_ports.pop(cube)
+            console.error(f"Attempting to connect a port {source_port} not available to source {source_cube}")
+
+        if target_port in self.__open_ports[target_cube].available:
+            if self.__open_ports[target_cube].required > 1:
+                self.__open_ports[target_cube].required -= 1
+            else:
+                for position in self.__open_ports[target_cube].available:
+                    self.__spacetime.release(target_cube, position)
+                self.__open_ports.pop(target_cube)
+        else:
+            console.error(f"Attempting to connect a port {target_port} not available to target {target_cube}")
 
     def reserve_ports(self, cube: BgCube):
         vertex = Vertex(cube = cube, required = self.__graph.get_zx_degree(cube.realised_node.id), available = set())
@@ -96,7 +114,7 @@ class OpenPortsTracker:
         self.__open_ports[cube] = vertex
         console.info(f"Reserved ports for {vertex}")
 
-    def occlude_ports(self, position: Coordinates):
+    def occlude_ports(self, position: Port):
         if self.__spacetime.is_reserved(position):
             holder = self.__spacetime.holder(position)
             self.__open_ports[holder].available.remove(position)

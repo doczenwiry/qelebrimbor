@@ -35,6 +35,14 @@ class Path:
         self.pipes_types: list[EdgeType] = []
         self.occupied = { start.position }
 
+    @property
+    def start_port(self):
+        return self.final.position if len(self.extra_cubes) == 0 else self.extra_cubes[0].position
+
+    @property
+    def final_port(self):
+        return self.start.position if len(self.extra_cubes) == 0 else self.extra_cubes[-1].position
+
     def overhead(self):
         return self.manhattan_length() - self.start.position.get_manhattan_distance(self.final.position)
 
