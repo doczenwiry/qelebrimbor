@@ -45,5 +45,5 @@ if __name__ == "__main__":
             try:
                 subprocess.run([f"python ../qb.py -s {benchmark.DATASET_DIRECTORY}/{input_path} 2> /dev/null"], shell = True, timeout = 20)
             except subprocess.TimeoutExpired:
-                print("ABORTED RUN.")
+                print("ABORTED RUN [longer than 20 seconds].")
                 continue

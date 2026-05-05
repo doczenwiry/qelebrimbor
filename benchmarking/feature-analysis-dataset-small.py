@@ -11,7 +11,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+from typing import cast
 
+import networkx as nx
 from collections import defaultdict
 
 import benchmark
@@ -36,8 +38,15 @@ if __name__ == "__main__":
 
     for input_path in dataset_filepaths:
         vzx = PYZX.from_file(benchmark.DATASET_DIRECTORY + '/' + input_path)
-        cycles = CycleAnalyser.decompose_nodes(vzx, minimal = True)
-        result: dict[int, int] = defaultdict(int)
-        for cycle in cycles:
-            result[len(cycle)] += 1
-        print(f"Cycle analysis of {input_path.ljust(longest_file_name, ' ')} : {list(result.items())}")
+
+        largest_component = len(max(nx.connected_components(cast(nx.Graph, vzx)), key = len))
+        if CycleAnalyser.has_cycles(vzx):
+            largest_cycle = len(max(CycleAnalyser.decompose_nodes(vzx, minimal = True)))
+        else:
+            largest_cycle = "n/a"
+
+        component = f"Largest component = {largest_component}"
+        cycle     = f"Largest cycle = {largest_cycle}"
+
+        print(f"Analysis of {input_path.ljust(longest_file_name, ' ')} : {component}, {cycle}")
+

@@ -62,7 +62,7 @@ def __get_unrealised_endpoints_rate(graph: VolumetricZxGraph, unrealised: int) -
 
     return unrealised_endpoints / len(all_unrealised_edges)
 
-def __format_percentage(value: float | None, optimum: float) -> str:
+def __format_percentage(value: float | None, optimum: float, increase: bool = False) -> str:
     if value is None:
         output = "  n/a  "
     else:
@@ -74,6 +74,9 @@ def __format_percentage(value: float | None, optimum: float) -> str:
         else:
             printed = "{:.2f}".format(rounded)
         output = f"{printed.rjust(6, ' ')}%"
+
+    if increase:
+        output = '+' + output
 
     if value == optimum:
         output = colored(output, 'green', attrs = ['bold'], force_color = True)
@@ -112,11 +115,11 @@ def print_report(vzx: VolumetricZxGraph, runtime: float, report: dict[str, list[
     )
     inflation_rate: float | None = excess_volume / spider_volume if spider_volume > 0.0 else None
     partial_inflation_rate: str | None = __format_percentage(
-        value = inflation_rate, optimum = 0.0
+        value = inflation_rate, optimum = 0.0, increase = True
     )
     spider_count: int = sum(1 for zxn in vzx.get_zx_nodes() if zxn.type in { NodeType.X, NodeType.Z })
     overall_inflation_rate: str | None = __format_percentage(
-        value = inflation_rate * spider_volume / spider_count if inflation_rate else None, optimum = 0.0
+        value = inflation_rate * spider_volume / spider_count if inflation_rate else None, optimum = 0.0, increase = True
     )
 
     cnrr = __format_percentage(value=CycleAnalyser.cycle_node_realisation_rate(graph=vzx), optimum=1.0)
@@ -132,24 +135,24 @@ def print_report(vzx: VolumetricZxGraph, runtime: float, report: dict[str, list[
         print(f"Realised nodes: {realised_nodes} / {vzx.number_of_nodes()} [{node_realisation_rate}]")
         print(f"> Insufficient Ports Rate   : {insufficient_ports_rate}")
         print(f"Realised edges: {realised_edges} / {vzx.number_of_edges()} [{edge_realisation_rate}]")
-        print(f"> Unrealised Endpoints Rate : 0[{unrealised_0_endpoints_rate}] 1[{unrealised_1_endpoints_rate}] 2[{unrealised_2_endpoints_rate}]")
+        print(f"> Unrealised Endpoints Rate (0/1/2) : {unrealised_0_endpoints_rate}/{unrealised_1_endpoints_rate}/{unrealised_2_endpoints_rate}")
 
         print(f"Complete volume : {total_volume}")
         print(f"> Spider Volume : {spider_volume}")
         print(f"> Excess Volume : +{excess_volume}")
 
-        print(f"Partial Inflation Rate : +{partial_inflation_rate}")
-        print(f"Overall Inflation Rate : +{overall_inflation_rate}")
+        print(f"Partial Inflation Rate : {partial_inflation_rate}")
+        print(f"Overall Inflation Rate : {overall_inflation_rate}")
     else:
         summary  = f"RUN:{"{:.2f}".format(runtime).rjust(6, ' ')} seconds, "
-        summary += f"CNRR: {cnrr}, "
-        summary += f"CERR: {cerr}, "
-        summary += f"OIR:+{overall_inflation_rate}, "
-        summary += f"PIR:+{partial_inflation_rate}, "
+        summary += f"CNRR:{cnrr}, "
+        summary += f"CERR:{cerr}, "
+        summary += f"OIR:{overall_inflation_rate}, "
+        summary += f"PIR:{partial_inflation_rate}, "
         summary += f"NRR:{node_realisation_rate}, "
         summary += f"ERR:{edge_realisation_rate}, "
         summary += f"IPR:{insufficient_ports_rate}, "
-        summary += f"UER:{unrealised_0_endpoints_rate}/{unrealised_1_endpoints_rate}/{unrealised_2_endpoints_rate}, "
+        summary += f"UER(0/1/2):{unrealised_0_endpoints_rate}/{unrealised_1_endpoints_rate}/{unrealised_2_endpoints_rate}, "
         summary += f"TV:{str(total_volume).rjust(4, ' ')}, "
         summary += f"SV:{str(spider_volume).rjust(4, ' ')}, "
         summary += f"EV:{str(excess_volume).rjust(4, ' ')}"

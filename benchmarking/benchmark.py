@@ -21,8 +21,8 @@ import pyzx
 
 DATASET_PARAMETERS = {
     'small' : {
-        'QUBITS' : [4, 8, 16],
-        'DEPTHS' : [4, 8, 16]
+        'QUBITS' : [4, 8, 16, 32],
+        'DEPTHS' : [4, 8, 16, 32]
     }
 }
 DATASET = 'small'
@@ -41,7 +41,7 @@ def get_dataset_filenames(prefix: str = None) -> list[str]:
 
 def dataset_detected():
     present_inputs = set(filter(lambda name: name.endswith(".pyzx.json"), os.listdir(DATASET_DIRECTORY)))
-    dataset_inputs = set(get_dataset_filenames(prefix = DATASET_DIRECTORY))
+    dataset_inputs = set(get_dataset_filenames())
 
     return dataset_inputs.issubset(present_inputs)
 
