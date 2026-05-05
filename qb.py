@@ -58,10 +58,7 @@ def main():
     if arguments.filepath is None:
         raise Exception("Filepath to a *.json file required.")
 
-    with open(arguments.filepath, 'r') as file:
-        pyzx_input = pyzx.Graph().from_json(file.read())
-
-    vzx = PYZX.from_pyzx_graph(pyzx_input)
+    vzx = PYZX.from_file(arguments.filepath)
 
     number_of_connected_components = nx.number_connected_components(cast(nx.Graph, vzx))
     if number_of_connected_components > 1:
@@ -110,6 +107,8 @@ def main():
 
     # Equivalence checking stage
     if arguments.check_equivalence:
+        with open(arguments.filepath, 'r') as file:
+            pyzx_input = pyzx.Graph().from_json(file.read())
         pyzx_output = PYZX.into_pyzx_graph(vzx)
         # TODO: fix the labelling of BOUNDARIES in vzx.into_pyzx_graph(..) to match that of pyzx_input
         pyzx_input.auto_detect_io()

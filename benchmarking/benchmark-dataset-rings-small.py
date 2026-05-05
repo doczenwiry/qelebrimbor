@@ -12,7 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from collections import defaultdict
+import subprocess
+from typing import cast
+import networkx as nx
 
 import benchmark
 
@@ -26,18 +28,22 @@ if __name__ == "__main__":
     print(f"Benchmarking dataset {benchmark.DATASET}")
 
     if not benchmark.dataset_detected():
-        print(f"Generating dataset into {benchmark.DATASET_DIRECTORY}")
         benchmark.generate_dataset()
     else:
-        print(f"Detected dataset in {benchmark.DATASET_DIRECTORY}.")
+        print(f"Existing dataset found in {benchmark.DATASET_DIRECTORY}.")
 
-    dataset_filepaths = benchmark.get_dataset_filenames()
-    longest_file_name = max(map(len, dataset_filepaths))
+    dataset_filenames = benchmark.get_dataset_filenames()
+    longest_file_name = max(map(len, dataset_filenames))
 
-    for input_path in dataset_filepaths:
+    for input_path in dataset_filenames:
         vzx = PYZX.from_file(benchmark.DATASET_DIRECTORY + '/' + input_path)
-        cycles = CycleAnalyser.decompose_nodes(vzx, minimal = True)
-        result: dict[int, int] = defaultdict(int)
-        for cycle in cycles:
-            result[len(cycle)] += 1
-        print(f"Cycle analysis of {input_path.ljust(longest_file_name, ' ')} : {list(result.items())}")
+
+        number_of_connected_components = nx.number_connected_components(cast(nx.Graph, vzx))
+        if CycleAnalyser.has_cycles(vzx) and number_of_connected_components == 1:
+            print(f"Benchmarking {input_path.ljust(longest_file_name, ' ')} :", end = ' ')
+
+            try:
+                subprocess.run([f"python ../qb.py -s {benchmark.DATASET_DIRECTORY}/{input_path} 2> /dev/null"], shell = True, timeout = 20)
+            except subprocess.TimeoutExpired:
+                print("ABORTED RUN.")
+                continue

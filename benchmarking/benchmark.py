@@ -33,15 +33,15 @@ SEEDS = [ int(random.random() * 4242424242) for _ in range(SEED_COUNT) ]
 QUBITS = DATASET_PARAMETERS[DATASET]['QUBITS']
 DEPTHS = DATASET_PARAMETERS[DATASET]['DEPTHS']
 
-def get_dataset_filepaths() -> list[str]:
-    return sorted(list(map(
-        lambda parameters: f"{DATASET_DIRECTORY}/random-cnots-q{parameters[1]}-d{parameters[2]}-s{parameters[0]}.pyzx.json",
-        itertools.product(SEEDS, QUBITS, DEPTHS)
-    )), reverse=True)
+def get_dataset_filenames(prefix: str = None) -> list[str]:
+    return list(map(
+        lambda parameters: f"{(prefix + '/') if prefix else ""}random-cnots-q{parameters[0]}-d{parameters[1]}-s{parameters[2]}.pyzx.json",
+        itertools.product(QUBITS, DEPTHS, SEEDS)
+    ))
 
 def dataset_detected():
     present_inputs = set(filter(lambda name: name.endswith(".pyzx.json"), os.listdir(DATASET_DIRECTORY)))
-    dataset_inputs = set(get_dataset_filepaths())
+    dataset_inputs = set(get_dataset_filenames(prefix = DATASET_DIRECTORY))
 
     return dataset_inputs.issubset(present_inputs)
 

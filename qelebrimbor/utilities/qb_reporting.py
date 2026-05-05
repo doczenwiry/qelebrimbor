@@ -11,11 +11,13 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+from mypy.types import PartialType
 from termcolor import colored
 
 from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.common.attributes_zx import NodeType
 from qelebrimbor.common.components import ZxEdge
+from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 
@@ -61,29 +63,46 @@ def print_report(vzx: VolumetricZxGraph, runtime: float, report: dict[str, list[
     excess_volume: int = sum(
         1 for cube in vzx.get_bg_cubes() if cube.kind not in [CubeKind.OOO , CubeKind.YYY] and cube.realised_node is None
     )
-    inflation_rate: str | None = __format_percentage(
-        value = excess_volume / spider_volume if spider_volume > 0.0 else None, optimum = 0.0
+    inflation_rate: float | None = excess_volume / spider_volume if spider_volume > 0.0 else None
+    partial_inflation_rate: str | None = __format_percentage(
+        value = inflation_rate, optimum = 0.0
     )
+    spider_count: int = sum(1 for zxn in vzx.get_zx_nodes() if zxn.type in { NodeType.X, NodeType.Z })
+    overall_inflation_rate: str | None = __format_percentage(
+        value = inflation_rate * spider_volume / spider_count if inflation_rate else None, optimum = 0.0
+    )
+
+    cnrr = __format_percentage(value=CycleAnalyser.cycle_node_realisation_rate(graph=vzx), optimum=1.0)
+    cerr = __format_percentage(value=CycleAnalyser.cycle_edge_realisation_rate(graph=vzx), optimum=1.0)
 
     if detailed:
         print(f"Inflation runtime: {"{:.6f}".format(runtime)} seconds.")
+
+        print(f"Realised cycles:")
+        print(f"> Cycle Node Realisation Rate : {cnrr}")
+        print(f"> Cycle Edge Realisation Rate : {cerr}")
+
         print(f"Realised nodes: {realised_nodes} / {vzx.number_of_nodes()} [{node_realisation_rate}]")
         print(f"Realised edges: {realised_edges} / {vzx.number_of_edges()} [{edge_realisation_rate}]")
+        print(f"> Insufficient Ports     : {due_to_insufficient_ports}")
+        print(f"> Disconnected Component : {due_to_disconnected_component}")
 
-        print(f"> Insufficient ports     : {due_to_insufficient_ports}")
-        print(f"> Disconnected component : {due_to_disconnected_component}")
+        print(f"Complete volume : {total_volume}")
+        print(f"> Spider Volume : {spider_volume}")
+        print(f"> Excess Volume : +{excess_volume}")
 
-        print(f"Complete volume  : {total_volume}")
-        print(f"> Spider volume : {spider_volume}")
-        print(f"> Excess volume : +{excess_volume}")
-        print(f"INFLATION RATE  : +{inflation_rate}")
+        print(f"Partial Inflation Rate : +{partial_inflation_rate}")
+        print(f"Overall Inflation Rate : +{overall_inflation_rate}")
     else:
-        summary  = f"Runtime:{"{:.6f}".format(runtime)} seconds, "
+        summary  = f"RUN:{"{:.2f}".format(runtime).rjust(6, ' ')} seconds, "
+        summary += f"CNRR: {cnrr}, "
+        summary += f"CERR: {cerr}, "
+        summary += f"OIR:+{overall_inflation_rate}, "
+        summary += f"PIR:+{partial_inflation_rate}, "
         summary += f"NRR:{node_realisation_rate}, "
         summary += f"ERR:{edge_realisation_rate}, "
         summary += f"IPR:{due_to_insufficient_ports}, "
         summary += f"DCR:{due_to_disconnected_component}, "
-        summary += f"IR:+{inflation_rate}, "
         summary += f"TV:{str(total_volume).rjust(4, ' ')}, "
         summary += f"SV:{str(spider_volume).rjust(4, ' ')}, "
         summary += f"EV:{str(excess_volume).rjust(4, ' ')}"
