@@ -11,7 +11,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+from typing import cast
 
+import vedo.core.common
 from vedo import settings, Plotter, ButtonWidget, Text3D  # type: ignore[import-untyped]
 
 from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
@@ -66,7 +68,8 @@ class VolumetricZxGraphViewer(Plotter):
         self.at(BG_CUBEFACE).add( VdCubeReference() )
 
         # Initialise the cameras for the viewports
-        self.__reset_camera()
+        self.reset_camera()
+        self.__setup_camera()
 
         self.__hovered_object = None
 
@@ -82,17 +85,15 @@ class VolumetricZxGraphViewer(Plotter):
         self.add_callback("key press", self.__on_key_pressed)
         self.add_callback("mouse move", self.__on_mouse_moved)
 
-    def __reset_camera(self):
+    def __setup_camera(self):
         # Initialise the camera for the ZX Graph
         self.at(ZX_VIEWPORT).camera.SetViewUp(0, 1, 0)
 
         # Initialise the camera for the BG Graph
         self.at(BG_VIEWPORT).camera.SetPosition(22, 14, 15)
-        self.at(BG_VIEWPORT).camera.SetFocalPoint(0, 0, 0)
         self.at(BG_VIEWPORT).camera.SetViewUp(0, 0, 1)
 
         # Share the camera between the BlockGraph and the CubeFaces
-        self.at(BG_CUBEFACE).camera.SetFocalPoint(0, 0, 0)
         self.at(BG_CUBEFACE).camera.SetViewUp(0, 0, 1)
         self.at(BG_CUBEFACE).camera.SetPosition(22, 14, 15)
 
