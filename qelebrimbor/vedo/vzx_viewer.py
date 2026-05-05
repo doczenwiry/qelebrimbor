@@ -16,7 +16,7 @@ from typing import cast
 import vedo.core.common
 from vedo import settings, Plotter, ButtonWidget, Text3D  # type: ignore[import-untyped]
 
-from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
+from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
 from qelebrimbor.vedo.miscellaneous import VdCubeReference
 from qelebrimbor.vedo.scene_manager_bg import BgSceneManager
 from qelebrimbor.vedo.scene_manager_zx import ZxSceneManager
@@ -75,8 +75,8 @@ class VolumetricZxGraphViewer(Plotter):
 
         self.__cycle_highlighting = False
         self.__available_cycle_analysers = [
-            CycleBasisAnalyser.decompose_edges(self.__vzx_graph),
-            CycleBasisAnalyser.decompose_edges(self.__vzx_graph, minimal = True)
+            CycleAnalyser.decompose_edges(self.__vzx_graph),
+            CycleAnalyser.decompose_edges(self.__vzx_graph, minimal = True)
         ]
         self.__selected_cycle_index = -1
         self.__available_cycles = self.__available_cycle_analysers[0]

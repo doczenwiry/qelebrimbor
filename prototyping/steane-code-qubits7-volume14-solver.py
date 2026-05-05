@@ -21,7 +21,7 @@ from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.path import Path
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
-from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
+from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
 from qelebrimbor.utilities.ring_making import find_realisation, extend_unrealised
 from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
@@ -34,8 +34,8 @@ logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
 if __name__ == "__main__":
     vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders7.json")
 
-    CycleBasisAnalyser.analyse(vzx)
-    cycles = CycleBasisAnalyser.decompose_nodes(vzx)
+    CycleAnalyser.analyse(vzx)
+    cycles = CycleAnalyser.decompose_nodes(vzx)
 
     index = 0
     cycle = cycles[index]

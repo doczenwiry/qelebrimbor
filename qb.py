@@ -27,7 +27,7 @@ from qelebrimbor.formats.tqec import TQEC
 from qelebrimbor.formats.vzx import VZX
 from qelebrimbor.inflaters.breadth_first_search import ZxGraphInflaterBFS
 from qelebrimbor.inflaters.rings import ZxGraphInflaterRings
-from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
+from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
 
 from qelebrimbor.utilities.qb_reporting import print_report
 
@@ -68,11 +68,11 @@ def main():
         print("WARNING: The input ZX-graph has more than one connected component.")
 
     # Inflation stage
-    if not CycleBasisAnalyser.has_cycles(vzx):
-        print("WARNING: The input ZX-graph has no cycles: cannot use rings strategy. Falling back to BFS.")
-        inflater = ZxGraphInflaterBFS(graph = vzx)
-    else:
+    if CycleAnalyser.has_cycles(vzx):
         inflater = ZxGraphInflaterRings(graph = vzx)
+    else:
+        print("WARNING: The input ZX-graph has no cycles: cannot use Rings strategy. Falling back to BFS.")
+        inflater = ZxGraphInflaterBFS(graph = vzx)
 
     sys.stdout.flush()
     sys.stderr.flush()

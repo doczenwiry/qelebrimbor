@@ -27,7 +27,7 @@ from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.utilities.ring_making import find_realisation, find_completion
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
+from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
 
 SEED = 42
 QUBITS = 4
@@ -113,9 +113,9 @@ if __name__ == "__main__":
 
     vzx = PYZX.from_pyzx_graph(pyzx_input)
 
-    CycleBasisAnalyser.analyse(vzx)
+    CycleAnalyser.analyse(vzx)
 
-    cycles = CycleBasisAnalyser.decompose_nodes(vzx)
+    cycles = CycleAnalyser.decompose_nodes(vzx)
 
     index = 0
     cycle = cycles[index]

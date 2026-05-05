@@ -18,7 +18,7 @@ from time import time
 import pyzx
 
 from qelebrimbor.formats.pyzx import PYZX
-from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
+from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
 from qelebrimbor.utilities.ring_making import find_realisation, find_completion, extend_unrealised
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
@@ -40,8 +40,8 @@ if __name__ == "__main__":
         file.write(pyzx_input.to_json())
 
     vzx = PYZX.from_pyzx_graph(pyzx_input)
-    CycleBasisAnalyser.analyse(vzx)
-    cycles = CycleBasisAnalyser.decompose_nodes(vzx)
+    CycleAnalyser.analyse(vzx)
+    cycles = CycleAnalyser.decompose_nodes(vzx)
 
     index = 0
     cycle = cycles[index][6:] + cycles[index][:6]

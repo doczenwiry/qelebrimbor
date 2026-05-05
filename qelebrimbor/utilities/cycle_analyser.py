@@ -21,7 +21,9 @@ from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 import logging
 console = logging.getLogger(__name__)
 
-class CycleBasisAnalyser:
+type Chain = list[ZxNode]
+
+class CycleAnalyser:
     @staticmethod
     def has_cycles(graph: VolumetricZxGraph) -> bool:
         try:
@@ -33,7 +35,7 @@ class CycleBasisAnalyser:
     @staticmethod
     def analyse(vzx: VolumetricZxGraph, minimal: bool = False):
         console.info(f"Cycle basis :")
-        cycles = CycleBasisAnalyser.decompose_nodes(vzx, minimal)
+        cycles = CycleAnalyser.decompose_nodes(vzx, minimal)
         for index in range(len(cycles)):
             console.info(f"Index {index} : {cycles[index]}")
 
@@ -49,7 +51,7 @@ class CycleBasisAnalyser:
     @staticmethod
     def decompose_edges(vzx: VolumetricZxGraph, minimal: bool = False) -> list[list[ZxEdge]]:
         decomposition: list[list[ZxEdge]] = []
-        for cycle in CycleBasisAnalyser.decompose_nodes(vzx, minimal):
+        for cycle in CycleAnalyser.decompose_nodes(vzx, minimal):
             nc = len(cycle)
             current: list[ZxEdge] = []
             for index in range(len(cycle)):
@@ -57,3 +59,44 @@ class CycleBasisAnalyser:
                 current.append( vzx.get_zx_edge(source.id, target.id) )
             decomposition.append(current)
         return decomposition
+
+    @staticmethod
+    def breakdown(graph: VolumetricZxGraph, cycle: list[ZxNode]) -> Chain:
+        chain: list[ZxNode] = []
+
+        console.debug(f"> Breaking down cycle {cycle}")
+        nc = len(cycle)
+
+        node_realisation_status = [
+            (node, node.is_realised()) for node in cycle
+        ]
+        console.info(f"> Node realisation status : {node_realisation_status}")
+        edge_realisation_status = [
+            (edge, edge.is_realised()) for edge in [
+                graph.get_zx_edge(cycle[idx].id, cycle[(idx + 1) % len(cycle)].id) for idx in range(len(cycle))
+            ]
+        ]
+        console.info(f"> Edge realisation status : {edge_realisation_status}")
+
+
+        # Identify the start of the chain where the preceding edge is realised but the following one is not
+        index = 0
+        preceding: ZxEdge = graph.get_zx_edge(cycle[index].id, cycle[(index-1)% nc].id)
+        following: ZxEdge = graph.get_zx_edge(cycle[index].id, cycle[(index+1)% nc].id)
+        while not (preceding.is_realised() and not following.is_realised()):
+            index += 1
+            preceding = following
+            following = graph.get_zx_edge(cycle[index].id, cycle[(index+1)% nc].id)
+
+        # Construct the chain from index until the following edge that is realised
+        while not following.is_realised():
+            chain.append( cycle[index] )
+            index = (index + 1) % nc
+            following = graph.get_zx_edge(cycle[index].id, cycle[(index+1)% nc].id)
+
+        # Add the final node of the chain
+        chain.append( cycle[index] )
+
+        console.info(f"Chain identified : {chain}")
+
+        return chain
