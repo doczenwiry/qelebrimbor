@@ -18,6 +18,7 @@ from time import time
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.components import BgCube
+from qelebrimbor.helpers.calculator import ManhattanCalculator
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
@@ -33,43 +34,51 @@ import logging
 logging.basicConfig(level=logging.CRITICAL)
 logging.getLogger("qelebrimbor.spacetime").setLevel(logging.INFO)
 
+SOURCE: int = 0
+TARGET: int = 1
+
 if __name__ == "__main__":
-    for d in [ 1, 5, 10, 25, 100, 200 ]:
-        print(f"Benchmarking pathfinder with distance {d}.")
+    nodes = [(SOURCE, NodeType.X), (TARGET, NodeType.Z)]
+    edges = [(SOURCE, TARGET, EdgeType.IDENTITY)]
+    qubits = {SOURCE: 0, TARGET: 0}
+    layers = {SOURCE: 0, TARGET: 1}
+
+    for md in [1, 5, 10, 25, 100, 200]:
+        print(f"Benchmarking pathfinder with distance {md}.")
 
         sys.stdout.flush()
 
-        vzx = VolumetricZxGraph(
-            nodes = [ (0, NodeType.X), (1, NodeType.Z) ],
-            edges = [ (0, 1, EdgeType.IDENTITY) ],
-            qubits = { 0 : 0, 1 : 0 },
-            layers = { 0 : 0, 1 : 1 },
-        )
+        # Prepare the VolumetricZxGraph.
+        vzx = VolumetricZxGraph(nodes, edges, qubits, layers)
+        source = vzx.get_zx_node(SOURCE)
+        target = vzx.get_zx_node(TARGET)
+        vzx.realise_zx_node(node = source, cube = BgCube(CubeKind.XZZ, SpacetimeHelper.ORIGIN))
+        vzx.realise_zx_node(node = target, cube = BgCube(CubeKind.ZXX, md * SpacetimeHelper.XP))
 
-        node0 = vzx.get_zx_node(0)
-        cube0 = BgCube(CubeKind.XZZ, SpacetimeHelper.ORIGIN)
-        node1 = vzx.get_zx_node(1)
-        cube1 = BgCube(CubeKind.ZXX, d * SpacetimeHelper.XP)
-        vzx.realise_zx_node( node0, cube0 )
-        vzx.realise_zx_node( node1, cube1 )
-
+        # Instantiate the Pathfinder to benchmark
         pathfinder = PathfinderDFS(vzx, branch_and_bound = True, tracing = True)
         # pathfinder = PathfinderDijkstra(vzx, tracing = True)
 
-        start = time()
-        path = pathfinder.find_optimal_paths(cube0, cube1)
-        final = time()
+        # Perform the pathfinding from source to target
+        start_time = time()
+        path = pathfinder.find_optimal_paths(source.realising_cube, target.realising_cube)
+        final_time = time()
+        runtime = round(final_time - start_time, 2)
 
         if path is None:
             continue
 
-        vzx.realise_zx_edge( node0.id, node1.id, path )
+        vzx.realise_zx_edge(SOURCE, TARGET, path)
 
         sys.stderr.flush()
 
-        print(f"Runtime : {round(final - start, 2)} seconds.")
+        md = ManhattanCalculator.manhattan_distance(source.realising_cube, target.realising_cube)
+        ml = path.manhattan_length()
 
-        d = 1
-        l = path.manhattan_length()
-        viewer = VolumetricZxGraphViewer(vzx, label = f"manhattan distance = {d}, manhattan length = {l}, time={round(final - start, 2)}s", layout = CircuitLayout(vzx))
+        print(f"Runtime : {runtime} seconds. Manhattan distance = {md}, Manhattan length = {ml}")
+
+        label = f"manhattan distance = {md}, manhattan length = {ml}, manhattan excess = +{ml - md}, time={runtime}s"
+        layout = CircuitLayout(vzx)
+
+        viewer = VolumetricZxGraphViewer(graph = vzx, label = label, layout = layout)
         viewer.display()

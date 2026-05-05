@@ -11,10 +11,10 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import itertools
+
 import sys
+import itertools
 from time import time
-from random import seed, randint
 
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import NodeType, EdgeType
@@ -32,8 +32,10 @@ from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 import logging
 logging.basicConfig(level=logging.CRITICAL)
+logging.getLogger("qelebrimbor.spacetime").setLevel(logging.INFO)
 
-seed(42)
+SOURCE: int = 0
+TARGET: int = 1
 
 def check_restrictions(distance: int, number_of_restrictions: int = 0):
     all_permutations = list(
@@ -45,20 +47,20 @@ def check_restrictions(distance: int, number_of_restrictions: int = 0):
 
     inconsistencies = 0
 
-    print(f"Benchmarking chainfinder for distance {distance} [restrictions:{number_of_restrictions}, combinations:{len(all_permutations)}].")
+    print(f"Benchmarking chainfinder for distance {distance} [restrictions:{number_of_restrictions}, permutations:{len(all_permutations)}].")
     for restrictions in all_permutations:
         chain_restrictions = list(zip(restrictions, [ EdgeType.IDENTITY for _ in range(number_of_restrictions) ]))
 
         printable_restrictions = list(map(
             lambda restriction: f"({restriction[1].name[0]},{restriction[0].name})", chain_restrictions)
         )
-        # print(f"Chain-restrictions {printable_restrictions}")
+        print(f"Chain-restrictions {printable_restrictions}")
         sys.stdout.flush()
 
         vzx = VolumetricZxGraph(nodes, edges)
 
-        node0 = vzx.get_zx_node(0)
-        node1 = vzx.get_zx_node(1)
+        node0 = vzx.get_zx_node(SOURCE)
+        node1 = vzx.get_zx_node(TARGET)
 
         vzx.realise_zx_node(node = node0, cube = BgCube(CubeKind.ZXZ, SpacetimeHelper.ORIGIN))
         vzx.realise_zx_node(node = node1, cube = BgCube(CubeKind.ZZX, distance * SpacetimeHelper.XM))
@@ -67,27 +69,25 @@ def check_restrictions(distance: int, number_of_restrictions: int = 0):
         start = time()
         chain = chainfinder.find_optimum(node0.realising_cube, node1.realising_cube, restrictions = chain_restrictions)
         final = time()
+        runtime = round(final - start, 2)
 
         if chain is None:
-            # print(f"Failed to find optimal chain.")
+            print(f"> Failed to find optimal chain.")
             continue
 
         vzx.realise_zx_edge(chain.start.realised_node.id, chain.final.realised_node.id, chain)
+
         ml = chain.manhattan_length()
         md = chain.start.position.get_manhattan_distance(chain.final.position)
-
         mce = ManhattanCalculator.minimal_manhattan_excess(chain.start, chain.final)
-        # print(f"> Excess volume : {ml - md} [MC:{mce}] ({round(final - start, 2)} seconds)")
+        print(f"> Manhattan distance = {md}, Manhattan length = {ml}, Excess volume : +{ml - md} [MC:{mce}] ({runtime} seconds)")
 
         if mce != ml - md:
             inconsistencies += 1
 
-        # viewer = VolumetricZxGraphViewer(
-        #     graph = vzx,
-        #     label = f"manhattan distance = {md}, manhattan length = {ml}, excess volume = +{ml - md}, time={round(final - start, 2)}s",
-        #     layout = PlanarLayout(vzx, scale = 2)
-        # )
-        # viewer.display()
+        label = f"manhattan distance = {md}, manhattan length = {ml}, excess volume = +{ml - md}, time={runtime}s"
+        viewer = VolumetricZxGraphViewer(graph = vzx, label = label, layout = PlanarLayout(vzx, scale = 2))
+        viewer.display()
 
     print(f"Inconsistencies w.r.t. minimal Manhattan Calculator : {inconsistencies}")
 
@@ -95,4 +95,4 @@ if __name__ == "__main__":
     nodes = [ (0, NodeType.X), (1, NodeType.X) ]
     edges = [ (0, 1, EdgeType.IDENTITY) ]
 
-    check_restrictions(6, 6)
+    check_restrictions(3, 2)
