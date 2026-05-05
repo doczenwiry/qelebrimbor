@@ -62,11 +62,15 @@ class VdEdge(Assembly):
 
         color = 'k' if edge.type == EdgeType.IDENTITY else 'y4'
 
-        source_position = Coordinates(SPACING_X * source_placement[0], SPACING_Y * source_placement[1],  0.05)
+        offset = 0.00
+        if edge.source.layer == edge.target.layer:
+            offset += 0.05
+
+        source_position = Coordinates(SPACING_X * source_placement[0], SPACING_Y * source_placement[1], -0.05)
         target_position = Coordinates(SPACING_X * target_placement[0], SPACING_Y * target_placement[1], -0.05)
 
         # Create the line of this edge
-        self.__edge = Line(p0 = source_position, p1 = target_position, lw = 8, c = color).z(0.01)
+        self.__edge = Line(p0 = source_position, p1 = target_position, lw = 8, c = color).z(offset + 0.01)
         self.add(self.__edge)
 
         console.debug(f"ZxEdge {edge.source}L{source_placement}@{source_position} - {edge.target}L{target_placement}@{target_position}")
@@ -74,20 +78,20 @@ class VdEdge(Assembly):
 
         # Create the Manhattan Excess annotation
         if edge.excess_volume > 0:
-            middle_position = (source_position + target_position) / 2.0
+            excess_position = source_position
             if edge.source.qubit != -1 and edge.target.qubit != -1 and edge.source.qubit == edge.target.qubit:
-                middle_position += Coordinates(2.0, 0.0, 0.0)
+                excess_position += Coordinates(2.0, 3.0, 0.0)
             elif edge.source.layer != -1 and edge.target.layer != -1 and edge.source.layer == edge.target.layer:
-                middle_position += Coordinates(0.0, 2.0, 0.0)
+                excess_position += Coordinates(3.0, 2.0, 0.0)
             self.__manhattan_excess = Text3D(
-                txt = f"+{edge.excess_volume}", s = 1, pos = middle_position,
+                txt = f"+{edge.excess_volume}", s = 1, pos = excess_position,
                 font = 'Roboto', depth = 5.0, justify = 'centered', c = 'black'
             ).z(0.5)
         else:
             self.__manhattan_excess = None
 
         # Create the background of this edge for highlighting
-        self.__background = Line(p0 = source_position, p1 = target_position, lw = 16, c = 'white')
+        self.__background = Line(p0 = source_position, p1 = target_position, lw = 16, c = 'white').z(offset + 0.005)
         self.add(self.__background)
 
     def toggle_excess_volume(self, shown: bool = False):

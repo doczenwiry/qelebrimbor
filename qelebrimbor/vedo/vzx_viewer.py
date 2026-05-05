@@ -16,6 +16,7 @@ from typing import cast
 import vedo.core.common
 from vedo import settings, Plotter, ButtonWidget, Text3D  # type: ignore[import-untyped]
 
+from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
 from qelebrimbor.vedo.miscellaneous import VdCubeReference
 from qelebrimbor.vedo.scene_manager_bg import BgSceneManager
@@ -25,6 +26,7 @@ from qelebrimbor.vedo.shapes_bg import VdCube, VdPipe
 
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
+from qelebrimbor.vedo.zx_layout.planar import PlanarLayout
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -54,10 +56,16 @@ class VolumetricZxGraphViewer(Plotter):
         self.__vzx_graph = graph
 
         # Prepare the scene manager for the ZX-graph
+        selected_layout: ZxLayout
+        if layout is None:
+            if len(graph.get_zx_qubits()) > 0 and len(graph.get_zx_layers()) > 0:
+                selected_layout = CircuitLayout(graph, vertical = len(graph.get_zx_qubits()) <= len(graph.get_zx_layers()))
+            else:
+                selected_layout = PlanarLayout(graph, scale = 1.5)
+        else:
+            selected_layout = layout
         self.__zx_scene_manager = ZxSceneManager(
-            graph= self.__vzx_graph,
-            plotter = self.at(ZX_VIEWPORT),
-            layout = CircuitLayout(graph) if layout is None else layout
+            graph= self.__vzx_graph, plotter = self.at(ZX_VIEWPORT), layout = selected_layout
         )
         self.at(ZX_VIEWPORT).camera.SetParallelProjection(True)
 
@@ -80,6 +88,8 @@ class VolumetricZxGraphViewer(Plotter):
         ]
         self.__selected_cycle_index = -1
         self.__available_cycles = self.__available_cycle_analysers[0]
+
+        self.__insufficient_ports_enabled = False
 
         # Set the global callbacks
         self.add_callback("key press", self.__on_key_pressed)
@@ -152,6 +162,12 @@ class VolumetricZxGraphViewer(Plotter):
         elif event.keypress == "Down":
             if self.__cycle_highlighting:
                 self.__shift_selected_cycle(shift = -1)
+        elif event.keypress == "i":
+            self.__insufficient_ports_enabled = not self.__insufficient_ports_enabled
+            color = 'red5' if self.__insufficient_ports_enabled else 'white'
+            for node in OpenPortsTracker.get_nodes_with_insufficient_ports(self.__vzx_graph):
+                self.__zx_scene_manager.alter_node_color(node, color)
+            pass
         elif event.keypress == "c":
             self.__cycle_highlighting = True
             self.__alter_selected_cycle_appearance(highlighting=False)
@@ -175,7 +191,7 @@ class VolumetricZxGraphViewer(Plotter):
         self.render()
 
     def __on_mouse_moved(self, event):
-        if self.__selected_cycle_index == -1:
+        if not self.__cycle_highlighting:
             if event.object != self.__hovered_object:
                 if self.__hovered_object is not None:
                     self.__alter_highlighting(self.__hovered_object, highlighting = False)

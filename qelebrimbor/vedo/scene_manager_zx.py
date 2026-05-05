@@ -59,7 +59,7 @@ class ZxSceneManager:
         if not self.__show_unrealised:
             node_alpha /= 4.0
             edge_alpha /= 32.0
-        
+
         for node in self.__vzx_graph.get_zx_nodes():
             if not node.is_realised():
                 self.__nodes[ node ].alpha(node_alpha)
@@ -77,15 +77,19 @@ class ZxSceneManager:
     def alter_node_appearance(self, node: ZxNode, highlight: bool = False):
         if node is not None:
             self.__nodes[node].alter_highlighting(
-                color = 'white' if not highlight else 'teal5' if node.is_realised() else 'indigo5'
+                color = 'white' if not highlight else 'teal5' if node.is_realised() else 'red5'
             )
+
+    def alter_node_color(self, node: ZxNode, color: str):
+        if node is not None:
+            self.__nodes[node].alter_highlighting(color = color)
 
     def alter_edge_appearance(self, edge: ZxEdge, highlight: bool = False):
         self.alter_node_appearance(edge.source, highlight=highlight)
         self.alter_node_appearance(edge.target, highlight=highlight)
 
         self.__edges[ edge ].alter_highlighting(
-            color='white' if not highlight else 'teal5' if edge.is_realised() else 'indigo5'
+            color='white' if not highlight else 'teal5' if edge.is_realised() else 'red5'
         )
 
     def alter_cycle_appearance(self, cycle: list[ZxEdge], highlight: bool = False):

@@ -12,6 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from typing import cast
 import networkx as nx
 
 from qelebrimbor.common.components import ZxNode
@@ -20,9 +21,10 @@ from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 class PlanarLayout(ZxLayout):
-    def __init__(self, graph: VolumetricZxGraph, scale: int = 1):
+    def __init__(self, graph: VolumetricZxGraph, scale: float = 1.0):
         self.placements: dict[ZxNode, tuple[float, float]] = dict()
-        for node_id, position in nx.planar_layout(graph, scale = scale).items():
+        nx_layout = nx.spring_layout(cast(nx.Graph, graph), scale = scale)
+        for node_id, position in nx_layout.items():
             x, y = position
             self.placements[graph.get_zx_node(node_id)] = (y, x)
 

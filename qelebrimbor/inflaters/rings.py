@@ -116,6 +116,7 @@ class ZxGraphInflaterRings:
             for s in range(nc)
         ]
 
+        # TODO: the following call is the bottleneck of the overall inflation process ...
         realisations = RingFinderBFS.find_minimal_rings(zx_nodes, zx_edges, maximal_overhead = maximal_overhead)
         ring = realisations[0]
 

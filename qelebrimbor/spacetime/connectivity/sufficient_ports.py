@@ -16,7 +16,7 @@ from typing import Iterator
 
 from recordclass import RecordClass
 
-from qelebrimbor.common.components import BgCube
+from qelebrimbor.common.components import BgCube, ZxNode
 from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
@@ -128,3 +128,20 @@ class OpenPortsTracker:
                 unreachable += 1
         if prioritized == 0 == unreachable:
             console.info(f"All tracked cubes have enough ports.")
+
+    @staticmethod
+    def get_nodes_with_insufficient_ports(graph: VolumetricZxGraph) -> list[ZxNode]:
+        nodes_with_insufficient_ports = []
+        for node in filter(ZxNode.is_realised, graph.get_zx_nodes()):
+            unrealised_edges = sum(
+                1 for neighbor in graph.get_zx_neighbors(node) if
+                not graph.get_zx_edge(node.id, neighbor.id).is_realised()
+            )
+            cube = node.realising_cube
+            open_ports = sum(
+                1 for position in SpacetimeHelper.get_constellation(cube.position, cube.kind.get_reach())
+                if not graph.spacetime.is_occupied(position)
+            )
+            if open_ports < unrealised_edges:
+                nodes_with_insufficient_ports.append(node)
+        return nodes_with_insufficient_ports

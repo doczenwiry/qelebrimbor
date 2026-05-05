@@ -32,7 +32,6 @@ from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
 from qelebrimbor.utilities.qb_reporting import print_report
 
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
-from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 
 import logging
 logging.basicConfig(level=logging.CRITICAL)
@@ -127,8 +126,7 @@ def main():
     if arguments.visualization or arguments.force_visualization:
         if arguments.force_visualization or vzx.volume() <= 100:
             window_size = "full" if arguments.fullscreen else "auto"
-            layout = CircuitLayout(vzx, vertical=len(vzx.get_zx_qubits()) < len(vzx.get_zx_layers()))
-            viewer = VolumetricZxGraphViewer(vzx, label = arguments.filepath, layout = layout, size = window_size)
+            viewer = VolumetricZxGraphViewer(vzx, label = arguments.filepath, size = window_size)
             viewer.display()
         else:
             print("> Visualization of a VolumetricZxGraph with more than 100 cubes is slow (Override with -V).")
