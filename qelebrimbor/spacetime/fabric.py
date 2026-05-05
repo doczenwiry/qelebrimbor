@@ -45,7 +45,7 @@ class SpacetimeFabric:
             self.__reserved_positions.pop(position)
             return True
         else:
-            console.error(f"Cube {cube} attempted to release a position it doesn't hold.")
+            console.warning(f"Cube {cube} attempted to release a position it doesn't hold.")
             return False
 
     def close(self, position: Coordinates):

@@ -60,8 +60,8 @@ class BlockGraphConstructor:
                 console.warning(f"Edge: {source} -> {target} is already realised : {zx_edge.realisation}")
                 continue
 
-            console.info(f"Realisation of edge {zx_edge}")
-            console.info(f"> Proposal : {proposal}")
+            console.debug(f"Realisation of edge {zx_edge}")
+            console.debug(f"> Proposal : {proposal}")
             if graph.is_path_valid(zx_edge, proposal):
                 graph.realise_zx_edge(source, target, proposal)
             else:

@@ -46,7 +46,8 @@ class ZxGraphInflaterRings:
         realised: set[int] = set()
 
         index: int = 0
-        for count in range(len(zx_cycles)):
+        count: int = 0
+        for _ in range(len(zx_cycles)):
             zx_cycle = zx_cycles[index]
             console.info(f"> Cycle {index} : {zx_cycles[index]}")
 
@@ -202,11 +203,8 @@ class ZxGraphInflaterRings:
             nodes_specifications[node.id] = cube
             self.__ports_tracker.reserve_ports(cube, self.__graph.get_zx_degree(node.id))
 
-        console.info(f"> Nodes specifications : {nodes_specifications}")
+        console.debug(f"> Nodes specifications : {nodes_specifications}")
         BlockGraphConstructor.realise_nodes(self.__graph, nodes_specifications)
-
-        for node_id, bg_cube in nodes_specifications.items():
-            self.__ports_tracker.occlude_ports(bg_cube.position)
 
         edge_count = len(zx_edges)
         extra_count = len(completion.extra_cubes)
@@ -229,9 +227,9 @@ class ZxGraphInflaterRings:
         partial = partial.extend(target.realising_cube, final_edge.type)
         edges_specifications[(source.id, target.id)] = partial
 
-        console.info(f"> Edges specifications :")
+        console.debug(f"> Edges specifications :")
         for edge, proposal in edges_specifications.items():
-            console.info(f">> {edge} : {proposal}")
+            console.debug(f">> {edge} : {proposal}")
 
         BlockGraphConstructor.realise_edges(graph=self.__graph, specifications=edges_specifications)
 
@@ -245,5 +243,8 @@ class ZxGraphInflaterRings:
 
             for cube in completion.extra_cubes:
                 self.__ports_tracker.occlude_ports(cube.position)
+
+        for node_id, bg_cube in nodes_specifications.items():
+            self.__ports_tracker.occlude_ports(bg_cube.position)
 
         return True
