@@ -78,10 +78,7 @@ def main():
     sys.stderr.flush()
 
     start = time()
-    try:
-        completion_status = inflater.process()
-    except:
-        completion_status = None
+    completion_status = inflater.process()
     final = time()
     runtime = round(final - start, 6)
 
@@ -92,6 +89,7 @@ def main():
     if arguments.summary:
         print_report(vzx, runtime, completion_status, detailed = False)
     else:
+        print(f"Inflation attempted using {inflater.__class__.__name__}")
         print_report(vzx, runtime, completion_status)
 
     # Outputting stage

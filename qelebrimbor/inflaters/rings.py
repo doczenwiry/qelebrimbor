@@ -15,16 +15,14 @@
 from qelebrimbor.common.path import Path
 from qelebrimbor.common.components import ZxNode, ZxEdge, BgCube
 from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
-from qelebrimbor.common.attributes_bg import CubeId
-from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.deprecated.pathfinder_dfs import PathFinderDFS
-from qelebrimbor.helpers.spacetime import SpacetimeHelper
+from qelebrimbor.spacetime.chainfinders.depth_first_search import ChainfinderDFS
 from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
 from qelebrimbor.spacetime.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.cycle_basis_analyser import CycleBasisAnalyser
-from qelebrimbor.utilities.ring_making import extract_chain
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+
+from qelebrimbor.deprecated.pathfinder_dfs import PathFinderDFS
 
 import logging
 console = logging.getLogger(__name__)
@@ -37,6 +35,9 @@ class ZxGraphInflaterRings:
         self.__edge_realisations = 0
 
         self.__ports_tracker: OpenPortsTracker = OpenPortsTracker(graph)
+
+        self.__ringfinder = RingFinderBFS()
+        self.__chainfinder = PathFinderDFS() #ChainfinderDFS(tracing = True)
 
     def process(self):
         CycleBasisAnalyser.analyse(self.__graph, minimal = True)
@@ -51,24 +52,22 @@ class ZxGraphInflaterRings:
 
             if all(not zxn.is_realised() for zxn in zx_cycle):
                 if not self.__attempt_ring_realisation(zx_cycle):
-                    console.error(f"Failure to realise ring : {zx_cycle}")
+                    console.info(f"Failure to realise ring : {zx_cycle}")
                     break
             else:
-                if not self.__attempt_ring_completion(zx_cycle, maximal_excess= 10):
-                    console.error(f"Failure to realise ring : {zx_cycle}")
+                if not self.__attempt_ring_completion(zx_cycle, maximal_excess = 10):
+                    console.info(f"Failure to complete ring : {zx_cycle}")
                     break
 
             count += 1
             realised.add(index)
-
-            self.__ports_tracker.verify_ports()
 
             index = self.__select_candidate(realised, zx_cycles)
 
             if count == 2:
                 break
 
-        console.info(f"All {len(zx_cycles)} cycles processed.")
+        console.info(f"Cycles processed : {count}/{len(zx_cycles)}.")
 
     def __select_candidate(self, realised: set[int], cycles: list[list[ZxNode]]):
         minimal_distance = None
@@ -112,16 +111,14 @@ class ZxGraphInflaterRings:
 
         nodes_specifications = ring.to_nodes_specifications(zx_nodes)
         console.info(f"> Nodes specifications : {nodes_specifications}")
+
+        for node_id, cube in nodes_specifications.items():
+            self.__ports_tracker.reserve_ports(cube = cube, required_ports = self.__graph.get_zx_degree(node_id))
+
         success = BlockGraphConstructor.realise_nodes(graph=self.__graph, specifications=nodes_specifications)
 
         if not success:
             return False
-
-        for node_id, bg_cube in nodes_specifications.items():
-            self.__ports_tracker.occlude_ports(bg_cube.position)
-
-        for node in zx_nodes:
-            self.__ports_tracker.reserve_ports(node.realising_cube)
 
         edges_specifications = ring.to_edges_specifications(zx_edges)
         console.info(f"> Edges specifications :")
@@ -139,6 +136,9 @@ class ZxGraphInflaterRings:
                 source = (source, path.start_port),
                 target = (target, path.final_port)
             )
+
+        for node_id, bg_cube in nodes_specifications.items():
+            self.__ports_tracker.occlude_ports(bg_cube.position)
 
         return True
 
@@ -182,10 +182,9 @@ class ZxGraphInflaterRings:
         if not self.__ports_tracker.reachable(start_cube) or not self.__ports_tracker.reachable(final_cube):
             return False
 
-        completion = PathFinderDFS.find_minimal_paths(
+        completion = self.__chainfinder.find_minimal_paths(
             source = start_cube, target = final_cube,
-            zx_nodes = zx_nodes,
-            zx_edges = zx_edges,
+            zx_nodes = zx_nodes, zx_edges = zx_edges,
             graph = self.__graph,
             maximal_excess = maximal_excess
         )
@@ -198,16 +197,16 @@ class ZxGraphInflaterRings:
 
         nodes_specifications: dict[NodeId, BgCube] = dict()
         for idx in range(len(zx_nodes)):
-            nodes_specifications[zx_nodes[idx].id] = completion.extra_cubes[idx]
+            node = zx_nodes[idx]
+            cube = completion.extra_cubes[idx]
+            nodes_specifications[node.id] = cube
+            self.__ports_tracker.reserve_ports(cube, self.__graph.get_zx_degree(node.id))
 
         console.info(f"> Nodes specifications : {nodes_specifications}")
         BlockGraphConstructor.realise_nodes(self.__graph, nodes_specifications)
 
         for node_id, bg_cube in nodes_specifications.items():
             self.__ports_tracker.occlude_ports(bg_cube.position)
-
-        for node in zx_nodes:
-            self.__ports_tracker.reserve_ports(node.realising_cube)
 
         edge_count = len(zx_edges)
         extra_count = len(completion.extra_cubes)

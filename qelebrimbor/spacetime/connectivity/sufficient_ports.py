@@ -100,25 +100,20 @@ class OpenPortsTracker:
         else:
             console.error(f"Attempting to connect a port {target_port} not available to target {target_cube}")
 
-    def reserve_ports(self, cube: BgCube):
-        vertex = Vertex(cube = cube, required = self.__graph.get_zx_degree(cube.realised_node.id), available = set())
-        constellation = SpacetimeHelper.get_constellation(cube.position, cube.kind.get_reach())
-        for position in constellation:
-            if self.__spacetime.reserve(cube, position):
+    def reserve_ports(self, cube: BgCube, required_ports: int):
+        vertex = Vertex(cube = cube, required = required_ports, available = set())
+
+        for position in SpacetimeHelper.get_constellation(cube.position, cube.kind.get_reach()):
+            if self.__spacetime.available(position):
                 vertex.available.add(position)
-            else:
-                holder = self.__spacetime.holder(position) if self.__spacetime.is_reserved(position) else None
-                occupant = self.__spacetime.occupant(position) if self.__spacetime.is_occupied(position) else None
-                console.warning(f"Position {position} is not available in spacetime [requester={cube}, holder={holder}, occupant={occupant}]")
 
         self.__open_ports[cube] = vertex
-        console.info(f"Reserved ports for {vertex}")
+        console.debug(f"Reserved ports for {vertex}")
 
-    def occlude_ports(self, position: Port):
-        if self.__spacetime.is_reserved(position):
-            holder = self.__spacetime.holder(position)
-            self.__open_ports[holder].available.remove(position)
-            self.__spacetime.close(position)
+    def occlude_ports(self, position: Coordinates):
+        for holder, vertex in self.__open_ports.items():
+            if position in vertex.available:
+                vertex.available.remove(position)
 
     def verify_ports(self):
         prioritized = 0

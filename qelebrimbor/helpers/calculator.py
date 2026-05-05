@@ -30,8 +30,8 @@ class ManhattanCalculator:
         return ManhattanCalculator.minimal_manhattan_length(source, target) + 1
 
     @staticmethod
-    def minimal_manhattan_chain(source: BgCube, target: BgCube, restrictions: list[tuple[NodeType, EdgeType]] | None = None) -> int:
-        if not restrictions or ManhattanCalculator.manhattan_distance(source, target) > len(restrictions):
+    def minimal_manhattan_chain(source: BgCube, target: BgCube, node_type_restrictions: list[NodeType] | None = None) -> int:
+        if not node_type_restrictions or ManhattanCalculator.manhattan_distance(source, target) > len(node_type_restrictions):
             return ManhattanCalculator.minimal_manhattan_length(source, target)
         else:
             raise NotImplementedError(f"Computation subject to restrictions along the way not implemented yet [HARD].")
