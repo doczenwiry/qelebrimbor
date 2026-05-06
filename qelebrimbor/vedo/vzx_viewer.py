@@ -81,7 +81,6 @@ class VolumetricZxGraphViewer(Plotter):
 
         self.__hovered_object = None
 
-        self.__cycle_highlighting = False
         self.__cycle_analyses = [
             CycleAnalyser.decompose_edges(self.__vzx_graph),
             CycleAnalyser.decompose_edges(self.__vzx_graph, minimal = True)
@@ -90,6 +89,7 @@ class VolumetricZxGraphViewer(Plotter):
         self.__selected_analysis = self.__cycle_analyses[self.__selected_analyser]
         self.__highlighted_cycle = -1
 
+        self.__highlighting_manhattan_excess    = False
         self.__highlighting_insufficient_ports  = False
         self.__highlighting_unrealised_subgraph = False
 
@@ -165,7 +165,8 @@ class VolumetricZxGraphViewer(Plotter):
         if event.keypress == "Escape":
             self.close()
         elif event.keypress == "e":
-            self.__zx_scene_manager.toggle_manhattan_excess_highlighting()
+            self.__highlighting_manhattan_excess = not self.__highlighting_manhattan_excess
+            self.__zx_scene_manager.alter_manhattan_excess_highlighting(self.__highlighting_manhattan_excess)
         # Keypresses dealing with cycle highlighting
         elif event.keypress == "grave":
             self.__alter_selected_cycle_analyser(analyser = -1)
@@ -182,8 +183,8 @@ class VolumetricZxGraphViewer(Plotter):
             self.__alter_selected_cycle_analyser(analyser = 1)
         # Keypresses dealing with toggling unrealised parts of the ZX-graph
         elif event.keypress == "u":
-            # TODO: hide the unrealised part of the zx-graph
-            self.__zx_scene_manager.toggle_unrealised_appearance()
+            self.__highlighting_unrealised_subgraph = not self.__highlighting_unrealised_subgraph
+            self.__zx_scene_manager.alter_unrealised_subgraph_highlighting(self.__highlighting_unrealised_subgraph)
             pass
         else:
             self.__bg_scene_manager.on_key_press(event)
@@ -191,21 +192,23 @@ class VolumetricZxGraphViewer(Plotter):
         self.render()
 
     def __on_mouse_moved(self, event):
-        if not self.__cycle_highlighting:
-            if event.object != self.__hovered_object:
-                if self.__hovered_object is not None:
-                    self.__alter_highlighting(self.__hovered_object, highlighting = False)
+        if self.__highlighted_cycle != -1 or self.__highlighting_unrealised_subgraph or self.__highlighting_insufficient_ports:
+            return
 
-                self.__hovered_object = event.object
-                self.__alter_highlighting(self.__hovered_object, highlighting = True)
+        if event.object != self.__hovered_object:
+            if self.__hovered_object is not None:
+                self.__alter_highlighting(self.__hovered_object, highlighting = False)
 
-            try:
-                # TODO: lock the orientation of the BG_CUBEFACE to match that of VdCubes in BG_VIEWPORT correctly.
-                self.at(BG_CUBEFACE).camera.SetViewUp(self.at(BG_VIEWPORT).camera.GetViewUp())
-            except IndexError:
-                pass
+            self.__hovered_object = event.object
+            self.__alter_highlighting(self.__hovered_object, highlighting = True)
 
-            self.render()
+        try:
+            # TODO: lock the orientation of the BG_CUBEFACE to match that of VdCubes in BG_VIEWPORT correctly.
+            self.at(BG_CUBEFACE).camera.SetViewUp(self.at(BG_VIEWPORT).camera.GetViewUp())
+        except IndexError:
+            pass
+
+        self.render()
 
     def display(self):
         self.at(ZX_VIEWPORT).show()

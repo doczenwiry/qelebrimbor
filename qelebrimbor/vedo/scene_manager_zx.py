@@ -46,40 +46,37 @@ class ZxSceneManager:
             self.__plotter.add( vd_edge )
 
         self.__selected_object = None
-        self.__highlight_unrealised = False
+        # self.__highlight_unrealised = False
         self.__highlight_manhattan_excess = False
 
-    def toggle_unrealised_appearance(self):
-        self.__highlight_unrealised = not self.__highlight_unrealised
-
+    def alter_unrealised_subgraph_highlighting(self, highlight: bool):
         for zx_node in self.__vzx_graph.get_zx_nodes():
-            self.__vd_nodes[zx_node].alter_highlighting(self.__highlight_unrealised)
+            self.__vd_nodes[zx_node].alter_highlighting(highlight)
 
         for zx_edge in self.__vzx_graph.get_zx_edges():
-            self.__vd_edges[zx_edge].alter_highlighting(self.__highlight_unrealised)
+            self.__vd_edges[zx_edge].alter_highlighting(highlight)
 
-    def toggle_manhattan_excess_highlighting(self):
-        self.__highlight_manhattan_excess = not self.__highlight_manhattan_excess
-
+    def alter_manhattan_excess_highlighting(self, highlight: bool):
         for zx_edge in self.__vzx_graph.get_zx_edges():
             if zx_edge.excess_volume > 0:
-                self.alter_node_highlighting(zx_edge.source, highlight = self.__highlight_manhattan_excess)
-                self.alter_node_highlighting(zx_edge.target, highlight = self.__highlight_manhattan_excess)
-                self.__vd_edges[zx_edge].alter_highlighting(highlight = self.__highlight_manhattan_excess, excess = True)
+                self.alter_node_highlighting(zx_edge.source, highlight = highlight)
+                self.alter_node_highlighting(zx_edge.target, highlight = highlight)
+                self.__vd_edges[zx_edge].alter_highlighting(highlight = highlight, excess = True)
 
-    def alter_insufficient_ports_highlighting(self, highlight: bool = False):
+    def alter_insufficient_ports_highlighting(self, highlight: bool):
         for node in OpenPortsTracker.get_nodes_with_insufficient_ports(self.__vzx_graph):
             self.__vd_nodes[node].alter_highlighting(highlight = highlight, unreachable = True)
 
-    def alter_node_highlighting(self, node: ZxNode, highlight: bool = False):
-        self.__vd_nodes[node].alter_highlighting(highlight = highlight)
+    def alter_node_highlighting(self, node: ZxNode, highlight: bool):
+        if node:
+            self.__vd_nodes[node].alter_highlighting(highlight = highlight)
 
-    def alter_edge_highlighting(self, edge: ZxEdge, highlight: bool = False):
+    def alter_edge_highlighting(self, edge: ZxEdge, highlight: bool):
         self.alter_node_highlighting(edge.source, highlight = highlight)
         self.alter_node_highlighting(edge.target, highlight = highlight)
         self.__vd_edges[edge].alter_highlighting(highlight = highlight)
 
-    def alter_cycle_highlighting(self, cycle: list[ZxEdge], highlight: bool = False):
+    def alter_cycle_highlighting(self, cycle: list[ZxEdge], highlight: bool):
         for edge in cycle:
             self.alter_node_highlighting(edge.source, highlight = highlight)
             self.alter_node_highlighting(edge.target, highlight = highlight)

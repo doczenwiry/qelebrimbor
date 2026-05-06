@@ -91,10 +91,9 @@ def main():
 
     # Reporting stage
     if arguments.summary:
-        print_report(vzx, runtime, completion_status, detailed = False)
+        print_report(vzx, runtime, inflater, detailed = False)
     else:
-        print(f"Inflation attempted using {inflater.__class__.__name__}")
-        print_report(vzx, runtime, completion_status)
+        print_report(vzx, runtime, inflater)
 
     # Outputting stage
     if arguments.output_pyzx:

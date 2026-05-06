@@ -11,7 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+import math
 from termcolor import colored
 
 from qelebrimbor import inflaters
@@ -88,7 +88,7 @@ def __format_percentage(value: float | None, optimum: float, increase: bool = Fa
 
     return output
 
-def print_report(vzx: VolumetricZxGraph, runtime: float, report: dict[str, list[ZxEdge]] | None, detailed: bool = True):
+def print_report(vzx: VolumetricZxGraph, runtime: float, inflater, detailed: bool = True):
     realised_nodes: int = sum(1 for node in vzx.get_zx_nodes() if node.is_realised())
     realised_edges: int = sum(1 for edge in vzx.get_zx_edges() if edge.is_realised())
     node_realisation_rate: str = __format_percentage(realised_nodes / vzx.number_of_nodes(), optimum = 1.0)
@@ -129,7 +129,7 @@ def print_report(vzx: VolumetricZxGraph, runtime: float, report: dict[str, list[
     cerr = __format_percentage(value=CycleAnalyser.cycle_edge_realisation_rate(graph=vzx), optimum=1.0)
 
     if detailed:
-        print(f"Inflation runtime: {"{:.6f}".format(runtime)} seconds.")
+        print(f"Inflation runtime (strategy:{inflater.__class__.__name__}): {"{:.3f}".format(runtime)} seconds.")
 
         print(f"Realised cycles:")
         print(f"> Cycle Node Realisation Rate : {cnrr}")
@@ -140,14 +140,15 @@ def print_report(vzx: VolumetricZxGraph, runtime: float, report: dict[str, list[
         print(f"Realised edges: {realised_edges} / {vzx.number_of_edges()} [{edge_realisation_rate}]")
         print(f"> Unrealised Endpoints Rate (0/1/2) : {unrealised_0_endpoints_rate}/{unrealised_1_endpoints_rate}/{unrealised_2_endpoints_rate}")
 
-        print(f"Complete volume : {total_volume}")
-        print(f"> Spider Volume : {spider_volume}")
-        print(f"> Excess Volume : +{excess_volume}")
+        volume_digits = int(math.log10(total_volume)) + 1
+        print(f"Complete volume : {str(total_volume).rjust(volume_digits+1, ' ')}")
+        print(f"> Spider Volume : {str(spider_volume).rjust(volume_digits+1, ' ')}")
+        print(f"> Excess Volume : +{str(excess_volume).rjust(volume_digits, ' ')}")
 
         print(f"Partial Inflation Rate : {partial_inflation_rate}")
         print(f"Overall Inflation Rate : {overall_inflation_rate}")
     else:
-        summary  = f"RUN:{"{:.2f}".format(runtime).rjust(6, ' ')} seconds, "
+        summary  = f"RUN:{"{:.3f}".format(runtime).rjust(6, ' ')}s, "
         summary += f"CNRR:{cnrr}, "
         summary += f"CERR:{cerr}, "
         summary += f"OIR:{overall_inflation_rate}, "
