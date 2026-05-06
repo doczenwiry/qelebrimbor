@@ -46,15 +46,14 @@ class ZxSceneManager:
             self.__plotter.add( vd_edge )
 
         self.__selected_object = None
-        # self.__highlight_unrealised = False
         self.__highlight_manhattan_excess = False
 
     def alter_unrealised_subgraph_highlighting(self, highlight: bool):
         for zx_node in self.__vzx_graph.get_zx_nodes():
-            self.__vd_nodes[zx_node].alter_highlighting(highlight)
+            self.__vd_nodes[zx_node].alter_highlighting(highlight) #, concealed = highlight and not zx_node.is_realised())
 
         for zx_edge in self.__vzx_graph.get_zx_edges():
-            self.__vd_edges[zx_edge].alter_highlighting(highlight)
+            self.__vd_edges[zx_edge].alter_highlighting(highlight) #, concealed = highlight and not zx_edge.is_realised())
 
     def alter_manhattan_excess_highlighting(self, highlight: bool):
         for zx_edge in self.__vzx_graph.get_zx_edges():
@@ -67,14 +66,14 @@ class ZxSceneManager:
         for node in OpenPortsTracker.get_nodes_with_insufficient_ports(self.__vzx_graph):
             self.__vd_nodes[node].alter_highlighting(highlight = highlight, unreachable = True)
 
-    def alter_node_highlighting(self, node: ZxNode, highlight: bool):
+    def alter_node_highlighting(self, node: ZxNode, highlight: bool, concealed: bool = False):
         if node:
-            self.__vd_nodes[node].alter_highlighting(highlight = highlight)
+            self.__vd_nodes[node].alter_highlighting(highlight = highlight, concealed = concealed)
 
-    def alter_edge_highlighting(self, edge: ZxEdge, highlight: bool):
-        self.alter_node_highlighting(edge.source, highlight = highlight)
-        self.alter_node_highlighting(edge.target, highlight = highlight)
-        self.__vd_edges[edge].alter_highlighting(highlight = highlight)
+    def alter_edge_highlighting(self, edge: ZxEdge, highlight: bool, excluded: bool = False):
+        self.alter_node_highlighting(edge.source, highlight = highlight, concealed = excluded)
+        self.alter_node_highlighting(edge.target, highlight = highlight, concealed = excluded)
+        self.__vd_edges[edge].alter_highlighting(highlight = highlight, concealed = excluded)
 
     def alter_cycle_highlighting(self, cycle: list[ZxEdge], highlight: bool):
         for edge in cycle:

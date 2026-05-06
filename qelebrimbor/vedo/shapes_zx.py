@@ -48,10 +48,23 @@ class VdNode(Assembly):
         self.__node_id = Text3D(str(node.id), s = radius, pos = text_position, font ='Calco', justify ='centered', c ='white').z(0.02)
         self.add(self.__node_id)
 
-    def alter_highlighting(self, highlight: bool, unreachable: bool = False):
-        self.__background.color(
-            'white' if not highlight else 'red6' if unreachable or not self.zx_node.is_realised() else 'green6'
-        )
+    def alter_highlighting(self, highlight: bool, unreachable: bool = False, concealed: bool = False):
+        alpha = 1.0
+        if concealed:
+            alpha /= 32.0
+
+        if highlight:
+            if unreachable or not self.zx_node.is_realised():
+                color = 'red6'
+            else:
+                color = 'green6'
+        else:
+            color = 'white'
+
+        self.__disc.alpha(alpha)
+        self.__node_id.alpha(alpha)
+        self.__background.alpha(alpha)
+        self.__background.color(color)
 
 class VdEdge(Assembly):
     LENGTH = 3.00
@@ -97,13 +110,25 @@ class VdEdge(Assembly):
         self.__background = Line(p0 = source_position, p1 = target_position, lw = 16, c = 'white').z(offset + 0.005)
         self.add(self.__background)
 
-    def alter_highlighting(self, highlight: bool, excess: bool = False):
+    def alter_highlighting(self, highlight: bool, excess: bool = False, concealed: bool = False):
+        alpha = 1.0
+        if concealed:
+            alpha /= 32.0
+
         if excess and self.__manhattan_excess:
             if highlight:
                 self.add(self.__manhattan_excess)
             else:
                 self.remove(self.__manhattan_excess)
 
-        color = 'white' if not highlight else 'red6' if (excess and self.zx_edge.excess_volume > 0) or not self.zx_edge.is_realised() else 'green6'
+        if highlight:
+            if (excess and self.__manhattan_excess) or not self.zx_edge.is_realised():
+                color = 'red6'
+            else:
+                color = 'green6'
+        else:
+            color = 'white'
 
+        self.__vd_edge.alpha(alpha)
+        self.__background.alpha(alpha)
         self.__background.linecolor(lc = color)

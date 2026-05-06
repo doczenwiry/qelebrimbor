@@ -122,7 +122,7 @@ def print_report(vzx: VolumetricZxGraph, runtime: float, inflater, detailed: boo
     )
     spider_count: int = sum(1 for zxn in vzx.get_zx_nodes() if zxn.type in { NodeType.X, NodeType.Z })
     overall_inflation_rate: str | None = __format_percentage(
-        value = inflation_rate * spider_volume / spider_count if inflation_rate else None, optimum = 0.0, increase = True
+        value = inflation_rate * spider_volume / spider_count if inflation_rate is not None else None, optimum = 0.0, increase = True
     )
 
     cnrr = __format_percentage(value=CycleAnalyser.cycle_node_realisation_rate(graph=vzx), optimum=1.0)
