@@ -111,6 +111,15 @@ class PathFinderDFS:
                     if graph.spacetime.is_occupied(neighbor.position):
                         continue
 
+                    # Ignore neighbor if the position is already reserved in spacetime
+                    if graph.spacetime.is_reserved(neighbor.position):
+                        continue
+
+                    if length+1 < nt:
+                        ports_required = graph.get_zx_degree(zx_nodes[length+1].id)
+                        if graph.spacetime.ports_offered(neighbor.position, neighbor.kind.get_reach()) < ports_required:
+                            continue
+
                 extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
                 extended_distance = extended_path.manhattan_length()
 

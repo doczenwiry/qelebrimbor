@@ -45,70 +45,62 @@ class ZxGraphInflaterRings:
         realised: set[int] = set()
 
         count: int = 0
+        root_ring = zx_cycles[0]
 
         # Realise the root ring
-        excess_volume: int = self.__attempt_ring_realisation(zx_cycles[0])
+        console.info(f"> Root ring identified : {root_ring}")
+        excess_volume: int = self.__attempt_ring_realisation(root_ring)
         if excess_volume == -1:
-            console.info(f"> Failure to realise ring : {zx_cycles[0]}")
+            console.info(f"> Failure [cause:unknown]")
             console.info(f"Cycles processed : {count}/{len(zx_cycles)}.")
 
-        console.info(f"> Ring realised with excess volume : +{excess_volume} cubes.")
+        console.info(f"> Realisation successful with excess volume : +{excess_volume} cubes.")
         count += 1
 
-        # Realise the remaining completions
-        index: int = self.__select_candidate(realised, zx_cycles)
+        # Realise all subsequent chains
+        candidate: tuple[int, ZxChainNodes] | None = self.__identify_next_chain(realised, zx_cycles)
 
-        while index != -1 and count < len(zx_cycles):
-            zx_cycle = zx_cycles[index]
-            console.info(f"Cycle {index} : {zx_cycle}")
+        while candidate is not None and count < len(zx_cycles):
+            index, chain = candidate
+            console.info(f"> Next chain identified : {candidate}")
 
-            if all(not zxn.is_realised() for zxn in zx_cycle):
-                raise NotImplementedError(f"Support for disjoint rings not currently implemented.")
-
-            excess_volume = self.__attempt_ring_completion(zx_cycle, maximal_excess = 10)
+            excess_volume = self.__attempt_ring_completion(chain, maximal_excess = 10)
             if excess_volume == -1:
-                console.info(f"> Failure to complete ring : {zx_cycle}")
+                console.info(f"> Failure to complete chain : {candidate}")
                 break
-            console.info(f"> Ring completed with excess volume : +{excess_volume} cubes.")
+            console.info(f"> Chain completed with excess volume : +{excess_volume} cubes.")
+
+            self.__ports_tracker.verify_ports()
 
             count += 1
             realised.add(index)
 
-            index = self.__select_candidate(realised, zx_cycles)
+            candidate = self.__identify_next_chain(realised, zx_cycles)
 
         console.info(f"Cycles processed : {count}/{len(zx_cycles)}.")
 
-    def __select_candidate(self, realised: set[int], cycles: list[list[ZxNode]]):
-        minimal_distance = None
-        selected = -1
+    # TODO: handle case of disjoint rings (i.e. multiple connected components that contain cycles).
+    def __identify_next_chain(self, realised: set[int], cycles: list[list[ZxNode]]) -> tuple[int, ZxChainNodes] | None:
+        all_chains: list[tuple[int, ZxChainNodes]] = CycleAnalyser.identify_chains(self.__graph, realised, cycles)
+        selected_length: int | None = None
+        selected_distance: int |None = None
+        selected: tuple[int, ZxChainNodes] | None = None
+        for index, chain in all_chains:
+            start = chain[0].realising_cube
+            final = chain[-1].realising_cube
+            length = len(chain)
+            distance = start.position.get_manhattan_distance(final.position)
+            if selected:
+                if length < selected_length or (length == selected_length and distance > selected_distance):
+                    selected = index, chain
+                    selected_length = length
+                    selected_distance = distance
+            else:
+                selected = index, chain
+                selected_length = length
+                selected_distance = distance
 
-        for index in range(len(cycles)):
-            if index in realised:
-                continue
-
-            cycle = cycles[index]
-
-            if all( self.__graph.get_zx_edge(cycle[index].id, cycle[(index+1) % len(cycle)].id).is_realised()
-                    for index in range(len(cycle))
-            ):
-                console.debug(f"> Cycle {cycle} is already complete. Skipping.")
-                continue
-
-            if any(node.is_realised() for node in cycle):
-                console.debug(f"> Cycle {cycle} intersects current construct.")
-                chain = CycleAnalyser.breakdown(self.__graph, cycle)
-                source = chain[0].realising_cube
-                target = chain[-1].realising_cube
-                extras = chain[1:-1]
-
-                console.debug(f"> Breakdown : {source} -> {extras} -> {target}")
-
-                distance = source.position.get_manhattan_distance(target.position)
-                console.debug(f"> Endpoints {source} - {target} : distance={distance}, chain={len(extras)}")
-
-                if minimal_distance is None or distance < minimal_distance:
-                    minimal_distance = distance
-                    selected = index
+            console.debug(f"> Chain [L:{len(chain)}, D:{distance}] : {chain}")
 
         return selected
 
@@ -163,18 +155,16 @@ class ZxGraphInflaterRings:
         return len(ring.cubes) - len(zx_cycle)
 
     def __attempt_ring_completion(self,
-        cycle: list[ZxNode],
+        chain: ZxChainNodes,
         maximal_excess: int = 0
     ) -> int:
-        chain: ZxChainNodes = CycleAnalyser.breakdown(self.__graph, cycle)
-
         start = chain[0]
         final = chain[-1]
 
         zx_nodes = chain[1:-1]
         zx_edges = [ self.__graph.get_zx_edge(chain[i].id, chain[(i + 1) % len(chain)].id) for i in range(len(zx_nodes)+1) ]
 
-        console.info(f"> Breaking down into chain : {chain}")
+        console.debug(f"> Breaking down into chain : {chain}")
         console.debug(f">> Nodes : {zx_nodes}")
         console.debug(f">> Edges : {zx_edges}")
 

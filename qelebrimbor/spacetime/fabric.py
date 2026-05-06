@@ -17,6 +17,9 @@ from qelebrimbor.common.coordinates import Coordinates
 
 
 import logging
+
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
+
 console = logging.getLogger(__name__)
 
 class SpacetimeFabric:
@@ -26,6 +29,9 @@ class SpacetimeFabric:
 
     def available(self, position: Coordinates) -> bool:
         return not self.is_occupied(position) and not self.is_reserved(position)
+
+    def ports_offered(self, position: Coordinates, reach: Coordinates) -> int:
+        return sum(1 for pos in SpacetimeHelper.get_constellation(position, reach) if self.available(pos))
 
     def is_occupied(self, position: Coordinates) -> bool:
         return position in self.__occupied_positions

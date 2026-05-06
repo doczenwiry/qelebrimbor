@@ -123,9 +123,35 @@ class CycleAnalyser:
         # Add the final node of the chain
         chain.append( cycle[index] )
 
-        console.info(f"Chain identified : {chain}")
+        console.debug(f"Chain identified : {chain}")
 
         return chain
+
+    @staticmethod
+    def identify_chains(
+            graph: VolumetricZxGraph, realised: set[int], cycles: list[list[ZxNode]]
+    ) -> list[tuple[int, ZxChainNodes]]:
+        chains: list[tuple[int, ZxChainNodes]] = []
+        for index in range(len(cycles)):
+            if index in realised:
+                continue
+
+            cycle = cycles[index]
+
+            if all( graph.get_zx_edge(cycle[index].id, cycle[(index+1) % len(cycle)].id).is_realised()
+                    for index in range(len(cycle))
+            ):
+                console.debug(f"> Cycle {cycle} is already complete. Skipping.")
+                continue
+
+            if any(node.is_realised() for node in cycle):
+                console.debug(f"> Cycle {cycle} intersects current construct.")
+                chain: ZxChainNodes = CycleAnalyser.breakdown(graph, cycle)
+                chains.append( (index, chain) )
+
+        chains = sorted(chains, key = lambda entry: len(entry[1]))
+
+        return chains
 
     @staticmethod
     def cycle_node_realisation_rate(graph: VolumetricZxGraph, minimal: bool = False) -> float:
