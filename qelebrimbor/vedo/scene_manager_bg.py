@@ -55,7 +55,7 @@ class BgSceneManager:
         # Prepare the first frame
         console.info(f"> {len(self.__cubes)} cubes, {len(self.__pipes)} pipes.")
 
-    def alter_cube_appearance(self, selected: BgCube, highlight: bool = False):
+    def alter_cube_highlighting(self, selected: BgCube, highlight: bool = False):
         if selected is None:
             console.error(f"Cube #{selected} not found in BG-scene.")
         else:
@@ -76,7 +76,7 @@ class BgSceneManager:
                 if bg_pipe not in connecting_pipes:
                     vd_pipe.alpha(alpha)
 
-    def alter_pipes_appearance(self, *pipes: BgPipe, highlight: bool = False):
+    def alter_path_highlighting(self, *pipes: BgPipe, highlight: bool = False):
         cubes: set[BgCube] = set()
         # for pipe in pipes:
         #     cubes.add(pipe.source)
@@ -102,11 +102,11 @@ class BgSceneManager:
             if bg_cube not in cubes:
                 vd_cube.alpha(alpha)
 
-    def alter_cycle_appearance(self, cycle: list[ZxEdge], highlight: bool = False):
+    def alter_cycle_highlighting(self, cycle: list[ZxEdge], highlight: bool = False):
         pipes = set()
         for edge in cycle:
             pipes.update(edge.realisation)
-        self.alter_pipes_appearance(*pipes, highlight = highlight)
+        self.alter_path_highlighting(*pipes, highlight = highlight)
 
     def on_key_press(self, event):
         if event.keypress == "p":

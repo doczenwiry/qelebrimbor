@@ -82,14 +82,16 @@ class VolumetricZxGraphViewer(Plotter):
         self.__hovered_object = None
 
         self.__cycle_highlighting = False
-        self.__available_cycle_analysers = [
+        self.__cycle_analyses = [
             CycleAnalyser.decompose_edges(self.__vzx_graph),
             CycleAnalyser.decompose_edges(self.__vzx_graph, minimal = True)
         ]
-        self.__selected_cycle_index = -1
-        self.__available_cycles = self.__available_cycle_analysers[0]
+        self.__selected_analyser = 0
+        self.__selected_analysis = self.__cycle_analyses[self.__selected_analyser]
+        self.__highlighted_cycle = -1
 
-        self.__insufficient_ports_enabled = False
+        self.__highlighting_insufficient_ports  = False
+        self.__highlighting_unrealised_subgraph = False
 
         # Set the global callbacks
         self.add_callback("key press", self.__on_key_pressed)
@@ -113,73 +115,71 @@ class VolumetricZxGraphViewer(Plotter):
             zx_node = selected.zx_node
             if highlighting:
                 console.info(f"ZxNode : {zx_node}")
-            self.__zx_scene_manager.alter_node_appearance(zx_node, highlight = highlighting)
-            self.__bg_scene_manager.alter_cube_appearance(zx_node.realising_cube, highlight = highlighting)
+            self.__zx_scene_manager.alter_node_highlighting(zx_node, highlight = highlighting)
+            self.__bg_scene_manager.alter_cube_highlighting(zx_node.realising_cube, highlight = highlighting)
         elif isinstance(selected, VdEdge):
             zx_edge = selected.zx_edge
             if highlighting:
                 console.info(f"ZxEdge : {zx_edge}")
             # Highlight the edge in the ZX-graph and all the pipes of its realisation
-            self.__zx_scene_manager.alter_edge_appearance(zx_edge, highlight = highlighting)
-            self.__bg_scene_manager.alter_pipes_appearance(*zx_edge.realisation, highlight = highlighting)
+            self.__zx_scene_manager.alter_edge_highlighting(zx_edge, highlight = highlighting)
+            self.__bg_scene_manager.alter_path_highlighting(*zx_edge.realisation, highlight = highlighting)
         elif isinstance(selected, VdCube):
             bg_cube = selected.bg_cube
             if highlighting:
                 console.info(f"BgCube : {bg_cube}")
             # Highlight the bg-cube and its corresponding zx-node if it has one
-            self.__zx_scene_manager.alter_node_appearance(bg_cube.realised_node, highlight = highlighting)
-            self.__bg_scene_manager.alter_cube_appearance(bg_cube, highlight = highlighting)
+            self.__zx_scene_manager.alter_node_highlighting(bg_cube.realised_node, highlight = highlighting)
+            self.__bg_scene_manager.alter_cube_highlighting(bg_cube, highlight = highlighting)
         elif isinstance(selected, VdPipe):
             bg_pipe = selected.bg_pipe
             if highlighting:
                 console.info(f"BgPipe : {bg_pipe}")
-            self.__bg_scene_manager.alter_pipes_appearance(bg_pipe, highlight = highlighting)
+            self.__bg_scene_manager.alter_path_highlighting(bg_pipe, highlight = highlighting)
 
     def __shift_selected_cycle(self, shift: int):
-        if len(self.__available_cycles) > 0:
-            self.__alter_selected_cycle_appearance(highlighting=False)
-            self.__selected_cycle_index = (self.__selected_cycle_index + shift) % len(self.__available_cycles)
-            self.__alter_selected_cycle_appearance(highlighting=True)
+        if self.__highlighted_cycle != -1 and len(self.__selected_analysis) > 0:
+            self.__alter_selected_cycle_highlighting(highlighting=False)
+            self.__highlighted_cycle = (self.__highlighted_cycle + shift) % len(self.__selected_analysis)
+            self.__alter_selected_cycle_highlighting(highlighting=True)
 
-    def __alter_selected_cycle_appearance(self, highlighting: bool):
-        if self.__selected_cycle_index != -1:
-            selected_cycle = self.__available_cycles[self.__selected_cycle_index]
-            self.__zx_scene_manager.alter_cycle_appearance(selected_cycle, highlight = highlighting)
-            self.__bg_scene_manager.alter_cycle_appearance(selected_cycle, highlight = highlighting)
+    def __alter_selected_cycle_analyser(self, analyser: int):
+        if self.__highlighted_cycle != -1:
+            self.__alter_selected_cycle_highlighting(highlighting = False)
+
+        if analyser == -1:
+            self.__highlighted_cycle = -1
+        else:
+            self.__selected_analyser = analyser
+            self.__selected_analysis = self.__cycle_analyses[self.__selected_analyser]
+            self.__highlighted_cycle = 0 if len(self.__selected_analysis) > 0 else -1
+            self.__alter_selected_cycle_highlighting(highlighting = True)
+
+    def __alter_selected_cycle_highlighting(self, highlighting: bool):
+        if self.__highlighted_cycle != -1:
+            selected_cycle = self.__selected_analysis[self.__highlighted_cycle]
+            self.__zx_scene_manager.alter_cycle_highlighting(selected_cycle, highlight = highlighting)
+            self.__bg_scene_manager.alter_cycle_highlighting(selected_cycle, highlight = highlighting)
 
     def __on_key_pressed(self, event):
         if event.keypress == "Escape":
             self.close()
         elif event.keypress == "e":
-            self.__zx_scene_manager.toggle_manhattan_excess_volume()
+            self.__zx_scene_manager.toggle_manhattan_excess_highlighting()
         # Keypresses dealing with cycle highlighting
         elif event.keypress == "grave":
-            self.__alter_selected_cycle_appearance(highlighting = False)
-            self.__cycle_highlighting = False
+            self.__alter_selected_cycle_analyser(analyser = -1)
         elif event.keypress == "Up":
-            if self.__cycle_highlighting:
-                self.__shift_selected_cycle(shift = +1)
+            self.__shift_selected_cycle(shift = +1)
         elif event.keypress == "Down":
-            if self.__cycle_highlighting:
-                self.__shift_selected_cycle(shift = -1)
+            self.__shift_selected_cycle(shift = -1)
         elif event.keypress == "i":
-            self.__insufficient_ports_enabled = not self.__insufficient_ports_enabled
-            color = 'red6' if self.__insufficient_ports_enabled else 'white'
-            for node in OpenPortsTracker.get_nodes_with_insufficient_ports(self.__vzx_graph):
-                self.__zx_scene_manager.alter_node_color(node, color)
-            pass
+            self.__highlighting_insufficient_ports = not self.__highlighting_insufficient_ports
+            self.__zx_scene_manager.alter_insufficient_ports_highlighting(self.__highlighting_insufficient_ports)
         elif event.keypress == "c":
-            self.__cycle_highlighting = True
-            self.__alter_selected_cycle_appearance(highlighting=False)
-            self.__available_cycles = self.__available_cycle_analysers[0]
-            self.__selected_cycle_index = 0 if len(self.__available_cycles) > 0 else -1
-            self.__alter_selected_cycle_appearance(highlighting=True)
+            self.__alter_selected_cycle_analyser(analyser = 0)
         elif event.keypress == "m":
-            self.__cycle_highlighting = True
-            self.__alter_selected_cycle_appearance(highlighting = False)
-            self.__available_cycles = self.__available_cycle_analysers[1]
-            self.__selected_cycle_index = 0 if len(self.__available_cycles) > 0 else -1
-            self.__alter_selected_cycle_appearance(highlighting = True)
+            self.__alter_selected_cycle_analyser(analyser = 1)
         # Keypresses dealing with toggling unrealised parts of the ZX-graph
         elif event.keypress == "u":
             # TODO: hide the unrealised part of the zx-graph

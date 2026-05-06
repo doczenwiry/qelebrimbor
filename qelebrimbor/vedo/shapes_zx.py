@@ -48,8 +48,10 @@ class VdNode(Assembly):
         self.__node_id = Text3D(str(node.id), s = radius, pos = text_position, font ='Calco', justify ='centered', c ='white').z(0.02)
         self.add(self.__node_id)
 
-    def alter_highlighting(self, color: str):
-        self.__background.color(color)
+    def alter_highlighting(self, highlight: bool, unreachable: bool = False):
+        self.__background.color(
+            'white' if not highlight else 'red6' if unreachable or not self.zx_node.is_realised() else 'green6'
+        )
 
 class VdEdge(Assembly):
     LENGTH = 3.00
@@ -71,8 +73,8 @@ class VdEdge(Assembly):
         target_position = Coordinates(SPACING_X * target_placement[0], SPACING_Y * target_placement[1], -0.05)
 
         # Create the line of this edge
-        self.__edge = Line(p0 = source_position, p1 = target_position, lw = 8, c = color).z(offset + 0.01)
-        self.add(self.__edge)
+        self.__vd_edge = Line(p0 = source_position, p1 = target_position, lw = 8, c = color).z(offset + 0.01)
+        self.add(self.__vd_edge)
 
         console.debug(f"ZxEdge {edge.source}L{source_placement}@{source_position} - {edge.target}L{target_placement}@{target_position}")
         console.debug(f"> Manhattan Excess Volume : {edge.excess_volume}")
@@ -81,12 +83,12 @@ class VdEdge(Assembly):
         if edge.excess_volume > 0:
             excess_position = source_position
             if edge.source.qubit != -1 and edge.target.qubit != -1 and edge.source.qubit == edge.target.qubit:
-                excess_position += Coordinates(2.0, 3.0, 0.0)
+                excess_position += Coordinates(2.5, 3.0, 0.0)
             elif edge.source.layer != -1 and edge.target.layer != -1 and edge.source.layer == edge.target.layer:
-                excess_position += Coordinates(3.0, 2.0, 0.0)
+                excess_position += Coordinates(3.0, 2.5, 0.0)
             self.__manhattan_excess = Text3D(
-                txt = f"+{edge.excess_volume}", s = 1, pos = excess_position,
-                font = 'Roboto', depth = 5.0, justify = 'centered', c = 'black'
+                txt = f"+{edge.excess_volume}", s = 1.5, pos = excess_position,
+                font = 'Roboto', depth = 5.0, justify = 'centered', c = 'red6'
             ).z(0.5)
         else:
             self.__manhattan_excess = None
@@ -95,14 +97,13 @@ class VdEdge(Assembly):
         self.__background = Line(p0 = source_position, p1 = target_position, lw = 16, c = 'white').z(offset + 0.005)
         self.add(self.__background)
 
-    def toggle_excess_volume(self, shown: bool = False):
-        if self.__manhattan_excess:
-            if shown:
+    def alter_highlighting(self, highlight: bool, excess: bool = False):
+        if excess and self.__manhattan_excess:
+            if highlight:
                 self.add(self.__manhattan_excess)
-                self.__background.linecolor('red6')
             else:
                 self.remove(self.__manhattan_excess)
-                self.__background.linecolor('white')
 
-    def alter_highlighting(self, color: str):
-        self.__background.linecolor(color)
+        color = 'white' if not highlight else 'red6' if (excess and self.zx_edge.excess_volume > 0) or not self.zx_edge.is_realised() else 'green6'
+
+        self.__background.linecolor(lc = color)

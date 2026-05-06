@@ -14,13 +14,12 @@
 
 from vedo.plotter import Plotter  # type: ignore[import-untyped]
 
-from qelebrimbor.common.attributes_zx import NodeId
 from qelebrimbor.common.components import ZxNode, ZxEdge
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
+
 from qelebrimbor.vedo.shapes_zx import VdNode, VdEdge
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
-
-from qelebrimbor.common.attributes_zx import EdgeId
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 from logging import getLogger
 console = getLogger(__name__)
@@ -30,71 +29,58 @@ class ZxSceneManager:
         self.__plotter = plotter
         self.__vzx_graph = graph
 
-        self.__nodes: dict[ZxNode, VdNode] = dict()
-        self.__edges: dict[ZxEdge, VdEdge] = dict()
+        self.__vd_nodes: dict[ZxNode, VdNode] = dict()
+        self.__vd_edges: dict[ZxEdge, VdEdge] = dict()
 
         # Prepare all the elements for the ZX scene (i.e. nodes and edges)
         for node in graph.get_zx_nodes():
             vd_node = VdNode(node, layout.get_node_placement(node)).z(+0.1)
-            self.__nodes[ node ] = vd_node
+            self.__vd_nodes[ node] = vd_node
             self.__plotter.add( vd_node )
 
         for edge in graph.get_zx_edges():
             vd_edge = VdEdge(
                 edge, layout.get_node_placement(edge.source), layout.get_node_placement(edge.target)
             ).z(-0.1)
-            self.__edges[ edge ] = vd_edge
+            self.__vd_edges[ edge] = vd_edge
             self.__plotter.add( vd_edge )
 
         self.__selected_object = None
-        self.__highlight_unrealised = True
-        self.__show_manhattan_excess = False
-        self.toggle_unrealised_appearance()
+        self.__highlight_unrealised = False
+        self.__highlight_manhattan_excess = False
 
     def toggle_unrealised_appearance(self):
         self.__highlight_unrealised = not self.__highlight_unrealised
 
-        unrealised_color = 'red6' if self.__highlight_unrealised else 'white'
-        realised_color = 'green6' if self.__highlight_unrealised else 'white'
+        for zx_node in self.__vzx_graph.get_zx_nodes():
+            self.__vd_nodes[zx_node].alter_highlighting(self.__highlight_unrealised)
 
-        for node in self.__vzx_graph.get_zx_nodes():
-            if node.is_realised():
-                self.__nodes[node].alter_highlighting(realised_color)
-            else:
-                self.__nodes[node].alter_highlighting(unrealised_color)
+        for zx_edge in self.__vzx_graph.get_zx_edges():
+            self.__vd_edges[zx_edge].alter_highlighting(self.__highlight_unrealised)
 
-        for edge in self.__vzx_graph.get_zx_edges():
-            if edge.is_realised():
-                self.__edges[edge].alter_highlighting(realised_color)
-            else:
-                self.__edges[edge].alter_highlighting(unrealised_color)
+    def toggle_manhattan_excess_highlighting(self):
+        self.__highlight_manhattan_excess = not self.__highlight_manhattan_excess
 
-    def toggle_manhattan_excess_volume(self):
-        self.__show_manhattan_excess = not self.__show_manhattan_excess
+        for zx_edge in self.__vzx_graph.get_zx_edges():
+            if zx_edge.excess_volume > 0:
+                self.alter_node_highlighting(zx_edge.source, highlight = self.__highlight_manhattan_excess)
+                self.alter_node_highlighting(zx_edge.target, highlight = self.__highlight_manhattan_excess)
+                self.__vd_edges[zx_edge].alter_highlighting(highlight = self.__highlight_manhattan_excess, excess = True)
 
-        for edge in self.__edges.values():
-            edge.toggle_excess_volume(shown = self.__show_manhattan_excess)
+    def alter_insufficient_ports_highlighting(self, highlight: bool = False):
+        for node in OpenPortsTracker.get_nodes_with_insufficient_ports(self.__vzx_graph):
+            self.__vd_nodes[node].alter_highlighting(highlight = highlight, unreachable = True)
 
-    def alter_node_appearance(self, node: ZxNode, highlight: bool = False):
-        if node is not None:
-            self.__nodes[node].alter_highlighting(
-                color = 'white' if not highlight else 'green4' if node.is_realised() else 'red4'
-            )
+    def alter_node_highlighting(self, node: ZxNode, highlight: bool = False):
+        self.__vd_nodes[node].alter_highlighting(highlight = highlight)
 
-    def alter_node_color(self, node: ZxNode, color: str):
-        if node is not None:
-            self.__nodes[node].alter_highlighting(color = color)
+    def alter_edge_highlighting(self, edge: ZxEdge, highlight: bool = False):
+        self.alter_node_highlighting(edge.source, highlight = highlight)
+        self.alter_node_highlighting(edge.target, highlight = highlight)
+        self.__vd_edges[edge].alter_highlighting(highlight = highlight)
 
-    def alter_edge_appearance(self, edge: ZxEdge, highlight: bool = False):
-        self.alter_node_appearance(edge.source, highlight=highlight)
-        self.alter_node_appearance(edge.target, highlight=highlight)
-
-        self.__edges[ edge ].alter_highlighting(
-            color='white' if not highlight else 'green5' if edge.is_realised() else 'red4'
-        )
-
-    def alter_cycle_appearance(self, cycle: list[ZxEdge], highlight: bool = False):
+    def alter_cycle_highlighting(self, cycle: list[ZxEdge], highlight: bool = False):
         for edge in cycle:
-            self.alter_node_appearance(edge.source, highlight=highlight )
-            self.alter_node_appearance(edge.target, highlight=highlight )
-            self.alter_edge_appearance(edge, highlight=highlight)
+            self.alter_node_highlighting(edge.source, highlight = highlight)
+            self.alter_node_highlighting(edge.target, highlight = highlight)
+            self.__vd_edges[edge].alter_highlighting(highlight = highlight, excess = True)
