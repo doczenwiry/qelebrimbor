@@ -65,7 +65,7 @@ def __get_unrealised_endpoints_rate(graph: VolumetricZxGraph, unrealised: int) -
 
     return unrealised_endpoints / len(all_unrealised_edges)
 
-def __format_percentage(value: float | None, optimum: float, increase: bool = False) -> str:
+def __format_percentage(value: float | None, optimum: float = None, increase: bool = False) -> str:
     if value is None:
         output = "  n/a  "
     else:
@@ -81,10 +81,11 @@ def __format_percentage(value: float | None, optimum: float, increase: bool = Fa
     if increase:
         output = '+' + output
 
-    if value == optimum:
-        output = colored(output, 'green', attrs = ['bold'], force_color = True)
-    else:
-        output = colored(output, 'red', attrs = ['bold'], force_color = True)
+    if optimum is not None:
+        if value == optimum:
+            output = colored(output, 'green', attrs = ['bold'], force_color = True)
+        else:
+            output = colored(output, 'red', attrs = ['bold'], force_color = True)
 
     return output
 
@@ -125,6 +126,9 @@ def print_report(vzx: VolumetricZxGraph, runtime: float, inflater, detailed: boo
         value = inflation_rate * spider_volume / spider_count if inflation_rate is not None else None, optimum = 0.0, increase = True
     )
 
+    number_of_odd_cycles = sum(1 for cycle in CycleAnalyser.decompose(vzx, minimal=True) if len(cycle) % 2 == 1)
+    certain_inflation_rate = __format_percentage(number_of_odd_cycles / spider_count, increase=True)
+
     cnrr = __format_percentage(value=CycleAnalyser.cycle_node_realisation_rate(graph=vzx), optimum=1.0)
     cerr = __format_percentage(value=CycleAnalyser.cycle_edge_realisation_rate(graph=vzx), optimum=1.0)
 
@@ -145,6 +149,7 @@ def print_report(vzx: VolumetricZxGraph, runtime: float, inflater, detailed: boo
         print(f"> Spider Volume : {str(spider_volume).rjust(volume_digits+1, ' ')}")
         print(f"> Excess Volume : +{str(excess_volume).rjust(volume_digits, ' ')}")
 
+        print(f"Certain Inflation Rate : {certain_inflation_rate}")
         print(f"Partial Inflation Rate : {partial_inflation_rate}")
         print(f"Overall Inflation Rate : {overall_inflation_rate}")
     else:

@@ -82,7 +82,7 @@ def main():
     sys.stderr.flush()
 
     start = time()
-    completion_status = inflater.process()
+    inflater.process()
     final = time()
     runtime = round(final - start, 6)
 
