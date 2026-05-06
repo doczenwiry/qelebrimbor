@@ -47,26 +47,27 @@ class ZxSceneManager:
             self.__plotter.add( vd_edge )
 
         self.__selected_object = None
-        self.__show_unrealised = False
+        self.__highlight_unrealised = True
         self.__show_manhattan_excess = False
         self.toggle_unrealised_appearance()
 
     def toggle_unrealised_appearance(self):
-        self.__show_unrealised = not self.__show_unrealised
+        self.__highlight_unrealised = not self.__highlight_unrealised
 
-        node_alpha = 1.0
-        edge_alpha = 1.0
-        if not self.__show_unrealised:
-            node_alpha /= 4.0
-            edge_alpha /= 32.0
+        unrealised_color = 'red6' if self.__highlight_unrealised else 'white'
+        realised_color = 'green6' if self.__highlight_unrealised else 'white'
 
         for node in self.__vzx_graph.get_zx_nodes():
-            if not node.is_realised():
-                self.__nodes[ node ].alpha(node_alpha)
+            if node.is_realised():
+                self.__nodes[node].alter_highlighting(realised_color)
+            else:
+                self.__nodes[node].alter_highlighting(unrealised_color)
 
         for edge in self.__vzx_graph.get_zx_edges():
-            if not edge.is_realised():
-                self.__edges[ edge ].alpha(edge_alpha)
+            if edge.is_realised():
+                self.__edges[edge].alter_highlighting(realised_color)
+            else:
+                self.__edges[edge].alter_highlighting(unrealised_color)
 
     def toggle_manhattan_excess_volume(self):
         self.__show_manhattan_excess = not self.__show_manhattan_excess
@@ -77,7 +78,7 @@ class ZxSceneManager:
     def alter_node_appearance(self, node: ZxNode, highlight: bool = False):
         if node is not None:
             self.__nodes[node].alter_highlighting(
-                color = 'white' if not highlight else 'teal5' if node.is_realised() else 'red5'
+                color = 'white' if not highlight else 'green4' if node.is_realised() else 'red4'
             )
 
     def alter_node_color(self, node: ZxNode, color: str):
@@ -89,7 +90,7 @@ class ZxSceneManager:
         self.alter_node_appearance(edge.target, highlight=highlight)
 
         self.__edges[ edge ].alter_highlighting(
-            color='white' if not highlight else 'teal5' if edge.is_realised() else 'red5'
+            color='white' if not highlight else 'green5' if edge.is_realised() else 'red4'
         )
 
     def alter_cycle_appearance(self, cycle: list[ZxEdge], highlight: bool = False):

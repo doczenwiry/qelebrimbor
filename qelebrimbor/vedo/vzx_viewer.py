@@ -164,7 +164,7 @@ class VolumetricZxGraphViewer(Plotter):
                 self.__shift_selected_cycle(shift = -1)
         elif event.keypress == "i":
             self.__insufficient_ports_enabled = not self.__insufficient_ports_enabled
-            color = 'red5' if self.__insufficient_ports_enabled else 'white'
+            color = 'red6' if self.__insufficient_ports_enabled else 'white'
             for node in OpenPortsTracker.get_nodes_with_insufficient_ports(self.__vzx_graph):
                 self.__zx_scene_manager.alter_node_color(node, color)
             pass

@@ -15,6 +15,8 @@
 from recordclass import RecordClass  # type: ignore[import-untyped]
 from typing import cast
 
+from termcolor import colored
+
 from qelebrimbor.common.attributes_zx import NodeId, NodeType, QubitId, LayerId, EdgeType
 from qelebrimbor.common.attributes_bg import CubeId, CubeKind
 from qelebrimbor.common.coordinates import Coordinates
@@ -41,7 +43,7 @@ class ZxNode(RecordClass):
         self.__realising_cube = value
 
     def __str__(self):
-        return f"N{self.id}:{self.type}"
+        return f"{self.type}:N{str(self.id).ljust(2, ' ')}"
 
     def __repr__(self):
         return str(self)

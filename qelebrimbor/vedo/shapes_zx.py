@@ -35,13 +35,14 @@ class VdNode(Assembly):
 
         disc_position = (SPACING_X * placement[0], SPACING_Y * placement[1], 0.00)
         text_position = (SPACING_X * placement[0], SPACING_Y * placement[1], 0.05)
-        radius = 1.0 if node.type != NodeType.O else 0.75
+        radius = 1.00 if node.type != NodeType.O else 0.75
+        radius *= 1.25
         color = ZxPalette.get_major(node.type)
 
         self.__disc = Disc(pos = disc_position, r1 = 0.0, r2 = radius, c = color).z(0.01)
         self.add( self.__disc )
 
-        self.__background = Disc(pos = disc_position, r1 = 0.0, r2 = 1.30 * radius, c = 'white')
+        self.__background = Disc(pos = disc_position, r1 = 0.0, r2 = 1.40 * radius, c = 'white')
         self.add( self.__background )
 
         self.__node_id = Text3D(str(node.id), s = radius, pos = text_position, font ='Calco', justify ='centered', c ='white').z(0.02)
@@ -98,7 +99,7 @@ class VdEdge(Assembly):
         if self.__manhattan_excess:
             if shown:
                 self.add(self.__manhattan_excess)
-                self.__background.linecolor('red')
+                self.__background.linecolor('red6')
             else:
                 self.remove(self.__manhattan_excess)
                 self.__background.linecolor('white')

@@ -15,13 +15,18 @@
 from enum import Enum
 
 import pyzx
+from termcolor import colored
 
 NodeId = int
 EdgeId = tuple[NodeId, NodeId]
 QubitId = int
 LayerId = int
 
+ZX_COLORING: bool = False
+
 class NodeType(Enum):
+    __COLORS: list[str] = ['grey', 'red', 'green', 'blue']
+
     O = 0 # Boundary
     X = 1 # X-Spider
     Y = 2 # Y-Spider
@@ -53,10 +58,13 @@ class NodeType(Enum):
         return hash(self.value)
 
     def __str__(self):
-        return self.name
-
+        if ZX_COLORING:
+            return colored(self.name, NodeType.__COLORS[self.value], attrs = ['bold'], force_color = True)
+        else:
+            return self.name
 
 class EdgeType(Enum):
+    __COLORS: list[str] = [ None, 'yellow' ]
     IDENTITY = 0
     HADAMARD = 1
 
@@ -77,7 +85,13 @@ class EdgeType(Enum):
             return pyzx.EdgeType.HADAMARD
 
     def __str__(self):
-        return self.name
+        if ZX_COLORING:
+            return colored(self.name, EdgeType.__COLORS[self.value], attrs = ['bold'], force_color = True)
+        else:
+            return self.name
 
     def __repr__(self):
-        return self.name
+        if ZX_COLORING:
+            return colored(self.name[0], EdgeType.__COLORS[self.value], attrs = ['bold'], force_color = True)
+        else:
+            return self.name[0]

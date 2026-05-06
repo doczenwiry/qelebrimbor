@@ -22,6 +22,7 @@ from time import time
 
 import sys
 
+from qelebrimbor.common import attributes_zx
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
 from qelebrimbor.formats.vzx import VZX
@@ -49,6 +50,7 @@ parser.add_argument('-t', '--output-tqec', action = 'store_true', help = "save t
 parser.add_argument('-v', '--visualization', action='store_true', help = "display the visualisation of the constructed Volumetric ZX-graph at the end of the construction.")
 parser.add_argument('-V', '--force-visualization', action='store_true', help = "force the visualisation for constructed Volumetric ZX-graph with more than 100 cubes.")
 parser.add_argument('-w', '--output-vzx', action='store_true', help = "save the Volumetric ZX-graph to a *.vzx file.")
+parser.add_argument('-z', '--zx-coloring', action='store_true', help = "toggles the coloring of ZX-types in the terminal.")
 args = parser.parse_args()
 
 def main():
@@ -58,6 +60,9 @@ def main():
         raise Exception("Filepath to a *.json file required.")
 
     vzx = PYZX.from_file(arguments.filepath)
+
+    if arguments.zx_coloring:
+        attributes_zx.ZX_COLORING = True
 
     number_of_connected_components = nx.number_connected_components(cast(nx.Graph, vzx))
     if number_of_connected_components > 1:
