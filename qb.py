@@ -42,6 +42,7 @@ parser = ArgumentParser(
     description = "A tool to construct a Volumetric ZX-graph (a.k.a. BlockGraph) from an input ZX-graph. Currently accepted files are *.json containing a PyZX graph in JSON format."
 )
 parser.add_argument('filepath', help = "path to the file containing the input ZX-graph.")
+parser.add_argument('-a', '--analysis', action='store_true', help = "display the preliminary analysis of the input ZX-graph.")
 parser.add_argument('-c', '--check-equivalence', action = 'store_true', help = "check equivalence of the final construct against the input ZX-graph.")
 parser.add_argument('-f', '--fullscreen', action='store_true', help = "display the visualisation in a fullscreen window.")
 parser.add_argument('-p', '--output-pyzx', action = 'store_true', help = "save the Volumetric ZX-graph as a PyZX graph to a *.pyzx.json file.")
@@ -70,6 +71,8 @@ def main():
 
     # Inflation stage
     if CycleAnalyser.has_cycles(vzx):
+        if arguments.analysis:
+            CycleAnalyser.analyse(vzx, minimal = True)
         inflater = ZxGraphInflaterRings(graph = vzx)
     else:
         print("WARNING: The input ZX-graph has no cycles: cannot use Rings strategy. Falling back to BFS.")

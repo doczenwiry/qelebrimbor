@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
         largest_component = len(max(nx.connected_components(cast(nx.Graph, vzx)), key = len))
         if CycleAnalyser.has_cycles(vzx):
-            largest_cycle = len(max(CycleAnalyser.decompose_nodes(vzx, minimal = True)))
+            largest_cycle = len(max(CycleAnalyser.decompose(vzx, minimal = True)))
         else:
             largest_cycle = "n/a"
 

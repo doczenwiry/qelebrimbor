@@ -115,7 +115,7 @@ if __name__ == "__main__":
 
     CycleAnalyser.analyse(vzx)
 
-    cycles = CycleAnalyser.decompose_nodes(vzx)
+    cycles = CycleAnalyser.decompose(vzx)
 
     index = 0
     cycle = cycles[index]

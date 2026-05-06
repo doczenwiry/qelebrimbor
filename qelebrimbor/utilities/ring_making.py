@@ -25,6 +25,7 @@ from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 from qelebrimbor.spacetime.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
+from qelebrimbor.utilities.cycle_analyser import ZxCycle
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 from qelebrimbor.deprecated.pathfinder_dfs import PathFinderDFS
@@ -32,13 +33,8 @@ from qelebrimbor.deprecated.pathfinder_dfs import PathFinderDFS
 import logging
 console = logging.getLogger(__name__)
 
-def find_realisation(graph: VolumetricZxGraph, zx_nodes: list[ZxNode], maximal_overhead: int = 0):
-    nc = len(zx_nodes)
-
-    zx_edges = [
-        ZxEdge(source = zx_nodes[s], target = zx_nodes[(s+1) % nc], type = graph.get_zx_edge(zx_nodes[s].id, zx_nodes[(s+1)%nc].id).type)
-        for s in range(nc)
-    ]
+def find_realisation(graph: VolumetricZxGraph, cycle: ZxCycle, maximal_overhead: int = 0):
+    zx_nodes, zx_edges = zip(*cycle)
 
     realisations = RingFinderBFS.find_minimal_rings(zx_nodes, zx_edges, maximal_overhead = maximal_overhead)
     ring = realisations[0]
@@ -75,12 +71,13 @@ def extract_chain(graph: VolumetricZxGraph, cycle: list[ZxNode]) -> list[ZxNode]
     ]
 
 def find_completion(
-        graph: VolumetricZxGraph, cycle: list[ZxNode],
+        graph: VolumetricZxGraph, cycle: ZxCycle,
         maximal_overhead: int = 0,
         reservations: dict[Coordinates, ZxNode] | None = None
 ) -> bool:
     nc = len(cycle)
-    chain = extract_chain(graph, cycle)
+    nodes, _ = zip(*cycle)
+    chain = extract_chain(graph, nodes)
     start = chain[0]
     final = chain[-1]
 

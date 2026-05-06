@@ -13,6 +13,8 @@
 #   limitations under the License.
 
 from typing import cast
+
+import math
 import networkx as nx
 
 from qelebrimbor.common.components import ZxEdge, ZxNode
@@ -21,7 +23,9 @@ from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 import logging
 console = logging.getLogger(__name__)
 
-type Chain = list[ZxNode]
+type ZxCycle = list[tuple[ZxNode, ZxEdge]]
+type ZxChainNodes = list[ZxNode]
+type ZxChainEdges = list[ZxEdge]
 
 class CycleAnalyser:
     @staticmethod
@@ -33,11 +37,45 @@ class CycleAnalyser:
             return False
 
     @staticmethod
-    def analyse(vzx: VolumetricZxGraph, minimal: bool = False):
-        console.info(f"Cycle basis :")
-        cycles = CycleAnalyser.decompose_nodes(vzx, minimal)
-        for index in range(len(cycles)):
-            console.info(f"Index {index} : {cycles[index]}")
+    def string(cycle: ZxCycle) -> str:
+        content = ""
+
+        for link in cycle:
+            node, edge = link
+            content += f"{str(node)} --{repr(edge.type)}-- "
+
+        if len(cycle) > 0:
+            content += f"{cycle[0][0]}"
+
+        return content
+
+    @staticmethod
+    def analyse(graph: VolumetricZxGraph, minimal: bool = False):
+        print(f"Cycle basis [{"" if minimal else "non-"}minimal]:")
+        zx_cycles = CycleAnalyser.decompose(graph, minimal)
+        max_digits = max(int(math.log10(len(cycle))) for cycle in zx_cycles) + 1
+        for index in range(len(zx_cycles)):
+            zx_cycle = zx_cycles[index]
+            print(f"Cycle {index} [length={str(len(zx_cycle)).rjust(max_digits, ' ')}] : {CycleAnalyser.string(zx_cycle)}")
+
+    @staticmethod
+    def decompose(graph: VolumetricZxGraph, minimal: bool = False) -> list[ZxCycle]:
+        zx_cycles: list[ZxCycle] = []
+
+        nxg = cast(nx.Graph, graph)
+        cycle_basis = nx.minimum_cycle_basis(nxg) if minimal else nx.cycle_basis(nxg)
+
+        for cycle in cycle_basis:
+            zx_cycle = []
+
+            for index in range(len(cycle)):
+                current_node = graph.get_zx_node(cycle[index])
+                current_edge = graph.get_zx_edge(cycle[index], cycle[(index + 1) % len(cycle)])
+                zx_cycle.append( (current_node, current_edge ))
+
+            zx_cycles.append( zx_cycle )
+
+        return list(sorted(zx_cycles, key = len, reverse = True))
 
     @staticmethod
     def decompose_nodes(vzx: VolumetricZxGraph, minimal: bool = False) -> list[list[ZxNode]]:
@@ -61,8 +99,8 @@ class CycleAnalyser:
         return decomposition
 
     @staticmethod
-    def breakdown(graph: VolumetricZxGraph, cycle: list[ZxNode]) -> Chain:
-        chain: list[ZxNode] = []
+    def breakdown(graph: VolumetricZxGraph, cycle: list[ZxNode]) -> ZxChainNodes:
+        chain: ZxChainNodes = []
 
         console.debug(f"> Breaking down cycle {cycle}")
         nc = len(cycle)
