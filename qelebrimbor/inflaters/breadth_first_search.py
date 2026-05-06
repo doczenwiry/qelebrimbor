@@ -150,7 +150,7 @@ class ZxGraphInflaterBFS:
         console.debug(f">> Source ports : {self.__ports_tracker.report(source.realising_cube)}")
         console.debug(f">> Target ports : {self.__ports_tracker.report(target.realising_cube)}")
 
-        path = self.__pathfinder.find_optimal_paths(source.realising_cube, target.realising_cube)
+        path = self.__pathfinder.find_optimum(source.realising_cube, target.realising_cube)
 
         if path is None:
             console.error(f"Failed to find any path for edge-realisation {source} - {target}")

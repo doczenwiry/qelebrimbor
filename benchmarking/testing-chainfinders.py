@@ -16,6 +16,8 @@ import sys
 import itertools
 from time import time
 
+from numpy import number
+
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.components import BgCube
@@ -34,36 +36,45 @@ import logging
 logging.basicConfig(level=logging.CRITICAL)
 logging.getLogger("qelebrimbor.spacetime").setLevel(logging.INFO)
 
+# VolumetricZxGraph parameters
 SOURCE: int = 0
 TARGET: int = 1
+NODES = [(SOURCE, NodeType.X), (TARGET, NodeType.X)]
+EDGES = [(SOURCE, TARGET, EdgeType.IDENTITY)]
 
-def check_restrictions(distance: int, number_of_restrictions: int = 0):
-    all_permutations = list(
+# The distance between the SOURCE and TARGET in spacetime
+DISTANCE = 3
+# The number of restrictions to consider along the chain requested
+RESTRICTIONS_COUNT = 2
+# The choices of restrictions among which to pick for the chain requested
+RESTRICTIONS_CHOICES = [ NodeType.X, NodeType.Z ]
+
+if __name__ == "__main__":
+    inconsistencies_with_calculator = 0
+
+    all_possible_permutations = list(
         itertools.chain.from_iterable(
             itertools.permutations(combination)
-            for combination in itertools.combinations_with_replacement([NodeType.X, NodeType.Z], number_of_restrictions)
+            for combination in itertools.combinations_with_replacement(RESTRICTIONS_CHOICES, RESTRICTIONS_COUNT)
         )
     )
 
-    inconsistencies = 0
+    print(f"Benchmarking chainfinder for distance {DISTANCE} [restrictions:{RESTRICTIONS_COUNT}, permutations:{len(all_possible_permutations)}].")
+    for node_type_restrictions in all_possible_permutations:
+        edge_type_restrictions = [EdgeType.IDENTITY for _ in range(RESTRICTIONS_COUNT + 1)]
+        chain_restrictions = (node_type_restrictions, edge_type_restrictions)
 
-    print(f"Benchmarking chainfinder for distance {distance} [restrictions:{number_of_restrictions}, permutations:{len(all_permutations)}].")
-    for restrictions in all_permutations:
-        chain_restrictions = list(zip(restrictions, [ EdgeType.IDENTITY for _ in range(number_of_restrictions) ]))
-
-        printable_restrictions = list(map(
-            lambda restriction: f"({restriction[1].name[0]},{restriction[0].name})", chain_restrictions)
-        )
-        print(f"Chain-restrictions {printable_restrictions}")
+        print(f"NodeType restrictions : {node_type_restrictions}")
+        print(f"EdgeType restrictions : {edge_type_restrictions}")
         sys.stdout.flush()
 
-        vzx = VolumetricZxGraph(nodes, edges)
+        vzx = VolumetricZxGraph(NODES, EDGES)
 
         node0 = vzx.get_zx_node(SOURCE)
         node1 = vzx.get_zx_node(TARGET)
 
         vzx.realise_zx_node(node = node0, cube = BgCube(CubeKind.ZXZ, SpacetimeHelper.ORIGIN))
-        vzx.realise_zx_node(node = node1, cube = BgCube(CubeKind.ZZX, distance * SpacetimeHelper.XM))
+        vzx.realise_zx_node(node = node1, cube = BgCube(CubeKind.ZZX, DISTANCE * SpacetimeHelper.XM))
 
         chainfinder = ChainfinderDFS(vzx, branch_and_bound = True, tracing = False)
         start = time()
@@ -83,16 +94,10 @@ def check_restrictions(distance: int, number_of_restrictions: int = 0):
         print(f"> Manhattan distance = {md}, Manhattan length = {ml}, Excess volume : +{ml - md} [MC:{mce}] ({runtime} seconds)")
 
         if mce != ml - md:
-            inconsistencies += 1
+            inconsistencies_with_calculator += 1
 
         label = f"manhattan distance = {md}, manhattan length = {ml}, excess volume = +{ml - md}, time={runtime}s"
         viewer = VolumetricZxGraphViewer(graph = vzx, label = label, layout = PlanarLayout(vzx, scale = 2))
         viewer.display()
 
-    print(f"Inconsistencies w.r.t. minimal Manhattan Calculator : {inconsistencies}")
-
-if __name__ == "__main__":
-    nodes = [ (0, NodeType.X), (1, NodeType.X) ]
-    edges = [ (0, 1, EdgeType.IDENTITY) ]
-
-    check_restrictions(3, 2)
+    print(f"Inconsistencies w.r.t. minimal Manhattan Calculator : {inconsistencies_with_calculator}")

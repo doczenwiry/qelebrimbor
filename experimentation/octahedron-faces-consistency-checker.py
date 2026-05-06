@@ -157,7 +157,7 @@ def check_consistency(kinds: Iterable[CubeKind], faces: Iterable[Octant], manhat
             positions = sorted(OctahedronHelper.get_face_positions(manhattan_distance, target_face), key = SORTING_FUNCTIONS[target_face])
             for target_position in positions:
                 target = BgCube(target_kind, target_position)
-                path = pathfinder.find_optimal_paths(source, target)
+                path = pathfinder.find_optimum(source, target)
                 if path is None:
                     raise Exception(f"No path found between {source} and {target}")
                 explored_overhead = path.overhead()

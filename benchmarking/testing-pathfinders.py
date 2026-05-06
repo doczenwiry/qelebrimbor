@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
         # Perform the pathfinding from source to target
         start_time = time()
-        path = pathfinder.find_optimal_paths(source.realising_cube, target.realising_cube)
+        path = pathfinder.find_optimum(source.realising_cube, target.realising_cube)
         final_time = time()
         runtime = round(final_time - start_time, 2)
 

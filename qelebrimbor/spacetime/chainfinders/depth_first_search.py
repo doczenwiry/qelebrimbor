@@ -45,50 +45,67 @@ class ChainfinderDFS:
         self.__branch_and_bound = branch_and_bound
         self.__tracing = tracing
 
+    @staticmethod
+    def heuristic(source: BgCube, target: BgCube, node_types: list[NodeType]):
+        return ManhattanCalculator.minimal_manhattan_chain(source, target, node_types)
+
     def find_optimum(self,
             source: BgCube, target: BgCube,
-            node_types : list[NodeType],
-            edge_types : list[EdgeType],
+            restrictions: tuple[list[NodeType], list[EdgeType]] | None = None,
             maximal_excess: int = None
     ) -> Path | None:
-        if any(nt == NodeType.O or nt == NodeType.Y for nt in node_types):
-            raise Exception(f"Restrictions cannot contain NodeType.O or NodeType.Y.")
-        node_type_nr = len(node_types)
-
         optimum: Path | None = None
-
         minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
-
-        initial = Path(start=source)
-        minimal_paths[(source.kind, source.position)] = initial
-
         unrelaxed: list[tuple[Length, Path]] = []
-        heapq.heappush(
-            unrelaxed,
-            (ManhattanCalculator.minimal_manhattan_chain(source, target, node_types), initial)
-        )
 
-        maximal_distance = source.position.get_manhattan_distance(target.position) + maximal_excess if maximal_excess else None
+        if restrictions:
+            # TODO: guarantee consistency of both restrictions lists
+            node_types, edge_types = restrictions
+            if any(nt == NodeType.O or nt == NodeType.Y for nt in node_types):
+                raise Exception(f"Restrictions cannot contain NodeType.O or NodeType.Y.")
+        else:
+            node_types, edge_types = [], []
+
+        node_type_nr = len(node_types)
+        edge_type_nr = len(edge_types)
+
+        if maximal_excess:
+            maximal_length = source.position.get_manhattan_distance(target.position) + maximal_excess
+            extra = f"max length={maximal_length}/"
+        else:
+            maximal_length = None
+            extra = ""
 
         tracer: SpacetimeTracer | None = SpacetimeTracer() if self.__tracing else None
         if tracer:
             tracer.add_node(source)
 
-        console.info(f"Searching for paths from {source} to {target} [{node_types}/{edge_types}]")
+        initial = Path(start=source)
+        minimal_paths[(source.kind, source.position)] = initial
+
+        vertex = (ChainfinderDFS.heuristic(source, target, node_types), initial)
+        heapq.heappush(unrelaxed, vertex )
+
+        pruning_performed = 0
+
+        console.info(f"Searching for chain from {source} to {target} [{extra}{node_types}/{edge_types}]")
 
         while len(unrelaxed) > 0 and (self.__branch_and_bound or optimum is None):
+            # Restore the heap invariant
             heapq.heapify(unrelaxed)
             ml, current_path = heapq.heappop(unrelaxed)
             terminal = current_path.final
 
             manhattan_length = current_path.manhattan_length()
 
+            if maximal_length and maximal_length < manhattan_length:
+                continue
+
             # Branch-and-bound
             if self.__branch_and_bound and optimum:
-                manhattan_length_projected: int = current_path.manhattan_length() + ManhattanCalculator.minimal_manhattan_chain(
-                    source = terminal, target = target, node_type_restrictions = node_types
-                )
+                manhattan_length_projected: int = current_path.manhattan_length() + self.heuristic(terminal, target, node_types)
                 if optimum.manhattan_length() <= manhattan_length_projected:
+                    pruning_performed += 1
                     continue
 
             console.debug(f"Current [{terminal}] : {current_path}")
@@ -111,17 +128,17 @@ class ChainfinderDFS:
 
             if manhattan_length < node_type_nr:
                 node_type_required = { node_types[manhattan_length] }
-                pipe_type_required = edge_types[manhattan_length]
             else:
                 node_type_required = { NodeType.X, NodeType.Z }
+            if manhattan_length < edge_type_nr:
+                pipe_type_required = edge_types[manhattan_length]
+            else:
                 pipe_type_required = EdgeType.IDENTITY
-            console.debug(f"> Types required : {node_type_required} / {pipe_type_required}")
+            console.debug(f"> Restriction on node/edge : {node_type_required} / {pipe_type_required}")
+
             for neighbor in BlockGraphHelper.get_candidate_constellation(terminal, node_types = node_type_required, pipe_type = pipe_type_required):
                 neighbor_point = (neighbor.kind, neighbor.position)
                 console.debug(f"> Neighbor : {neighbor}")
-
-                if maximal_distance and maximal_distance < source.position.get_manhattan_distance(neighbor.position):
-                    continue
 
                 # Ignore neighbor if it introduces a loop
                 if current_path.occupies(neighbor.position):
@@ -142,13 +159,8 @@ class ChainfinderDFS:
                 if neighbor_point not in minimal_paths or extended_distance < minimal_paths[neighbor_point].manhattan_length():
                     # Filtering out the neighbor from unrelaxed
                     unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].final != neighbor ]
-
                     # Compute the minimal manhattan length required to connect neighbor to target (heuristic).
-                    manhattan_length_remaining: int = ManhattanCalculator.minimal_manhattan_chain(
-                        source = neighbor, target = target,
-                        node_type_restrictions = node_types[extended_distance:],
-                    )
-                    unrelaxed.append( (manhattan_length_remaining, extended_path) )
+                    unrelaxed.append( (self.heuristic(neighbor, target, node_types[extended_distance:]), extended_path) )
 
                     # Update minimal distance discovered
                     minimal_paths[neighbor_point] = extended_path
@@ -156,5 +168,8 @@ class ChainfinderDFS:
         # Tracing exploration
         if tracer:
             tracer.report(cubes_to_label= [source, target])
+
+        if self.__branch_and_bound:
+            console.info(f"Number of pruning performed : {pruning_performed}")
 
         return optimum
