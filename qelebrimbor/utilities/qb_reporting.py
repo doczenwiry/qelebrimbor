@@ -26,11 +26,14 @@ import logging
 console = logging.getLogger(__name__)
 
 
-def __get_insufficient_ports_rate(graph: VolumetricZxGraph) -> float:
+def __get_insufficient_ports_rate(graph: VolumetricZxGraph) -> float | None:
     all_realised_spiders = set(filter(
         lambda zxn: zxn.is_realised() and zxn.type in { NodeType.X, NodeType.Z },
         graph.get_zx_nodes()
     ))
+    if len(all_realised_spiders) == 0:
+        return None
+
     cubes_with_insufficient_ports: int = 0
     for node in all_realised_spiders:
         unrealised_edges = sum(

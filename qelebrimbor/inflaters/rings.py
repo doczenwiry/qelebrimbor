@@ -45,27 +45,33 @@ class ZxGraphInflaterRings:
 
         realised: set[int] = set()
 
-        index: int = 0
         count: int = 0
-        for _ in range(len(zx_cycles)):
-            if index == -1:
-                break
 
+        # Realise the root ring
+        excess_volume: int = self.__attempt_ring_realisation(zx_cycles[0])
+        if excess_volume == -1:
+            console.info(f"> Failure to realise ring : {zx_cycles[0]}")
+            console.info(f"Cycles processed : {count}/{len(zx_cycles)}.")
+
+        console.info(f"> Ring realised with excess volume : +{excess_volume} cubes.")
+        count += 1
+
+        # Realise the remaining completions
+        index: int = self.__select_candidate(realised, zx_cycles)
+
+        while index != -1 and count < len(zx_cycles):
             zx_cycle = zx_cycles[index]
-            console.info(f"Cycle {index} : {zx_cycles[index]}")
+            console.info(f"Cycle {index} : {zx_cycle}")
 
             if all(not zxn.is_realised() for zxn in zx_cycle):
-                excess_volume = self.__attempt_ring_realisation(zx_cycle)
-                if excess_volume == -1:
-                    console.info(f"> Failure to realise ring : {zx_cycle}")
-                    break
-                console.info(f"> Ring realised with excess volume : +{excess_volume} cubes.")
-            else:
-                excess_volume = self.__attempt_ring_completion(zx_cycle, maximal_excess = 10)
-                if excess_volume == -1:
-                    console.info(f"> Failure to complete ring : {zx_cycle}")
-                    break
-                console.info(f"> Ring completed with excess volume : +{excess_volume} cubes.")
+                raise NotImplementedError(f"Support for disjoint rings not currently implemented.")
+
+            excess_volume = self.__attempt_ring_completion(zx_cycle, maximal_excess = 10)
+            if excess_volume == -1:
+                console.info(f"> Failure to complete ring : {zx_cycle}")
+                break
+            console.info(f"> Ring completed with excess volume : +{excess_volume} cubes.")
+
             count += 1
             realised.add(index)
 
