@@ -86,10 +86,10 @@ class Ring:
 
         for index in range(1, len(self.cubes)):
             cube, pipe = self.cubes[index], self.pipes[index-1]
-            content += f"--{repr(pipe)}-- {str(cube)} "
+            content += f" --{repr(pipe)}-- {str(cube)}"
 
         if self.is_closed():
-            content += f"--{repr(self.pipes[-1])}-- {self.anchor}"
+            content += f" --{repr(self.pipes[-1])}-- {self.anchor}"
 
         return content
 

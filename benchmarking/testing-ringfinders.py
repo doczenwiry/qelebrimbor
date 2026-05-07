@@ -20,6 +20,7 @@ from qelebrimbor.core import attributes_zx
 from qelebrimbor.core.attributes_zx import NodeId, NodeType, EdgeType
 
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
+from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
 
@@ -50,8 +51,7 @@ def __benchmark_ring(restrictions: Iterable[tuple[NodeType, EdgeType]]):
     zx_cycle = CycleAnalyser.decompose(vzx, minimal = True)[0]
     print(f"Cycle : {CycleAnalyser.string(zx_cycle)}")
 
-    zx_nodes, zx_edges = zip(*zx_cycle)
-    ringfinder = RingfinderBFS(graph = vzx)#, tracing = SpacetimeTracingReport.FINAL)
+    ringfinder = RingfinderBFS(graph = vzx, tracing = SpacetimeTracingReport.FINAL)
 
     start = time()
     ring = ringfinder.find_optimum(zx_cycle, maximal_excess = 6)
@@ -93,11 +93,10 @@ if __name__ == "__main__":
         )
     )
 
-    restrictions = zip(
+    __benchmark_ring(restrictions = zip(
         [ NodeType.X for _ in range(4) ],
         [ EdgeType.IDENTITY if e % 2 == 0 else EdgeType.HADAMARD for e in range(4) ]
-    )
-    __benchmark_ring(restrictions)
+    ))
 
     # count = 0
     # for spiders, legs in itertools.product(all_spider_permutations, all_legs_permutations):

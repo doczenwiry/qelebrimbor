@@ -73,4 +73,4 @@ class Coordinates(NamedTuple):
         return str(self)
 
     def __str__(self):
-        return f"({self.x},{self.y},{self.z})"
+        return f"({str(self.x).rjust(2, ' ')},{str(self.y).rjust(2, ' ')},{str(self.z).rjust(2, ' ')})"

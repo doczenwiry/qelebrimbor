@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     zx_cycle = list(zip(zx_nodes, zx_edges))
 
-    ring = ringfinder.find_optimum(zx_cycle, maximal_excess = MAX_OVERHEAD + 2)
+    ring = ringfinder.find_optimum(zx_cycle, maximal_excess = 0)
 
     if ring is None:
         console.info(f"No optimum found for {zx_cycle}")
