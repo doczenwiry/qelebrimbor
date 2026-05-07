@@ -14,18 +14,18 @@
 
 import heapq
 
-from qelebrimbor.common.path import Path, Length
-from qelebrimbor.common.attributes_zx import NodeType, EdgeType
-from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.components import BgCube, ZxNode, ZxEdge
+from qelebrimbor.core.path import Path, Length
+from qelebrimbor.core.attributes_zx import NodeType, EdgeType
+from qelebrimbor.core.attributes_bg import CubeKind
+from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.components import BgCube, ZxNode, ZxEdge
 
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.calculator import ManhattanCalculator
-from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
+from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger(__name__)

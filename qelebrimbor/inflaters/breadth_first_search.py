@@ -12,18 +12,17 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from collections import defaultdict
 from typing import cast
 
 import networkx as nx
 
-from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.components import ZxNode, BgCube
+from qelebrimbor.core.attributes_bg import CubeKind
+from qelebrimbor.core.components import ZxNode, BgCube
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
+from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 from qelebrimbor.spacetime.placefinders.breadth_first_search import PlacefinderBFS
 from qelebrimbor.spacetime.pathfinders.depth_first_search import PathfinderDFS
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger("qelebrimbor.main")

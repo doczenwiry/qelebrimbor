@@ -14,9 +14,9 @@
 
 from functools import total_ordering
 
-from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.components import BgCube
-from qelebrimbor.common.attributes_zx import EdgeType
+from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.attributes_zx import EdgeType
 
 import logging
 console = logging.getLogger(__name__)

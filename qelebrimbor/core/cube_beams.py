@@ -13,9 +13,9 @@
 #   limitations under the License.
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.core.coordinates import Coordinates
 
-from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.core.attributes_bg import CubeKind
 
 from logging import getLogger
 console = getLogger(__name__)

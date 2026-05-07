@@ -11,12 +11,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-from typing import cast
 
-import vedo.core.common
 from vedo import settings, Plotter, ButtonWidget, Text3D  # type: ignore[import-untyped]
 
-from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
 from qelebrimbor.vedo.miscellaneous import VdCubeReference
 from qelebrimbor.vedo.scene_manager_bg import BgSceneManager
@@ -28,7 +25,7 @@ from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 from qelebrimbor.vedo.zx_layout.planar import PlanarLayout
 
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger(__name__)

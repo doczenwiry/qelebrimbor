@@ -17,8 +17,8 @@ from typing import cast
 import math
 import networkx as nx
 
-from qelebrimbor.common.components import ZxEdge, ZxNode
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.components import ZxEdge, ZxNode
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger(__name__)

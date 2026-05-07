@@ -22,7 +22,7 @@ from time import time
 
 import sys
 
-from qelebrimbor.common import attributes_zx
+from qelebrimbor.core import attributes_zx
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
 from qelebrimbor.formats.vzx import VZX

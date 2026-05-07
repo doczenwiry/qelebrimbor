@@ -15,8 +15,8 @@
 from vedo import get_color  # type: ignore[import-untyped]
 from numpy import array
 
-from qelebrimbor.common.attributes_zx import NodeType
-from qelebrimbor.common.components import BgCube
+from qelebrimbor.core.attributes_zx import NodeType
+from qelebrimbor.core.components import BgCube
 from qelebrimbor.vedo.bg_painter.abstract import BlockGraphPainter
 
 

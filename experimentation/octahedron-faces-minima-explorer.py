@@ -14,7 +14,7 @@
 
 from logging import basicConfig, getLogger, INFO, CRITICAL
 
-from qelebrimbor.common.components import BgCube
+from qelebrimbor.core.components import BgCube
 from qelebrimbor.helpers.calculator import ManhattanCalculator
 
 basicConfig(level = INFO)
@@ -26,8 +26,8 @@ getLogger('qelebrimbor.utilities').setLevel(INFO)
 from functools import cmp_to_key
 from collections import defaultdict
 
-from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.core.attributes_bg import CubeKind
+from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
 from qelebrimbor.helpers.octahedron import OctahedronHelper
 

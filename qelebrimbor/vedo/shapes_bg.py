@@ -18,11 +18,11 @@ from qelebrimbor.vedo.bg_painter.abstract import BlockGraphPainter
 from qelebrimbor.vedo.bg_painter.default import DefaultBlockGraphPainter
 from qelebrimbor.vedo.bg_painter.shaded import ShadedBlockGraphPainter
 
-from qelebrimbor.common.components import BgCube, BgPipe
+from qelebrimbor.core.components import BgCube, BgPipe
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import EdgeType
-from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.core.attributes_bg import CubeKind
+from qelebrimbor.core.attributes_zx import EdgeType
+from qelebrimbor.core.coordinates import Coordinates
 
 from logging import getLogger
 console = getLogger(__name__)

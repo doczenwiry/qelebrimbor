@@ -14,7 +14,7 @@
 
 from enum import Enum
 
-from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.core.coordinates import Coordinates
 
 class Octant(Enum):
     PPP = Coordinates(+1, +1, +1)

@@ -12,9 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.common.components import BgCube
-from qelebrimbor.common.attributes_zx import EdgeType
-from qelebrimbor.common.attributes_bg import CubeId
+from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.attributes_zx import EdgeType
+from qelebrimbor.core.attributes_bg import CubeId
 
 from logging import getLogger
 console = getLogger(__name__)

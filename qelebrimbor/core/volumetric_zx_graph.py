@@ -16,20 +16,17 @@ from collections import defaultdict, deque
 from enum import Enum
 from typing import Iterable
 from itertools import chain
-
 import networkx as nx
-
-from qelebrimbor.common.coordinates import Coordinates
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 
-from qelebrimbor.common.path import Path
-from qelebrimbor.common.components import ZxNode, ZxEdge, BgCube, BgPipe
-from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType, QubitId, LayerId
-from qelebrimbor.common.attributes_bg import CubeId, CubeKind, PipeId
+from qelebrimbor.core.path import Path
+from qelebrimbor.core.components import ZxNode, ZxEdge, BgCube, BgPipe
+from qelebrimbor.core.attributes_zx import NodeId, NodeType, EdgeType, QubitId, LayerId
+from qelebrimbor.core.attributes_bg import CubeId, CubeKind
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
-from qelebrimbor.spacetime.ringfinders.ring import Ring
+from qelebrimbor.core.ring import Ring
 
 from qelebrimbor.utilities.nmtfl_constraint import NoMoreThanFourLegsConstraint
 

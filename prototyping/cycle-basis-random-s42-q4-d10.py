@@ -17,16 +17,16 @@ from collections import defaultdict
 
 import pyzx
 
-from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.components import BgCube
-from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.path import Path
+from qelebrimbor.core.attributes_bg import CubeKind
+from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.path import Path
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.deprecated.ring_making import find_realisation, find_completion
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
 
 SEED = 42

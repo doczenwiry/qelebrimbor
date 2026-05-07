@@ -14,20 +14,19 @@
 
 from collections import deque
 
-from qelebrimbor.common.components import BgCube, ZxNode, ZxEdge
-from qelebrimbor.common.attributes_zx import NodeType, EdgeType
-from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.core.components import BgCube, ZxNode, ZxEdge
+from qelebrimbor.core.attributes_zx import NodeType, EdgeType
+from qelebrimbor.core.attributes_bg import CubeKind
 
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
 
-from qelebrimbor.spacetime.ringfinders.ring import Ring
+from qelebrimbor.core.ring import Ring
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
-from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
-from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
-from qelebrimbor.utilities.cycle_analyser import ZxCycle
+from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
+from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger(__name__)

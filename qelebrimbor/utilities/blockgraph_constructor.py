@@ -12,12 +12,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.common.components import BgCube
-from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.attributes_zx import NodeId, EdgeId
-from qelebrimbor.common.attributes_bg import CubeId, CubeKind
-from qelebrimbor.common.path import Path
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.attributes_zx import NodeId, EdgeId
+from qelebrimbor.core.attributes_bg import CubeId, CubeKind
+from qelebrimbor.core.path import Path
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger(__name__)

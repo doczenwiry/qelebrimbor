@@ -13,11 +13,6 @@
 #   limitations under the License.
 
 import pyzx
-from pyzx.local_search.congruences import unfuse
-
-from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
-from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger(__name__)

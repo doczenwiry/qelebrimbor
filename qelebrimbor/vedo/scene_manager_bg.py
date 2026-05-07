@@ -12,17 +12,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from collections import deque
-
 from vedo.plotter.runtime import Plotter  # type: ignore[import-untyped]
 
-from qelebrimbor.common.attributes_zx import EdgeId
-from qelebrimbor.common.attributes_bg import CubeId, PipeId
-from qelebrimbor.common.components import BgCube, ZxEdge, BgPipe
+from qelebrimbor.core.components import BgCube, ZxEdge, BgPipe
 from qelebrimbor.vedo.bg_painter.default import DefaultBlockGraphPainter
 from qelebrimbor.vedo.bg_painter.grayscale import GrayscaleBlockGraphPainter
 from qelebrimbor.vedo.bg_painter.shaded import ShadedBlockGraphPainter
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.vedo.shapes_bg import VdCube, VdPipe
 
 from logging import getLogger

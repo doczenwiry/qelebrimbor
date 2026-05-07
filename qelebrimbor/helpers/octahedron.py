@@ -19,7 +19,7 @@ from typing import Iterable
 import numpy as np
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
-from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.core.coordinates import Coordinates
 
 class OctahedronHelper:
     MOVE_XM_YP = SpacetimeHelper.XM + SpacetimeHelper.YP

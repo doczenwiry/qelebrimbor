@@ -16,9 +16,9 @@ from collections import defaultdict
 import pyzx
 import networkx as nx
 
-from qelebrimbor.common.components import ZxNode, BgCube
-from qelebrimbor.common.attributes_zx import NodeId, QubitId, LayerId, NodeType, EdgeType
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph, LayerTransition
+from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.attributes_zx import NodeId, QubitId, LayerId, NodeType, EdgeType
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph, LayerTransition
 
 import logging
 console = logging.getLogger(__name__)

@@ -17,9 +17,9 @@ import numpy as np
 from enum import Enum
 from functools import total_ordering
 
-from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.common.attributes_zx import NodeType
+from qelebrimbor.core.attributes_zx import NodeType
 
 CubeId = int
 PipeId = tuple[CubeId, CubeId]

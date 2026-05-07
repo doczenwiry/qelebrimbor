@@ -16,10 +16,10 @@ from typing import Iterator
 
 from recordclass import RecordClass
 
-from qelebrimbor.common.components import BgCube, ZxNode
-from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.core.components import BgCube, ZxNode
+from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 
 import logging

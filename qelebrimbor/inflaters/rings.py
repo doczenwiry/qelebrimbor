@@ -12,15 +12,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.common.path import Path
-from qelebrimbor.common.components import ZxNode, ZxEdge, BgCube
-from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
+from qelebrimbor.core.path import Path
+from qelebrimbor.core.components import ZxNode, ZxEdge, BgCube
+from qelebrimbor.core.attributes_zx import NodeId, EdgeId, EdgeType
 from qelebrimbor.spacetime.chainfinders.depth_first_search import ChainfinderDFS
-from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
+from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 from qelebrimbor.deprecated.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.cycle_analyser import ZxChainNodes, CycleAnalyser
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger(__name__)

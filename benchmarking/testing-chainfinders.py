@@ -16,9 +16,9 @@ import sys
 import itertools
 from time import time
 
-from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import NodeType, EdgeType
-from qelebrimbor.common.components import BgCube
+from qelebrimbor.core.attributes_bg import CubeKind
+from qelebrimbor.core.attributes_zx import NodeType, EdgeType
+from qelebrimbor.core.components import BgCube
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
@@ -26,7 +26,7 @@ from qelebrimbor.spacetime.chainfinders.depth_first_search import ChainfinderDFS
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 from qelebrimbor.vedo.zx_layout.planar import PlanarLayout
 
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 

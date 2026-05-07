@@ -12,11 +12,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import EdgeType
-from qelebrimbor.common.components import BgCube
-from qelebrimbor.common.path import Path
-from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.core.attributes_bg import CubeKind
+from qelebrimbor.core.attributes_zx import EdgeType
+from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.path import Path
+from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser

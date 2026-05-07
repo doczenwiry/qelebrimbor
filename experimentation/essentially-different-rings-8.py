@@ -15,14 +15,14 @@
 import pyzx
 import networkx as nx
 
-from qelebrimbor.common.components import BgCube
-from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import NodeId, EdgeId, NodeType, EdgeType
-from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.attributes_bg import CubeKind
+from qelebrimbor.core.attributes_zx import NodeId, EdgeId, NodeType, EdgeType
+from qelebrimbor.core.coordinates import Coordinates
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Step
 
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer

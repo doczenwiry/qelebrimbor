@@ -14,11 +14,11 @@
 
 from ast import literal_eval as make_tuple
 
-from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.attributes_zx import NodeId, NodeType, QubitId, LayerId, EdgeId, EdgeType
-from qelebrimbor.common.attributes_bg import CubeId, PipeId, CubeKind
-from qelebrimbor.common.components import ZxNode, ZxEdge, BgCube, BgPipe
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.attributes_zx import NodeId, NodeType, QubitId, LayerId, EdgeId, EdgeType
+from qelebrimbor.core.attributes_bg import CubeId, PipeId, CubeKind
+from qelebrimbor.core.components import BgCube, BgPipe
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 
 class VZX:

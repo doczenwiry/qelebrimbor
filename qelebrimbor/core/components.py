@@ -17,9 +17,9 @@ from typing import cast
 
 from termcolor import colored
 
-from qelebrimbor.common.attributes_zx import NodeId, NodeType, QubitId, LayerId, EdgeType
-from qelebrimbor.common.attributes_bg import CubeId, CubeKind
-from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.core.attributes_zx import NodeId, NodeType, QubitId, LayerId, EdgeType
+from qelebrimbor.core.attributes_bg import CubeId, CubeKind
+from qelebrimbor.core.coordinates import Coordinates
 
 import logging
 console = logging.getLogger(__name__)

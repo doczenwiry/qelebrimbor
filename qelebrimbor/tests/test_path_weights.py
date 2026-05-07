@@ -15,7 +15,7 @@
 import unittest
 from itertools import product
 
-from qelebrimbor.spacetime.metric.path_weight import PathWeight
+from qelebrimbor.core.metric.path_weight import PathWeight
 
 class TestPathWeights(unittest.TestCase):
     def test_identity(self):

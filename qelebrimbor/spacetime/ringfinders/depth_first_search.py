@@ -12,14 +12,14 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.common.components import BgCube
-from qelebrimbor.common.attributes_zx import NodeType, EdgeType
+from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.attributes_zx import NodeType, EdgeType
 
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
-from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
-from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
+from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
+from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger(__name__)

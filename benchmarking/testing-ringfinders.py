@@ -16,17 +16,14 @@ import itertools
 from time import time
 from typing import Iterable
 
-from qelebrimbor.common import attributes_zx
-from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType
-from qelebrimbor.common.path import Path
+from qelebrimbor.core import attributes_zx
+from qelebrimbor.core.attributes_zx import NodeId, NodeType, EdgeType
 
-from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
 
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
-from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 from qelebrimbor.vedo.zx_layout.cycle import CycleLayout
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
@@ -67,18 +64,6 @@ def __benchmark_ring(restrictions: Iterable[tuple[NodeType, EdgeType]]):
     print(f"Found a ring !")
 
     vzx.realise_zx_cycle(zx_cycle, ring)
-
-    # # Realise the nodes
-    # nodes_specifications, edges_specifications = ring.to_specifications(zx_cycle)
-    # for node, cube in nodes_specifications.items():
-    #     print(f"Node {node} -> {cube}")
-    # BlockGraphConstructor.realise_nodes(vzx, nodes_specifications)
-
-    # # Realise the edges
-    # edges_specifications = ring.to_edges_specifications(zx_edges)
-    # for edge, path in edges_specifications.items():
-    #     print(f"Edge {edge} -> {Path.string(path)}")
-    # BlockGraphConstructor.realise_edges(vzx, edges_specifications)
 
     volume = vzx.volume()
 

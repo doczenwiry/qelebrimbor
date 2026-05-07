@@ -14,13 +14,11 @@
 import math
 from termcolor import colored
 
-from qelebrimbor import inflaters
-from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import NodeType
-from qelebrimbor.common.components import ZxEdge
+from qelebrimbor.core.attributes_bg import CubeKind
+from qelebrimbor.core.attributes_zx import NodeType
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger(__name__)

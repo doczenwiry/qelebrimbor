@@ -12,10 +12,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.common.components import ZxNode
-from qelebrimbor.common.attributes_zx import NodeId
+from qelebrimbor.core.components import ZxNode
+from qelebrimbor.core.attributes_zx import NodeId
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 
 class ManualLayout(ZxLayout):

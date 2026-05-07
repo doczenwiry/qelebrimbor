@@ -14,9 +14,9 @@
 
 import numpy as np
 
-from qelebrimbor.common.attributes_bg import CubeKind
-from qelebrimbor.common.attributes_zx import NodeType, EdgeType
-from qelebrimbor.common.components import BgCube
+from qelebrimbor.core.attributes_bg import CubeKind
+from qelebrimbor.core.attributes_zx import NodeType, EdgeType
+from qelebrimbor.core.components import BgCube
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 

@@ -12,8 +12,8 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.common.components import ZxNode, BgCube
-from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.core.components import ZxNode, BgCube
+from qelebrimbor.core.coordinates import Coordinates
 
 
 import logging

@@ -28,7 +28,7 @@ from enum import Enum
 import networkx as nx
 import matplotlib.pyplot as plt
 
-from qelebrimbor.common.components import BgCube
+from qelebrimbor.core.components import BgCube
 
 import logging
 console = logging.getLogger(__name__)

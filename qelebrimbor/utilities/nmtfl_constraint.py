@@ -12,9 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.common.components import ZxNode, ZxEdge
-from qelebrimbor.common.attributes_zx import NodeId
-import qelebrimbor.volumetric_zx_graph as vzg
+from qelebrimbor.core.components import ZxNode, ZxEdge
+from qelebrimbor.core.attributes_zx import NodeId
+import qelebrimbor.core.volumetric_zx_graph as vzg
 
 
 class NoMoreThanFourLegsConstraint:

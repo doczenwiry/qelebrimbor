@@ -14,7 +14,7 @@
 
 from abc import ABC, abstractmethod
 
-from qelebrimbor.common.components import ZxNode
+from qelebrimbor.core.components import ZxNode
 
 Placement = tuple[float, float]
 

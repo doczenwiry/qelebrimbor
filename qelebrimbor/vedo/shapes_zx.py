@@ -14,9 +14,9 @@
 
 from vedo import Assembly, Disc, Line, Text3D, Box  # type: ignore[import-untyped]
 
-from qelebrimbor.common.components import ZxNode, ZxEdge
-from qelebrimbor.common.attributes_zx import NodeType, EdgeType
-from qelebrimbor.common.coordinates import Coordinates
+from qelebrimbor.core.components import ZxNode, ZxEdge
+from qelebrimbor.core.attributes_zx import NodeType, EdgeType
+from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.vedo.zx_palette import ZxPalette
 
 from logging import getLogger

@@ -15,10 +15,10 @@
 from typing import cast
 import networkx as nx
 
-from qelebrimbor.common.components import ZxNode
+from qelebrimbor.core.components import ZxNode
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 class PlanarLayout(ZxLayout):
     def __init__(self, graph: VolumetricZxGraph, scale: float = 1.0):
