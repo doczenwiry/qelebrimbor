@@ -15,7 +15,7 @@
 from qelebrimbor.formats.pyzx import PYZX
 
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
-from qelebrimbor.utilities.ring_making import find_realisation, find_completion, extend_unrealised
+from qelebrimbor.deprecated.ring_making import find_realisation, find_completion, extend_unrealised
 
 from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer

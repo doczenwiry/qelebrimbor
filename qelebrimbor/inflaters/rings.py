@@ -17,12 +17,10 @@ from qelebrimbor.common.components import ZxNode, ZxEdge, BgCube
 from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
 from qelebrimbor.spacetime.chainfinders.depth_first_search import ChainfinderDFS
 from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
-from qelebrimbor.spacetime.ringfinders.ringfinder_bfs import RingFinderBFS
+from qelebrimbor.deprecated.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.cycle_analyser import ZxChainNodes, CycleAnalyser
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
-
-from qelebrimbor.deprecated.pathfinder_dfs import PathFinderDFS
 
 import logging
 console = logging.getLogger(__name__)
@@ -37,7 +35,7 @@ class ZxGraphInflaterRings:
         self.__ports_tracker: OpenPortsTracker = OpenPortsTracker(graph)
 
         self.__ringfinder = RingFinderBFS()
-        self.__chainfinder = PathFinderDFS(self.__graph, self.__ports_tracker) #ChainfinderDFS(tracing = True)
+        self.__chainfinder = ChainfinderDFS(self.__graph, self.__ports_tracker)
 
     def process(self):
         zx_cycles = CycleAnalyser.decompose_nodes(self.__graph, minimal = True)
@@ -119,7 +117,7 @@ class ZxGraphInflaterRings:
         ring = realisations[0]
 
         console.debug(f"Found {len(realisations)} realisations for cycle : {zx_cycle}")
-        console.debug(f"> Realisation [{ring.manhattan_length()}] : {ring}")
+        console.debug(f"> Realisation [{ring.volume()}] : {ring}")
 
         nodes_specifications = ring.to_nodes_specifications(zx_cycle)
         console.debug(f"> Nodes specifications : {nodes_specifications}")
@@ -256,4 +254,4 @@ class ZxGraphInflaterRings:
         for node_id, bg_cube in nodes_specifications.items():
             self.__ports_tracker.occlude_ports(bg_cube.position)
 
-        return completion.manhattan_length() - len(zx_nodes) - 1
+        return completion.volume() - len(zx_nodes) - 1

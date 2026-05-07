@@ -18,10 +18,11 @@ from qelebrimbor.common.path import Path, Length
 from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.components import BgCube, ZxNode, ZxEdge
+from qelebrimbor.common.components import BgCube
 
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.calculator import ManhattanCalculator
+from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
@@ -33,6 +34,7 @@ console = logging.getLogger(__name__)
 class ChainfinderDFS:
     def __init__(self,
             graph: VolumetricZxGraph = None,
+            ports_tracker: OpenPortsTracker | None = None,
             branch_and_bound: bool = False,
             tracing: SpacetimeTracingReport | None = None
     ):
@@ -46,12 +48,15 @@ class ChainfinderDFS:
         """
         self.__graph = graph if graph else VolumetricZxGraph()
         self.__spacetime = graph.spacetime if graph else SpacetimeFabric()
+        self.__ports_tracker = ports_tracker if ports_tracker else OpenPortsTracker(self.__graph)
         self.__branch_and_bound = branch_and_bound
         self.__tracing = tracing
 
     @staticmethod
     def heuristic(source: BgCube, target: BgCube, node_types: list[NodeType]):
-        return ManhattanCalculator.minimal_manhattan_chain(source, target, node_types)
+        # Deprecated PathFinderDFS used this:
+        # return ManhattanCalculator.minimal_manhattan_chain(source, target, node_types)
+        return ManhattanCalculator.minimal_manhattan_length(source, target)
 
     def find_optimum(self,
             source: BgCube, target: BgCube,

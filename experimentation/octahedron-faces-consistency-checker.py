@@ -16,6 +16,7 @@ from typing import Iterable
 from functools import cmp_to_key
 from collections import defaultdict
 
+from qelebrimbor.common.attributes_zx import EdgeType
 from qelebrimbor.common.components import BgCube
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.coordinates import Coordinates
@@ -157,7 +158,7 @@ def check_consistency(kinds: Iterable[CubeKind], faces: Iterable[Octant], manhat
             positions = sorted(OctahedronHelper.get_face_positions(manhattan_distance, target_face), key = SORTING_FUNCTIONS[target_face])
             for target_position in positions:
                 target = BgCube(target_kind, target_position)
-                path = pathfinder.find_optimum(source, target)
+                path = pathfinder.find_optimum(source, target, EdgeType.IDENTITY)
                 if path is None:
                     raise Exception(f"No path found between {source} and {target}")
                 explored_overhead = path.overhead()

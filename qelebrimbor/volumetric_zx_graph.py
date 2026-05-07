@@ -29,6 +29,7 @@ from qelebrimbor.common.components import ZxNode, ZxEdge, BgCube, BgPipe
 from qelebrimbor.common.attributes_zx import NodeId, NodeType, EdgeType, QubitId, LayerId
 from qelebrimbor.common.attributes_bg import CubeId, CubeKind, PipeId
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
+from qelebrimbor.spacetime.ringfinders.ring import Ring
 
 from qelebrimbor.utilities.nmtfl_constraint import NoMoreThanFourLegsConstraint
 
@@ -270,6 +271,43 @@ class VolumetricZxGraph(nx.Graph):
 
         console.debug(f"Realising edge {zx_edge} with pipes : {pipe_ids}")
 
+    def realise_zx_cycle(self, cycle: list[tuple[ZxNode, ZxEdge]], proposal: Ring):
+        nodes, edges = zip(*cycle)
+
+        # TODO: validate the Ring ?
+
+        # Realise the anchor of the cycle.
+        anchor = self.get_zx_node(nodes[0].id)
+        anchor_id = self.realise_zx_node(anchor, proposal.anchor)
+
+        # Realise the successive nodes of the cycle
+        preceding_cube: BgCube = self.get_bg_cube(anchor_id)
+        for index in range(1, len(cycle)):
+            current = self.get_zx_node(nodes[index].id)
+            current_id: CubeId = self.realise_zx_node(current, proposal.cubes[index])
+
+            following_cube: BgCube = self.get_bg_cube(current_id)
+            self.realise_zx_edge(
+                source = preceding_cube.realised_node.id,
+                target = following_cube.realised_node.id,
+                proposal = Path(start = preceding_cube).extend(
+                    cube = following_cube, pipe_type = proposal.pipes[index-1]
+                )
+            )
+
+            preceding_cube = following_cube
+
+        # Realise the final edge to close the ring
+        anchor = self.get_zx_node(nodes[0].id)
+        final = self.get_zx_node(nodes[-1].id)
+
+        path = Path(start = final.realising_cube)
+        for index in range(len(cycle), len(proposal.cubes)):
+            path = path.extend(cube = proposal.cubes[index], pipe_type = proposal.pipes[index-1])
+        path = path.extend(cube = anchor.realising_cube, pipe_type = proposal.pipes[-1])
+
+        self.realise_zx_edge(source = final.id, target = anchor.id, proposal = path)
+
     def place_cube(self, cube: BgCube) -> CubeId:
         if self.spacetime.is_occupied(cube.position):
             occupant = self.spacetime.occupant(cube.position)
@@ -340,42 +378,16 @@ class VolumetricZxGraph(nx.Graph):
         bg_pipe = BgPipe(source, target, pipe_type)
         self.blockgraph.edges[source.id, target.id][VolumetricZxGraph.KEY_BG_PIPE] = bg_pipe
 
-    # TODO: figure the rules for this as it gets complicated quickly ...
-    def is_realising_cube(self, node: ZxNode, cube: BgCube):
-        if cube.realised_node == node:
-            return True
-
-        visited: set[BgCube] = { cube }
-        queue: deque[BgCube] = deque([cube])
-        while queue:
-            current = queue.popleft()
-            for neighbor in self.get_bg_neighbours(current, pipe_type = EdgeType.IDENTITY):
-                if neighbor.kind.get_type() == cube.kind.get_type():
-                    if neighbor.realised_node == node:
-                        return True
-
-                    if neighbor not in visited:
-                        visited.add(neighbor)
-                        queue.append(neighbor)
-                elif self.get_bg_degree(neighbor.id) == 2:
-                    if neighbor not in visited:
-                        visited.add(neighbor)
-                        queue.append(neighbor)
-
-        console.debug(f"Neigborhood visited to find alternative : {visited}")
-
-        return False
-
     def is_path_valid(self, edge: ZxEdge, proposal: Path) -> bool:
         is_hadamard_path = False
 
         start = proposal.start
         final = proposal.final
 
-        if not (self.is_realising_cube(edge.source, start) or self.is_realising_cube(edge.target, start)):
+        if not (edge.source.id != start.realised_node.id or edge.target.id != start.realised_node.id):
             raise Exception(f"Start cube {start} is not realising either endpoint of edge {edge} [proposal={proposal}].")
 
-        if not (self.is_realising_cube(edge.source, final) or self.is_realising_cube(edge.target, final)):
+        if not (edge.source.id != final.realised_node.id or edge.target.id != final.realised_node.id):
             raise Exception(f"Final cube {final} is not realising either endpoint of edge {edge} [proposal={proposal}].")
 
         console.debug(f"Validating path proposal for {edge} : {proposal}.")

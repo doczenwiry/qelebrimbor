@@ -87,5 +87,18 @@ class Path:
             content += f" -> {self.final}"
         return content
 
+    def string(self) -> str:
+        content = f"{self.start} --{repr(self.pipes_types[0])}-- "
+
+        for index in range(len(self.extra_cubes)):
+            cube = self.extra_cubes[index]
+            pipe = self.pipes_types[index+1]
+            content += f"{str(cube)} --{repr(pipe)}-- "
+
+        content += f"{self.final}"
+
+        return content
+
+
     def __repr__(self):
         return str(self)

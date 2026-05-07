@@ -16,13 +16,9 @@ import sys
 import itertools
 from time import time
 
-from numpy import number
-
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.components import BgCube
-from qelebrimbor.deprecated.pathfinder_dfs import PathFinderDFS
-from qelebrimbor.helpers.calculator import ManhattanCalculator
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
@@ -70,10 +66,8 @@ def __benchmark_restrictions(node_type_restrictions: list[NodeType]):
     vzx.realise_zx_node(node = node1, cube = TARGET_CUBE)
 
     chainfinder = ChainfinderDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
-    pathfinder = PathFinderDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
     start = time()
-    # chain = chainfinder.find_optimum(node0.realising_cube, node1.realising_cube, restrictions = chain_restrictions)
-    chain = pathfinder.find_optimum(node0.realising_cube, node1.realising_cube, restrictions = chain_restrictions)
+    chain = chainfinder.find_optimum(node0.realising_cube, node1.realising_cube, restrictions = chain_restrictions)
     final = time()
     runtime = round(final - start, 2)
 

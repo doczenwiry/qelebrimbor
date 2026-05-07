@@ -12,28 +12,61 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from functools import total_ordering
+
 from qelebrimbor.common.coordinates import Coordinates
-from qelebrimbor.common.components import ZxNode, ZxEdge, BgCube
-from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
-from qelebrimbor.common.path import Path
+from qelebrimbor.common.components import BgCube
+from qelebrimbor.common.attributes_zx import EdgeType
+
+import logging
+console = logging.getLogger(__name__)
 
 
+@total_ordering
 class Ring:
     def __init__(self, anchor: BgCube):
         self.cubes: list[BgCube] = [ anchor ]
+        self.pipes: list[EdgeType] = []
         self.occupied = { anchor.position }
 
-    def get_terminal(self):
+    @property
+    def anchor(self) -> BgCube:
+        return self.cubes[0]
+
+    @property
+    def terminal(self) -> BgCube:
         return self.cubes[-1]
 
     def manhattan_distance_anchor(self) -> int:
         return self.cubes[0].position.get_manhattan_distance(self.cubes[-1].position)
 
-    def manhattan_length(self):
+    def volume(self) -> int:
         return len(self.cubes)
 
     def occupies(self, position: Coordinates):
         return position in self.occupied
+
+    def is_closed(self):
+        return len(self.cubes) == len(self.pipes)
+
+    def __copy(self):
+        cp = Ring(anchor = self.cubes[0])
+        cp.cubes.extend(self.cubes[1:])
+        cp.pipes.extend(self.pipes)
+        cp.occupied.update(self.occupied)
+        return cp
+
+    def close(self, pipe: EdgeType) -> Ring:
+        closed = self.__copy()
+        closed.pipes.append(pipe)
+        return closed
+
+    def extend(self, cube: BgCube, pipe: EdgeType) -> Ring:
+        extended = self.__copy()
+        extended.cubes.append(cube)
+        extended.pipes.append(pipe)
+        extended.occupied.add(cube.position)
+        return extended
 
     def append(self, cube: BgCube):
         self.cubes.append(cube)
@@ -41,44 +74,24 @@ class Ring:
 
     def copy(self):
         cp = Ring(self.cubes[0])
-        cp.cubes.extend(self.cubes[1:])
-        cp.occupied = set(self.occupied)
+        cp.cubes.extend(self.cubes[1:].copy())
+        cp.occupied = set(self.occupied.copy())
         return cp
 
-    def to_nodes_specifications(self, nodes: list[ZxNode]) -> dict[NodeId, BgCube]:
-        return { nodes[nd].id : self.cubes[nd] for nd in range(len(nodes)) }
-
-    def to_edges_specifications(self, edges: list[ZxEdge]) -> dict[EdgeId, Path]:
-        edge_count = len(edges)
-        cube_count = len(self.cubes)
-
-        edges_specifications = {}
-
-        for i in range(edge_count-1):
-            source = edges[i].source
-            target = edges[i].target
-            if source.id > target.id:
-                source, target = target, source
-            path = Path(start = source.realising_cube).extend(target.realising_cube, edges[i].type)
-            edges_specifications[ (source.id, target.id) ] = path
-
-        start = edges[-1].target
-        final = edges[-1].source
-        cubes = self.cubes[edge_count : cube_count]
-        if start.id > final.id:
-            start, final = final, start
-        else:
-            cubes = list(reversed(cubes))
-        path = Path(start = start.realising_cube)
-        for cube, pipe in zip(cubes, [ EdgeType.IDENTITY for i in range(cube_count - edge_count + 1)]):
-            path = path.extend(cube, pipe)
-        path = path.extend(final.realising_cube, edges[-1].type)
-        edges_specifications[(start.id, final.id)] = path
-
-        return edges_specifications
+    def __lt__(self, other):
+        return self.volume().__lt__(other.volume())
 
     def __str__(self):
-        return f"{self.cubes[0]} - {self.cubes[1:]}"
+        content = f"{self.cubes[0]}"
+
+        for index in range(1, len(self.cubes)):
+            cube, pipe = self.cubes[index], self.pipes[index-1]
+            content += f"--{repr(pipe)}-- {str(cube)} "
+
+        if self.is_closed():
+            content += f"--{repr(self.pipes[-1])}-- {self.anchor}"
+
+        return content
 
     def __repr__(self):
         return str(self)

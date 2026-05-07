@@ -12,8 +12,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import pyzx
-
 from qelebrimbor.common.attributes_bg import CubeKind
 from qelebrimbor.common.attributes_zx import EdgeType
 from qelebrimbor.common.components import BgCube
@@ -22,9 +20,7 @@ from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
-from qelebrimbor.utilities.ring_making import find_realisation, extend_unrealised
-
-from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.deprecated.ring_making import find_realisation, extend_unrealised
 
 from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer

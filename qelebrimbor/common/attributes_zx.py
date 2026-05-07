@@ -63,6 +63,12 @@ class NodeType(Enum):
         else:
             return self.name
 
+    def __repr__(self):
+        if ZX_COLORING:
+            return colored(self.name, NodeType.__COLORS[self.value], attrs = ['bold'], force_color = True)
+        else:
+            return self.name
+
 class EdgeType(Enum):
     __COLORS: list[str] = [ None, 'yellow' ]
     IDENTITY = 0

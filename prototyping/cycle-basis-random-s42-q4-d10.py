@@ -24,7 +24,7 @@ from qelebrimbor.common.path import Path
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.utilities.ring_making import find_realisation, find_completion
+from qelebrimbor.deprecated.ring_making import find_realisation, find_completion
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser

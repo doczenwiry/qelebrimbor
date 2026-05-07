@@ -13,22 +13,17 @@
 #   limitations under the License.
 
 from qelebrimbor.common.components import ZxNode, ZxEdge
+from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
+from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.common.attributes_zx import NodeType, EdgeType
-from qelebrimbor.spacetime.ringfinders.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.cycle import CycleLayout
 
 import logging
 console = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-logging.getLogger('qelebrimbor').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.DEBUG)
-logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.DEBUG)
-logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.vedo').setLevel(logging.INFO)
+logging.basicConfig(level=logging.CRITICAL)
 
 LENGTH = 6
 MAX_OVERHEAD = 2 if LENGTH <= 5 else 1 if LENGTH % 2 != 0 else 0
@@ -44,32 +39,26 @@ if __name__ == "__main__":
         edges = ( (s, (s + 1) % LENGTH, edges[s]) for s in range(LENGTH) )
     )
 
+    ringfinder = RingfinderBFS(vzx)
+
     vzx.log_summary()
 
-    realisations = RingFinderBFS.find_minimal_rings(zx_nodes, zx_edges, number_sought = -1, maximal_overhead = MAX_OVERHEAD + 2)
-    console.info(f"Found {len(realisations)} realisations for Hadamard Ring of length {LENGTH}")
+    zx_cycle = list(zip(zx_nodes, zx_edges))
 
-    for realisation in realisations[:2]:
-        console.info(f"> Realisation [{realisation.manhattan_length()}] : {realisation}")
+    ring = ringfinder.find_optimum(zx_cycle, maximal_excess = MAX_OVERHEAD + 2)
+
+    if ring is None:
+        console.info(f"No optimum found for {zx_cycle}")
+    else:
+        console.info(f"Found an optimal Hadamard Ring of length {ring.volume()}")
+
+        console.info(f"> Realisation [{ring.volume()}] : {ring}")
         vzx = VolumetricZxGraph(
             nodes = zip(range(LENGTH), nodes),
             edges = ( (s, (s + 1) % LENGTH, edges[s]) for s in range(LENGTH) )
         )
 
-        nodes_specifications = realisation.to_nodes_specifications(zx_nodes)
-        console.info(f"Nodes specifications : {nodes_specifications}")
-        BlockGraphConstructor.realise_nodes(graph= vzx, specifications = nodes_specifications)
-
-        # Update the realising cubes of all zx_nodes involved
-        for node in zx_nodes:
-            node.realising_cube = vzx.get_zx_node(node.id).realising_cube
-        for edge in zx_edges:
-            edge.source.realising_cube = vzx.get_zx_node(edge.source.id).realising_cube
-            edge.target.realising_cube = vzx.get_zx_node(edge.target.id).realising_cube
-
-        edges_specifications = realisation.to_edges_specifications(zx_edges)
-        console.info(f"Edges specifications : {edges_specifications}")
-        BlockGraphConstructor.realise_edges(graph= vzx, specifications = edges_specifications)
+        vzx.realise_zx_cycle(zx_cycle, ring)
 
         viewer = VolumetricZxGraphViewer(vzx, f"Hadamard Ring, n={LENGTH}", CycleLayout(vzx))
         viewer.display()

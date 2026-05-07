@@ -11,9 +11,6 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-from os import pipe
-
-import pyzx
 
 from qelebrimbor.common.path import Path
 from qelebrimbor.common.components import BgCube
@@ -24,7 +21,7 @@ from qelebrimbor.formats.pyzx import PYZX
 
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 
-from qelebrimbor.utilities.ring_making import extend_unrealised
+from qelebrimbor.deprecated.ring_making import extend_unrealised
 
 from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer

@@ -14,16 +14,15 @@
 
 from collections import defaultdict
 
-from qelebrimbor.common.coordinates import Coordinates
 from qelebrimbor.common.attributes_zx import NodeId, EdgeId, EdgeType
-from qelebrimbor.common.attributes_bg import CubeId, CubeKind
-from qelebrimbor.common.components import BgCube, ZxNode, ZxEdge
+from qelebrimbor.common.attributes_bg import CubeKind
+from qelebrimbor.common.components import BgCube, ZxNode
 from qelebrimbor.common.path import Path
 
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
-from qelebrimbor.spacetime.ringfinders.ringfinder_bfs import RingFinderBFS
+from qelebrimbor.deprecated.ringfinder_bfs import RingFinderBFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 from qelebrimbor.utilities.cycle_analyser import ZxCycle
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
@@ -40,7 +39,7 @@ def find_realisation(graph: VolumetricZxGraph, cycle: ZxCycle, maximal_overhead:
     ring = realisations[0]
 
     console.info(f"Found {len(realisations)} realisations for cycle : {zx_nodes}")
-    console.info(f"> Realisation [{ring.manhattan_length()}] : {ring}")
+    console.info(f"> Realisation [{ring.volume()}] : {ring}")
 
     nodes_specifications = ring.to_nodes_specifications(zx_nodes)
     console.info(f"> Nodes specifications : {nodes_specifications}")

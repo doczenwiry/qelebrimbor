@@ -17,16 +17,34 @@ from collections import deque
 from qelebrimbor.common.components import BgCube, ZxNode, ZxEdge
 from qelebrimbor.common.attributes_zx import NodeType, EdgeType
 from qelebrimbor.common.attributes_bg import CubeKind
+
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
+
 from qelebrimbor.spacetime.ringfinders.ring import Ring
+from qelebrimbor.spacetime.fabric import SpacetimeFabric
+from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
+from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
+from qelebrimbor.utilities.cycle_analyser import ZxCycle
+
+from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger(__name__)
 
+
 class RingFinderBFS:
-    @staticmethod
-    def find_minimal_rings(
+    def __init__(self,
+            graph: VolumetricZxGraph = None,
+            ports_tracker: OpenPortsTracker | None = None,
+            tracing: SpacetimeTracingReport | None = None
+    ):
+        self.__graph = graph if graph else VolumetricZxGraph()
+        self.__ports_tracker = ports_tracker if ports_tracker else OpenPortsTracker(self.__graph)
+        self.__spacetime = graph.spacetime if graph else SpacetimeFabric()
+        self.__tracing = tracing
+
+    def find_minimal_rings(self,
         nodes: list[ZxNode],
         edges: list[ZxEdge],
         number_sought: int = 1,
@@ -46,8 +64,8 @@ class RingFinderBFS:
 
         while len(queue) > 0 and len(rings) != number_sought:
             ring: Ring = queue.popleft()
-            length: int = ring.manhattan_length()
-            terminal: BgCube = ring.get_terminal()
+            length: int = ring.volume()
+            terminal: BgCube = ring.terminal
             node_types: set[NodeType] = { nodes[length].type } if length < n else { NodeType.X , NodeType.Z }
             pipe_type: EdgeType = edges[ length-1 ].type if edges and length <= e else EdgeType.IDENTITY
             console.debug(f"Terminal cube: {terminal} [{pipe_type}]")
@@ -73,7 +91,7 @@ class RingFinderBFS:
 
                 # Check whether the ring satisfies the specification
                 console.debug(f"Extended : {extended}")
-                console.debug(f"> {extended.manhattan_length()} <= {n} + {maximal_overhead}?")
+                console.debug(f"> {extended.volume()} <= {n} + {maximal_overhead}?")
                 if length >= n-1 and anchor.position.get_manhattan_distance(candidate.position) == 1:
                     console.debug(f"Target reached : {ring}")
                     step = candidate.position - anchor.position
@@ -82,7 +100,7 @@ class RingFinderBFS:
                     if reach_condition and pipe_type in BlockGraphHelper.infer_pipe_type(anchor.kind, candidate.kind):
                         rings.append(extended)
                 else:
-                    if extended.manhattan_length() + extended.manhattan_distance_anchor() <= n + maximal_overhead:
+                    if extended.volume() + extended.manhattan_distance_anchor() <= n + maximal_overhead:
                         queue.append(extended)
                     else:
                         console.debug(f"> Candidate is too far away [{candidate}]")
