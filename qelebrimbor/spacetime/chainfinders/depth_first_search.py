@@ -23,7 +23,7 @@ from qelebrimbor.common.components import BgCube, ZxNode, ZxEdge
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.calculator import ManhattanCalculator
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
-from qelebrimbor.spacetime.tracer import SpacetimeTracer
+from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -31,14 +31,18 @@ import logging
 console = logging.getLogger(__name__)
 
 class ChainfinderDFS:
-    def __init__(self, graph: VolumetricZxGraph = None, branch_and_bound: bool = False, tracing: bool = False):
+    def __init__(self,
+            graph: VolumetricZxGraph = None,
+            branch_and_bound: bool = False,
+            tracing: SpacetimeTracingReport | None = None
+    ):
         """
         Create a PathfinderDFS to search for optimal paths between cubes in spacetime.
         :param graph: The VolumetricZxGraph serving as the context for the search.
         :param branch_and_bound: Controls whether a Branch-and-Bound is performed to improve the first path found.
         This will incur an additional computational cost that may or may not fall into super-exponential territory.
         Proof of the possibility would be nice. Refutation thereof would be better.
-        :param tracing:
+        :param tracing: Controls whether a tracing/reporting of all vertices explored is performed.
         """
         self.__graph = graph if graph else VolumetricZxGraph()
         self.__spacetime = graph.spacetime if graph else SpacetimeFabric()
@@ -76,7 +80,7 @@ class ChainfinderDFS:
             maximal_length = None
             extra = ""
 
-        tracer: SpacetimeTracer | None = SpacetimeTracer() if self.__tracing else None
+        tracer: SpacetimeTracer | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None
         if tracer:
             tracer.add_node(source)
 
@@ -103,7 +107,7 @@ class ChainfinderDFS:
 
             # Branch-and-bound
             if self.__branch_and_bound and optimum:
-                manhattan_length_projected: int = current_path.manhattan_length() + self.heuristic(terminal, target, node_types)
+                manhattan_length_projected: int = current_path.manhattan_length() + self.heuristic(terminal, target, node_types[manhattan_length:])
                 if optimum.manhattan_length() <= manhattan_length_projected:
                     pruning_performed += 1
                     continue
@@ -160,7 +164,7 @@ class ChainfinderDFS:
                     # Filtering out the neighbor from unrelaxed
                     unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].final != neighbor ]
                     # Compute the minimal manhattan length required to connect neighbor to target (heuristic).
-                    unrelaxed.append( (self.heuristic(neighbor, target, node_types[extended_distance:]), extended_path) )
+                    unrelaxed.append( (ChainfinderDFS.heuristic(neighbor, target, node_types[extended_distance:]), extended_path) )
 
                     # Update minimal distance discovered
                     minimal_paths[neighbor_point] = extended_path

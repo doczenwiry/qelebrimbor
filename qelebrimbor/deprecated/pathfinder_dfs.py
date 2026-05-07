@@ -23,7 +23,7 @@ from qelebrimbor.common.components import BgCube, ZxNode, ZxEdge
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.calculator import ManhattanCalculator
 from qelebrimbor.spacetime.connectivity.sufficient_ports import OpenPortsTracker
-from qelebrimbor.spacetime.tracer import SpacetimeTracer
+from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -35,7 +35,7 @@ class PathFinderDFS:
         graph: VolumetricZxGraph | None = None,
         ports_tracker: OpenPortsTracker | None = None,
         branch_and_bound: bool = False,
-        tracing: bool = False
+        tracing: SpacetimeTracingReport | None = None
     ) -> None:
         self.__graph: VolumetricZxGraph = graph or VolumetricZxGraph()
         self.__ports_tracker: OpenPortsTracker = ports_tracker or OpenPortsTracker(self.__graph)
@@ -89,7 +89,7 @@ class PathFinderDFS:
 
         # Tracing exploration
         pruning_performed = 0
-        tracer: SpacetimeTracer | None = SpacetimeTracer() if self.__tracing else None
+        tracer: SpacetimeTracer | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None
         if tracer:
             tracer.add_node(source)
 

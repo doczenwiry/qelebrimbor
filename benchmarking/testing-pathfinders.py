@@ -24,6 +24,7 @@ from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 from qelebrimbor.spacetime.pathfinders.depth_first_search import PathfinderDFS
 from qelebrimbor.spacetime.pathfinders.dijkstra import PathfinderDijkstra
+from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -56,12 +57,12 @@ if __name__ == "__main__":
         vzx.realise_zx_node(node = target, cube = BgCube(CubeKind.ZXX, md * SpacetimeHelper.XP))
 
         # Instantiate the Pathfinder to benchmark
-        pathfinder = PathfinderDFS(vzx, branch_and_bound = True, tracing = True)
+        pathfinder = PathfinderDFS(vzx, branch_and_bound = False, tracing = SpacetimeTracingReport.FINAL)
         # pathfinder = PathfinderDijkstra(vzx, tracing = True)
 
         # Perform the pathfinding from source to target
         start_time = time()
-        path = pathfinder.find_optimum(source.realising_cube, target.realising_cube)
+        path = pathfinder.find_optimum(source.realising_cube, target.realising_cube, EdgeType.IDENTITY)
         final_time = time()
         runtime = round(final_time - start_time, 2)
 

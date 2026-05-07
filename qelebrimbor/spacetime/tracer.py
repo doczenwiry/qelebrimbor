@@ -24,6 +24,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from enum import Enum
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -32,11 +33,16 @@ from qelebrimbor.common.components import BgCube
 import logging
 console = logging.getLogger(__name__)
 
+class SpacetimeTracingReport(Enum):
+    FINAL = 0
+    STEPS = 1
+
 class SpacetimeTracer:
-    def __init__(self):
+    def __init__(self, reporting: SpacetimeTracingReport = SpacetimeTracingReport.FINAL):
         self.__nodes : dict[BgCube, int] = dict()
         self.__nodes_extended: set[BgCube] = set()
         self.__trace: nx.Graph = nx.Graph()
+        self.__reporting = reporting
 
     def add_node(self, vertex):
         current_id = len(self.__nodes)
@@ -45,12 +51,16 @@ class SpacetimeTracer:
 
     def add_edge(self, source, target):
         self.__trace.add_edge(self.__nodes[source], self.__nodes[target])
+        if self.__reporting == SpacetimeTracingReport.STEPS:
+            layout = nx.drawing.layout.bfs_layout(self.__trace, start=0)
+            nx.draw(self.__trace, layout, node_size=1)
+            plt.show()
 
-    def report(self, cubes_to_label : list[BgCube]):
-        labels = {
-            self.__nodes[cube] : str(cube)
-            for cube in cubes_to_label
-        }
+    def report(self, cubes_to_label : list[BgCube] | None = None):
+        labels = {}
+        if cubes_to_label:
+            for cube in cubes_to_label:
+                labels[self.__nodes[cube]] = str(cube)
         layout = nx.drawing.layout.bfs_layout(self.__trace, start = 0)
 
         points_discovered = len(self.__nodes)

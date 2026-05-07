@@ -23,7 +23,7 @@ from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.calculator import ManhattanCalculator
 from qelebrimbor.common.path import Length, Path
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
-from qelebrimbor.spacetime.tracer import SpacetimeTracer
+from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
 from qelebrimbor.volumetric_zx_graph import VolumetricZxGraph
 
@@ -31,7 +31,11 @@ import logging
 console = logging.getLogger(__name__)
 
 class PathfinderDFS:
-    def __init__(self, graph: VolumetricZxGraph = None, branch_and_bound: bool = False, tracing: bool = False):
+    def __init__(self,
+            graph: VolumetricZxGraph = None,
+            branch_and_bound: bool = False,
+            tracing: SpacetimeTracingReport | None = None
+    ):
         """
         Instantiate a PathfinderDFS to search for shortest valid paths between cubes in spacetime.
         :param graph: The VolumetricZxGraph serving as the context for the searches.
@@ -84,7 +88,7 @@ class PathfinderDFS:
 
         pruning_performed = 0
 
-        tracer: SpacetimeTracer | None = SpacetimeTracer() if self.__tracing else None
+        tracer: SpacetimeTracer | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None
         if tracer:
             tracer.add_node(source)
 
