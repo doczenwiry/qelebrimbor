@@ -37,7 +37,7 @@ class ZxGraphInflaterRings:
         self.__ports_tracker: OpenPortsTracker = OpenPortsTracker(graph)
 
         self.__ringfinder = RingFinderBFS()
-        self.__chainfinder = PathFinderDFS() #ChainfinderDFS(tracing = True)
+        self.__chainfinder = PathFinderDFS(self.__graph, self.__ports_tracker) #ChainfinderDFS(tracing = True)
 
     def process(self):
         zx_cycles = CycleAnalyser.decompose_nodes(self.__graph, minimal = True)
@@ -196,7 +196,6 @@ class ZxGraphInflaterRings:
         completion = self.__chainfinder.find_minimal_paths(
             source = start, target = final,
             zx_nodes = zx_nodes, zx_edges = zx_edges,
-            graph = self.__graph,
             maximal_excess = maximal_excess
         )
 

@@ -72,8 +72,7 @@ def extract_chain(graph: VolumetricZxGraph, cycle: list[ZxNode]) -> list[ZxNode]
 
 def find_completion(
         graph: VolumetricZxGraph, cycle: ZxCycle,
-        maximal_overhead: int = 0,
-        reservations: dict[Coordinates, ZxNode] | None = None
+        maximal_overhead: int = 0
 ) -> bool:
     nc = len(cycle)
     nodes, _ = zip(*cycle)
@@ -92,11 +91,10 @@ def find_completion(
     console.info(f"Searching completion from {start_cube} to {final_cube}.")
     console.info(f"> Nodes : {zx_nodes}")
     console.info(f"> Edges : {zx_edges}")
-    completion = PathFinderDFS.find_minimal_paths(
+    completion = PathFinderDFS(graph).find_minimal_paths(
         source = start_cube, target = final_cube,
         zx_nodes = zx_nodes,
         zx_edges = zx_edges,
-        graph = graph,
         maximal_excess = maximal_overhead
     )
 
