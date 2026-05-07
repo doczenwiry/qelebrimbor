@@ -14,6 +14,8 @@
 
 from dataclasses import dataclass
 
+from qelebrimbor.core import attributes_zx
+from qelebrimbor.core.attributes_bg import CubeKind
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
@@ -71,6 +73,24 @@ class ColorShuffling:
                 symbol = other.start[closing] if idx == opening else other.start[idx]
                 shuffled[ locations[symbol] ] = self.final[idx]
             return ColorShuffling(self.start, "".join(shuffled))
+
+    def compatible(self, source: CubeKind, target: CubeKind) -> bool:
+        encoded_source: dict[str, str] = dict()
+        for marker, face in zip(self.start, source.name):
+            encoded_source[marker] = face
+
+        encoded_target: dict[str, str] = dict()
+        for marker, face in zip(self.final, target.name):
+            encoded_target[marker] = face
+
+        for marker in 'xyz':
+            if marker in encoded_source and marker in encoded_target:
+                if encoded_source[marker] != encoded_target[marker]:
+                    return False
+            elif marker in encoded_source or marker in encoded_target:
+                raise Exception(f"Internal inconsistency {marker} {encoded_source} {encoded_target}.")
+
+        return True
 
     def __eq__(self, other):
         return self.start == other.start and self.final == other.final
