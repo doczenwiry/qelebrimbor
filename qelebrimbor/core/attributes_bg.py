@@ -105,10 +105,15 @@ class CubeKind(Enum):
         return self.value.__lt__(other.value)
 
     def __repr__(self):
-        return str(self)
+        return self.name
 
     def __str__(self):
-        return self.name
+        content = ""
+
+        for face in self.name:
+            content += f"{str(NodeType[face])}"
+
+        return content
 
 class PipeType(Enum):
     IDENTITY = 0

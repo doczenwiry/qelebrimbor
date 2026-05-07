@@ -30,7 +30,7 @@ from qelebrimbor.vedo.zx_layout.cycle import CycleLayout
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 import logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.CRITICAL)
 
 def __benchmark_ring(restrictions: Iterable[tuple[NodeType, EdgeType]]):
     node_type_restrictions, edge_type_restrictions = zip(*restrictions)
@@ -61,7 +61,8 @@ def __benchmark_ring(restrictions: Iterable[tuple[NodeType, EdgeType]]):
     if ring is None:
         print(f"> Failed to find optimal ring.")
         return -1
-    print(f"Found a ring !")
+    print(f"Found a ring with volume : {ring.volume()}")
+    print(f"> {ring}")
 
     vzx.realise_zx_cycle(zx_cycle, ring)
 
