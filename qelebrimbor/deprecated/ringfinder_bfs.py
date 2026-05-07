@@ -85,11 +85,12 @@ class RingFinderBFS:
                     console.debug(f"> Candidate doesn't have requested node type [{candidate}]")
                     continue
 
-                extended: Ring = ring.copy()
-                extended.append(candidate)
+                extended = ring.extend(candidate, pipe_type)
+                # extended: Ring = ring.copy()
+                # extended.append(candidate)
 
                 # Check whether the ring satisfies the specification
-                console.debug(f"Extended : {extended}")
+                console.debug(f"Extended : {str(extended.cubes)}")
                 console.debug(f"> {extended.volume()} <= {n} + {maximal_overhead}?")
                 if length >= n-1 and anchor.position.get_manhattan_distance(candidate.position) == 1:
                     console.debug(f"Target reached : {ring}")

@@ -21,12 +21,14 @@ import networkx as nx
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 
-from qelebrimbor.core.path import Path
-from qelebrimbor.core.components import ZxNode, ZxEdge, BgCube, BgPipe
 from qelebrimbor.core.attributes_zx import NodeId, NodeType, EdgeType, QubitId, LayerId
 from qelebrimbor.core.attributes_bg import CubeId, CubeKind
-from qelebrimbor.spacetime.fabric import SpacetimeFabric
+from qelebrimbor.core.common import ZxChain
+from qelebrimbor.core.components import ZxNode, ZxEdge, BgCube, BgPipe
+from qelebrimbor.core.path import Path
 from qelebrimbor.core.ring import Ring
+
+from qelebrimbor.spacetime.fabric import SpacetimeFabric
 
 from qelebrimbor.utilities.nmtfl_constraint import NoMoreThanFourLegsConstraint
 
@@ -255,7 +257,7 @@ class VolumetricZxGraph(nx.Graph):
 
         zx_edge = self.get_zx_edge(source, target)
         if zx_edge.is_realised():
-            raise Exception(f"{source}-{target} is already realized by a path.")
+            raise Exception(f"{source}-{target} is already realized by a path [{list(zx_edge.realisation)}].")
 
         # Reject path if it is invalid.
         if not self.is_path_valid(zx_edge, proposal):
@@ -274,14 +276,13 @@ class VolumetricZxGraph(nx.Graph):
         # TODO: validate the Ring ?
 
         # Realise the anchor of the cycle.
-        anchor = self.get_zx_node(nodes[0].id)
+        anchor = nodes[0]
         anchor_id = self.realise_zx_node(anchor, proposal.anchor)
 
         # Realise the successive nodes of the cycle
         preceding_cube: BgCube = self.get_bg_cube(anchor_id)
         for index in range(1, len(cycle)):
-            current = self.get_zx_node(nodes[index].id)
-            current_id: CubeId = self.realise_zx_node(current, proposal.cubes[index])
+            current_id: CubeId = self.realise_zx_node(nodes[index], proposal.cubes[index])
 
             following_cube: BgCube = self.get_bg_cube(current_id)
             self.realise_zx_edge(
@@ -304,6 +305,27 @@ class VolumetricZxGraph(nx.Graph):
         path = path.extend(cube = anchor.realising_cube, pipe_type = proposal.pipes[-1])
 
         self.realise_zx_edge(source = final.id, target = anchor.id, proposal = path)
+
+    def realise_zx_chain(self, chain: ZxChain, proposal: Path):
+        start, nodes, edges, final = chain
+
+        # Realise the successive nodes of the chain
+        preceding: ZxNode = start
+        for index in range(len(nodes)):
+            following: ZxNode = nodes[index]
+            cube_id = self.realise_zx_node(nodes[index], proposal.extra_cubes[index])
+            self.realise_zx_edge(preceding.id, following.id, Path(start = preceding.realising_cube).extend(
+                cube = following.realising_cube, pipe_type = proposal.pipes_types[index]
+            ))
+            preceding = following
+
+        # Realise the final edge to close the ring
+        preceding_cube = preceding.realising_cube
+        path = Path(start = preceding_cube)
+        for index in range(len(nodes), len(proposal.extra_cubes)):
+            path = path.extend(cube = proposal.extra_cubes[index], pipe_type = proposal.pipes_types[index])
+        path = path.extend(cube = final.realising_cube, pipe_type = proposal.pipes_types[-1])
+        self.realise_zx_edge(preceding.id, final.id, path)
 
     def place_cube(self, cube: BgCube) -> CubeId:
         if self.spacetime.is_occupied(cube.position):
@@ -363,13 +385,13 @@ class VolumetricZxGraph(nx.Graph):
         if self.blockgraph.has_edge(source.id, target.id):
             raise Exception(f"Cubes {source} and {target} are already connected by a pipe.")
 
-        if not pipe_type in BlockGraphHelper.infer_pipe_type(source.kind, target.kind):
-            raise Exception(f"Pipe type {pipe_type} is incompatible with source and target kinds [{source.kind}-{target.kind}].")
-
-        # TODO: validate with respect to inferred pipe type between source and target cubes
-
         if source.position.get_manhattan_distance(target.position) != 1:
             raise Exception(f"Cubes {source} and {target} are not at adjacent positions.")
+
+        if not pipe_type in BlockGraphHelper.infer_pipe_type(source.kind, target.kind):
+            raise Exception(f"Pipe type {pipe_type} is incompatible with source and target kinds [{source}-{target}].")
+
+        # TODO: validate with respect to inferred pipe type between source and target cubes
 
         self.blockgraph.add_edge(source.id, target.id)
         bg_pipe = BgPipe(source, target, pipe_type)

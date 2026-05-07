@@ -142,7 +142,7 @@ def print_report(vzx: VolumetricZxGraph, runtime: float, inflater, detailed: boo
         print(f"Realised edges: {realised_edges} / {vzx.number_of_edges()} [{edge_realisation_rate}]")
         print(f"> Unrealised Endpoints Rate (0/1/2) : {unrealised_0_endpoints_rate}/{unrealised_1_endpoints_rate}/{unrealised_2_endpoints_rate}")
 
-        volume_digits = int(math.log10(total_volume)) + 1
+        volume_digits = int(math.log10(total_volume)) + 1 if total_volume > 0 else 0
         print(f"Complete volume : {str(total_volume).rjust(volume_digits+1, ' ')}")
         print(f"> Spider Volume : {str(spider_volume).rjust(volume_digits+1, ' ')}")
         print(f"> Excess Volume : +{str(excess_volume).rjust(volume_digits, ' ')}")

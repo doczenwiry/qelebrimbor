@@ -29,11 +29,11 @@ type Length = int
 @total_ordering
 class Path:
     def __init__(self, start: BgCube):
-        self.start = start
-        self.final = start
+        self.start: BgCube = start
+        self.final: BgCube = start
         self.extra_cubes: list[BgCube] = []
         self.pipes_types: list[EdgeType] = []
-        self.occupied = { start.position }
+        self.occupied: set[Coordinates] = { start.position }
 
     @property
     def start_port(self):
@@ -87,7 +87,7 @@ class Path:
             content += f" -> {self.final}"
         return content
 
-    def string(self) -> str:
+    def string(self):
         content = f"{self.start} --{repr(self.pipes_types[0])}-- "
 
         for index in range(len(self.extra_cubes)):

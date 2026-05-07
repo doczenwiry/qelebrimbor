@@ -17,15 +17,12 @@ from typing import cast
 import math
 import networkx as nx
 
+from qelebrimbor.core.common import ZxCycle, ZxChain
 from qelebrimbor.core.components import ZxEdge, ZxNode
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger(__name__)
-
-type ZxCycle = list[tuple[ZxNode, ZxEdge]]
-type ZxChainNodes = list[ZxNode]
-type ZxChainEdges = list[ZxEdge]
 
 class CycleAnalyser:
     @staticmethod
@@ -99,57 +96,71 @@ class CycleAnalyser:
         return decomposition
 
     @staticmethod
-    def breakdown(graph: VolumetricZxGraph, cycle: list[ZxNode]) -> ZxChainNodes:
-        chain: ZxChainNodes = []
+    def breakdown(graph: VolumetricZxGraph, cycle: ZxCycle) -> ZxChain | None:
+        if len(cycle) < 2:
+            raise Exception(f"Cannot breakdown cycle with less than 2 edges.")
+
+        nodes, edges = zip(*cycle)
+
+        chain_nodes: list[ZxNode] = []
+        chain_edges: list[ZxEdge] = []
 
         console.debug(f"> Breaking down cycle {cycle}")
-        nc = len(cycle)
 
         # Identify the start of the chain where the preceding edge is realised but the following one is not
+        preceding: ZxEdge = edges[-1]
+        following: ZxEdge = edges[0]
         index = 0
-        preceding: ZxEdge = graph.get_zx_edge(cycle[index].id, cycle[(index-1)% nc].id)
-        following: ZxEdge = graph.get_zx_edge(cycle[index].id, cycle[(index+1)% nc].id)
-        while not (preceding.is_realised() and not following.is_realised()):
-            index += 1
+        while not (preceding.is_realised() and not following.is_realised()) and index < len(cycle):
             preceding = following
-            following = graph.get_zx_edge(cycle[index].id, cycle[(index+1)% nc].id)
+            following = edges[(index+1) % len(cycle)]
+            index += 1
+
+        if index == len(cycle):
+            console.debug(f"> Cycle {cycle} is already complete.")
+            return None
+
+        start: ZxNode = nodes[index]
+        chain_edges.append( edges[index] )
+        index: int = (index + 1) % len(cycle)
 
         # Construct the chain from index until the following edge that is realised
         while not following.is_realised():
-            chain.append( cycle[index] )
-            index = (index + 1) % nc
-            following = graph.get_zx_edge(cycle[index].id, cycle[(index+1)% nc].id)
+            chain_nodes.append( nodes[index] )
+            chain_edges.append( edges[index] )
+            index = (index + 1) % len(cycle)
+            following = edges[index]
 
         # Add the final node of the chain
-        chain.append( cycle[index] )
+        final: ZxNode = nodes[index]
 
-        console.debug(f"Chain identified : {chain}")
+        console.debug(f"Chain identified : {chain_nodes} , {chain_edges}")
 
-        return chain
+        return start, chain_nodes, chain_edges, final
 
     @staticmethod
     def identify_chains(
-            graph: VolumetricZxGraph, realised: set[int], cycles: list[list[ZxNode]]
-    ) -> list[tuple[int, ZxChainNodes]]:
-        chains: list[tuple[int, ZxChainNodes]] = []
+            graph: VolumetricZxGraph, realised: set[int], cycles: list[ZxCycle]
+    ) -> list[tuple[int, ZxChain]]:
+        chains: list[tuple[int, ZxChain]] = []
         for index in range(len(cycles)):
             if index in realised:
                 continue
 
             cycle = cycles[index]
+            nodes, edges = zip(*cycle)
 
-            if all( graph.get_zx_edge(cycle[index].id, cycle[(index+1) % len(cycle)].id).is_realised()
-                    for index in range(len(cycle))
-            ):
+            if all(edge.is_realised() for edge in edges):
                 console.debug(f"> Cycle {cycle} is already complete. Skipping.")
                 continue
 
-            if any(node.is_realised() for node in cycle):
+            if any(node.is_realised() for node in nodes):
                 console.debug(f"> Cycle {cycle} intersects current construct.")
-                chain: ZxChainNodes = CycleAnalyser.breakdown(graph, cycle)
-                chains.append( (index, chain) )
+                chain: ZxChain | None = CycleAnalyser.breakdown(graph, cycle)
+                if chain is not None:
+                    chains.append( (index, chain) )
 
-        chains = sorted(chains, key = lambda entry: len(entry[1]))
+        chains = sorted(chains, key = lambda entry: len(entry[1][0]))
 
         return chains
 
