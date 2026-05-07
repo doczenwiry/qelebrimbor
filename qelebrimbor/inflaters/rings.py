@@ -15,6 +15,7 @@
 from qelebrimbor.core.attributes_zx import EdgeType, NodeType
 from qelebrimbor.core.path import Path
 
+from qelebrimbor.spacetime.ringfinders.depth_first_search import RingfinderDFS
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
 from qelebrimbor.spacetime.chainfinders.depth_first_search import ChainfinderDFS
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker

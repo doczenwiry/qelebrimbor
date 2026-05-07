@@ -20,6 +20,7 @@ from qelebrimbor.core import attributes_zx
 from qelebrimbor.core.attributes_zx import NodeId, NodeType, EdgeType
 
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
+from qelebrimbor.spacetime.ringfinders.depth_first_search import RingfinderDFS
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
@@ -30,7 +31,7 @@ from qelebrimbor.vedo.zx_layout.cycle import CycleLayout
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 import logging
-logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.INFO)
 
 def __benchmark_ring(restrictions: Iterable[tuple[NodeType, EdgeType]]):
     node_type_restrictions, edge_type_restrictions = zip(*restrictions)
@@ -51,7 +52,8 @@ def __benchmark_ring(restrictions: Iterable[tuple[NodeType, EdgeType]]):
     zx_cycle = CycleAnalyser.decompose(vzx, minimal = True)[0]
     print(f"Cycle : {CycleAnalyser.string(zx_cycle)}")
 
-    ringfinder = RingfinderBFS(graph = vzx, tracing = SpacetimeTracingReport.FINAL)
+    # ringfinder = RingfinderBFS(graph = vzx, tracing = SpacetimeTracingReport.FINAL)
+    ringfinder = RingfinderDFS(graph = vzx, tracing = SpacetimeTracingReport.FINAL)
 
     start = time()
     ring = ringfinder.find_optimum(zx_cycle, maximal_excess = 6)
