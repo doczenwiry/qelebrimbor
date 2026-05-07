@@ -23,7 +23,7 @@ from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.core.path import Path
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
-from qelebrimbor.spacetime.tracer import SpacetimeTracer
+from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
@@ -31,7 +31,7 @@ import logging
 console = logging.getLogger(__name__)
 
 class PlacefinderBFS:
-    def __init__(self, graph: VolumetricZxGraph, ports_tracker: OpenPortsTracker, tracing: bool = False):
+    def __init__(self, graph: VolumetricZxGraph, ports_tracker: OpenPortsTracker, tracing: SpacetimeTracingReport | None = None):
         self.__graph = graph
         self.__spacetime = graph.spacetime
         self.__ports_tracker = ports_tracker
@@ -53,7 +53,7 @@ class PlacefinderBFS:
         target_suitable_kinds: list[CubeKind] = CubeKind.suitable_kinds(target.type)
 
         # Tracing exploration
-        tracer: SpacetimeTracer | None = SpacetimeTracer() if self.__tracing else None
+        tracer: SpacetimeTracer | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None
         if tracer:
             tracer.add_node(source)
 
@@ -124,6 +124,6 @@ class PlacefinderBFS:
 
         # Tracing exploration
         if tracer:
-            tracer.report(cubes_to_label= [source])
+            tracer.report(cubes_to_label = [source])
 
         return optimum

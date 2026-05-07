@@ -88,7 +88,6 @@ class PathFinderDFS:
         console.info(f"> Maximal volume allowed : {maximal_volume}")
 
         # Tracing exploration
-        pruning_performed = 0
         tracer: SpacetimeTracer | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None
         if tracer:
             tracer.add_node(source)
@@ -104,7 +103,8 @@ class PathFinderDFS:
             # Branch-and-bound; discard current path if it cannot improve on our current knowledge
             if self.__branch_and_bound and optimum:
                 if optimum.manhattan_length() <= manhattan_length_projected:
-                    pruning_performed += 1
+                    if tracer:
+                        tracer.prune_node(terminal)
                     continue
 
             length = current_path.manhattan_length()

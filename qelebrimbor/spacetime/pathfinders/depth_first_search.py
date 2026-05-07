@@ -88,7 +88,9 @@ class PathfinderDFS:
 
         pruning_performed = 0
 
-        tracer: SpacetimeTracer | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None
+        tracer: SpacetimeTracer | None = SpacetimeTracer(
+            pruning = self.__branch_and_bound, reporting = self.__tracing
+        ) if self.__tracing else None
         if tracer:
             tracer.add_node(source)
 
@@ -109,7 +111,8 @@ class PathfinderDFS:
             if self.__branch_and_bound and optimum:
                 manhattan_length_projected = current_path.manhattan_length() + manhattan_length_remaining
                 if optimum.manhattan_length() <= manhattan_length_projected:
-                    pruning_performed += 1
+                    if tracer:
+                        tracer.prune_node(terminal)
                     continue
 
             console.debug(f"{'>' * (current_path.manhattan_length()+1)} Current : {current_path}")
@@ -159,8 +162,5 @@ class PathfinderDFS:
         # Tracing exploration
         if tracer:
             tracer.report(cubes_to_label= [source, target])
-
-        if self.__branch_and_bound:
-            console.info(f"Number of pruning performed : {pruning_performed}")
 
         return optimum

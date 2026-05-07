@@ -22,7 +22,7 @@ from qelebrimbor.core.path import Path, Length
 
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 
-from qelebrimbor.spacetime.tracer import SpacetimeTracer
+from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
@@ -30,7 +30,7 @@ import logging
 console = logging.getLogger(__name__)
 
 class PathfinderDijkstra:
-    def __init__(self, graph: VolumetricZxGraph = None, tracing: bool = False):
+    def __init__(self, graph: VolumetricZxGraph = None, tracing: SpacetimeTracingReport | None = None):
         self.__graph = graph
         self.__tracing = tracing
 
@@ -53,9 +53,9 @@ class PathfinderDijkstra:
         interconnect = { NodeType.X, NodeType.Z }
 
         # Tracing exploration
-        tracer: SpacetimeTracer | None = SpacetimeTracer() if self.__tracing else None
+        tracer: SpacetimeTracer | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None
         if tracer:
-            tracer.add_node( source )
+            tracer.add_node(source)
 
         while len(unrelaxed) != 0 and optimum is None:
             heapq.heapify(unrelaxed)

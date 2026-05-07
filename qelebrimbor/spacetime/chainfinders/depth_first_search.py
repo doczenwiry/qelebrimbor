@@ -85,7 +85,9 @@ class ChainfinderDFS:
             maximal_length = None
             extra = ""
 
-        tracer: SpacetimeTracer | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None
+        tracer: SpacetimeTracer | None = SpacetimeTracer(
+            pruning = self.__branch_and_bound, reporting = self.__tracing
+        ) if self.__tracing else None
         if tracer:
             tracer.add_node(source)
 
@@ -94,8 +96,6 @@ class ChainfinderDFS:
 
         vertex = (ChainfinderDFS.heuristic(source, target, node_types), initial)
         heapq.heappush(unrelaxed, vertex )
-
-        pruning_performed = 0
 
         console.info(f"Searching for chain from {source} to {target} [{extra}{node_types}/{edge_types}]")
 
@@ -114,7 +114,8 @@ class ChainfinderDFS:
             if self.__branch_and_bound and optimum:
                 manhattan_length_projected: int = current_path.manhattan_length() + self.heuristic(terminal, target, node_types[manhattan_length:])
                 if optimum.manhattan_length() <= manhattan_length_projected:
-                    pruning_performed += 1
+                    if tracer:
+                        tracer.prune_node(terminal)
                     continue
 
             console.debug(f"Current [{terminal}] : {current_path}")
@@ -177,8 +178,5 @@ class ChainfinderDFS:
         # Tracing exploration
         if tracer:
             tracer.report(cubes_to_label= [source, target])
-
-        if self.__branch_and_bound:
-            console.info(f"Number of pruning performed : {pruning_performed}")
 
         return optimum
