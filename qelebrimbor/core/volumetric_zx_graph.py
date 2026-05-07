@@ -21,10 +21,10 @@ import networkx as nx
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 
+from qelebrimbor.core.common import ZxChain, ZxCycle
+from qelebrimbor.core.components import ZxNode, ZxEdge, BgCube, BgPipe
 from qelebrimbor.core.attributes_zx import NodeId, NodeType, EdgeType, QubitId, LayerId
 from qelebrimbor.core.attributes_bg import CubeId, CubeKind
-from qelebrimbor.core.common import ZxChain
-from qelebrimbor.core.components import ZxNode, ZxEdge, BgCube, BgPipe
 from qelebrimbor.core.path import Path
 from qelebrimbor.core.ring import Ring
 
@@ -270,7 +270,7 @@ class VolumetricZxGraph(nx.Graph):
 
         console.debug(f"Realising edge {zx_edge} with pipes : {pipe_ids}")
 
-    def realise_zx_cycle(self, cycle: list[tuple[ZxNode, ZxEdge]], proposal: Ring):
+    def realise_zx_cycle(self, cycle: ZxCycle, proposal: Ring):
         nodes, edges = zip(*cycle)
 
         # TODO: validate the Ring ?
@@ -280,31 +280,29 @@ class VolumetricZxGraph(nx.Graph):
         anchor_id = self.realise_zx_node(anchor, proposal.anchor)
 
         # Realise the successive nodes of the cycle
-        preceding_cube: BgCube = self.get_bg_cube(anchor_id)
+        preceding: ZxNode = anchor
         for index in range(1, len(cycle)):
-            current_id: CubeId = self.realise_zx_node(nodes[index], proposal.cubes[index])
+            following: ZxNode = nodes[index]
+            current_id: CubeId = self.realise_zx_node(following, proposal.cubes[index])
 
-            following_cube: BgCube = self.get_bg_cube(current_id)
             self.realise_zx_edge(
-                source = preceding_cube.realised_node.id,
-                target = following_cube.realised_node.id,
-                proposal = Path(start = preceding_cube).extend(
-                    cube = following_cube, pipe_type = proposal.pipes[index-1]
+                source = preceding.id,
+                target = following.id,
+                proposal = Path(start = preceding.realising_cube).extend(
+                    cube = following.realising_cube, pipe_type = proposal.pipes[index-1]
                 )
             )
 
-            preceding_cube = following_cube
+            preceding = following
 
         # Realise the final edge to close the ring
-        anchor = self.get_zx_node(nodes[0].id)
-        final = self.get_zx_node(nodes[-1].id)
-
-        path = Path(start = final.realising_cube)
+        terminal = nodes[-1]
+        path = Path(start = terminal.realising_cube)
         for index in range(len(cycle), len(proposal.cubes)):
             path = path.extend(cube = proposal.cubes[index], pipe_type = proposal.pipes[index-1])
         path = path.extend(cube = anchor.realising_cube, pipe_type = proposal.pipes[-1])
 
-        self.realise_zx_edge(source = final.id, target = anchor.id, proposal = path)
+        self.realise_zx_edge(source = terminal.id, target = anchor.id, proposal = path)
 
     def realise_zx_chain(self, chain: ZxChain, proposal: Path):
         start, nodes, edges, final = chain
@@ -314,9 +312,12 @@ class VolumetricZxGraph(nx.Graph):
         for index in range(len(nodes)):
             following: ZxNode = nodes[index]
             cube_id = self.realise_zx_node(nodes[index], proposal.extra_cubes[index])
-            self.realise_zx_edge(preceding.id, following.id, Path(start = preceding.realising_cube).extend(
-                cube = following.realising_cube, pipe_type = proposal.pipes_types[index]
-            ))
+            self.realise_zx_edge(
+                source = preceding.id, target = following.id,
+                proposal = Path(start = preceding.realising_cube).extend(
+                    cube = following.realising_cube, pipe_type = proposal.pipes_types[index]
+                )
+            )
             preceding = following
 
         # Realise the final edge to close the ring
