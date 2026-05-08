@@ -29,9 +29,10 @@ from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 import logging
 console = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
-logging.getLogger('qelebrimbor.utilities.cycle_analyser').setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
+# logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
+# logging.getLogger('qelebrimbor.utilities.cycle_analyser').setLevel(logging.DEBUG)
+logging.getLogger('qelebrimbor.vedo').setLevel(logging.CRITICAL)
 
 
 attributes_zx.ZX_COLORING = True
@@ -74,7 +75,7 @@ if __name__ == "__main__":
 
     console.info(f"Cycle {index} : {CycleAnalyser.string(cycle)}")
     console.info(f"> Chain : {chain}")
-    completion = subringfinder.find_optimum(chain, maximal_excess = 8)
+    completion = subringfinder.find_optimum(chain, maximal_excess = 12)
 
     if completion:
         console.info(f"Found completion [volume={completion.manhattan_length()-1}] for chain : {chain}")
@@ -98,7 +99,7 @@ if __name__ == "__main__":
 
     ZxGraphInflaterBoundaries(vzx).process()
 
-    # vzx.log_report()
+    vzx.log_report()
 
     hexagon = HexagonLayout(graph=vzx, nodes=[0, 2, 4, 5, 6, 3], extras={1: (0.0, 0.0), 7: (0.7, 1.0 / 6.0)})
     viewer = VolumetricZxGraphViewer(graph= vzx, label ="steane-code-7", layout = hexagon)

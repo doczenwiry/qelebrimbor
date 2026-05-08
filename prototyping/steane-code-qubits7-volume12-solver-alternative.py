@@ -17,11 +17,12 @@ from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.attributes_zx import EdgeType
 from qelebrimbor.core.attributes_bg import CubeKind
 from qelebrimbor.core.coordinates import Coordinates
+
 from qelebrimbor.formats.pyzx import PYZX
 
-from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
+from qelebrimbor.inflaters.boundaries import ZxGraphInflaterBoundaries
 
-from qelebrimbor.deprecated.ring_making import extend_unrealised
+from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
 
 from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
@@ -30,11 +31,6 @@ import logging
 console = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
-logging.getLogger('qelebrimbor.pathfinders.pathfinder_dfs').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.ringfinders.ringfinder_bfs').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.utilities.ring_making').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.utilities.blockgraph_constructor').setLevel(logging.CRITICAL)
-logging.getLogger('qelebrimbor.vedo').setLevel(logging.CRITICAL)
 
 if __name__ == "__main__":
     vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders8.json")
@@ -113,7 +109,7 @@ if __name__ == "__main__":
         }
     )
 
-    extend_unrealised(vzx)
+    ZxGraphInflaterBoundaries(vzx).process()
 
     vzx.log_report()
 

@@ -14,15 +14,16 @@
 
 from vedo import Assembly, Cube, Box, Text3D  # type: ignore[import-untyped]
 
-from qelebrimbor.vedo.bg_painter.abstract import BlockGraphPainter
-from qelebrimbor.vedo.bg_painter.default import DefaultBlockGraphPainter
-from qelebrimbor.vedo.bg_painter.shaded import ShadedBlockGraphPainter
-
 from qelebrimbor.core.components import BgCube, BgPipe
-from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.core.attributes_bg import CubeKind
 from qelebrimbor.core.attributes_zx import EdgeType
 from qelebrimbor.core.coordinates import Coordinates
+
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
+
+from qelebrimbor.vedo.bg_painter.abstract import BlockGraphPainter
+from qelebrimbor.vedo.bg_painter.default import DefaultBlockGraphPainter
+from qelebrimbor.vedo.bg_painter.shaded import ShadedBlockGraphPainter
 
 from logging import getLogger
 console = getLogger(__name__)

@@ -76,12 +76,12 @@ class ZxGraphInflaterRings:
         console.info(f"Cycles processed : {count}/{len(zx_cycles)}.")
 
     # TODO: handle case of disjoint rings (i.e. multiple connected components that contain cycles).
-    def __identify_next_chain(self, cycles: list[ZxCycle]) -> ZxChain | None:
+    def __identify_next_chain(self, *cycles: ZxCycle) -> ZxChain | None:
         all_chains: list[ZxChain] = CycleAnalyser.identify_chains(*cycles)
         selected_length: int | None = None
         selected_distance: int | None = None
         selected: ZxChain | None = None
-        for index, chain in all_chains:
+        for chain in all_chains:
             start, chain_nodes, chain_edges, final = chain
             length = len(chain_edges)
             distance = start.realising_cube.position.get_manhattan_distance(final.realising_cube.position)
@@ -134,13 +134,7 @@ class ZxGraphInflaterRings:
         if not self.__ports_tracker.reachable(final.realising_cube):
             return -1
 
-        node_restrictions: list[NodeType] = list(map(lambda zxn: zxn.type, nodes))
-        edge_restrictions: list[EdgeType] = list(map(lambda zxe: zxe.type, edges))
-        completion = self.__chainfinder.find_optimum(
-            source = start.realising_cube, target = final.realising_cube,
-            restrictions = (node_restrictions, edge_restrictions),
-            maximal_excess = maximal_excess
-        )
+        completion = self.__chainfinder.find_optimum(chain, maximal_excess = maximal_excess)
 
         if completion is None:
             console.error(f"Failed to find a chain for {start} - {nodes} - {final}")

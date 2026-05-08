@@ -141,6 +141,12 @@ class PathfinderDFS:
                 if self.__spacetime.is_occupied(neighbor.position):
                     continue
 
+                # Ignore neighbor if the position is already reserved in spacetime
+                if self.__spacetime.is_reserved(neighbor.position):
+                    holder = self.__spacetime.holder(neighbor.position)
+                    if holder != source and holder != target:
+                        continue
+
                 # Tracing exploration
                 if tracer:
                     tracer.add_node(neighbor)

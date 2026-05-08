@@ -16,6 +16,7 @@ from typing import Iterator, Iterable
 
 from recordclass import RecordClass
 
+from qelebrimbor.core.common import Port
 from qelebrimbor.core.components import BgCube, ZxNode
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
@@ -24,8 +25,6 @@ from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger(__name__)
-
-type Port = Coordinates
 
 class Vertex(RecordClass):
     cube: BgCube

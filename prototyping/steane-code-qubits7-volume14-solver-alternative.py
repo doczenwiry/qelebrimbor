@@ -18,6 +18,7 @@ from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.path import Path
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.formats.pyzx import PYZX
+from qelebrimbor.inflaters.boundaries import ZxGraphInflaterBoundaries
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
 from qelebrimbor.spacetime.subringfinders.depth_first_search import SubringfinderDFS
 from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
@@ -93,7 +94,7 @@ if __name__ == "__main__":
     #     }
     # )
 
-    # extend_unrealised(vzx)
+    # ZxGraphInflaterBoundaries(graph = vzx).process()
 
     vzx.log_report()
 
