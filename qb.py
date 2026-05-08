@@ -18,7 +18,9 @@ from argparse import ArgumentParser
 from time import time
 import pyzx
 
+from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.core import attributes_zx
+from qelebrimbor.core.common import ZxCycle
 
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
@@ -34,7 +36,7 @@ from qelebrimbor.utilities.qb_reporting import print_report
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 import logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.CRITICAL)
 
 parser = ArgumentParser(
     prog = "qb",
@@ -66,54 +68,83 @@ def main():
     if arguments.zx_coloring:
         attributes_zx.ZX_COLORING = True
 
+    verbose: bool = not arguments.summary
+
     # Preliminary analysis stage
-    zx_cycles, components_count = VolumetricZxGraphAnalyser.analyse(vzx, plot = arguments.analysis_style == 'plot')
+    if verbose:
+        print(f"ANALYSIS STAGE.")
+
+    zx_cycles: list[ZxCycle]
+    if verbose:
+        start = time()
+        zx_cycles = VolumetricZxGraphAnalyser.analyse(
+            graph = vzx, minimal = False, plot = arguments.analysis_style == 'plot'
+        )
+        runtime = round(time() - start, 2)
+        print(f"> Completed in {"{:.2f}".format(runtime)} seconds.")
+    else:
+        zx_cycles = CycleAnalyser.decompose(graph = vzx, minimal = False)
 
     if arguments.analysis:
         return 0
 
     # Inflation stage
+    if verbose:
+        print(f"\nINFLATION STAGE.")
+
     if len(zx_cycles) > 0:
         inflater = ZxGraphInflaterRings(graph = vzx, cycles = zx_cycles)
     else:
-        print("WARNING: The input ZX-graph has no cycles: cannot use Rings strategy. Falling back to BFS.")
         inflater = ZxGraphInflaterBFS(graph = vzx)
+
+    if verbose:
+        print(f"> Strategy used : {inflater.__class__.__name__}")
 
     sys.stdout.flush()
     sys.stderr.flush()
 
     start = time()
     inflater.process()
-    final = time()
-    runtime = round(final - start, 6)
+    runtime = round(time() - start, 6)
+
+    if verbose:
+        print(f"> Total runtime : {"{:.3f}".format(runtime)}s")
 
     sys.stdout.flush()
     sys.stderr.flush()
 
     # Reporting stage
-    if arguments.summary:
-        print_report(vzx, runtime, inflater, detailed = False)
+    if verbose:
+        print(f"\nREPORTING STAGE.")
     else:
-        print_report(vzx, runtime, inflater)
+        print(f"RUN:{"{:.3f}".format(runtime).rjust(6, ' ')}s, ", end = ' ')
+    print_report(vzx, cycles = zx_cycles, detailed = verbose)
 
     # Outputting stage
-    if arguments.output_pyzx:
-        output = path.splitext(arguments.filepath)[0] + str(".compiled.json")
-        print(f"Writing PyZX output to {output}")
-        PYZX.into_file(vzx, output)
+    if arguments.output_pyzx or arguments.output_tqec or arguments.output_vzx:
+        if verbose: print(f"\nOUTPUTTING STAGE.")
+        if arguments.output_pyzx:
+            output = path.splitext(arguments.filepath)[0] + str(".compiled.json")
+            if verbose:
+                print(f"> Writing PyZX output to {output}")
+            PYZX.into_file(vzx, output)
 
-    if arguments.output_tqec:
-        output = path.splitext(arguments.filepath)[0] + str(".tqec")
-        print(f"Writing TQEC output to {output}.")
-        TQEC.into_tqec_file(vzx, output)
+        if arguments.output_tqec:
+            output = path.splitext(arguments.filepath)[0] + str(".tqec")
+            if verbose:
+                print(f"> Writing TQEC output to {output}.")
+            TQEC.into_tqec_file(vzx, output)
 
-    if arguments.output_vzx:
-        output = path.splitext(arguments.filepath)[0] + str(".vzx")
-        print(f"Writing VZX output to {output}.")
-        VZX.into_file(vzx, output)
+        if arguments.output_vzx:
+            output = path.splitext(arguments.filepath)[0] + str(".vzx")
+            if verbose:
+                print(f"> Writing VZX output to {output}.")
+            VZX.into_file(vzx, output)
 
-    # Equivalence checking stage
+    # Validation stage
     if arguments.check_equivalence:
+        if verbose:
+            print(f"VALIDATION STAGE.")
         with open(arguments.filepath, 'r') as file:
             pyzx_input = pyzx.Graph().from_json(file.read())
         pyzx_output = PYZX.into_pyzx_graph(vzx)
@@ -128,15 +159,17 @@ def main():
             equivalent_graphs = "SUCCESS" if composition.is_id() else "FAILURE"
         except TypeError:
             equivalent_graphs = "FAILURE"
-        print(f"Equivalence between input and output ZX-graphs [composition-with-adjoint method] : {equivalent_graphs}")
+        if verbose:
+            print(f"Equivalence between input and output ZX-graphs [composition-with-adjoint method] : {equivalent_graphs}")
 
     # Visualisation stage
     if arguments.visualization or arguments.force_visualization:
+        if verbose: print(f"VISUALIZATION STAGE.")
         if arguments.force_visualization or vzx.volume() <= 100:
             window_size = "full" if arguments.fullscreen else "auto"
             viewer = VolumetricZxGraphViewer(vzx, label = arguments.filepath, size = window_size)
             viewer.display()
-        else:
+        elif verbose:
             print("> Visualization of a VolumetricZxGraph with more than 100 cubes is slow (Override with -V).")
 
 if __name__ == "__main__":

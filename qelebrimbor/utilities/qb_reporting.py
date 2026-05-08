@@ -11,11 +11,13 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+
 import math
 from termcolor import colored
 
 from qelebrimbor.core.attributes_bg import CubeKind
-from qelebrimbor.core.attributes_zx import NodeType
+from qelebrimbor.core.attributes_zx import NodeType, EdgeType
+from qelebrimbor.core.common import ZxCycle
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
@@ -24,7 +26,7 @@ import logging
 console = logging.getLogger(__name__)
 
 
-def __get_insufficient_ports_rate(graph: VolumetricZxGraph) -> float | None:
+def __get_insufficient_ports_rate(graph: VolumetricZxGraph) -> tuple[int, float] | None:
     all_realised_spiders = set(filter(
         lambda zxn: zxn.is_realised() and zxn.type in { NodeType.X, NodeType.Z },
         graph.get_zx_nodes()
@@ -45,7 +47,7 @@ def __get_insufficient_ports_rate(graph: VolumetricZxGraph) -> float | None:
         if open_ports < unrealised_edges:
             console.debug(f"Node {node} has insufficient ports [ue:{unrealised_edges}, op:{open_ports}]")
             cubes_with_insufficient_ports += 1
-    return cubes_with_insufficient_ports / len(all_realised_spiders)
+    return cubes_with_insufficient_ports, cubes_with_insufficient_ports / len(all_realised_spiders)
 
 def __get_unrealised_endpoints_rate(graph: VolumetricZxGraph, unrealised: int) -> float:
     if not (0 <= unrealised <= 2):
@@ -87,15 +89,14 @@ def __format_percentage(value: float | None, optimum: float = None, increase: bo
 
     return output
 
-def print_report(vzx: VolumetricZxGraph, runtime: float, inflater, detailed: bool = True):
+def print_report(vzx: VolumetricZxGraph, cycles: list[ZxCycle], detailed: bool = True):
     realised_nodes: int = sum(1 for node in vzx.get_zx_nodes() if node.is_realised())
     realised_edges: int = sum(1 for edge in vzx.get_zx_edges() if edge.is_realised())
     node_realisation_rate: str = __format_percentage(realised_nodes / vzx.number_of_nodes(), optimum = 1.0)
     edge_realisation_rate: str = __format_percentage(realised_edges / vzx.number_of_edges(), optimum = 1.0)
 
-    insufficient_ports_rate = __format_percentage(
-        value = __get_insufficient_ports_rate(graph = vzx), optimum = 0.0
-    )
+    insufficient_ports_count, rate = __get_insufficient_ports_rate(graph=vzx)
+    insufficient_ports_rate = __format_percentage(value = rate, optimum = 0.0)
 
     unrealised_0_endpoints_rate = __format_percentage(
         value = __get_unrealised_endpoints_rate(graph = vzx, unrealised = 0), optimum = 0.0
@@ -124,35 +125,52 @@ def print_report(vzx: VolumetricZxGraph, runtime: float, inflater, detailed: boo
         value = inflation_rate * spider_volume / spider_count if inflation_rate is not None else None, optimum = 0.0, increase = True
     )
 
-    number_of_odd_cycles = sum(1 for cycle in CycleAnalyser.decompose(vzx, minimal=True) if len(cycle) % 2 == 1)
+    number_of_odd_cycles = sum(1 for cycle in cycles if len(cycle) % 2 == 1)
     certain_inflation_rate = __format_percentage(number_of_odd_cycles / spider_count, increase=True)
 
     cnrr = __format_percentage(value=CycleAnalyser.cycle_node_realisation_rate(graph=vzx), optimum=1.0)
     cerr = __format_percentage(value=CycleAnalyser.cycle_edge_realisation_rate(graph=vzx), optimum=1.0)
 
     if detailed:
-        print(f"Inflation runtime (strategy:{inflater.__class__.__name__}): {"{:.3f}".format(runtime)} seconds.")
+        print(f"> Realisation of cycles:")
+        print(f">> Node Realisation Rate : {cnrr}")
+        print(f">> Edge Realisation Rate : {cerr}")
 
-        print(f"Realised cycles:")
-        print(f"> Cycle Node Realisation Rate : {cnrr}")
-        print(f"> Cycle Edge Realisation Rate : {cerr}")
+        print(f"> Realisation of overall input: ")
 
-        print(f"Realised nodes: {realised_nodes} / {vzx.number_of_nodes()} [{node_realisation_rate}]")
-        print(f"> Insufficient Ports Rate   : {insufficient_ports_rate}")
-        print(f"Realised edges: {realised_edges} / {vzx.number_of_edges()} [{edge_realisation_rate}]")
+        realised_nodes: dict[NodeType, int] = {
+            nodetype : sum(1 for node in vzx.get_zx_nodes(node_type = nodetype) if node.is_realised())
+            for nodetype in NodeType if vzx.number_of_zx_nodes(node_type = nodetype) > 0
+        }
+        breakdown = "/".join(str(nodetype) + ':' + __format_percentage(
+            value = count / vzx.number_of_zx_nodes(node_type = nodetype) if vzx.number_of_zx_nodes(node_type = nodetype) != 0.0 else None,
+            optimum = 1.0
+        ) for nodetype, count in realised_nodes.items())
+        print(f">> Nodes realised : {sum(realised_nodes.values())}/{vzx.number_of_nodes()} [{node_realisation_rate}]; {breakdown}")
+        print(f">>> having insufficient ports : {insufficient_ports_count}/{vzx.number_of_nodes()} [{insufficient_ports_rate}]")
+
+        realised_edges: dict[EdgeType, int] = {
+            edgetype : sum(1 for node in vzx.get_zx_edges(edge_type = edgetype) if node.is_realised())
+            for edgetype in EdgeType if vzx.number_of_zx_edges(edge_type = edgetype) > 0
+        }
+        breakdown = ",".join(str(edgetype) + ':' + __format_percentage(
+            value = count / vzx.number_of_zx_edges(edge_type = edgetype) if vzx.number_of_zx_edges(edge_type = edgetype) != 0.0 else None,
+            optimum = 1.0
+        ) for edgetype, count in realised_edges.items())
+        print(f">> Edges realised : {sum(realised_edges.values())}/{vzx.number_of_edges()} [{edge_realisation_rate}]; {breakdown}")
+
         print(f"> Unrealised Endpoints Rate (0/1/2) : {unrealised_0_endpoints_rate}/{unrealised_1_endpoints_rate}/{unrealised_2_endpoints_rate}")
 
         volume_digits = int(math.log10(total_volume)) + 1 if total_volume > 0 else 0
-        print(f"Complete volume : {str(total_volume).rjust(volume_digits+1, ' ')}")
-        print(f"> Spider Volume : {str(spider_volume).rjust(volume_digits+1, ' ')}")
-        print(f"> Excess Volume : +{str(excess_volume).rjust(volume_digits, ' ')}")
+        print(f"> {colored("Total volume", attrs = ['underline'], force_color = True)}   :  {str(total_volume).rjust(volume_digits, ' ')}")
+        print(f">> Spider Volume :  {str(spider_volume).rjust(volume_digits, ' ')}")
+        print(f">> Excess Volume : +{str(excess_volume).rjust(volume_digits, ' ')}")
 
-        print(f"Certain Inflation Rate : {certain_inflation_rate}")
-        print(f"Partial Inflation Rate : {partial_inflation_rate}")
-        print(f"Overall Inflation Rate : {overall_inflation_rate}")
+        print(f"> Certain Inflation Rate : {certain_inflation_rate}")
+        print(f"> Partial Inflation Rate : {partial_inflation_rate}")
+        print(f"> {colored("Overall Inflation Rate", attrs=['underline'], force_color=True)} : {overall_inflation_rate}")
     else:
-        summary  = f"RUN:{"{:.3f}".format(runtime).rjust(6, ' ')}s, "
-        summary += f"CNRR:{cnrr}, "
+        summary  = f"CNRR:{cnrr}, "
         summary += f"CERR:{cerr}, "
         summary += f"OIR:{overall_inflation_rate}, "
         summary += f"PIR:{partial_inflation_rate}, "

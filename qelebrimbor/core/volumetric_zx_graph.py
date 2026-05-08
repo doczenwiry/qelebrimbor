@@ -168,6 +168,12 @@ class VolumetricZxGraph(nx.Graph):
     def volume(self) -> int:
         return sum(1 for cube in self.get_bg_cubes() if cube.kind not in [ CubeKind.OOO, CubeKind.YYY ])
 
+    def number_of_zx_nodes(self, node_type: NodeType | None = None) -> int:
+        return sum(1 for _ in self.get_zx_nodes(node_type = node_type))
+
+    def number_of_zx_edges(self, edge_type: EdgeType | None = None) -> int:
+        return sum(1 for _ in self.get_zx_edges(edge_type = edge_type))
+
     def number_of_cubes(self, kind: CubeKind | None = None) -> int:
         return sum(1 for _ in self.get_bg_cubes(kind = kind))
 

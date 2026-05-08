@@ -45,6 +45,7 @@ class ConnectedComponentsAnalyser:
                 component = components[index]
                 histogram[len(component)] += 1
             size = sorted(histogram.keys(), reverse = True)[0]
+            print(f"> Total number of connected components : {len(components)}")
             print(f"> Largest connected component has size {size} [count={histogram[size]}]")
 
         return len(components), components[0]

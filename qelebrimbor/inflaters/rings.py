@@ -14,8 +14,10 @@
 
 from qelebrimbor.core.path import Path
 
+from qelebrimbor.spacetime.ringfinders.depth_first_search import RingfinderDFS
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
 from qelebrimbor.spacetime.subringfinders.depth_first_search import SubringfinderDFS
+
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 
 from qelebrimbor.analysis.cycles import CycleAnalyser, ZxCycle, ZxChain
@@ -29,7 +31,7 @@ class ZxGraphInflaterRings:
         self.__graph = graph
         self.__spacetime = graph.spacetime
         self.__ports_tracker: OpenPortsTracker = OpenPortsTracker(graph)
-        self.__ringfinder = RingfinderBFS(self.__graph)
+        self.__ringfinder = RingfinderDFS(self.__graph, branch_and_bound = True)
         self.__chainfinder = SubringfinderDFS(self.__graph, self.__ports_tracker)
 
         self.__zx_cycles = cycles
