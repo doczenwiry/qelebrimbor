@@ -17,7 +17,7 @@ from qelebrimbor.core.path import Path
 
 from qelebrimbor.spacetime.ringfinders.depth_first_search import RingfinderDFS
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
-from qelebrimbor.spacetime.chainfinders.depth_first_search import ChainfinderDFS
+from qelebrimbor.spacetime.subringfinders.depth_first_search import SubringfinderDFS
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser, ZxCycle, ZxChain
@@ -36,7 +36,7 @@ class ZxGraphInflaterRings:
         self.__ports_tracker: OpenPortsTracker = OpenPortsTracker(graph)
 
         self.__ringfinder = RingfinderBFS(self.__graph)
-        self.__chainfinder = ChainfinderDFS(self.__graph, self.__ports_tracker)
+        self.__chainfinder = SubringfinderDFS(self.__graph, self.__ports_tracker)
 
     def process(self):
         zx_cycles = CycleAnalyser.decompose(self.__graph, minimal = True)
@@ -57,13 +57,12 @@ class ZxGraphInflaterRings:
         count += 1
 
         # Realise all subsequent chains
-        candidate: tuple[int, ZxChain] | None = self.__identify_next_chain(realised, zx_cycles)
+        candidate: ZxChain | None = self.__identify_next_chain(*zx_cycles)
 
         while candidate is not None and count < len(zx_cycles):
-            index, chain = candidate
             console.debug(f"> Next chain identified : {candidate}")
 
-            excess_volume = self.__attempt_chain_realisation(chain, maximal_excess = 6)
+            excess_volume = self.__attempt_chain_realisation(candidate, maximal_excess = 6)
             if excess_volume == -1:
                 console.info(f"> Failure to complete chain : {candidate}")
                 break
@@ -71,29 +70,28 @@ class ZxGraphInflaterRings:
             self.__ports_tracker.verify_ports()
 
             count += 1
-            realised.add(index)
 
-            candidate = self.__identify_next_chain(realised, zx_cycles)
+            candidate = self.__identify_next_chain(*zx_cycles)
 
         console.info(f"Cycles processed : {count}/{len(zx_cycles)}.")
 
     # TODO: handle case of disjoint rings (i.e. multiple connected components that contain cycles).
-    def __identify_next_chain(self, realised: set[int], cycles: list[ZxCycle]) -> tuple[int, ZxChain] | None:
-        all_chains: list[tuple[int, ZxChain]] = CycleAnalyser.identify_chains(self.__graph, realised, cycles)
+    def __identify_next_chain(self, cycles: list[ZxCycle]) -> ZxChain | None:
+        all_chains: list[ZxChain] = CycleAnalyser.identify_chains(*cycles)
         selected_length: int | None = None
         selected_distance: int | None = None
-        selected: tuple[int, ZxChain] | None = None
+        selected: ZxChain | None = None
         for index, chain in all_chains:
             start, chain_nodes, chain_edges, final = chain
             length = len(chain_edges)
             distance = start.realising_cube.position.get_manhattan_distance(final.realising_cube.position)
             if selected:
                 if length < selected_length or (length == selected_length and distance > selected_distance):
-                    selected = index, chain
+                    selected = chain
                     selected_length = length
                     selected_distance = distance
             else:
-                selected = index, chain
+                selected = chain
                 selected_length = length
                 selected_distance = distance
 

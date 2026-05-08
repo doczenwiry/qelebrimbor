@@ -246,11 +246,14 @@ class VolumetricZxGraph(nx.Graph):
         return cube_id
 
     def realise_zx_edge(self, source: NodeId, target: NodeId, proposal: Path):
-        if not self.get_zx_node(source).is_realised():
-            raise Exception(f"{source} is not realised; cannot connect with a path.")
+        zx_source = self.get_zx_node(source)
+        zx_target = self.get_zx_node(target)
 
-        if not self.get_zx_node(target).is_realised():
-            raise Exception(f"{target} is not realised; cannot connect with a path.")
+        if not zx_source.is_realised():
+            raise Exception(f"Node {zx_source} is not realised; cannot connect with a path.")
+
+        if not zx_target.is_realised():
+            raise Exception(f"Node {zx_target} is not realised; cannot connect with a path.")
 
         if not self.has_edge(source, target):
             raise Exception(f"No edge {source}-{target} found in the ZX-graph.")

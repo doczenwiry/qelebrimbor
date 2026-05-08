@@ -22,7 +22,7 @@ from qelebrimbor.core.components import BgCube
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
-from qelebrimbor.spacetime.chainfinders.depth_first_search import ChainfinderDFS
+from qelebrimbor.spacetime.subringfinders.depth_first_search import SubringfinderDFS
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 from qelebrimbor.vedo.zx_layout.planar import PlanarLayout
 
@@ -31,8 +31,7 @@ from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 import logging
-# logging.basicConfig(level=logging.CRITICAL)
-logging.getLogger("qelebrimbor.spacetime").setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.CRITICAL)
 
 # VolumetricZxGraph parameters
 SOURCE: int = 0
@@ -50,7 +49,7 @@ RESTRICTIONS_COUNT = 2
 RESTRICTIONS_CHOICES = [ NodeType.X, NodeType.Z ]
 
 def __benchmark_restrictions(node_type_restrictions: list[NodeType]):
-    edge_type_restrictions = [EdgeType.IDENTITY for _ in range(RESTRICTIONS_COUNT + 1)]
+    edge_type_restrictions = [EdgeType.IDENTITY for _ in range(len(node_type_restrictions) + 1)]
     chain_restrictions = (node_type_restrictions, edge_type_restrictions)
 
     print(f"NodeType restrictions : {node_type_restrictions}")
@@ -65,7 +64,7 @@ def __benchmark_restrictions(node_type_restrictions: list[NodeType]):
     vzx.realise_zx_node(node = node0, cube = SOURCE_CUBE)
     vzx.realise_zx_node(node = node1, cube = TARGET_CUBE)
 
-    chainfinder = ChainfinderDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
+    chainfinder = SubringfinderDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
     start = time()
     chain = chainfinder.find_optimum(node0.realising_cube, node1.realising_cube, restrictions = chain_restrictions)
     final = time()
@@ -80,7 +79,7 @@ def __benchmark_restrictions(node_type_restrictions: list[NodeType]):
     length = chain.manhattan_length()
     distance = chain.start.position.get_manhattan_distance(chain.final.position)
 
-    label = f"manhattan distance = {distance}, manhattan length = {length}, excess volume = +{length - distance - len(node_type_restrictions)}, time={runtime}s"
+    label = f"number of restrictions = {len(node_type_restrictions)}, manhattan length = {length}, excess volume = +{length - distance - len(node_type_restrictions)}, time={runtime}s"
     viewer = VolumetricZxGraphViewer(graph = vzx, label = label, layout = PlanarLayout(vzx, scale = 2))
     viewer.display()
 
@@ -94,8 +93,12 @@ if __name__ == "__main__":
         )
     )
 
-    node_type_restrictions = [NodeType.Z, NodeType.X, NodeType.X, NodeType.Z, NodeType.X, NodeType.Z, NodeType.X]
-    _, _ ,_ = __benchmark_restrictions(node_type_restrictions)
+    _, _ ,_ = __benchmark_restrictions([
+        NodeType.Z, NodeType.X,
+        NodeType.Z, NodeType.X,
+        NodeType.Z, NodeType.X,
+        NodeType.Z, NodeType.X
+    ])
 
     # inconsistencies_with_calculator = 0
     #

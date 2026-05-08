@@ -20,6 +20,7 @@ from qelebrimbor.core.common import ZxCycle
 from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.ring import Ring
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
+from qelebrimbor.helpers.calculator import ManhattanCalculator
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
@@ -54,9 +55,15 @@ class RingfinderDFS:
         self.__branch_and_bound = branch_and_bound
         self.__tracing = tracing
 
+    @staticmethod
+    def heuristic(source: BgCube, target: BgCube, node_types: list[NodeType]):
+        # TODO: this heuristic is not admissible ...
+        # return len(node_types) + ManhattanCalculator.minimal_manhattan_length(source, target)
+        # TODO: is this heuristic admissible ?
+        return max(len(node_types), ManhattanCalculator.minimal_manhattan_length(source, target))
+
     def find_optimum(self,
             cycle: ZxCycle,
-            # restrictions: tuple[list[NodeType], list[EdgeType]] | None = None,
             maximal_excess: int = None
     ):
         node_restrictions, edge_restrictions = zip(*cycle)
@@ -73,7 +80,7 @@ class RingfinderDFS:
                 position = SpacetimeHelper.ORIGIN
             )
         )
-        unrelaxed.append( (number_of_restrictions - root.volume(), root) )
+        unrelaxed.append( (RingfinderDFS.heuristic(root.anchor, root.anchor, node_restrictions), root) )
 
         console.info(f"Searching for ring anchored at {root.anchor} [ringsize={number_of_restrictions}]")
         console.info(f"Node restrictions: {node_restrictions}")
@@ -87,10 +94,19 @@ class RingfinderDFS:
 
         while len(unrelaxed) > 0 and (self.__branch_and_bound or optimum is None):
             heapq.heapify(unrelaxed)
-            remaining, partial_ring = heapq.heappop(unrelaxed)
+            hv, partial_ring = heapq.heappop(unrelaxed)
             partial_volume = partial_ring.volume()
 
             console.debug(f"Current [volume={partial_volume}] : {partial_ring}")
+
+            # Branch-and-bound
+            if self.__branch_and_bound and optimum:
+                heuristic_value: int = RingfinderDFS.heuristic(partial_ring.terminal, partial_ring.anchor, node_restrictions[partial_volume:])
+                projected_volume: int = partial_ring.volume() + heuristic_value
+                if optimum.volume() <= projected_volume:
+                    if tracer:
+                        tracer.prune_node(partial_ring.terminal)
+                    continue
 
             # Check whether the ring satisfies the requirements and can be closed.
             distance = partial_ring.anchor.position.get_manhattan_distance(partial_ring.terminal.position)
@@ -143,7 +159,9 @@ class RingfinderDFS:
                     # Update the unrelaxed queue
                     unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].terminal != neighbor ]
                     # Compute the minimal manhattan length required to connect neighbor to target (heuristic).
-                    unrelaxed.append( (number_of_restrictions - extended.volume(), extended) )
+                    unrelaxed.append(
+                        (RingfinderDFS.heuristic(neighbor, root.anchor, node_restrictions[extended.volume():]), extended)
+                    )
 
         console.info(f"Optimal ring found : {optimum}")
 

@@ -37,7 +37,7 @@ from qelebrimbor.core.ring import Ring
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
-from qelebrimbor.utilities.cycle_analyser import ZxCycle
+from qelebrimbor.utilities.cycle_analyser import ZxCycle, CycleAnalyser
 
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
@@ -78,8 +78,7 @@ class RingfinderBFS:
         unrelaxed.append( root )
 
         console.info(f"Searching for ring anchored at {root.anchor} [ringsize={number_of_restrictions}]")
-        console.info(f"Node restrictions: {node_restrictions}")
-        console.info(f"Edge restrictions: {edge_restrictions}")
+        console.info(f"> {CycleAnalyser.string(cycle)}")
 
         # Initialise a tracer if it is needed
         tracer: SpacetimeTracer | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None
@@ -97,7 +96,7 @@ class RingfinderBFS:
             distance = partial_ring.anchor.position.get_manhattan_distance(partial_ring.terminal.position)
             if partial_volume >= number_of_restrictions and distance == 1:
                 final_pipe_type = edge_restrictions[-1].type if partial_volume == number_of_restrictions else EdgeType.IDENTITY
-                console.info(f"Candidate found : {partial_ring} with {final_pipe_type}")
+                console.info(f"Candidate found : {partial_ring} loop with {final_pipe_type}")
                 if BlockGraphHelper.connectable(partial_ring.terminal, partial_ring.anchor, final_pipe_type):
                     ring = partial_ring.close(final_pipe_type)
                     console.debug(f"Completed ring : {ring}")

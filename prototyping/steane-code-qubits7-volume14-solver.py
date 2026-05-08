@@ -12,15 +12,18 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.attributes_bg import CubeKind
-from qelebrimbor.core.attributes_zx import EdgeType
-from qelebrimbor.core.components import BgCube
-from qelebrimbor.core.coordinates import Coordinates
-from qelebrimbor.core.path import Path
+from qelebrimbor.core import attributes_zx
+
 from qelebrimbor.formats.pyzx import PYZX
-from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
+from qelebrimbor.inflaters.boundaries import ZxGraphInflaterBoundaries
+from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
+
+from qelebrimbor.spacetime.placefinders.breadth_first_search import PlacefinderBFS
+from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
+from qelebrimbor.spacetime.subringfinders.depth_first_search import SubringfinderDFS
+
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
-from qelebrimbor.deprecated.ring_making import find_realisation, extend_unrealised
+
 from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
@@ -28,73 +31,74 @@ import logging
 console = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
+logging.getLogger('qelebrimbor.utilities.cycle_analyser').setLevel(logging.DEBUG)
 
+
+attributes_zx.ZX_COLORING = True
 if __name__ == "__main__":
     vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders7.json")
 
-    CycleAnalyser.analyse(vzx)
-    cycles = CycleAnalyser.decompose_nodes(vzx)
+    ports_tracker = OpenPortsTracker(vzx)
+    ringfinder = RingfinderBFS(graph = vzx, ports_tracker = ports_tracker)
+    subringfinder = SubringfinderDFS(graph = vzx, ports_tracker = ports_tracker, branch_and_bound = True)
 
+    CycleAnalyser.analyse(vzx)
+    cycles = CycleAnalyser.decompose(vzx, minimal = True)
+
+    # Realise the root ring
     index = 0
     cycle = cycles[index]
     console.info(f"Cycle {index} : {cycle}")
-    find_realisation(vzx, cycle, maximal_overhead = 4)
 
-    BlockGraphConstructor.realise_nodes(
-        graph = vzx,
-        specifications = {
-            1 : BgCube(CubeKind.ZXZ, Coordinates(-1,-1,0))
-        }
-    )
+    ring = ringfinder.find_optimum(cycle, maximal_excess = 2)
+    if ring:
+        console.info(f"Found realisation [volume={ring.volume()}] for cycle : {CycleAnalyser.string(cycle)}")
+        console.info(f"> {ring}")
+        vzx.realise_zx_cycle(cycle, ring)
 
-    BlockGraphConstructor.realise_edges(
-        graph = vzx,
-        specifications = {
-            (0,1) : Path(vzx.get_zx_node(0).realising_cube).extend(
-                cube = vzx.get_zx_node(1).realising_cube,
-                pipe_type = vzx.get_zx_edge(0, 1).type
-            ),
-            (1, 4): Path(vzx.get_zx_node(1).realising_cube).extend(
-                cube = BgCube(CubeKind.ZXZ, Coordinates(-1, -1, -1)),
-                pipe_type = EdgeType.IDENTITY
-            ).extend(
-                cube = BgCube(CubeKind.ZXZ, Coordinates(0, -1, -1)),
-                pipe_type = EdgeType.IDENTITY
-            ).extend(
-                cube = BgCube(CubeKind.ZXZ, Coordinates(0, -1, -2)),
-                pipe_type = EdgeType.IDENTITY
-            ).extend(
-                cube = BgCube(CubeKind.ZXZ, Coordinates(1, -1, -2)),
-                pipe_type = EdgeType.IDENTITY
-            ).extend(
-                cube = vzx.get_zx_node(4).realising_cube,
-                pipe_type = vzx.get_zx_edge(1, 4).type
-            ),
-        }
-    )
+        # Reserve the ports for all the nodes that were realised as part of this ring.
+        for node, _ in cycle:
+            # Since each of these node is part of a ring, it already has two of its edges realised.
+            ports_tracker.reserve_ports(node.realising_cube, required_ports = vzx.get_zx_degree(node.id) - 2)
+            for position in ports_tracker.reserved(node.realising_cube):
+                vzx.spacetime.reserve(node.realising_cube, position)
 
-    BlockGraphConstructor.realise_edges(
-        graph = vzx,
-        specifications = { # Chosen cube 23 for node 1
-            (1, 6) : Path(vzx.get_bg_cube(23)).extend(
-                cube = BgCube(CubeKind.XXZ, Coordinates(-1, -1, -2)),
-                pipe_type = EdgeType.IDENTITY
-            ).extend(
-                cube = BgCube(CubeKind.XZZ, Coordinates(-1, 0, -2)),
-                pipe_type = EdgeType.IDENTITY
-            ).extend(
-                cube = BgCube(CubeKind.XZX, Coordinates(-1, 0, -1)),
-                pipe_type = EdgeType.IDENTITY
-            ).extend(
-                cube = vzx.get_zx_node(6).realising_cube,
-                pipe_type = vzx.get_zx_edge(1, 6).type
-            )
-        }
-    )
+    ports_tracker.verify_ports()
 
-    extend_unrealised(vzx)
+    # Realise the remaining chains
+    index = 1
+    cycle = cycles[index]
 
-    vzx.log_report()
+    chains = CycleAnalyser.identify_chains(cycle)
+    chain = chains[0]
+
+    console.info(f"Cycle {index} : {CycleAnalyser.string(cycle)}")
+    console.info(f"> Chain : {chain}")
+    completion = subringfinder.find_optimum(chain, maximal_excess = 8)
+
+    if completion:
+        console.info(f"Found completion [volume={completion.manhattan_length()-1}] for chain : {chain}")
+        console.info(f"> {completion}")
+        vzx.realise_zx_chain(chain, completion)
+
+    index = 2
+    cycle = cycles[index]
+
+    chains = CycleAnalyser.identify_chains(cycle)
+    chain = chains[0]
+
+    console.info(f"Cycle {index} : {CycleAnalyser.string(cycle)}")
+    console.info(f"> Chain : {chain}")
+    completion = subringfinder.find_optimum(chain, maximal_excess = 8)
+
+    if completion:
+        console.info(f"Found completion [volume={completion.manhattan_length()-1}] for chain : {chain}")
+        console.info(f"> {completion}")
+        vzx.realise_zx_chain(chain, completion)
+
+    ZxGraphInflaterBoundaries(vzx).process()
+
+    # vzx.log_report()
 
     hexagon = HexagonLayout(graph=vzx, nodes=[0, 2, 4, 5, 6, 3], extras={1: (0.0, 0.0), 7: (0.7, 1.0 / 6.0)})
     viewer = VolumetricZxGraphViewer(graph= vzx, label ="steane-code-7", layout = hexagon)

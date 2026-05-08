@@ -14,42 +14,34 @@
 
 from collections import defaultdict
 
+from qelebrimbor.core.components import BgCube, ZxNode
 from qelebrimbor.core.attributes_zx import NodeId, EdgeId, EdgeType
 from qelebrimbor.core.attributes_bg import CubeKind
-from qelebrimbor.core.components import BgCube, ZxNode
 from qelebrimbor.core.path import Path
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
-from qelebrimbor.deprecated.ringfinder_bfs import RingFinderBFS
-from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
-from qelebrimbor.utilities.cycle_analyser import ZxCycle
-from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.spacetime.pathfinders.depth_first_search import PathfinderDFS
+from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
 
-from qelebrimbor.deprecated.pathfinder_dfs import PathFinderDFS
+from qelebrimbor.utilities.blockgraph_constructor import BlockGraphConstructor
+from qelebrimbor.utilities.cycle_analyser import ZxCycle, CycleAnalyser
 
 import logging
 console = logging.getLogger(__name__)
 
-def find_realisation(graph: VolumetricZxGraph, cycle: ZxCycle, maximal_overhead: int = 0):
-    zx_nodes, zx_edges = zip(*cycle)
+def find_realisation(graph: VolumetricZxGraph, cycle: ZxCycle, maximal_excess: int = 0):
+    ringfinder = RingfinderBFS(graph)
 
-    realisations = RingFinderBFS.find_minimal_rings(zx_nodes, zx_edges, maximal_overhead = maximal_overhead)
-    ring = realisations[0]
+    ring = ringfinder.find_optimum(cycle, maximal_excess = maximal_excess)
 
-    console.info(f"Found {len(realisations)} realisations for cycle : {zx_nodes}")
-    console.info(f"> Realisation [{ring.volume()}] : {ring}")
+    if ring:
+        console.info(f"Found realisation for cycle : {CycleAnalyser.string(cycle)}")
+        console.info(f"> Realisation [{ring.volume()}] : {ring}")
 
-    nodes_specifications = ring.to_nodes_specifications(zx_nodes)
-    console.info(f"> Nodes specifications : {nodes_specifications}")
-    BlockGraphConstructor.realise_nodes(graph= graph, specifications = nodes_specifications)
-
-    edges_specifications = ring.to_edges_specifications(zx_edges)
-    console.info(f"> Edges specifications :")
-    for edge, proposal in edges_specifications.items():
-        console.info(f">> {edge} : {proposal}")
-    BlockGraphConstructor.realise_edges(graph= graph, specifications = edges_specifications)
+        graph.realise_zx_cycle(cycle, ring)
 
 # TODO: go beyond assumption that cycle is made of one realised chain and one unrealised chain
 # TODO: figure out which edges are missing if all the nodes are already placed
@@ -90,7 +82,7 @@ def find_completion(
     console.info(f"Searching completion from {start_cube} to {final_cube}.")
     console.info(f"> Nodes : {zx_nodes}")
     console.info(f"> Edges : {zx_edges}")
-    completion = PathFinderDFS(graph).find_minimal_paths(
+    completion = PathfinderDFS(graph).find_minimal_paths(
         source = start_cube, target = final_cube,
         zx_nodes = zx_nodes,
         zx_edges = zx_edges,

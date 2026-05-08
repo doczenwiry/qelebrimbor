@@ -44,7 +44,7 @@ if __name__ == "__main__":
     index = 0
     cycle = cycles[index][6:] + cycles[index][:6]
     console.info(f"Cycle {index} : {cycle}")
-    find_realisation(vzx, cycle, maximal_overhead = 2)
+    find_realisation(vzx, cycle, maximal_excess= 2)
 
     index = 5
     cycle = cycles[index]

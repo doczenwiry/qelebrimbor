@@ -25,7 +25,7 @@ LayerId = int
 ZX_COLORING: bool = False
 
 class NodeType(Enum):
-    __COLORS: list[str] = ['grey', 'red', 'green', 'blue']
+    __COLORS: list[str] = ['light_grey', 'red', 'green', 'blue']
 
     O = 0 # Boundary
     X = 1 # X-Spider

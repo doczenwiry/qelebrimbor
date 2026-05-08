@@ -43,7 +43,12 @@ class ZxNode(RecordClass):
         self.__realising_cube = value
 
     def __str__(self):
-        return f"{self.type}:N{str(self.id).ljust(2, ' ')}"
+        content = f"{self.type}:N{str(self.id).ljust(1, ' ')}"
+
+        if self.is_realised():
+            content += f":#{self.realising_cube.id}"
+
+        return content
 
     def __repr__(self):
         return str(self)

@@ -37,8 +37,7 @@ class CycleAnalyser:
     def string(cycle: ZxCycle) -> str:
         content = ""
 
-        for link in cycle:
-            node, edge = link
+        for node, edge in cycle:
             content += f"{str(node)} --{repr(edge.type)}-- "
 
         if len(cycle) > 0:
@@ -96,7 +95,7 @@ class CycleAnalyser:
         return decomposition
 
     @staticmethod
-    def breakdown(graph: VolumetricZxGraph, cycle: ZxCycle) -> ZxChain | None:
+    def breakdown(cycle: ZxCycle) -> ZxChain | None:
         if len(cycle) < 2:
             raise Exception(f"Cannot breakdown cycle with less than 2 edges.")
 
@@ -116,13 +115,16 @@ class CycleAnalyser:
             following = edges[(index+1) % len(cycle)]
             index += 1
 
+
         if index == len(cycle):
             console.debug(f"> Cycle {cycle} is already complete.")
             return None
 
         start: ZxNode = nodes[index]
+        console.debug(f"Found start of chain : {start}")
         chain_edges.append( edges[index] )
         index: int = (index + 1) % len(cycle)
+        following = edges[index % len(cycle)]
 
         # Construct the chain from index until the following edge that is realised
         while not following.is_realised():
@@ -133,20 +135,16 @@ class CycleAnalyser:
 
         # Add the final node of the chain
         final: ZxNode = nodes[index]
+        console.debug(f"Found final of chain : {final}")
 
         console.debug(f"Chain identified : {chain_nodes} , {chain_edges}")
 
         return start, chain_nodes, chain_edges, final
 
     @staticmethod
-    def identify_chains(
-            graph: VolumetricZxGraph, realised: set[int], cycles: list[ZxCycle]
-    ) -> list[tuple[int, ZxChain]]:
-        chains: list[tuple[int, ZxChain]] = []
+    def identify_chains(*cycles: ZxCycle) -> list[ZxChain]:
+        chains: list[ZxChain] = []
         for index in range(len(cycles)):
-            if index in realised:
-                continue
-
             cycle = cycles[index]
             nodes, edges = zip(*cycle)
 
@@ -156,11 +154,11 @@ class CycleAnalyser:
 
             if any(node.is_realised() for node in nodes):
                 console.debug(f"> Cycle {cycle} intersects current construct.")
-                chain: ZxChain | None = CycleAnalyser.breakdown(graph, cycle)
+                chain: ZxChain | None = CycleAnalyser.breakdown(cycle)
                 if chain is not None:
-                    chains.append( (index, chain) )
+                    chains.append( chain )
 
-        chains = sorted(chains, key = lambda entry: len(entry[1][0]))
+        chains = sorted(chains, key = len)
 
         return chains
 

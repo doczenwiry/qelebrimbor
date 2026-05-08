@@ -31,10 +31,13 @@ import logging
 console = logging.getLogger(__name__)
 
 class PlacefinderBFS:
-    def __init__(self, graph: VolumetricZxGraph, ports_tracker: OpenPortsTracker, tracing: SpacetimeTracingReport | None = None):
+    def __init__(self,
+        graph: VolumetricZxGraph, ports_tracker: OpenPortsTracker | None = None,
+        tracing: SpacetimeTracingReport | None = None
+    ):
         self.__graph = graph
         self.__spacetime = graph.spacetime
-        self.__ports_tracker = ports_tracker
+        self.__ports_tracker = ports_tracker if ports_tracker else OpenPortsTracker(self.__graph)
         self.__tracing = tracing
 
     # TODO: consider the type of Edge between source and target (IDENTITY or HADAMARD)

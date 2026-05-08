@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from typing import Iterator
+from typing import Iterator, Iterable
 
 from recordclass import RecordClass
 
@@ -41,7 +41,7 @@ class Vertex(RecordClass):
         return len(self.available) - self.required
 
     def __str__(self):
-        return f"{self.cube} [rq:{self.required},av:{len(self.available)}]"
+        return f"{self.cube} [rq:{self.required},av:{self.available}]"
 
     def __repr__(self):
         return str(self)
@@ -63,6 +63,9 @@ class OpenPortsTracker:
 
     def required(self, cube: BgCube):
         return self.__open_ports[cube].required if cube in self.__open_ports else 0
+
+    def reserved(self, cube: BgCube) -> Iterable[Coordinates]:
+        return iter(self.__open_ports[cube].available)
 
     def available(self, cube: BgCube):
         return len(self.__open_ports[cube].available)
