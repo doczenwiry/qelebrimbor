@@ -19,11 +19,10 @@ from typing import Iterable
 from qelebrimbor.core import attributes_zx
 from qelebrimbor.core.attributes_zx import NodeId, NodeType, EdgeType
 
-from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
 from qelebrimbor.spacetime.ringfinders.depth_first_search import RingfinderDFS
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 
-from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
+from qelebrimbor.analysis.cycles import CycleAnalyser
 
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 

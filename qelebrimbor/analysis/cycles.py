@@ -12,9 +12,16 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from typing import cast
-
 import math
+from time import time
+from typing import cast
+from collections import defaultdict
+
+import pandas
+import seaborn
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+
 import networkx as nx
 
 from qelebrimbor.core.common import ZxCycle, ZxChain
@@ -46,13 +53,33 @@ class CycleAnalyser:
         return content
 
     @staticmethod
-    def analyse(graph: VolumetricZxGraph, minimal: bool = False):
-        print(f"Cycle basis [{"" if minimal else "non-"}minimal]:")
+    def analyse(graph: VolumetricZxGraph, plot: bool = False, minimal: bool = False) -> list[ZxCycle]:
+        start = time()
         zx_cycles = CycleAnalyser.decompose(graph, minimal)
-        max_digits = max(int(math.log10(len(cycle))) for cycle in zx_cycles) + 1
-        for index in range(len(zx_cycles)):
-            zx_cycle = zx_cycles[index]
-            print(f"Cycle {index} [length={str(len(zx_cycle)).rjust(max_digits, ' ')}] : {CycleAnalyser.string(zx_cycle)}")
+        runtime = round(time() - start, 2)
+
+        if len(zx_cycles) == 0:
+            print(f"No cycles detected.")
+        else:
+            if plot:
+                ax = seaborn.histplot(
+                    data = pandas.Series(map(len, zx_cycles), dtype = int),
+                    discrete = True
+                )
+                ax.yaxis.set_major_locator(MaxNLocator(integer = True))
+                plt.title(f"Cycle basis [{"non-" if minimal is False else ""}minimal, computed in {str(runtime).rjust(2, ' ')}]")
+                plt.xlabel("Number of nodes")
+                plt.ylabel("Number of cycles")
+                plt.show()
+            else:
+                histogram: dict[int, int] = defaultdict(int)
+                for index in range(len(zx_cycles)):
+                    zx_cycle = zx_cycles[index]
+                    histogram[len(zx_cycle)] += 1
+                size = sorted(histogram.keys(), reverse = True)[0]
+                print(f"> Cycle basis ({"minimal" if minimal else "non-minimal"}, computed in {runtime}s) has largest cycle of size {size} [count={histogram[size]}]")
+
+        return zx_cycles
 
     @staticmethod
     def decompose(graph: VolumetricZxGraph, minimal: bool = False) -> list[ZxCycle]:

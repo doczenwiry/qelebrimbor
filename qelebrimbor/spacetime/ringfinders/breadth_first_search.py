@@ -37,7 +37,7 @@ from qelebrimbor.core.ring import Ring
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
-from qelebrimbor.utilities.cycle_analyser import ZxCycle, CycleAnalyser
+from qelebrimbor.analysis.cycles import ZxCycle, CycleAnalyser
 
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 

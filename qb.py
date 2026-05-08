@@ -12,37 +12,37 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import sys
 from os import path
-from typing import cast
-
-import networkx as nx
-import pyzx
 from argparse import ArgumentParser
 from time import time
-
-import sys
+import pyzx
 
 from qelebrimbor.core import attributes_zx
+
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
 from qelebrimbor.formats.vzx import VZX
-from qelebrimbor.inflaters.breadth_first_search import ZxGraphInflaterBFS
+
+from qelebrimbor.analysis.analyser import VolumetricZxGraphAnalyser
+
 from qelebrimbor.inflaters.rings import ZxGraphInflaterRings
-from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
+from qelebrimbor.inflaters.breadth_first_search import ZxGraphInflaterBFS
 
 from qelebrimbor.utilities.qb_reporting import print_report
 
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 import logging
-logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.INFO)
 
 parser = ArgumentParser(
     prog = "qb",
     description = "A tool to construct a Volumetric ZX-graph (a.k.a. BlockGraph) from an input ZX-graph. Currently accepted files are *.json containing a PyZX graph in JSON format."
 )
-parser.add_argument('filepath', help = "path to the file containing the input ZX-graph.")
-parser.add_argument('-a', '--analysis', action='store_true', help = "display the preliminary analysis of the input ZX-graph.")
+
+parser.add_argument('-a', '--analysis', action ='store_true', help = "only report the preliminary analysis of the input ZX-graph.")
+parser.add_argument('-A', '--analysis-style', choices = ['text', 'plot'], default = 'text', help = "controls whether to report the analysis in text of plot form.")
 parser.add_argument('-c', '--check-equivalence', action = 'store_true', help = "check equivalence of the final construct against the input ZX-graph.")
 parser.add_argument('-f', '--fullscreen', action='store_true', help = "display the visualisation in a fullscreen window.")
 parser.add_argument('-p', '--output-pyzx', action = 'store_true', help = "save the Volumetric ZX-graph as a PyZX graph to a *.pyzx.json file.")
@@ -52,6 +52,7 @@ parser.add_argument('-v', '--visualization', action='store_true', help = "displa
 parser.add_argument('-V', '--force-visualization', action='store_true', help = "force the visualisation for constructed Volumetric ZX-graph with more than 100 cubes.")
 parser.add_argument('-w', '--output-vzx', action='store_true', help = "save the Volumetric ZX-graph to a *.vzx file.")
 parser.add_argument('-z', '--zx-coloring', action='store_true', help = "toggles the coloring of ZX-types in the terminal.")
+parser.add_argument('filepath', help = "path to the file containing the input ZX-graph.")
 args = parser.parse_args()
 
 def main():
@@ -65,15 +66,15 @@ def main():
     if arguments.zx_coloring:
         attributes_zx.ZX_COLORING = True
 
-    number_of_connected_components = nx.number_connected_components(cast(nx.Graph, vzx))
-    if number_of_connected_components > 1:
-        print("WARNING: The input ZX-graph has more than one connected component.")
+    # Preliminary analysis stage
+    zx_cycles, components_count = VolumetricZxGraphAnalyser.analyse(vzx, plot = arguments.analysis_style == 'plot')
+
+    if arguments.analysis:
+        return 0
 
     # Inflation stage
-    if CycleAnalyser.has_cycles(vzx):
-        if arguments.analysis:
-            CycleAnalyser.analyse(vzx, minimal = True)
-        inflater = ZxGraphInflaterRings(graph = vzx)
+    if len(zx_cycles) > 0:
+        inflater = ZxGraphInflaterRings(graph = vzx, cycles = zx_cycles)
     else:
         print("WARNING: The input ZX-graph has no cycles: cannot use Rings strategy. Falling back to BFS.")
         inflater = ZxGraphInflaterBFS(graph = vzx)

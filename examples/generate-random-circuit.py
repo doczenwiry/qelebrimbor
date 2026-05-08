@@ -36,5 +36,5 @@ if __name__ == "__main__":
     circuit = f"random-cnots-s{args.seed}-q{args.qubits}-d{args.depth}"
     zx = pyzx.generate.cnots(qubits = int(args.qubits), depth = int(args.depth))
 
-    with open(f"../assets/pyzx/random/{circuit}.json", 'w') as file:
+    with open(f"../assets/pyzx/random/{circuit}.pyzx.json", 'w') as file:
         file.write(zx.to_json())

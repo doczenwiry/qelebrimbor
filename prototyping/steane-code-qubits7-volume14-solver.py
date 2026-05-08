@@ -18,11 +18,10 @@ from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.inflaters.boundaries import ZxGraphInflaterBoundaries
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 
-from qelebrimbor.spacetime.placefinders.breadth_first_search import PlacefinderBFS
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
 from qelebrimbor.spacetime.subringfinders.depth_first_search import SubringfinderDFS
 
-from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
+from qelebrimbor.analysis.cycles import CycleAnalyser
 
 from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer

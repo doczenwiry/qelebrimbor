@@ -17,7 +17,7 @@ import pyzx as zx
 
 from qelebrimbor.formats.pyzx import PYZX
 
-from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
+from qelebrimbor.analysis.cycles import CycleAnalyser
 
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 

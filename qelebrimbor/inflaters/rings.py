@@ -12,36 +12,30 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.attributes_zx import EdgeType, NodeType
 from qelebrimbor.core.path import Path
 
-from qelebrimbor.spacetime.ringfinders.depth_first_search import RingfinderDFS
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
 from qelebrimbor.spacetime.subringfinders.depth_first_search import SubringfinderDFS
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 
-from qelebrimbor.utilities.cycle_analyser import CycleAnalyser, ZxCycle, ZxChain
+from qelebrimbor.analysis.cycles import CycleAnalyser, ZxCycle, ZxChain
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 import logging
 console = logging.getLogger(__name__)
 
 class ZxGraphInflaterRings:
-    def __init__(self, graph: VolumetricZxGraph):
+    def __init__(self, graph: VolumetricZxGraph, cycles: list[ZxCycle]):
         self.__graph = graph
         self.__spacetime = graph.spacetime
-        self.__node_realisations = 0
-        self.__edge_realisations = 0
-
         self.__ports_tracker: OpenPortsTracker = OpenPortsTracker(graph)
-
         self.__ringfinder = RingfinderBFS(self.__graph)
         self.__chainfinder = SubringfinderDFS(self.__graph, self.__ports_tracker)
 
-    def process(self):
-        zx_cycles = CycleAnalyser.decompose(self.__graph, minimal = True)
+        self.__zx_cycles = cycles
 
-        realised: set[int] = set()
+    def process(self):
+        zx_cycles = self.__zx_cycles
 
         count: int = 0
         root_cycle: ZxCycle = zx_cycles[0]
@@ -62,7 +56,7 @@ class ZxGraphInflaterRings:
         while candidate is not None and count < len(zx_cycles):
             console.debug(f"> Next chain identified : {candidate}")
 
-            excess_volume = self.__attempt_chain_realisation(candidate, maximal_excess = 6)
+            excess_volume = self.__attempt_chain_realisation(candidate, maximal_excess = 12)
             if excess_volume == -1:
                 console.info(f"> Failure to complete chain : {candidate}")
                 break
@@ -117,6 +111,8 @@ class ZxGraphInflaterRings:
             self.__ports_tracker.reserve_ports(
                 cube = node.realising_cube, required_ports = self.__graph.get_zx_degree(node.id) - 2
             )
+            for port in self.__ports_tracker.reserved(node.realising_cube):
+                self.__spacetime.reserve(node.realising_cube, port)
 
         return len(ring.cubes) - len(zx_cycle)
 

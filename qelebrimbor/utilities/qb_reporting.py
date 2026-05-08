@@ -17,7 +17,7 @@ from termcolor import colored
 from qelebrimbor.core.attributes_bg import CubeKind
 from qelebrimbor.core.attributes_zx import NodeType
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
+from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 import logging

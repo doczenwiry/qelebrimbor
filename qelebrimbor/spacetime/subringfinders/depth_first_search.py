@@ -167,8 +167,8 @@ class SubringfinderDFS:
                 # Ignore neighbor if the position is already reserved in spacetime
                 if self.__spacetime.is_reserved(neighbor.position):
                     holder = self.__spacetime.holder(neighbor.position)
-                    if holder != start and holder != final:
-                        continue
+                    if holder != start and holder != final and self.__ports_tracker.is_critical(holder, neighbor.position):
+                            continue
 
                 extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
                 extended_distance = extended_path.manhattan_length()

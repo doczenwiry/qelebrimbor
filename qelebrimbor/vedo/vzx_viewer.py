@@ -14,7 +14,7 @@
 
 from vedo import settings, Plotter, ButtonWidget, Text3D  # type: ignore[import-untyped]
 
-from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
+from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.vedo.miscellaneous import VdCubeReference
 from qelebrimbor.vedo.scene_manager_bg import BgSceneManager
 from qelebrimbor.vedo.scene_manager_zx import ZxSceneManager

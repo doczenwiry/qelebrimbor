@@ -19,7 +19,7 @@ import networkx as nx
 import benchmark
 
 from qelebrimbor.formats.pyzx import PYZX
-from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
+from qelebrimbor.analysis.cycles import CycleAnalyser
 
 import logging
 logging.basicConfig(level=logging.INFO)
