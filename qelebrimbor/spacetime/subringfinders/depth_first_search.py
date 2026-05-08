@@ -168,7 +168,7 @@ class SubringfinderDFS:
                 if self.__spacetime.is_reserved(neighbor.position):
                     holder = self.__spacetime.holder(neighbor.position)
                     if holder != start and holder != final and self.__ports_tracker.is_critical(holder, neighbor.position):
-                            continue
+                        continue
 
                 extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
                 extended_distance = extended_path.manhattan_length()

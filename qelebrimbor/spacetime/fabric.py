@@ -67,13 +67,13 @@ class SpacetimeFabric:
         if cube.position in self.__reserved_positions:
             holder = self.__reserved_positions[cube.position]
             if holder != cube:
-                console.warning(f"Cube {cube} claims a position reserved by {holder}.")
+                console.debug(f"Cube {cube} claims a position reserved by {holder}.")
             self.__reserved_positions.pop(cube.position)
 
         if cube.position in self.__occupied_positions:
             holder = self.__occupied_positions[cube.position]
             if holder == cube:
-                console.warning(f"Cube {cube} already occupies position {cube.position}.")
+                console.error(f"Cube {cube} already occupies position {cube.position}.")
             else:
                 raise Exception(f"Attempting to claim a position which is already occupied by {self.occupant(cube.position)}.")
 

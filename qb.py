@@ -167,7 +167,9 @@ def main():
         if verbose: print(f"VISUALIZATION STAGE.")
         if arguments.force_visualization or vzx.volume() <= 100:
             window_size = "full" if arguments.fullscreen else "auto"
-            viewer = VolumetricZxGraphViewer(vzx, label = arguments.filepath, size = window_size)
+            viewer = VolumetricZxGraphViewer(
+                graph = vzx, label = arguments.filepath, size = window_size, cycles_processed= zx_cycles
+            )
             viewer.display()
         elif verbose:
             print("> Visualization of a VolumetricZxGraph with more than 100 cubes is slow (Override with -V).")

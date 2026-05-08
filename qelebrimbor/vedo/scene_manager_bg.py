@@ -14,7 +14,8 @@
 
 from vedo.plotter.runtime import Plotter  # type: ignore[import-untyped]
 
-from qelebrimbor.core.components import BgCube, ZxEdge, BgPipe
+from qelebrimbor.core.common import ZxCycle
+from qelebrimbor.core.components import BgCube, BgPipe
 from qelebrimbor.vedo.bg_painter.default import DefaultBlockGraphPainter
 from qelebrimbor.vedo.bg_painter.grayscale import GrayscaleBlockGraphPainter
 from qelebrimbor.vedo.bg_painter.shaded import ShadedBlockGraphPainter
@@ -25,28 +26,30 @@ from logging import getLogger
 console = getLogger(__name__)
 
 class BgSceneManager:
-    def __init__(self, vzx: VolumetricZxGraph, plotter: Plotter):
+    def __init__(self, graph: VolumetricZxGraph, plotter: Plotter, show_cubes: set[BgCube] | None = None):
         self.__plotter = plotter
-        self.__vzx_graph = vzx
+        self.__graph = graph
 
         self.__cubes: dict[BgCube, VdCube] = dict()
         self.__pipes: dict[BgPipe, VdPipe] = dict()
         self.__painters = [ ShadedBlockGraphPainter(), DefaultBlockGraphPainter(), GrayscaleBlockGraphPainter()]
         self.__painter_index = 0
 
-        for cube in vzx.get_bg_cubes():
+        for cube in graph.get_bg_cubes():
             vd_cube = VdCube(cube = cube, painter = self.__painters[self.__painter_index])
             self.__cubes[ cube ] = vd_cube
-            self.__plotter.add( vd_cube )
+            if not show_cubes or cube in show_cubes:
+                self.__plotter.add( vd_cube )
 
-        for pipe in vzx.get_bg_pipes():
+        for pipe in graph.get_bg_pipes():
             source_cube = pipe.source
             target_cube = pipe.target
             if source_cube.id > target_cube.id:
                 source_cube, target_cube = target_cube, source_cube
             vd_pipe = VdPipe(source_cube, target_cube, pipe.type, pipe, painter = self.__painters[self.__painter_index])
             self.__pipes[ pipe ] = vd_pipe
-            self.__plotter.add(vd_pipe)
+            if not show_cubes or (pipe.source in show_cubes and pipe.target in show_cubes):
+                self.__plotter.add(vd_pipe)
 
         # Prepare the first frame
         console.info(f"> {len(self.__cubes)} cubes, {len(self.__pipes)} pipes.")
@@ -62,7 +65,7 @@ class BgSceneManager:
             #     if bg_cube != selected:
             #         vd_cube.alpha(alpha)
 
-            equivalent_cubes, connecting_pipes = self.__vzx_graph.get_equivalent_bg_cubes(selected)
+            equivalent_cubes, connecting_pipes = self.__graph.get_equivalent_bg_cubes(selected)
 
             for bg_cube, vd_cube in self.__cubes.items():
                 if bg_cube not in equivalent_cubes:
@@ -81,8 +84,8 @@ class BgSceneManager:
         piping: set[BgPipe] = set()
 
         for pipe in pipes:
-            equivalent_sources, connecting_sources = self.__vzx_graph.get_equivalent_bg_cubes(pipe.source)
-            equivalent_targets, connecting_targets = self.__vzx_graph.get_equivalent_bg_cubes(pipe.target)
+            equivalent_sources, connecting_sources = self.__graph.get_equivalent_bg_cubes(pipe.source)
+            equivalent_targets, connecting_targets = self.__graph.get_equivalent_bg_cubes(pipe.target)
             cubes.update( equivalent_sources )
             cubes.update( equivalent_targets )
             piping.update( connecting_sources )
@@ -98,9 +101,10 @@ class BgSceneManager:
             if bg_cube not in cubes:
                 vd_cube.alpha(alpha)
 
-    def alter_cycle_highlighting(self, cycle: list[ZxEdge], highlight: bool = False):
+    def alter_cycle_highlighting(self, cycle: ZxCycle, highlight: bool = False):
         pipes = set()
-        for edge in cycle:
+        _, edges = zip(*cycle)
+        for edge in edges:
             pipes.update(edge.realisation)
         self.alter_path_highlighting(*pipes, highlight = highlight)
 

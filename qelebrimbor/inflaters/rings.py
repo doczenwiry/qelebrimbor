@@ -13,6 +13,7 @@
 #   limitations under the License.
 
 from qelebrimbor.core.path import Path
+from qelebrimbor.core.coordinates import Coordinates
 
 from qelebrimbor.spacetime.ringfinders.depth_first_search import RingfinderDFS
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
@@ -36,10 +37,10 @@ class ZxGraphInflaterRings:
 
         self.__zx_cycles = cycles
 
-    def process(self):
+    def process(self, abort_on_failure: bool = False, abort_on_index: int = -1):
         zx_cycles = self.__zx_cycles
 
-        count: int = 0
+        index: int = 0
         root_cycle: ZxCycle = zx_cycles[0]
 
         # Realise the root ring
@@ -47,29 +48,35 @@ class ZxGraphInflaterRings:
         excess_volume: int = self.__attempt_ring_realisation(root_cycle, maximal_excess = 6)
         if excess_volume == -1:
             console.info(f"> Failure [cause:unknown]")
-            console.info(f"Cycles processed : {count}/{len(zx_cycles)}.")
 
         console.info(f"> Realisation successful with excess volume : +{excess_volume} cubes.")
-        count += 1
+        index += 1
 
         # Realise all subsequent chains
         candidate: ZxChain | None = self.__identify_next_chain(*zx_cycles)
 
-        while candidate is not None and count < len(zx_cycles):
-            console.debug(f"> Next chain identified : {candidate}")
+        while candidate is not None and index < len(zx_cycles):
+            distance = candidate[0].realising_cube.position.get_manhattan_distance(candidate[3].realising_cube.position)
+            console.info(f"Attempting realisation of chain [index={index}, md={distance}] : {candidate}")
+
+            if index == abort_on_index:
+                console.info(f"> Premature abortion for inspection of specific example.")
+                # TODO: fix occlusion of ports by realisation of long path.
+                self.__ports_tracker.verify_ports(verbose = True)
+                break
 
             excess_volume = self.__attempt_chain_realisation(candidate, maximal_excess = 12)
             if excess_volume == -1:
                 console.info(f"> Failure to complete chain : {candidate}")
-                break
+                if abort_on_failure:
+                    break
 
             self.__ports_tracker.verify_ports()
-
-            count += 1
+            index += 1
 
             candidate = self.__identify_next_chain(*zx_cycles)
 
-        console.info(f"Cycles processed : {count}/{len(zx_cycles)}.")
+        console.info(f"Cycles processed : {index}/{len(zx_cycles)}.")
 
     # TODO: handle case of disjoint rings (i.e. multiple connected components that contain cycles).
     def __identify_next_chain(self, *cycles: ZxCycle) -> ZxChain | None:
@@ -121,8 +128,6 @@ class ZxGraphInflaterRings:
     def __attempt_chain_realisation(self, chain: ZxChain, maximal_excess: int = 0) -> int:
         start, nodes, edges, final = chain
 
-        console.info(f"Attempting realisation of chain : {chain}")
-
         if not start.is_realised() or not final.is_realised():
             return -1
 
@@ -149,5 +154,7 @@ class ZxGraphInflaterRings:
             self.__ports_tracker.reserve_ports(
                 cube = node.realising_cube, required_ports = self.__graph.get_zx_degree(node.id) - 2
             )
+            for port in self.__ports_tracker.reserved(node.realising_cube):
+                self.__spacetime.reserve(node.realising_cube, port)
 
         return excess_volume

@@ -14,6 +14,7 @@
 
 from vedo.plotter import Plotter  # type: ignore[import-untyped]
 
+from qelebrimbor.core.common import ZxCycle
 from qelebrimbor.core.components import ZxNode, ZxEdge
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
@@ -24,8 +25,14 @@ from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 from logging import getLogger
 console = getLogger(__name__)
 
+
 class ZxSceneManager:
-    def __init__(self, graph: VolumetricZxGraph, plotter: Plotter, layout: ZxLayout):
+    def __init__(self,
+            graph: VolumetricZxGraph,
+            plotter: Plotter,
+            layout: ZxLayout,
+            show_nodes: set[ZxNode] | None = None
+    ):
         self.__plotter = plotter
         self.__vzx_graph = graph
 
@@ -36,14 +43,16 @@ class ZxSceneManager:
         for node in graph.get_zx_nodes():
             vd_node = VdNode(node, layout.get_node_placement(node)).z(+0.1)
             self.__vd_nodes[ node] = vd_node
-            self.__plotter.add( vd_node )
+            if not show_nodes or node in show_nodes:
+                self.__plotter.add( vd_node )
 
         for edge in graph.get_zx_edges():
             vd_edge = VdEdge(
                 edge, layout.get_node_placement(edge.source), layout.get_node_placement(edge.target)
             ).z(-0.1)
             self.__vd_edges[ edge] = vd_edge
-            self.__plotter.add( vd_edge )
+            if not show_nodes or (edge.source in show_nodes and edge.target in show_nodes):
+                self.__plotter.add( vd_edge )
 
         self.__selected_object = None
         self.__highlight_manhattan_excess = False
@@ -75,8 +84,9 @@ class ZxSceneManager:
         self.alter_node_highlighting(edge.target, highlight = highlight, concealed = excluded)
         self.__vd_edges[edge].alter_highlighting(highlight = highlight, concealed = excluded)
 
-    def alter_cycle_highlighting(self, cycle: list[ZxEdge], highlight: bool):
-        for edge in cycle:
+    def alter_cycle_highlighting(self, cycle: ZxCycle, highlight: bool):
+        _, edges = zip(*cycle)
+        for edge in edges:
             self.alter_node_highlighting(edge.source, highlight = highlight)
             self.alter_node_highlighting(edge.target, highlight = highlight)
             self.__vd_edges[edge].alter_highlighting(highlight = highlight, excess = True)

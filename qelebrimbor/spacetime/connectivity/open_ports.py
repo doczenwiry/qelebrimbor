@@ -76,7 +76,7 @@ class OpenPortsTracker:
         return self.__open_ports[cube].remaining
 
     def is_critical(self, holder: BgCube, position: Coordinates):
-        return self.__open_ports[holder].remaining <= 1
+        return self.__open_ports[holder].remaining == 0
 
     def connect_ports(self, source: tuple[BgCube, Port], target: tuple[BgCube, Port]):
         source_cube, source_port = source
@@ -117,13 +117,17 @@ class OpenPortsTracker:
             if position in vertex.available:
                 vertex.available.remove(position)
 
-    def verify_ports(self):
+    def verify_ports(self, verbose: bool = False):
         prioritized = 0
         unreachable = 0
+        if verbose:
+            console.critical(f"Verifying all ports.")
         for vertex in self.__open_ports.values():
             console.debug(f"Verifying {vertex}")
+            if verbose:
+                console.critical(f"Vertex {vertex}")
             if vertex.remaining == 0:
-                console.warning(f"Time to prioritize {vertex}")
+                console.debug(f"Time to prioritize {vertex}")
                 prioritized += 1
             elif vertex.remaining < 0:
                 console.error(f"TOO LATE FOR {vertex}")
