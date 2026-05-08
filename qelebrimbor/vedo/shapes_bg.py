@@ -45,7 +45,7 @@ class VdCube(Assembly):
         console.debug(f"BgCube : {cube}")
 
         # Scaling the position
-        position = GLOBAL_SPACING_FACTOR * cube.position
+        position = cube.position * GLOBAL_SPACING_FACTOR
 
         # Parameters for the label
         label = str(cube.realised_node.id) if cube.realised_node is not None else ''
@@ -65,7 +65,7 @@ class VdCube(Assembly):
         self.__texts = []
         cube_kind_reach: Coordinates = cube.kind.get_reach()
         for direction in [cube_kind_reach , SpacetimeHelper.ORIGIN - cube_kind_reach]:
-            face_center = (position + step_scale * direction)
+            face_center = (position + direction * step_scale)
             text = Text3D(txt = label, pos = face_center, s = text_size, font ='Roboto', justify ='centered', c ='white')
             # Rotate the text to line it up with its face
             rotation_axis = SpacetimeHelper.ZP.cross(direction)

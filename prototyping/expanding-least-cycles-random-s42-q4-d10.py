@@ -22,7 +22,6 @@ from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
 from qelebrimbor.spacetime.subringfinders.depth_first_search import SubringfinderDFS
 from qelebrimbor.utilities.cycle_analyser import CycleAnalyser
-from qelebrimbor.deprecated.ring_making import find_realisation, find_completion, extend_unrealised
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 SEED = 42
