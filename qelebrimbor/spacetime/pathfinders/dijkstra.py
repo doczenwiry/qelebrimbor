@@ -34,7 +34,9 @@ class PathfinderDijkstra:
         self.__graph = graph
         self.__tracing = tracing
 
-    def find_optimal_paths(self, source: BgCube, target: BgCube) -> Path | None:
+    def find_optimum(
+            self, source: BgCube, target: BgCube, edge_type: EdgeType, maximal_excess: int | None = None
+    ) -> Path | None:
         optimum: Path | None = None
         minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
 
@@ -53,9 +55,9 @@ class PathfinderDijkstra:
         interconnect = { NodeType.X, NodeType.Z }
 
         # Tracing exploration
-        tracer: SpacetimeTracer | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None
+        tracer: SpacetimeTracer[BgCube] | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None
         if tracer:
-            tracer.add_node(source)
+            tracer.add_node(source, label = str(source))
 
         while len(unrelaxed) != 0 and optimum is None:
             heapq.heapify(unrelaxed)
@@ -71,7 +73,7 @@ class PathfinderDijkstra:
 
                 # Tracing exploration
                 if tracer:
-                    tracer.add_node( target )
+                    tracer.add_node( target , label = str(target) )
                     tracer.add_edge( terminal, target )
 
                 optimum = completed_path
@@ -108,6 +110,6 @@ class PathfinderDijkstra:
 
         # Tracing exploration
         if tracer:
-            tracer.report(cubes_to_label = [ source, target ])
+            tracer.report()
 
         return optimum

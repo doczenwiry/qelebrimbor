@@ -23,6 +23,7 @@ from qelebrimbor.helpers.calculator import ManhattanCalculator
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 from qelebrimbor.spacetime.pathfinders.depth_first_search import PathfinderDFS
+from qelebrimbor.spacetime.pathfinders.dijkstra import PathfinderDijkstra
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
@@ -57,7 +58,7 @@ if __name__ == "__main__":
 
         # Instantiate the Pathfinder to benchmark
         pathfinder = PathfinderDFS(vzx, branch_and_bound = False, tracing = SpacetimeTracingReport.FINAL)
-        # pathfinder = PathfinderDijkstra(vzx, tracing = True)
+        # pathfinder = PathfinderDijkstra(vzx, tracing = SpacetimeTracingReport.FINAL)
 
         # Perform the pathfinding from source to target
         start_time = time()

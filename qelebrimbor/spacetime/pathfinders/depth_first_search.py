@@ -93,11 +93,11 @@ class PathfinderDFS:
 
         pruning_performed = 0
 
-        tracer: SpacetimeTracer | None = SpacetimeTracer(
+        tracer: SpacetimeTracer[BgCube] | None = SpacetimeTracer(
             pruning = self.__branch_and_bound, reporting = self.__tracing
         ) if self.__tracing else None
         if tracer:
-            tracer.add_node(source)
+            tracer.add_node(source, label = str(source))
 
         while len(unrelaxed) > 0 and (self.__branch_and_bound or optimum is None):
             # Restore the heap invariant
@@ -128,7 +128,7 @@ class PathfinderDFS:
 
                 # Tracing exploration
                 if tracer:
-                    tracer.add_node(target)
+                    tracer.add_node(target, label = str(target))
                     tracer.add_edge(terminal, target)
 
                 # Update the optimum only if it improves our current knowledge
@@ -170,6 +170,6 @@ class PathfinderDFS:
 
         # Tracing exploration
         if tracer:
-            tracer.report(cubes_to_label= [source, target])
+            tracer.report()
 
         return optimum

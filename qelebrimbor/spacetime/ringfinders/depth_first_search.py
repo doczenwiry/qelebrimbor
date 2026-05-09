@@ -87,10 +87,10 @@ class RingfinderDFS:
         console.info(f"Edge restrictions: {edge_restrictions}")
 
         # Initialise a tracer if it is needed
-        tracer: SpacetimeTracer | None = SpacetimeTracer(
+        tracer: SpacetimeTracer[BgCube] | None = SpacetimeTracer(
             pruning = self.__branch_and_bound, reporting = self.__tracing) if self.__tracing else None
         if tracer:
-            tracer.add_node(root.anchor)
+            tracer.add_node(root.anchor, label = str(root.anchor))
 
         while len(unrelaxed) > 0 and (self.__branch_and_bound or optimum is None):
             heapq.heapify(unrelaxed)
@@ -166,6 +166,6 @@ class RingfinderDFS:
         console.info(f"Optimal ring found : {optimum}")
 
         if tracer:
-            tracer.report(cubes_to_label = [ root.anchor ])
+            tracer.report()
 
         return optimum

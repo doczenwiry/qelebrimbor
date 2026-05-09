@@ -56,9 +56,9 @@ class PlacefinderBFS:
         target_suitable_kinds: list[CubeKind] = CubeKind.suitable_kinds(target.type)
 
         # Tracing exploration
-        tracer: SpacetimeTracer | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None
+        tracer: SpacetimeTracer[BgCube] | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None
         if tracer:
-            tracer.add_node(source)
+            tracer.add_node(source, label = str(source))
 
         while len(unrelaxed) != 0 and optimum is None:
             current_path = unrelaxed.pop()
@@ -83,11 +83,6 @@ class PlacefinderBFS:
                     console.debug(f">> Position {neighbor.position} already occupied in spacetime [{occupant}]")
                     continue
 
-                # if self.__connectivity.is_reserved(neighbor.position):
-                #     holder = self.__connectivity.holder(neighbor.position)
-                #     console.debug(f">> Position {neighbor.position} already reserved in spacetime [critical:{holder}]")
-                #     if holder != source and self.__connectivity.is_critical(holder, neighbor.position):
-                #         console.debug(f">>> Open ports : {self.__connectivity.report(holder)}")
                 if not self.__connectivity.preserved(source, target, neighbor.position):
                     continue
 
@@ -126,6 +121,6 @@ class PlacefinderBFS:
 
         # Tracing exploration
         if tracer:
-            tracer.report(cubes_to_label = [source])
+            tracer.report()
 
         return optimum

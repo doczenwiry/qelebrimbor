@@ -18,7 +18,8 @@ from time import time
 
 from qelebrimbor.core.attributes_bg import CubeKind
 from qelebrimbor.core.attributes_zx import NodeType, EdgeType
-from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.components import BgCube, ZxNode
+from qelebrimbor.core.coordinates import Coordinates
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
@@ -33,14 +34,6 @@ from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 import logging
 logging.basicConfig(level=logging.CRITICAL)
 
-# VolumetricZxGraph parameters
-SOURCE: int = 0
-TARGET: int = 1
-NODES = [(SOURCE, NodeType.X), (TARGET, NodeType.Z)]
-EDGES = [(SOURCE, TARGET, EdgeType.IDENTITY)]
-SOURCE_CUBE = BgCube(CubeKind.ZXZ, SpacetimeHelper.ORIGIN)
-TARGET_CUBE = BgCube(CubeKind.XXZ, SpacetimeHelper.XM)
-
 # The distance between the SOURCE and TARGET in spacetime
 DISTANCE = 3
 # The number of restrictions to consider along the chain requested
@@ -48,36 +41,49 @@ RESTRICTIONS_COUNT = 2
 # The choices of restrictions among which to pick for the chain requested
 RESTRICTIONS_CHOICES = [ NodeType.X, NodeType.Z ]
 
+# Endpoints considered
+ENDPOINTS: dict[str, BgCube] = {
+    'source' : BgCube(CubeKind.ZXZ, Coordinates(0, 0, 0)),
+    'target' : BgCube(CubeKind.XXZ, DISTANCE * SpacetimeHelper.XM)
+}
+
 def __benchmark_restrictions(node_type_restrictions: list[NodeType]):
-    edge_type_restrictions = [EdgeType.IDENTITY for _ in range(len(node_type_restrictions) + 1)]
-    chain_restrictions = (node_type_restrictions, edge_type_restrictions)
+    nodes = [ (0, ENDPOINTS['source'].kind.get_type()) ]
+    for index in range(len(node_type_restrictions)):
+        nodes.append( (index+1, node_type_restrictions[index]) )
+    nodes.append( (len(node_type_restrictions) + 1, ENDPOINTS['target'].kind.get_type()) )
 
-    print(f"NodeType restrictions : {node_type_restrictions}")
-    print(f"EdgeType restrictions : {edge_type_restrictions}")
-    sys.stdout.flush()
+    edges = [ (index, index+1, EdgeType.IDENTITY) for index in range(len(node_type_restrictions) + 1) ]
 
-    vzx = VolumetricZxGraph(NODES, EDGES)
+    vzx = VolumetricZxGraph(nodes, edges)
 
-    node0 = vzx.get_zx_node(SOURCE)
-    node1 = vzx.get_zx_node(TARGET)
+    source = vzx.get_zx_node(0)
+    target = vzx.get_zx_node(len(node_type_restrictions) + 1)
 
-    vzx.realise_zx_node(node = node0, cube = SOURCE_CUBE)
-    vzx.realise_zx_node(node = node1, cube = TARGET_CUBE)
+    vzx.realise_zx_node(node = source, cube = ENDPOINTS['source'])
+    vzx.realise_zx_node(node = target, cube = ENDPOINTS['target'])
 
-    chainfinder = SubringfinderDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
+    subringfinder = SubringfinderDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
+
+    chain_nodes = [ vzx.get_zx_node(node_id) for node_id in range(1, len(node_type_restrictions) + 1 )]
+    chain_edges = [ vzx.get_zx_edge(node_id, node_id + 1) for node_id in range(len(node_type_restrictions) + 1) ]
+    chain = (source, chain_nodes, chain_edges, target)
+
+    print(f"Chain : {chain}")
+
     start = time()
-    chain = chainfinder.find_optimum(node0.realising_cube, node1.realising_cube, restrictions = chain_restrictions)
+    completion = subringfinder.find_optimum(chain, maximal_excess = 12)
     final = time()
     runtime = round(final - start, 2)
 
-    if chain is None:
+    if completion is None:
         print(f"> Failed to find optimal chain.")
-        return -1
+        return -1, -1, chain
 
-    vzx.realise_zx_edge(chain.start.realised_node.id, chain.final.realised_node.id, chain)
+    vzx.realise_zx_chain(chain, completion)
 
-    length = chain.manhattan_length()
-    distance = chain.start.position.get_manhattan_distance(chain.final.position)
+    length = completion.manhattan_length()
+    distance = completion.start.position.get_manhattan_distance(completion.final.position)
 
     label = f"number of restrictions = {len(node_type_restrictions)}, manhattan length = {length}, excess volume = +{length - distance - len(node_type_restrictions)}, time={runtime}s"
     viewer = VolumetricZxGraphViewer(graph = vzx, label = label, layout = PlanarLayout(vzx, scale = 2))

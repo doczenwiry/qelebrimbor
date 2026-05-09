@@ -92,11 +92,11 @@ class SubringfinderDFS:
             maximal_length = None
             extra = ""
 
-        tracer: SpacetimeTracer | None = SpacetimeTracer(
+        tracer: SpacetimeTracer[BgCube] | None = SpacetimeTracer(
             pruning = self.__branch_and_bound, reporting = self.__tracing
         ) if self.__tracing else None
         if tracer:
-            tracer.add_node(start)
+            tracer.add_node(start, label = str(start))
 
         initial = Path(start=start)
         minimal_paths[(start.kind, start.position)] = initial
@@ -136,7 +136,7 @@ class SubringfinderDFS:
 
                     # Tracing exploration
                     if tracer:
-                        tracer.add_node(final)
+                        tracer.add_node(final, label = str(final))
                         tracer.add_edge(terminal, final)
 
                     # Update the optimum only if it improves our current knowledge
@@ -188,6 +188,6 @@ class SubringfinderDFS:
 
         # Tracing exploration
         if tracer:
-            tracer.report(cubes_to_label= [start, final])
+            tracer.report()
 
         return optimum

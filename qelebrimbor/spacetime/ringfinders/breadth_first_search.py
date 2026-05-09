@@ -81,9 +81,9 @@ class RingfinderBFS:
         console.info(f"> {CycleAnalyser.string(cycle)}")
 
         # Initialise a tracer if it is needed
-        tracer: SpacetimeTracer | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None
+        tracer: SpacetimeTracer[BgCube] | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None
         if tracer:
-            tracer.add_node(root.anchor)
+            tracer.add_node(root.anchor, label = str(root.anchor))
 
         while len(unrelaxed) > 0 and optimum is None:
             heapq.heapify(unrelaxed)
@@ -149,6 +149,6 @@ class RingfinderBFS:
 
         # Tracing exploration
         if tracer:
-            tracer.report(cubes_to_label = [root.anchor])
+            tracer.report()
 
         return optimum
