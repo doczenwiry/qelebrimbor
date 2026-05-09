@@ -68,17 +68,32 @@ class ColorlessPath:
 
         return cp
 
-    def compatible(self, source_kind: CubeKind, target_kind: CubeKind) -> bool:
-        return self.__overall_shuffling.compatible(source_kind, target_kind)
+    def compatible(self, source_kind: CubeKind, target_kind: CubeKind, edge_type: EdgeType) -> bool:
+        if edge_type == EdgeType.IDENTITY:
+            return self.__overall_shuffling.compatible(source_kind, target_kind)
+        else:
+            return self.__overall_shuffling.hadamard().compatible(source_kind, target_kind)
 
     def painted(self, start: BgCube, final: BgCube, edge_type: EdgeType) -> Path:
+        """
+        Paint a ColorlessPath of successive Coordinates into a Path made of BgCubes with CubeKind and Coordinates.
+        The current strategy when dealing with Hadamard edges consists in making the last pipe into a Hadamard pipe.
+        :param start: The start cube from which the ColorlessPath emerges.
+        :param final: The final cube towards which the ColorlessPath goes.
+        :param edge_type: The type of edge the Path ought to have.
+        :return:
+        """
+        if not self.compatible(start.kind, final.kind, edge_type):
+            raise ValueError(f"ColorlessPath provided cannot be painted for edge : {start} -{repr(edge_type)}- {final}")
+
         path = Path(start)
         current: CubeKind = start.kind
         for index in range(1, len(self.__positions) - 1):
             assigned = self.__positions[index]
             remaining = reduce(ColorShuffling.extend, self.__successive_shuffling[index:], ColorShuffling.identity())
+            remaining = remaining.hadamard() if edge_type == EdgeType.HADAMARD else remaining
             compatibles = filter(
-                lambda kind: self.__successive_shuffling[index-1].compatible(current, kind) and remaining.compatible(kind, final.kind),
+                lambda kind: self.__successive_shuffling[index - 1].compatible(current, kind) and remaining.compatible(kind, final.kind),
                 CubeKind
             )
             selected = next(compatibles)
@@ -93,7 +108,7 @@ class ColorlessPath:
             except StopIteration as si:
                 pass
 
-        path = path.extend(final, pipe_type = EdgeType.IDENTITY)
+        path = path.extend(final, pipe_type = edge_type)
         return path
 
     def __lt__(self, other):

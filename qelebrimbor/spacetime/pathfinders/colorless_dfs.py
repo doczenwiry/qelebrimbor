@@ -92,7 +92,7 @@ class PathfinderColorblindDFS:
             pruning = self.__branch_and_bound, reporting = self.__tracing
         ) if self.__tracing else None
         if tracer:
-            tracer.add_node(source.position)
+            tracer.add_node(source.position, label = str(source.position))
 
         while len(unrelaxed) > 0 and (self.__branch_and_bound or optimum is None):
             # Restore the heap invariant
@@ -118,11 +118,11 @@ class PathfinderColorblindDFS:
             if terminal.get_manhattan_distance(target.position) == 1:
                 #TODO: check the path is consistent for the kinds of the source and the target.
                 completed_path = current_path.extend(target.position)
-                console.info(f"Candidate : {completed_path} {completed_path.compatible(source.kind, target.kind)}")
-                if completed_path.compatible(source.kind, target.kind):
+                console.info(f"Candidate : {completed_path} {completed_path.compatible(source.kind, target.kind, edge_type = edge_type)}")
+                if completed_path.compatible(source.kind, target.kind, edge_type = edge_type):
                     # Tracing exploration
                     if tracer:
-                        tracer.add_node(target.position)
+                        tracer.add_node(target.position, label = str(target.position))
                         tracer.add_edge(terminal, target.position)
 
                     # Update the optimum only if it improves our current knowledge
@@ -160,9 +160,6 @@ class PathfinderColorblindDFS:
 
         # Tracing exploration
         if tracer:
-            cubes_to_label = [ source.position ]
-            if optimum is not None:
-                cubes_to_label.append( target.position )
-            tracer.report(cubes_to_label = cubes_to_label)
+            tracer.report()
 
         return optimum

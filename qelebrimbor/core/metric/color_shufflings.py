@@ -14,7 +14,6 @@
 
 from dataclasses import dataclass
 
-from qelebrimbor.core import attributes_zx
 from qelebrimbor.core.attributes_bg import CubeKind
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
@@ -58,6 +57,14 @@ class ColorShuffling:
     @staticmethod
     def identity():
         return ColorShuffling('xyz')
+
+    def hadamard(self) -> ColorShuffling:
+        if self.is_identity():
+            raise NotImplementedError(f"Hadamard not supported for identity shuffling.")
+
+        color_one, color_two = tuple(filter(lambda face : face != 'o', self.start))
+        color_permutation = str.maketrans({ color_one : color_two, color_two : color_one })
+        return ColorShuffling(self.start, self.final.translate(color_permutation))
 
     def is_identity(self):
         return self.start == 'xyz' and self.final == 'xyz'
@@ -130,7 +137,8 @@ if __name__ == '__main__':
     generated = ColorShuffling.generate()
     print(f"Elements [{len(generated)}]:")
     for element in generated:
-        print(f"> {element}")
+        if not element.is_identity():
+            print(f"> {element} =H=> {element.hadamard()}")
 
     cs = ColorShuffling('oyz', 'yzo')
     cs2 = cs.extend(cs)

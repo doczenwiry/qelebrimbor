@@ -32,6 +32,7 @@ from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 import logging
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("qelebrimbor.spacetime").setLevel(logging.INFO)
+logging.getLogger("qelebrimbor.spacetime.core.colorless_path").setLevel(logging.CRITICAL)
 logging.getLogger("qelebrimbor.spacetime.connectivity.default").setLevel(logging.CRITICAL)
 
 SOURCE: int = 0
@@ -60,7 +61,13 @@ if __name__ == "__main__":
 
         # Perform the pathfinding from source to target
         start_time = time()
-        path = pathfinder.find_optimum(source.realising_cube, target.realising_cube, EdgeType.IDENTITY, maximal_excess = 6)
+        edge = vzx.get_zx_edge(source_id = SOURCE, target_id = TARGET)
+        path = pathfinder.find_optimum(
+            source = edge.source.realising_cube,
+            target = edge.target.realising_cube,
+            edge_type = edge.type,
+            maximal_excess = 6
+        )
         final_time = time()
         runtime = round(final_time - start_time, 2)
 
