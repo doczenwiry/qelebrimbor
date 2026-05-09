@@ -23,7 +23,7 @@ from qelebrimbor.core.coordinates import Coordinates
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
-from qelebrimbor.spacetime.subringfinders.depth_first_search import SubringfinderDFS
+from qelebrimbor.spacetime.strandfinders.depth_first_search import StrandfinderDFS
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 from qelebrimbor.vedo.zx_layout.planar import PlanarLayout
 
@@ -63,7 +63,7 @@ def __benchmark_restrictions(node_type_restrictions: list[NodeType]):
     vzx.realise_zx_node(node = source, cube = ENDPOINTS['source'])
     vzx.realise_zx_node(node = target, cube = ENDPOINTS['target'])
 
-    subringfinder = SubringfinderDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
+    strandfinder = StrandfinderDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
 
     chain_nodes = [ vzx.get_zx_node(node_id) for node_id in range(1, len(node_type_restrictions) + 1 )]
     chain_edges = [ vzx.get_zx_edge(node_id, node_id + 1) for node_id in range(len(node_type_restrictions) + 1) ]
@@ -72,7 +72,7 @@ def __benchmark_restrictions(node_type_restrictions: list[NodeType]):
     print(f"Chain : {chain}")
 
     start = time()
-    completion = subringfinder.find_optimum(chain, maximal_excess = 12)
+    completion = strandfinder.find_optimum(chain, maximal_excess = 12)
     final = time()
     runtime = round(final - start, 2)
 

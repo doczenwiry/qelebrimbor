@@ -18,7 +18,7 @@ from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
 
 from qelebrimbor.spacetime.ringfinders.depth_first_search import RingfinderDFS
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
-from qelebrimbor.spacetime.subringfinders.depth_first_search import SubringfinderDFS
+from qelebrimbor.spacetime.strandfinders.depth_first_search import StrandfinderDFS
 
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 
@@ -34,7 +34,7 @@ class ZxGraphInflaterRings:
         self.__spacetime = graph.spacetime
         self.__connectivity: ConnectivityTracker = OpenPortsTracker(graph)
         self.__ringfinder = RingfinderDFS(self.__graph, branch_and_bound = True)
-        self.__chainfinder = SubringfinderDFS(self.__graph, self.__connectivity)
+        self.__strandfinder = StrandfinderDFS(self.__graph, self.__connectivity)
 
         self.__zx_cycles = cycles
 
@@ -134,7 +134,7 @@ class ZxGraphInflaterRings:
         if not self.__connectivity.available(start.realising_cube, final.realising_cube):
             return -1
 
-        completion = self.__chainfinder.find_optimum(chain, maximal_excess = maximal_excess)
+        completion = self.__strandfinder.find_optimum(chain, maximal_excess = maximal_excess)
 
         if completion is None:
             console.error(f"Failed to find a chain for {start} - {nodes} - {final}")

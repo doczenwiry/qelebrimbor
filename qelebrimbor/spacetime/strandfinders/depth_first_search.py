@@ -33,7 +33,7 @@ import logging
 console = logging.getLogger(__name__)
 
 
-class SubringfinderDFS:
+class StrandfinderDFS:
     def __init__(self,
             graph: VolumetricZxGraph = None,
             connectivity: ConnectivityTracker | None = None,
@@ -101,7 +101,7 @@ class SubringfinderDFS:
         initial = Path(start=start)
         minimal_paths[(start.kind, start.position)] = initial
 
-        vertex = (SubringfinderDFS.heuristic(start, final, node_types), initial)
+        vertex = (StrandfinderDFS.heuristic(start, final, node_types), initial)
         heapq.heappush(unrelaxed, vertex )
 
         console.info(f"Searching for chain from {start} to {final} [{extra}{node_types}/{edge_types}]")
@@ -119,7 +119,7 @@ class SubringfinderDFS:
 
             # Branch-and-bound
             if self.__branch_and_bound and optimum:
-                manhattan_length_projected: int = current_path.manhattan_length() + SubringfinderDFS.heuristic(terminal, final, node_types[manhattan_length:])
+                manhattan_length_projected: int = current_path.manhattan_length() + StrandfinderDFS.heuristic(terminal, final, node_types[manhattan_length:])
                 if optimum.manhattan_length() <= manhattan_length_projected:
                     if tracer:
                         tracer.prune_node(terminal)
@@ -181,7 +181,7 @@ class SubringfinderDFS:
                     # Filtering out the neighbor from unrelaxed
                     unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].final != neighbor ]
                     # Compute the minimal manhattan length required to connect neighbor to target (heuristic).
-                    unrelaxed.append((SubringfinderDFS.heuristic(neighbor, final, node_types[extended_distance:]), extended_path))
+                    unrelaxed.append((StrandfinderDFS.heuristic(neighbor, final, node_types[extended_distance:]), extended_path))
 
                     # Update minimal distance discovered
                     minimal_paths[neighbor_point] = extended_path

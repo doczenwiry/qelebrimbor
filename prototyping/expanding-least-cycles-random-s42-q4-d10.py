@@ -19,7 +19,7 @@ import pyzx
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
-from qelebrimbor.spacetime.subringfinders.depth_first_search import SubringfinderDFS
+from qelebrimbor.spacetime.strandfinders.depth_first_search import StrandfinderDFS
 from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     connectivity = OpenPortsTracker(vzx)
     ringfinder = RingfinderBFS(graph = vzx, ports_tracker = connectivity)
-    subringfinder = SubringfinderDFS(graph = vzx, ports_tracker = connectivity, branch_and_bound = True)
+    strandfinder = StrandfinderDFS(graph = vzx, connectivity = connectivity, branch_and_bound = True)
 
     CycleAnalyser.analyse(vzx)
     cycles = CycleAnalyser.decompose(vzx)
@@ -61,7 +61,7 @@ if __name__ == "__main__":
         # Reserve the ports for all the nodes that were realised as part of this ring.
         for node, _ in cycle:
             # Since each of these node is part of a ring, it already has two of its edges realised.
-            connectivity.reserve(node.realising_cube, required_ports =vzx.get_zx_degree(node.id) - 2)
+            connectivity.reserve(node.realising_cube, required =vzx.get_zx_degree(node.id) - 2)
 
         for cube in ring.cubes[len(cycle):]:
             connectivity.occlude(cube.position)

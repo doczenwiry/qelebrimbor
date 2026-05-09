@@ -18,7 +18,7 @@ from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.inflaters.boundaries import ZxGraphInflaterBoundaries
 
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
-from qelebrimbor.spacetime.subringfinders.depth_first_search import SubringfinderDFS
+from qelebrimbor.spacetime.strandfinders.depth_first_search import StrandfinderDFS
 
 from qelebrimbor.analysis.cycles import CycleAnalyser
 
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders8.json")
 
     ringfinder = RingfinderBFS(graph = vzx)
-    subringfinder = SubringfinderDFS(graph = vzx, branch_and_bound = True)
+    strandfinder = StrandfinderDFS(graph = vzx, branch_and_bound = True)
 
     CycleAnalyser.analyse(vzx, minimal = True)
     cycles = CycleAnalyser.decompose(vzx, minimal = True)
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     console.info(f"Cycle {index} : {cycle}")
     console.info(f"> Chain : {chain}")
 
-    completion = subringfinder.find_optimum(chain, maximal_excess = 8)
+    completion = strandfinder.find_optimum(chain, maximal_excess = 8)
     if completion:
         console.info(f"Found completion [volume={completion.manhattan_length()-1}] for chain : {chain}")
         console.info(f"> {completion}")
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     hexagon = HexagonLayout(graph = vzx, nodes = [1, 4, 0, 7, 3, 6],
         extras = {2 : (0.7, 1.5 / 6.0) , 5 : (0.7, 4.5 / 6.0), 9 : (0.7, 0.5 / 6.0), 12 : (0.7, 3.5 / 6.0)}
     )
-    viewer = VolumetricZxGraphViewer(vzx, "steane-code-7", hexagon)
+    viewer = VolumetricZxGraphViewer(graph = vzx, label = "steane-code-7", layout = hexagon)
     viewer.display()
 
     PYZX.into_file(vzx, filepath ="../assets/pyzx/steane/steane-code-qubits7-spiders8-blockgraph.pyzx.json")

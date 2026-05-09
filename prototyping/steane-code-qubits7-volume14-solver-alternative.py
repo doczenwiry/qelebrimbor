@@ -14,7 +14,7 @@
 
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
-from qelebrimbor.spacetime.subringfinders.depth_first_search import SubringfinderDFS
+from qelebrimbor.spacetime.strandfinders.depth_first_search import StrandfinderDFS
 from qelebrimbor.analysis.cycles import CycleAnalyser
 
 from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders7.json")
 
     ringfinder = RingfinderBFS(graph = vzx)
-    subringfinder = SubringfinderDFS(graph = vzx, branch_and_bound = True)
+    strandfinder = StrandfinderDFS(graph = vzx, branch_and_bound = True)
 
     CycleAnalyser.analyse(vzx)
     cycles = CycleAnalyser.decompose(vzx)
