@@ -48,6 +48,9 @@ class SpacetimeTracer[Vertex]:
         self.__labels: dict[int, str] = dict()
 
     def add_node(self, vertex: Vertex, label: str | None = None):
+        if vertex in self.__points_discovered:
+            return
+
         current_id = len(self.__points_discovered)
         self.__points_discovered[vertex] = current_id
         if label is not None:
