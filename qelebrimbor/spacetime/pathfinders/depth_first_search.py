@@ -22,6 +22,7 @@ from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.calculator import ManhattanCalculator
 from qelebrimbor.core.path import Length, Path
+from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
@@ -48,7 +49,7 @@ class PathfinderDFS:
         """
         self.__graph = graph if graph else VolumetricZxGraph()
         self.__spacetime = graph.spacetime if graph else SpacetimeFabric()
-        self.__ports_tracker = ports_tracker if ports_tracker else OpenPortsTracker()
+        self.__connectivity: ConnectivityTracker = ports_tracker if ports_tracker else OpenPortsTracker(self.__graph)
 
         self.__branch_and_bound = branch_and_bound
         self.__tracing = tracing
@@ -145,11 +146,9 @@ class PathfinderDFS:
                 if self.__spacetime.occupied(neighbor.position):
                     continue
 
-                # Ignore neighbor if the position is already reserved in spacetime
-                if self.__ports_tracker.is_reserved(neighbor.position):
-                    holder = self.__ports_tracker.holder(neighbor.position)
-                    if holder != source and holder != target:
-                        continue
+                # Ignore neighbor if occluding the position breaks connectivity
+                if not self.__connectivity.preserved(source, target, neighbor.position):
+                    continue
 
                 # Tracing exploration
                 if tracer:

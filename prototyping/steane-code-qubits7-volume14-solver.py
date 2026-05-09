@@ -38,9 +38,9 @@ attributes_zx.ZX_COLORING = True
 if __name__ == "__main__":
     vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders7.json")
 
-    ports_tracker = OpenPortsTracker(vzx)
-    ringfinder = RingfinderBFS(graph = vzx, ports_tracker = ports_tracker)
-    subringfinder = SubringfinderDFS(graph = vzx, ports_tracker = ports_tracker, branch_and_bound = True)
+    connectivity = OpenPortsTracker(vzx)
+    ringfinder = RingfinderBFS(graph = vzx, ports_tracker = connectivity)
+    subringfinder = SubringfinderDFS(graph = vzx, ports_tracker = connectivity, branch_and_bound = True)
 
     CycleAnalyser.analyse(vzx)
     cycles = CycleAnalyser.decompose(vzx, minimal = True)
@@ -59,12 +59,12 @@ if __name__ == "__main__":
         # Reserve the ports for all the nodes that were realised as part of this ring.
         for node, _ in cycle:
             # Since each of these node is part of a ring, it already has two of its edges realised.
-            ports_tracker.reserve_ports(node.realising_cube, required_ports = vzx.get_zx_degree(node.id) - 2)
+            connectivity.reserve(node.realising_cube, required_ports =vzx.get_zx_degree(node.id) - 2)
 
         for cube in ring.cubes[len(cycle):]:
-            ports_tracker.occlude_ports(cube.position)
+            connectivity.occlude(cube.position)
 
-    ports_tracker.verify_ports()
+    connectivity.report()
 
     # Realise the remaining chains
     index = 1
@@ -83,7 +83,7 @@ if __name__ == "__main__":
         vzx.realise_zx_chain(chain, completion)
 
         for cube in completion.extra_cubes[len(chain):]:
-            ports_tracker.occlude_ports(cube.position)
+            connectivity.occlude(cube.position)
 
     index = 2
     cycle = cycles[index]
@@ -101,7 +101,7 @@ if __name__ == "__main__":
         vzx.realise_zx_chain(chain, completion)
 
         for cube in completion.extra_cubes[len(chain):]:
-            ports_tracker.occlude_ports(cube.position)
+            connectivity.occlude(cube.position)
 
     ZxGraphInflaterBoundaries(vzx).process()
 

@@ -41,9 +41,9 @@ if __name__ == "__main__":
 
     vzx = PYZX.from_pyzx_graph(pyzx_input)
 
-    ports_tracker = OpenPortsTracker(vzx)
-    ringfinder = RingfinderBFS(graph = vzx, ports_tracker = ports_tracker)
-    subringfinder = SubringfinderDFS(graph = vzx, ports_tracker = ports_tracker, branch_and_bound = True)
+    connectivity = OpenPortsTracker(vzx)
+    ringfinder = RingfinderBFS(graph = vzx, ports_tracker = connectivity)
+    subringfinder = SubringfinderDFS(graph = vzx, ports_tracker = connectivity, branch_and_bound = True)
 
     CycleAnalyser.analyse(vzx)
     cycles = CycleAnalyser.decompose(vzx)
@@ -61,10 +61,10 @@ if __name__ == "__main__":
         # Reserve the ports for all the nodes that were realised as part of this ring.
         for node, _ in cycle:
             # Since each of these node is part of a ring, it already has two of its edges realised.
-            ports_tracker.reserve_ports(node.realising_cube, required_ports = vzx.get_zx_degree(node.id) - 2)
+            connectivity.reserve(node.realising_cube, required_ports =vzx.get_zx_degree(node.id) - 2)
 
         for cube in ring.cubes[len(cycle):]:
-            ports_tracker.occlude_ports(cube.position)
+            connectivity.occlude(cube.position)
 
     # for index in [ 5, 6, 4, 3, 2, 1 ]:
     #     cycle = cycles[index]

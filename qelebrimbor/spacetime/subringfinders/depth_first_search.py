@@ -23,7 +23,7 @@ from qelebrimbor.core.components import BgCube
 
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.calculator import ManhattanCalculator
-from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
+from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
@@ -32,10 +32,11 @@ from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 import logging
 console = logging.getLogger(__name__)
 
+
 class SubringfinderDFS:
     def __init__(self,
             graph: VolumetricZxGraph = None,
-            ports_tracker: OpenPortsTracker | None = None,
+            connectivity: ConnectivityTracker | None = None,
             branch_and_bound: bool = False,
             tracing: SpacetimeTracingReport | None = None
     ):
@@ -49,7 +50,7 @@ class SubringfinderDFS:
         """
         self.__graph = graph if graph else VolumetricZxGraph()
         self.__spacetime = graph.spacetime if graph else SpacetimeFabric()
-        self.__ports_tracker = ports_tracker if ports_tracker else OpenPortsTracker(self.__graph)
+        self.__connectivity = connectivity
         self.__branch_and_bound = branch_and_bound
         self.__tracing = tracing
 
@@ -165,10 +166,8 @@ class SubringfinderDFS:
                     continue
 
                 # Ignore neighbor if the position is already reserved in spacetime
-                if self.__ports_tracker.is_reserved(neighbor.position):
-                    holder = self.__ports_tracker.holder(neighbor.position)
-                    if holder != start and holder != final and self.__ports_tracker.is_critical(holder, neighbor.position):
-                        continue
+                if self.__connectivity and not self.__connectivity.preserved(start, final, neighbor.position):
+                    continue
 
                 extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
                 extended_distance = extended_path.manhattan_length()

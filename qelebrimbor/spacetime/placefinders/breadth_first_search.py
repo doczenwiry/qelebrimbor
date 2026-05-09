@@ -37,7 +37,7 @@ class PlacefinderBFS:
     ):
         self.__graph = graph
         self.__spacetime = graph.spacetime
-        self.__ports_tracker = ports_tracker if ports_tracker else OpenPortsTracker(self.__graph)
+        self.__connectivity = ports_tracker if ports_tracker else OpenPortsTracker(self.__graph)
         self.__tracing = tracing
 
     # TODO: consider the type of Edge between source and target (IDENTITY or HADAMARD)
@@ -83,12 +83,13 @@ class PlacefinderBFS:
                     console.debug(f">> Position {neighbor.position} already occupied in spacetime [{occupant}]")
                     continue
 
-                if self.__ports_tracker.is_reserved(neighbor.position):
-                    holder = self.__ports_tracker.holder(neighbor.position)
-                    console.debug(f">> Position {neighbor.position} already reserved in spacetime [critical:{holder}]")
-                    if holder != source and self.__ports_tracker.is_critical(holder, neighbor.position):
-                        console.debug(f">>> Open ports : {self.__ports_tracker.report(holder)}")
-                        continue
+                # if self.__connectivity.is_reserved(neighbor.position):
+                #     holder = self.__connectivity.holder(neighbor.position)
+                #     console.debug(f">> Position {neighbor.position} already reserved in spacetime [critical:{holder}]")
+                #     if holder != source and self.__connectivity.is_critical(holder, neighbor.position):
+                #         console.debug(f">>> Open ports : {self.__connectivity.report(holder)}")
+                if not self.__connectivity.preserved(source, target, neighbor.position):
+                    continue
 
                 extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
                 console.debug(f"> Extended Path : {extended_path}")

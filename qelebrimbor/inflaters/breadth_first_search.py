@@ -32,8 +32,8 @@ class ZxGraphInflaterBFS:
         self.__graph = graph
         self.__spacetime = graph.spacetime
 
-        self.__ports_tracker = OpenPortsTracker(graph)
-        self.__placefinder = PlacefinderBFS(graph, self.__ports_tracker)
+        self.__connectivity = OpenPortsTracker(graph)
+        self.__placefinder = PlacefinderBFS(graph, self.__connectivity)
         self.__pathfinder = PathfinderDFS(graph)
 
     # TODO: detects whether the source and/or target are unreachable in the BlockGraph.
@@ -55,7 +55,7 @@ class ZxGraphInflaterBFS:
             position = SpacetimeHelper.ORIGIN
         )
         self.__graph.realise_zx_node(root_node, root_cube)
-        self.__ports_tracker.reserve_ports(root_cube)
+        self.__connectivity.reserve(root_cube, required = self.__graph.get_zx_degree(root_node.id))
 
         # Form the backbone with the bfs_edges
         # > Reserve needed positions based on remaining missing neighbors
@@ -73,7 +73,7 @@ class ZxGraphInflaterBFS:
             source, target = (zx_edge.source, zx_edge.target) if zx_edge.source.is_realised() else (zx_edge.target, zx_edge.source)
 
             if source.is_realised() or target.is_realised():
-                if self.__ports_tracker.reachable(source.realising_cube):
+                if self.__connectivity.reachable(source.realising_cube):
                     raise Exception(f"> FAILURE to realise FP edge : {edge} [cause:insufficient-ports]")
 
                 success = self.__attempt_node_realisation(source, target)
@@ -99,7 +99,7 @@ class ZxGraphInflaterBFS:
             source, target = (zx_edge.source, zx_edge.target) if zx_edge.source.is_realised() else (zx_edge.target, zx_edge.source)
 
             if source.is_realised() and target.is_realised():
-                if self.__ports_tracker.reachable(source.realising_cube) or self.__ports_tracker.reachable(target.realising_cube):
+                if not self.__connectivity.available(source.realising_cube, target.realising_cube):
                     raise Exception(f"> FAILURE to realise SP edge : {edge} [cause:insufficient-ports]")
 
                 success = self.__attempt_edge_realisation(source, target)
@@ -115,7 +115,6 @@ class ZxGraphInflaterBFS:
     def __attempt_node_realisation(self, source: ZxNode, target: ZxNode) -> bool:
         # Place a cube of a kind suitable for the type of the unrealised endpoint node can be placed.
         console.info(f"> Searching for node-realisation : {source} - {target}")
-        console.info(f">> Source ports : {self.__ports_tracker.report(source.realising_cube)}")
         path = self.__placefinder.find_closest_realisation(source.realising_cube, target)
 
         if path is None:
@@ -129,14 +128,14 @@ class ZxGraphInflaterBFS:
         # TODO: use Path.to_specification(..)
         self.__graph.realise_zx_edge(source.id, target.id, proposal = path)
 
-        self.__ports_tracker.reserve_ports(path.final)
+        self.__connectivity.reserve(path.final, required = self.__graph.get_zx_degree(path.final.realised_node))
 
         # Remove the reserved positions of ports from those available ones
         for position in path.extra_cubes:
-            self.__ports_tracker.occlude_ports(position)
-        self.__ports_tracker.occlude_ports(path.final.position)
+            self.__connectivity.occlude(position)
+        self.__connectivity.occlude(path.final.position)
 
-        self.__ports_tracker.connect_ports(
+        self.__connectivity.connect(
             source = (source.realising_cube, path.start_port),
             target = (target.realising_cube, path.final_port)
         )
@@ -146,8 +145,6 @@ class ZxGraphInflaterBFS:
     def __attempt_edge_realisation(self, source: ZxNode, target: ZxNode) -> bool:
         # Place a sequence of cubes connected by pipes in between the source and target realising cubes.
         console.info(f"> Searching for edge-realisation : {source} - {target}")
-        console.debug(f">> Source ports : {self.__ports_tracker.report(source.realising_cube)}")
-        console.debug(f">> Target ports : {self.__ports_tracker.report(target.realising_cube)}")
 
         path = self.__pathfinder.find_optimum(source.realising_cube, target.realising_cube)
 
@@ -161,9 +158,9 @@ class ZxGraphInflaterBFS:
 
         # Remove the reserved positions of ports from those available ones
         for position in path.extra_cubes:
-            self.__ports_tracker.occlude_ports(position)
+            self.__connectivity.occlude(position)
 
-        self.__ports_tracker.connect_ports(
+        self.__connectivity.connect(
             source = (source.realising_cube, path.start_port),
             target = (target.realising_cube, path.final_port)
         )

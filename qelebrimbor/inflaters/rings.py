@@ -14,6 +14,7 @@
 
 from qelebrimbor.core.path import Path
 from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
 
 from qelebrimbor.spacetime.ringfinders.depth_first_search import RingfinderDFS
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
@@ -31,9 +32,9 @@ class ZxGraphInflaterRings:
     def __init__(self, graph: VolumetricZxGraph, cycles: list[ZxCycle]):
         self.__graph = graph
         self.__spacetime = graph.spacetime
-        self.__ports_tracker: OpenPortsTracker = OpenPortsTracker(graph)
+        self.__connectivity: ConnectivityTracker = OpenPortsTracker(graph)
         self.__ringfinder = RingfinderDFS(self.__graph, branch_and_bound = True)
-        self.__chainfinder = SubringfinderDFS(self.__graph, self.__ports_tracker)
+        self.__chainfinder = SubringfinderDFS(self.__graph, self.__connectivity)
 
         self.__zx_cycles = cycles
 
@@ -62,7 +63,7 @@ class ZxGraphInflaterRings:
             if index == abort_on_index:
                 console.info(f"> Premature abortion for inspection of specific example.")
                 # TODO: fix occlusion of ports by realisation of long path.
-                self.__ports_tracker.verify_ports(verbose = True)
+                self.__connectivity.report(verbose = True)
                 break
 
             excess_volume = self.__attempt_chain_realisation(candidate, maximal_excess = 12)
@@ -71,7 +72,7 @@ class ZxGraphInflaterRings:
                 if abort_on_failure:
                     break
 
-            self.__ports_tracker.verify_ports()
+            self.__connectivity.report()
             index += 1
 
             candidate = self.__identify_next_chain(*zx_cycles)
@@ -117,12 +118,10 @@ class ZxGraphInflaterRings:
         # Reserve the ports for all the nodes that were realised as part of this ring.
         for node, _ in zx_cycle:
             # Since each of these node is realised as part of a ring, it already has two of its edges realised.
-            self.__ports_tracker.reserve_ports(
-                cube = node.realising_cube, required_ports = self.__graph.get_zx_degree(node.id) - 2
-            )
+            self.__connectivity.reserve(node.realising_cube, required = self.__graph.get_zx_degree(node.id) - 2)
 
         for cube in ring.cubes[len(zx_cycle):]:
-            self.__ports_tracker.occlude_ports(cube.position)
+            self.__connectivity.occlude(cube.position)
 
         return len(ring.cubes) - len(zx_cycle)
 
@@ -132,10 +131,7 @@ class ZxGraphInflaterRings:
         if not start.is_realised() or not final.is_realised():
             return -1
 
-        if not self.__ports_tracker.reachable(start.realising_cube):
-            return -1
-
-        if not self.__ports_tracker.reachable(final.realising_cube):
+        if not self.__connectivity.available(start.realising_cube, final.realising_cube):
             return -1
 
         completion = self.__chainfinder.find_optimum(chain, maximal_excess = maximal_excess)
@@ -152,11 +148,9 @@ class ZxGraphInflaterRings:
         # Reserve the ports for all the nodes that were realised as part of this ring.
         for node in nodes:
             # Since each of these node is part of a ring, it already has two of its edges realised.
-            self.__ports_tracker.reserve_ports(
-                cube= node.realising_cube, required_ports =self.__graph.get_zx_degree(node.id) - 2
-            )
+            self.__connectivity.reserve(node.realising_cube, required =self.__graph.get_zx_degree(node.id) - 2)
 
         for cube in completion.extra_cubes[len(nodes):]:
-            self.__ports_tracker.occlude_ports(cube.position)
+            self.__connectivity.occlude(cube.position)
 
         return excess_volume
