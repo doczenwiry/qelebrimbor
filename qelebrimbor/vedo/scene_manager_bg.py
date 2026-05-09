@@ -51,7 +51,6 @@ class BgSceneManager:
             if not show_cubes or (pipe.source in show_cubes and pipe.target in show_cubes):
                 self.__plotter.add(vd_pipe)
 
-        # Prepare the first frame
         console.info(f"> {len(self.__cubes)} cubes, {len(self.__pipes)} pipes.")
 
     def alter_cube_highlighting(self, selected: BgCube, highlight: bool = False):
@@ -60,41 +59,44 @@ class BgSceneManager:
         else:
             alpha = 0.025 if highlight else 1.0
 
-            # TODO: adapt to toggle whether all equivalent cubes should be shown or only the "original" one
-            # for bg_cube, vd_cube in self.__cubes.items():
-            #     if bg_cube != selected:
-            #         vd_cube.alpha(alpha)
-
-            equivalent_cubes, connecting_pipes = self.__graph.get_equivalent_bg_cubes(selected)
-
             for bg_cube, vd_cube in self.__cubes.items():
-                if bg_cube not in equivalent_cubes:
+                if bg_cube != selected:
                     vd_cube.alpha(alpha)
 
             for bg_pipe, vd_pipe in self.__pipes.items():
-                if bg_pipe not in connecting_pipes:
-                    vd_pipe.alpha(alpha)
+                vd_pipe.alpha(alpha)
+
+            # TODO: adapt to toggle whether all equivalent cubes should be shown or only the selected one
+            # equivalent_cubes, connecting_pipes = self.__graph.get_equivalent_bg_cubes(selected)
+            #
+            # for bg_cube, vd_cube in self.__cubes.items():
+            #     if bg_cube not in equivalent_cubes:
+            #         vd_cube.alpha(alpha)
+            #
+            # for bg_pipe, vd_pipe in self.__pipes.items():
+            #     if bg_pipe not in connecting_pipes:
+            #         vd_pipe.alpha(alpha)
 
     def alter_path_highlighting(self, *pipes: BgPipe, highlight: bool = False):
         cubes: set[BgCube] = set()
-        # for pipe in pipes:
-        #     cubes.add(pipe.source)
-        #     cubes.add(pipe.target)
-
-        piping: set[BgPipe] = set()
-
         for pipe in pipes:
-            equivalent_sources, connecting_sources = self.__graph.get_equivalent_bg_cubes(pipe.source)
-            equivalent_targets, connecting_targets = self.__graph.get_equivalent_bg_cubes(pipe.target)
-            cubes.update( equivalent_sources )
-            cubes.update( equivalent_targets )
-            piping.update( connecting_sources )
-            piping.update( connecting_targets )
+            cubes.add(pipe.source)
+            cubes.add(pipe.target)
+
+        # TODO: adapt to toggle whether all equivalent cubes should be shown or only the "original" ones
+        # piping: set[BgPipe] = set()
+        # for pipe in pipes:
+        #     equivalent_sources, connecting_sources = self.__graph.get_equivalent_bg_cubes(pipe.source)
+        #     equivalent_targets, connecting_targets = self.__graph.get_equivalent_bg_cubes(pipe.target)
+        #     cubes.update( equivalent_sources )
+        #     cubes.update( equivalent_targets )
+        #     piping.update( connecting_sources )
+        #     piping.update( connecting_targets )
 
         alpha = 0.025 if highlight else 1.0
 
         for bg_pipe, vd_pipe in self.__pipes.items():
-            if bg_pipe not in pipes and bg_pipe not in piping:
+            if bg_pipe not in pipes: # and bg_pipe not in piping:
                 vd_pipe.alpha(alpha)
 
         for bg_cube, vd_cube in self.__cubes.items():

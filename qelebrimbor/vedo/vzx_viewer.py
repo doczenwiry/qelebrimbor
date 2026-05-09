@@ -168,16 +168,16 @@ class VolumetricZxGraphViewer(Plotter):
         # Keypresses dealing with cycle highlighting
         elif event.keypress == "c":
             if len(self.__cycles_processed) > 0:
-                self.__highlighted_cycle = 0
-                self.__alter_selected_cycle_highlighting(highlighting = True)
+                if self.__highlighted_cycle == -1:
+                    self.__highlighted_cycle = 0
+                    self.__alter_selected_cycle_highlighting(highlighting = True)
+                else:
+                    self.__alter_selected_cycle_highlighting(highlighting = False)
+                    self.__highlighted_cycle = -1
         elif event.keypress == "Up":
             self.__shift_selected_cycle(shift = +1)
         elif event.keypress == "Down":
             self.__shift_selected_cycle(shift = -1)
-        elif event.keypress == "grave":
-            if len(self.__cycles_processed) > 0:
-                self.__alter_selected_cycle_highlighting(highlighting=False)
-                self.__highlighted_cycle = -1
         # Keypress dealing with Manhattan Excesses highlighting
         elif event.keypress == "e":
             self.__highlighting_manhattan_excess = not self.__highlighting_manhattan_excess
