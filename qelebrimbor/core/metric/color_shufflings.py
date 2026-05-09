@@ -27,8 +27,11 @@ class ColorShuffling:
     GENERATORS = {
         SpacetimeHelper.ORIGIN: 'xyz',
         SpacetimeHelper.XP: 'oyz',
+        SpacetimeHelper.XM: 'oyz',
         SpacetimeHelper.YP: 'xoz',
-        SpacetimeHelper.ZP: 'xyo'
+        SpacetimeHelper.YM: 'xoz',
+        SpacetimeHelper.ZP: 'xyo',
+        SpacetimeHelper.ZM: 'xyo'
     }
 
     start: str = 'xyz'
@@ -49,8 +52,8 @@ class ColorShuffling:
         self.final = final
 
     @staticmethod
-    def convert(move: Coordinates):
-        return ColorShuffling.GENERATORS[move]
+    def convert(move: Coordinates) -> ColorShuffling:
+        return ColorShuffling(ColorShuffling.GENERATORS[move])
 
     @staticmethod
     def identity():
@@ -59,7 +62,7 @@ class ColorShuffling:
     def is_identity(self):
         return self.start == 'xyz' and self.final == 'xyz'
 
-    def extend(self, other):
+    def extend(self, other) -> ColorShuffling:
         if self.is_identity():
             return other
         elif other.is_identity():
