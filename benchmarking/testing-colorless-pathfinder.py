@@ -21,7 +21,7 @@ from qelebrimbor.core.attributes_zx import NodeType, EdgeType
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.calculator import ManhattanCalculator
 
-from qelebrimbor.spacetime.pathfinders.colorless_dfs import PathfinderColorblindDFS
+from qelebrimbor.spacetime.pathfinders.colorblind_dfs import PathfinderColorblindDFS
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph

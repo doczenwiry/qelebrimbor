@@ -101,7 +101,7 @@ class PathfinderColorblindDFS:
 
             terminal = current_path.final
 
-            # Discard the current_path if it is longer than what was requested.
+            # Discard the current_path if it is longer than what is acceptable.
             if maximal_length and maximal_length < current_path.manhattan_length():
                 continue
 
