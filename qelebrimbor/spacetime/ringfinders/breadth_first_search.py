@@ -128,7 +128,7 @@ class RingfinderBFS:
                 if partial_ring.occupies(neighbor.position):
                     continue
 
-                if self.__spacetime.is_occupied(neighbor.position):
+                if self.__spacetime.occupied(neighbor.position):
                     continue
 
                 # Tracing exploration

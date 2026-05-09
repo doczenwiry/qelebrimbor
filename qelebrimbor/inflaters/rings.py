@@ -116,12 +116,13 @@ class ZxGraphInflaterRings:
 
         # Reserve the ports for all the nodes that were realised as part of this ring.
         for node, _ in zx_cycle:
-            # Since each of these node is part of a ring, it already has two of its edges realised.
+            # Since each of these node is realised as part of a ring, it already has two of its edges realised.
             self.__ports_tracker.reserve_ports(
                 cube = node.realising_cube, required_ports = self.__graph.get_zx_degree(node.id) - 2
             )
-            for port in self.__ports_tracker.reserved(node.realising_cube):
-                self.__spacetime.reserve(node.realising_cube, port)
+
+        for cube in ring.cubes[len(zx_cycle):]:
+            self.__ports_tracker.occlude_ports(cube.position)
 
         return len(ring.cubes) - len(zx_cycle)
 
@@ -152,9 +153,10 @@ class ZxGraphInflaterRings:
         for node in nodes:
             # Since each of these node is part of a ring, it already has two of its edges realised.
             self.__ports_tracker.reserve_ports(
-                cube = node.realising_cube, required_ports = self.__graph.get_zx_degree(node.id) - 2
+                cube= node.realising_cube, required_ports =self.__graph.get_zx_degree(node.id) - 2
             )
-            for port in self.__ports_tracker.reserved(node.realising_cube):
-                self.__spacetime.reserve(node.realising_cube, port)
+
+        for cube in completion.extra_cubes[len(nodes):]:
+            self.__ports_tracker.occlude_ports(cube.position)
 
         return excess_volume

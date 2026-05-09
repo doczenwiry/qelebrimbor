@@ -78,17 +78,15 @@ class PlacefinderBFS:
                     console.debug(f">> Position already occupied by path : {neighbor.position}")
                     continue
 
-                if self.__spacetime.is_occupied(neighbor.position):
+                if self.__spacetime.occupied(neighbor.position):
                     occupant = self.__spacetime.occupant(neighbor.position)
                     console.debug(f">> Position {neighbor.position} already occupied in spacetime [{occupant}]")
                     continue
 
-                if self.__spacetime.is_reserved(neighbor.position):
-                    holder = self.__spacetime.holder(neighbor.position)
+                if self.__ports_tracker.is_reserved(neighbor.position):
+                    holder = self.__ports_tracker.holder(neighbor.position)
                     console.debug(f">> Position {neighbor.position} already reserved in spacetime [critical:{holder}]")
                     if holder != source and self.__ports_tracker.is_critical(holder, neighbor.position):
-                        holder = self.__spacetime.holder(neighbor.position)
-                        console.debug(f">> Position {neighbor.position} already reserved in spacetime [critical:{holder}]")
                         console.debug(f">>> Open ports : {self.__ports_tracker.report(holder)}")
                         continue
 
@@ -99,7 +97,7 @@ class PlacefinderBFS:
                 console.debug(f"> Neighbor has kind {neighbor.kind} in {target_suitable_kinds} ?")
                 if neighbor.kind in target_suitable_kinds:
                     open_ports = list(filter(
-                        lambda pos : not extended_path.occupies(pos) and not self.__spacetime.is_occupied(pos),
+                        lambda pos : not extended_path.occupies(pos) and not self.__spacetime.occupied(pos),
                         SpacetimeHelper.get_constellation(neighbor.position, neighbor.kind.get_reach())
                     ))
                     number_of_open_ports = len(open_ports)

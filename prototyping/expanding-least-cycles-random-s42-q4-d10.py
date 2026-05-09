@@ -62,8 +62,9 @@ if __name__ == "__main__":
         for node, _ in cycle:
             # Since each of these node is part of a ring, it already has two of its edges realised.
             ports_tracker.reserve_ports(node.realising_cube, required_ports = vzx.get_zx_degree(node.id) - 2)
-            for position in ports_tracker.reserved(node.realising_cube):
-                vzx.spacetime.reserve(node.realising_cube, position)
+
+        for cube in ring.cubes[len(cycle):]:
+            ports_tracker.occlude_ports(cube.position)
 
     # for index in [ 5, 6, 4, 3, 2, 1 ]:
     #     cycle = cycles[index]

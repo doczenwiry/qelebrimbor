@@ -25,62 +25,23 @@ console = logging.getLogger(__name__)
 class SpacetimeFabric:
     def __init__(self):
         self.__occupied_positions: dict[Coordinates, BgCube] = dict()
-        self.__reserved_positions: dict[Coordinates, BgCube] = dict()
 
     def available(self, position: Coordinates) -> bool:
-        return not self.is_occupied(position) and not self.is_reserved(position)
+        return not self.occupied(position)
+
+    def occupied(self, position: Coordinates) -> bool:
+        return position in self.__occupied_positions
 
     def ports_offered(self, position: Coordinates, reach: Coordinates) -> int:
         return sum(1 for pos in SpacetimeHelper.get_constellation(position, reach) if self.available(pos))
 
-    def is_occupied(self, position: Coordinates) -> bool:
-        return position in self.__occupied_positions
-
-    def is_reserved(self, position: Coordinates) -> bool:
-        return position in self.__reserved_positions
-
-    def reserve(self, cube: BgCube, position: Coordinates) -> bool:
-        if position in self.__reserved_positions or position in self.__occupied_positions:
-            return False
-
-        self.__reserved_positions[position] = cube
-        return True
-
-    def release(self, cube: BgCube, position: Coordinates) -> bool:
-        if position in self.__reserved_positions and self.__reserved_positions[position] == cube:
-            self.__reserved_positions.pop(position)
+    def occupy(self, cube: BgCube, position: Coordinates) -> bool:
+        if position not in self.__occupied_positions:
+            self.__occupied_positions[position] = cube
             return True
         else:
-            console.warning(f"Cube {cube} attempted to release a position it doesn't hold.")
+            console.error(f"Cube {cube} attempted to acquire occupied {position}.")
             return False
-
-    def close(self, position: Coordinates):
-        if position not in self.__reserved_positions:
-            raise Exception(f"Attempting to close a position which is not reserved.")
-
-        if position in self.__occupied_positions:
-            raise Exception(f"Attempting to close a position already occupied by {self.occupant(position)}.")
-
-        self.__reserved_positions.pop(position)
-
-    def claim(self, cube: BgCube):
-        if cube.position in self.__reserved_positions:
-            holder = self.__reserved_positions[cube.position]
-            if holder != cube:
-                console.debug(f"Cube {cube} claims a position reserved by {holder}.")
-            self.__reserved_positions.pop(cube.position)
-
-        if cube.position in self.__occupied_positions:
-            holder = self.__occupied_positions[cube.position]
-            if holder == cube:
-                console.error(f"Cube {cube} already occupies position {cube.position}.")
-            else:
-                raise Exception(f"Attempting to claim a position which is already occupied by {self.occupant(cube.position)}.")
-
-        self.__occupied_positions[cube.position] = cube
-
-    def holder(self, position: Coordinates):
-        return self.__reserved_positions[position]
 
     def occupant(self, position: Coordinates):
         return self.__occupied_positions[position]

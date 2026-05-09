@@ -42,7 +42,7 @@ def __get_insufficient_ports_rate(graph: VolumetricZxGraph) -> tuple[int, float]
         cube = node.realising_cube
         open_ports = sum(
             1 for position in SpacetimeHelper.get_constellation(cube.position, cube.kind.get_reach())
-            if not graph.spacetime.is_occupied(position)
+            if not graph.spacetime.occupied(position)
         )
         if open_ports < unrealised_edges:
             console.debug(f"Node {node} has insufficient ports [ue:{unrealised_edges}, op:{open_ports}]")

@@ -13,7 +13,6 @@
 #   limitations under the License.
 
 from typing import Iterator, Iterable
-
 from recordclass import RecordClass
 
 from qelebrimbor.core.common import Port
@@ -27,7 +26,6 @@ import logging
 console = logging.getLogger(__name__)
 
 class Vertex(RecordClass):
-    cube: BgCube
     required: int
     available: set[Port]
 
@@ -40,7 +38,7 @@ class Vertex(RecordClass):
         return len(self.available) - self.required
 
     def __str__(self):
-        return f"{self.cube} [rq:{self.required},av:{self.available}]"
+        return f"req:{self.required}, avl:{self.available}"
 
     def __repr__(self):
         return str(self)
@@ -49,88 +47,96 @@ class OpenPortsTracker:
     def __init__(self, graph: VolumetricZxGraph):
         self.__graph = graph
         self.__spacetime = graph.spacetime
-        self.__open_ports: dict[BgCube, Vertex] = dict()
+        self.__reserved_ports: dict[BgCube, Vertex] = dict()
+        self.__ports_holders: dict[Port, BgCube] = dict()
 
-    def tracked_cubes(self) -> Iterator[BgCube]:
-        return iter(self.__open_ports.keys())
+    def tracked_nodes(self) -> Iterator[BgCube]:
+        return iter(self.__reserved_ports.keys())
 
     def report(self, cube: BgCube):
-        if cube in self.__open_ports:
-            return str(self.__open_ports[cube])
+        if cube in self.__reserved_ports:
+            return f"{cube} [{self.__reserved_ports[cube]}]"
         else:
             return "<not-tracked>"
 
     def required(self, cube: BgCube):
-        return self.__open_ports[cube].required if cube in self.__open_ports else 0
+        return self.__reserved_ports[cube].required if cube in self.__reserved_ports else 0
 
-    def reserved(self, cube: BgCube) -> Iterable[Coordinates]:
-        return iter(self.__open_ports[cube].available)
+    def reserved(self, cube: BgCube) -> Iterable[Port]:
+        return iter(self.__reserved_ports[cube].available)
 
     def available(self, cube: BgCube):
-        return len(self.__open_ports[cube].available)
+        return len(self.__reserved_ports[cube].available)
 
     def reachable(self, cube: BgCube):
-        return self.__open_ports[cube].reachable
+        return self.__reserved_ports[cube].reachable
 
     def remaining(self, cube: BgCube):
-        return self.__open_ports[cube].remaining
+        return self.__reserved_ports[cube].remaining
 
-    def is_critical(self, holder: BgCube, position: Coordinates):
-        return self.__open_ports[holder].remaining == 0
+    def is_reserved(self, port: Port) -> bool:
+        return port in self.__ports_holders
+
+    def holder(self, port: Port) -> BgCube:
+        pass
+
+    def is_critical(self, holder: BgCube, port: Port):
+        return self.__reserved_ports[holder].remaining == 0
 
     def connect_ports(self, source: tuple[BgCube, Port], target: tuple[BgCube, Port]):
         source_cube, source_port = source
         target_cube, target_port = target
-        if source_port in self.__open_ports[source_cube].available:
-            if self.__open_ports[source_cube].required > 1:
-                self.__open_ports[source_cube].required -= 1
-                self.__open_ports[source_cube].available.remove(source_port)
+        if source_port in self.__reserved_ports[source_cube].available:
+            if self.__reserved_ports[source_cube].required > 1:
+                self.__reserved_ports[source_cube].required -= 1
+                self.__reserved_ports[source_cube].available.remove(source_port)
             else:
-                for position in self.__open_ports[source_cube].available:
-                    self.__spacetime.release(source_cube, position)
-                self.__open_ports.pop(source_cube)
+                for port in self.__reserved_ports[source_cube].available:
+                    self.__ports_holders.pop(port)
+                self.__reserved_ports.pop(source_cube)
         else:
-            console.error(f"Attempting to connect a port {source_port} not available to source {source_cube}")
+            console.warning(f"Attempting to connect a port {source_port} not available to source {source_cube}")
 
-        if target_port in self.__open_ports[target_cube].available:
-            if self.__open_ports[target_cube].required > 1:
-                self.__open_ports[target_cube].required -= 1
+        if target_port in self.__reserved_ports[target_cube].available:
+            if self.__reserved_ports[target_cube].required > 1:
+                self.__reserved_ports[target_cube].required -= 1
             else:
-                for position in self.__open_ports[target_cube].available:
-                    self.__spacetime.release(target_cube, position)
-                self.__open_ports.pop(target_cube)
+                for port in self.__reserved_ports[target_cube].available:
+                    self.__ports_holders.pop(port)
+                self.__reserved_ports.pop(target_cube)
         else:
-            console.error(f"Attempting to connect a port {target_port} not available to target {target_cube}")
+            console.warning(f"Attempting to connect a port {target_port} not available to target {target_cube}")
 
     def reserve_ports(self, cube: BgCube, required_ports: int):
-        vertex = Vertex(cube = cube, required = required_ports, available = set())
+        vertex = Vertex(required = required_ports, available = set())
 
         for position in SpacetimeHelper.get_constellation(cube.position, cube.kind.get_reach()):
-            if self.__spacetime.available(position):
+            if position not in self.__ports_holders and self.__spacetime.available(position):
                 vertex.available.add(position)
 
-        self.__open_ports[cube] = vertex
+        self.__reserved_ports[cube] = vertex
         console.debug(f"Reserved ports for {vertex}")
 
-    def occlude_ports(self, position: Coordinates):
-        for holder, vertex in self.__open_ports.items():
-            if position in vertex.available:
-                vertex.available.remove(position)
+    def occlude_ports(self, *ports: Coordinates):
+        for holder, vertex in self.__reserved_ports.items():
+            for port in ports:
+                if port in vertex.available:
+                   vertex.available.remove(port)
 
     def verify_ports(self, verbose: bool = False):
         prioritized = 0
         unreachable = 0
         if verbose:
             console.critical(f"Verifying all ports.")
-        for vertex in self.__open_ports.values():
-            console.debug(f"Verifying {vertex}")
+        for holder, vertex in self.__reserved_ports.items():
+            console.debug(f"Verifying {holder} [{vertex}]")
             if verbose:
-                console.critical(f"Vertex {vertex}")
+                console.critical(f"Node {holder} [{vertex}]")
             if vertex.remaining == 0:
-                console.debug(f"Time to prioritize {vertex}")
+                console.debug(f"Time to prioritize {holder} [{vertex}]")
                 prioritized += 1
             elif vertex.remaining < 0:
-                console.error(f"TOO LATE FOR {vertex}")
+                console.error(f"TOO LATE FOR {holder} [{vertex}]")
                 unreachable += 1
         if prioritized == 0 == unreachable:
             console.info(f"All tracked cubes have enough ports.")
@@ -139,15 +145,15 @@ class OpenPortsTracker:
     def get_nodes_with_insufficient_ports(graph: VolumetricZxGraph) -> list[ZxNode]:
         nodes_with_insufficient_ports = []
         for node in filter(ZxNode.is_realised, graph.get_zx_nodes()):
-            unrealised_edges = sum(
+            edges_unrealised = sum(
                 1 for neighbor in graph.get_zx_neighbors(node) if
                 not graph.get_zx_edge(node.id, neighbor.id).is_realised()
             )
             cube = node.realising_cube
             open_ports = sum(
                 1 for position in SpacetimeHelper.get_constellation(cube.position, cube.kind.get_reach())
-                if not graph.spacetime.is_occupied(position)
+                if not graph.spacetime.occupied(position)
             )
-            if open_ports < unrealised_edges:
+            if open_ports < edges_unrealised:
                 nodes_with_insufficient_ports.append(node)
         return nodes_with_insufficient_ports

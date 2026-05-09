@@ -60,8 +60,9 @@ if __name__ == "__main__":
         for node, _ in cycle:
             # Since each of these node is part of a ring, it already has two of its edges realised.
             ports_tracker.reserve_ports(node.realising_cube, required_ports = vzx.get_zx_degree(node.id) - 2)
-            for position in ports_tracker.reserved(node.realising_cube):
-                vzx.spacetime.reserve(node.realising_cube, position)
+
+        for cube in ring.cubes[len(cycle):]:
+            ports_tracker.occlude_ports(cube.position)
 
     ports_tracker.verify_ports()
 
@@ -81,6 +82,9 @@ if __name__ == "__main__":
         console.info(f"> {completion}")
         vzx.realise_zx_chain(chain, completion)
 
+        for cube in completion.extra_cubes[len(chain):]:
+            ports_tracker.occlude_ports(cube.position)
+
     index = 2
     cycle = cycles[index]
 
@@ -95,6 +99,9 @@ if __name__ == "__main__":
         console.info(f"Found completion [volume={completion.manhattan_length()-1}] for chain : {chain}")
         console.info(f"> {completion}")
         vzx.realise_zx_chain(chain, completion)
+
+        for cube in completion.extra_cubes[len(chain):]:
+            ports_tracker.occlude_ports(cube.position)
 
     ZxGraphInflaterBoundaries(vzx).process()
 

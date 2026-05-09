@@ -161,12 +161,12 @@ class SubringfinderDFS:
                     continue
 
                 # Ignore neighbor if the position is already occupied in spacetime
-                if self.__spacetime.is_occupied(neighbor.position):
+                if self.__spacetime.occupied(neighbor.position):
                     continue
 
                 # Ignore neighbor if the position is already reserved in spacetime
-                if self.__spacetime.is_reserved(neighbor.position):
-                    holder = self.__spacetime.holder(neighbor.position)
+                if self.__ports_tracker.is_reserved(neighbor.position):
+                    holder = self.__ports_tracker.holder(neighbor.position)
                     if holder != start and holder != final and self.__ports_tracker.is_critical(holder, neighbor.position):
                         continue
 

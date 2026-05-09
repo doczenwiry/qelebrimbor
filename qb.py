@@ -47,6 +47,7 @@ parser.add_argument('-a', '--analysis', action ='store_true', help = "only repor
 parser.add_argument('-A', '--analysis-style', choices = ['text', 'plot'], default = 'text', help = "controls whether to report the analysis in text of plot form.")
 parser.add_argument('-c', '--check-equivalence', action = 'store_true', help = "check equivalence of the final construct against the input ZX-graph.")
 parser.add_argument('-f', '--fullscreen', action='store_true', help = "display the visualisation in a fullscreen window.")
+parser.add_argument('-i', '--index', action = 'store', type = int, default = -1, help = "index of the step at which to stop the inflation process.")
 parser.add_argument('-p', '--output-pyzx', action = 'store_true', help = "save the Volumetric ZX-graph as a PyZX graph to a *.pyzx.json file.")
 parser.add_argument('-s', '--summary', action='store_true', help = "print a summary of the construction process.")
 parser.add_argument('-t', '--output-tqec', action = 'store_true', help = "save the Volumetric ZX-graph to a *.tqec file.")
@@ -104,7 +105,7 @@ def main():
     sys.stderr.flush()
 
     start = time()
-    inflater.process()
+    inflater.process(abort_on_index = arguments.index)
     runtime = round(time() - start, 6)
 
     if verbose:
