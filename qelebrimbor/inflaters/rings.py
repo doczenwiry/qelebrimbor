@@ -134,23 +134,23 @@ class ZxGraphInflaterRings:
         if not self.__connectivity.available(start.realising_cube, final.realising_cube):
             return -1
 
-        completion = self.__strandfinder.find_optimum(chain, maximal_excess = maximal_excess)
+        strand = self.__strandfinder.find_optimum(chain, maximal_excess = maximal_excess)
 
-        if completion is None:
+        if strand is None:
             console.error(f"Failed to find a chain for {start} - {nodes} - {final}")
             return -1
 
-        excess_volume = completion.manhattan_length() - len(nodes) - 1
-        console.info(f"Found a realisation for chain [EV:+{excess_volume}] : {Path.string(completion)}")
+        excess_volume = strand.manhattan_length() - len(nodes) - 1
+        console.info(f"Found a suitable strand for chain [EV:+{excess_volume}] : {strand}")
 
-        self.__graph.realise_zx_chain(chain, completion)
+        self.__graph.realise_zx_chain(chain, strand)
 
         # Reserve the ports for all the nodes that were realised as part of this ring.
         for node in nodes:
             # Since each of these node is part of a ring, it already has two of its edges realised.
             self.__connectivity.reserve(node.realising_cube, required =self.__graph.get_zx_degree(node.id) - 2)
 
-        for cube in completion.extra_cubes[len(nodes):]:
+        for cube in strand.extra_cubes[len(nodes):]:
             self.__connectivity.occlude(cube.position)
 
         return excess_volume

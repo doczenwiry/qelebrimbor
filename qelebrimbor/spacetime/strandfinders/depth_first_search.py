@@ -14,6 +14,7 @@
 
 import heapq
 
+from qelebrimbor.core.strand import Strand
 from qelebrimbor.core.common import ZxChain
 from qelebrimbor.core.path import Path, Length
 from qelebrimbor.core.attributes_zx import NodeType, EdgeType
@@ -64,10 +65,10 @@ class StrandfinderDFS:
         # TODO: is this heuristic admissible ?
         return max(len(node_types), ManhattanCalculator.minimal_manhattan_length(source, target))
 
-    def find_optimum(self, chain: ZxChain, maximal_excess: int = None) -> Path | None:
-        optimum: Path | None = None
-        minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
-        unrelaxed: list[tuple[Length, Path]] = []
+    def find_optimum(self, chain: ZxChain, maximal_excess: int = None) -> Strand | None:
+        optimum: Strand | None = None
+        minimal_paths: dict[tuple[CubeKind, Coordinates], Strand] = dict()
+        unrelaxed: list[tuple[Length, Strand]] = []
 
         source, nodes, edges, target = chain
         start = source.realising_cube
@@ -98,7 +99,7 @@ class StrandfinderDFS:
         if tracer:
             tracer.add_node(start, label = str(start))
 
-        initial = Path(start=start)
+        initial = Strand(start = start)
         minimal_paths[(start.kind, start.position)] = initial
 
         vertex = (StrandfinderDFS.heuristic(start, final, node_types), initial)
@@ -169,6 +170,8 @@ class StrandfinderDFS:
                 if self.__connectivity and not self.__connectivity.preserved(start, final, neighbor.position):
                     continue
 
+                if manhattan_length < node_type_nr:
+                    neighbor.realised_node = nodes[manhattan_length]
                 extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
                 extended_distance = extended_path.manhattan_length()
 
