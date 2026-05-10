@@ -100,27 +100,33 @@ class PathfinderColorblindDFS:
         while len(unrelaxed) > 0 and (self.__branch_and_bound or optimum is None):
             # Restore the heap invariant
             heapq.heapify(unrelaxed)
-            remaining, current_path = heapq.heappop(unrelaxed)
+            remaining: int
+            current: ColorlessPath
+            remaining, current = heapq.heappop(unrelaxed)
 
-            terminal = current_path.final
+            terminal = current.final
 
             # Discard the current_path if it is longer than what is acceptable.
-            if maximal_length and maximal_length < current_path.manhattan_length():
+            if maximal_length and maximal_length < current.manhattan_length():
                 continue
 
             # Branch-and-bound
             if self.__branch_and_bound and optimum is not None:
-                manhattan_length_projected = current_path.manhattan_length() + remaining
+                manhattan_length_projected = current.manhattan_length() + remaining
                 if optimum.manhattan_length() <= manhattan_length_projected:
                     if tracer:
                         tracer.prune_node(terminal)
                     continue
 
-            console.debug(f"{'>' * (current_path.manhattan_length()+1)} Current : {current_path}")
+            console.debug(f"{'>' * (current.manhattan_length()+1)} Current : {current}")
 
             # Check whether the goal has been reached
             if terminal.get_manhattan_distance(final.position) == 1:
-                completed_path = current_path.extend(final.position)
+                # Ignore the incoming path if it doesn't line up with a port of the final cube.
+                if not SpacetimeHelper.contains(final.kind.get_reach(), final.position - terminal):
+                    continue
+
+                completed_path = current.extend(final.position)
                 console.info(f"Candidate : {completed_path} {completed_path.compatible(goal)}")
                 if completed_path.compatible(goal):
                     # Tracing exploration
@@ -132,10 +138,15 @@ class PathfinderColorblindDFS:
                     if optimum is None or completed_path.manhattan_length() < optimum.manhattan_length():
                         optimum = completed_path.painted(goal)
 
-            console.debug(f"{'>' * (current_path.manhattan_length()+2)} Constellation : {SpacetimeHelper.get_constellation(terminal)}")
-            for adjacent in SpacetimeHelper.get_constellation(terminal):
+            # Restrict the outgoing paths to lie in the reach of the CubeKind of the start.
+            constellation = SpacetimeHelper.get_constellation(
+                position = terminal, restriction = start.kind.get_reach() if current.manhattan_length() == 0 else None
+            )
+
+            console.debug(f"{'>' * (current.manhattan_length()+2)} : {constellation}")
+            for adjacent in constellation:
                 # Ignore neighbor if it introduces a loop
-                if current_path.visits(adjacent):
+                if current.visits(adjacent):
                     continue
 
                 # Ignore neighbor if its position is already occupied in spacetime
@@ -151,7 +162,7 @@ class PathfinderColorblindDFS:
                     tracer.add_node(adjacent)
                     tracer.add_edge(terminal, adjacent)
 
-                extended = current_path.extend(adjacent)
+                extended = current.extend(adjacent)
 
                 # Filtering out the neighbor from unrelaxed
                 unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].final != adjacent ]

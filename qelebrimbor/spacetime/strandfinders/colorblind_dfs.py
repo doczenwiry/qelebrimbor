@@ -135,6 +135,10 @@ class StrandfinderColorblindDFS:
 
             # Check whether the goal has been accomplished
             if terminal.get_manhattan_distance(final.position) == 1 and current.manhattan_length() > node_type_nr:
+                # Ignore the incoming path if it doesn't line up with a port of the final cube.
+                if not SpacetimeHelper.contains(final.kind.get_reach(), final.position - terminal):
+                    continue
+
                 candidate: ColorlessStrand = current.extend(final.position)
                 console.info(f"Candidate ColorlessStrand : {candidate}")
 
@@ -148,10 +152,10 @@ class StrandfinderColorblindDFS:
                     if optimum is None or candidate.manhattan_length() < optimum.manhattan_length():
                         optimum = candidate.painted(goal)
 
-            if current.manhattan_length() == 0:
-                constellation = SpacetimeHelper.get_constellation(terminal, restriction = start.kind.get_reach())
-            else:
-                constellation = SpacetimeHelper.get_constellation(terminal)
+            # Restrict the outgoing paths to lie in the reach of the CubeKind of the start.
+            constellation = SpacetimeHelper.get_constellation(
+                position = terminal, restriction = start.kind.get_reach() if current.manhattan_length() == 0 else None
+            )
 
             console.debug(f"{'>' * (current.manhattan_length()+2)} {terminal} has constellation : {constellation}")
 

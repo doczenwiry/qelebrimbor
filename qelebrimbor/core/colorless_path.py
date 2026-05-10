@@ -22,6 +22,9 @@ from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.core.metric.color_shufflings import ColorShuffling
 
 import logging
+
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
+
 console = logging.getLogger(__name__)
 
 
@@ -71,6 +74,19 @@ class ColorlessPath:
     def compatible(self, edge: ZxEdge) -> bool:
         start: BgCube = edge.source.realising_cube
         final: BgCube = edge.target.realising_cube
+
+        # The ColorlessPath is not compatible if its endpoints' positions don't match those of start and final.
+        if self.start != start.position or self.final != final.position:
+            return False
+
+        # The ColorlessPath is not compatible if it doesn't line up with a port in the reach of the CubeKind of start.
+        if not SpacetimeHelper.contains(start.kind.get_reach(), self.__positions[1] - start.position):
+            return False
+
+        # The ColorlessPath is not compatible if it doesn't line up with a port in the reach of the CubeKind of final.
+        if not SpacetimeHelper.contains(final.kind.get_reach(), self.__positions[-2] - final.position):
+            return False
+
         if edge.type == EdgeType.IDENTITY:
             return self.__overall_shuffling.compatible(start.kind, final.kind)
         else:

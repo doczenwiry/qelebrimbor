@@ -25,7 +25,7 @@ from qelebrimbor.core.metric.color_shufflings import ColorShuffling
 
 import logging
 
-from qelebrimbor.helpers.spacetime import Step
+from qelebrimbor.helpers.spacetime import Step, SpacetimeHelper
 
 console = logging.getLogger(__name__)
 
@@ -83,6 +83,14 @@ class ColorlessStrand:
 
         if final.position != self.__positions[-1]:
             raise ValueError(f"ColorlessStrand is not connected to the target of the chain : {chain}")
+
+        # The ColorlessPath is not compatible if it doesn't line up with a port in the reach of the CubeKind of start.
+        if not SpacetimeHelper.contains(start.kind.get_reach(), self.__positions[1] - start.position):
+            return False
+
+        # The ColorlessPath is not compatible if it doesn't line up with a port in the reach of the CubeKind of final.
+        if not SpacetimeHelper.contains(final.kind.get_reach(), self.__positions[-2] - final.position):
+            return False
 
         if self.manhattan_length() < len(nodes):
             return False
