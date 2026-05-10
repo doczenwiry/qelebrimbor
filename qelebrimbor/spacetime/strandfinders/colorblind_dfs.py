@@ -148,8 +148,14 @@ class StrandfinderColorblindDFS:
                     if optimum is None or candidate.manhattan_length() < optimum.manhattan_length():
                         optimum = candidate.painted(goal)
 
-            console.debug(f"{'>' * (current.manhattan_length()+2)} Constellation : {SpacetimeHelper.get_constellation(terminal)}")
-            for adjacent in SpacetimeHelper.get_constellation(terminal):
+            if current.manhattan_length() == 0:
+                constellation = SpacetimeHelper.get_constellation(terminal, restriction = start.kind.get_reach())
+            else:
+                constellation = SpacetimeHelper.get_constellation(terminal)
+
+            console.debug(f"{'>' * (current.manhattan_length()+2)} {terminal} has constellation : {constellation}")
+
+            for adjacent in constellation:
                 # Ignore neighbor if it introduces a loop
                 if current.visits(adjacent):
                     continue
@@ -175,7 +181,7 @@ class StrandfinderColorblindDFS:
                 # Compute the minimal manhattan length required to connect neighbor to target (HEURISTIC).
                 unrelaxed.append((StrandfinderColorblindDFS.heuristic(adjacent, final.position), extended))
 
-        console.info(f"Optimum found ? {optimum}")
+        console.info(f"Optimum found : {optimum}")
 
         # Tracing exploration
         if tracer:

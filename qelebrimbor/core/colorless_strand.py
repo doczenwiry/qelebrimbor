@@ -13,6 +13,7 @@
 #   limitations under the License.
 
 from functools import total_ordering, reduce
+from importlib.resources import contents
 
 from qelebrimbor.core.strand import Strand
 from qelebrimbor.core.common import ZxChain
@@ -24,7 +25,7 @@ from qelebrimbor.core.metric.color_shufflings import ColorShuffling
 
 import logging
 
-from qelebrimbor.helpers.spacetime import SpacetimeHelper
+from qelebrimbor.helpers.spacetime import Step
 
 console = logging.getLogger(__name__)
 
@@ -86,11 +87,10 @@ class ColorlessStrand:
         if self.manhattan_length() < len(nodes):
             return False
 
-        # TODO: correct this !
-        # try:
-        #     self.painted(chain)
-        # except Exception as e:
-        #     return False
+        try:
+            self.painted(chain)
+        except ValueError as ve:
+            return False
 
         return True
 
@@ -101,8 +101,8 @@ class ColorlessStrand:
         :param chain: The ZxChain which specifies how to paint this ColorlessStrand.
         :return:
         """
-        if not self.paintable(chain):
-            raise ValueError(f"ColorlessStrand provided cannot be painted with the chain : {chain}")
+        # if not self.paintable(chain):
+        #     raise ValueError(f"ColorlessStrand provided cannot be painted with the chain : {chain}")
 
         source, nodes, edges, target = chain
         start = source.realising_cube
@@ -139,12 +139,14 @@ class ColorlessStrand:
                         selected = kind
 
                 if selected is None:
-                    raise Exception(f"No suitable kind found for next cube when painting Strand.")
+                    console.debug(f"> Failure to paint cube @ {assigned}")
+                    raise ValueError(f"No suitable kind found for next cube when painting Strand.")
 
                 cube = BgCube(kind = selected, position = assigned)
                 if selected.get_type() == current_node_type:
                     cube.realised_node = nodes[restriction]
                     matched = True
+                console.debug(f"> Painted cube @ {assigned} : {cube}")
 
                 cube_index += 1
 
@@ -176,7 +178,7 @@ class ColorlessStrand:
                     console.warning(f"Ambiguity in CubeKind at {assigned} arbitrarily resolved [selected={selected}, alternative={kind}]")
 
             if selected is None:
-                raise Exception(f"No suitable kind found for next cube when painting Strand.")
+                raise ValueError(f"No suitable kind found for next cube when painting Strand.")
 
             cube = BgCube(kind=selected, position=assigned)
             cube_index += 1
@@ -194,4 +196,12 @@ class ColorlessStrand:
         return self.manhattan_length().__lt__(other.manhattan_length())
 
     def __str__(self):
-        return " -> ".join(map(str, self.__positions))
+        content  = f"{self.start}"
+        for index in range(1, len(self.__positions)):
+            step = self.__positions[index] - self.__positions[index - 1]
+            content += f" -> "
+            if index < len(self.__positions) - 1:
+                content += f"{Step(step).name}"
+            else:
+                content += f"{self.__positions[index]}"
+        return content

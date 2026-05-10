@@ -54,7 +54,7 @@ class Strand:
 
     def extend(self, cube: BgCube, pipe_type: EdgeType):
         if not BlockGraphHelper.connectable(self.final, cube, pipe_type):
-            raise Exception(f"Attempting to extend Strand with incompatible pipe/cube [strand:{self}  with -{pipe_type.name[0]}- {cube}].")
+            raise ValueError(f"Attempting to extend Strand with incompatible pipe/cube [strand:{self}  with -{pipe_type.name[0]}- {cube}].")
 
         console.debug(f"Extending strand : {self} -{pipe_type.name[0]}- {cube}")
 
