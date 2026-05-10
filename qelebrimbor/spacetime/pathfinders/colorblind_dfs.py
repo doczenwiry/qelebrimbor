@@ -15,10 +15,11 @@
 import heapq
 
 from qelebrimbor.core.path import Path
-from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.components import BgCube, ZxEdge
 from qelebrimbor.core.attributes_zx import EdgeType
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.core.colorless_path import ColorlessPath
+from qelebrimbor.helpers.calculator import ManhattanCalculator
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
@@ -55,44 +56,46 @@ class PathfinderColorblindDFS:
         self.__tracing = tracing
 
     @staticmethod
+    def initial(edge: ZxEdge) -> ColorlessPath:
+        return ColorlessPath(start = edge.source.realising_cube.position)
+
+    @staticmethod
     def heuristic(source: Coordinates, target: Coordinates) -> int:
         return source.get_manhattan_distance(target)
 
-    def find_optimum(
-            self, source: BgCube, target: BgCube, edge_type: EdgeType, maximal_excess: int | None = None
-    ) -> Path | None:
+    def find_optimum(self, goal: ZxEdge, maximal_excess: int | None = None) -> Path | None:
         """
         Search for a path connecting cubes source and target.
         WARNING: if there exists no colorless path in spacetime between the source and the target; infinite loop.
-        :param source: The cube from which to start.
-        :param target: The cube towards which to go.
-        :param edge_type: The type that the Path found ought to have.
+        :param goal: The edge specifying a path that must be searched for.
         :param maximal_excess: The maximum number of additional cubes permitted on top of the Manhattan Length.
         N.B. maximal_excess = None forces the PathfinderDFS to search until it finds a Path.
         :return: A Path or None if no path was found.
         """
         optimum: Path | None = None
-
         unrelaxed: list[tuple[int, ColorlessPath]] = []
 
-        initial = ColorlessPath(start = source.position)
+        start = goal.source.realising_cube
+        final = goal.target.realising_cube
 
-        heapq.heappush(unrelaxed, (PathfinderColorblindDFS.heuristic(source.position, target.position), initial))
+        initial = PathfinderColorblindDFS.initial(goal)
+
+        heapq.heappush(unrelaxed, (PathfinderColorblindDFS.heuristic(start.position, final.position), initial))
 
         if maximal_excess:
-            maximal_length = PathfinderColorblindDFS.heuristic(source.position, target.position) + maximal_excess
+            maximal_length = ManhattanCalculator.manhattan_distance(start, final) + maximal_excess
             extra = f"[max length={maximal_length}]"
         else:
             maximal_length = None
             extra = ""
 
-        console.info(f"Searching for path from {source} to {target} {extra}")
+        console.info(f"Searching for path from {start} to {final} {extra}")
 
         tracer: SpacetimeTracer | None = SpacetimeTracer(
             pruning = self.__branch_and_bound, reporting = self.__tracing
         ) if self.__tracing else None
         if tracer:
-            tracer.add_node(source.position, label = str(source.position))
+            tracer.add_node(start.position, label = str(start.position))
 
         while len(unrelaxed) > 0 and (self.__branch_and_bound or optimum is None):
             # Restore the heap invariant
@@ -115,19 +118,19 @@ class PathfinderColorblindDFS:
 
             console.debug(f"{'>' * (current_path.manhattan_length()+1)} Current : {current_path}")
 
-            if terminal.get_manhattan_distance(target.position) == 1:
-                #TODO: check the path is consistent for the kinds of the source and the target.
-                completed_path = current_path.extend(target.position)
-                console.info(f"Candidate : {completed_path} {completed_path.compatible(source.kind, target.kind, edge_type = edge_type)}")
-                if completed_path.compatible(source.kind, target.kind, edge_type = edge_type):
+            # Check whether the goal has been reached
+            if terminal.get_manhattan_distance(final.position) == 1:
+                completed_path = current_path.extend(final.position)
+                console.info(f"Candidate : {completed_path} {completed_path.compatible(goal)}")
+                if completed_path.compatible(goal):
                     # Tracing exploration
                     if tracer:
-                        tracer.add_node(target.position, label = str(target.position))
-                        tracer.add_edge(terminal, target.position)
+                        tracer.add_node(final.position, label = str(final.position))
+                        tracer.add_edge(terminal, final.position)
 
                     # Update the optimum only if it improves our current knowledge
                     if optimum is None or completed_path.manhattan_length() < optimum.manhattan_length():
-                        optimum = completed_path.painted(source, target, edge_type)
+                        optimum = completed_path.painted(goal)
 
             console.debug(f"{'>' * (current_path.manhattan_length()+2)} Constellation : {SpacetimeHelper.get_constellation(terminal)}")
             for adjacent in SpacetimeHelper.get_constellation(terminal):
@@ -140,7 +143,7 @@ class PathfinderColorblindDFS:
                     continue
 
                 # Ignore neighbor if occluding the position breaks connectivity
-                if not self.__connectivity.preserved(source, target, adjacent):
+                if not self.__connectivity.preserved(start, final, adjacent):
                     continue
 
                 # Tracing exploration
@@ -154,7 +157,7 @@ class PathfinderColorblindDFS:
                 unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].final != adjacent ]
 
                 # Compute the minimal manhattan length required to connect neighbor to target (HEURISTIC).
-                unrelaxed.append((PathfinderColorblindDFS.heuristic(adjacent, target.position), extended))
+                unrelaxed.append((PathfinderColorblindDFS.heuristic(adjacent, final.position), extended))
 
         console.info(f"Optimum found ? {optimum}")
 

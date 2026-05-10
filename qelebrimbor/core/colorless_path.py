@@ -15,7 +15,7 @@
 from functools import total_ordering, reduce
 
 from qelebrimbor.core.attributes_zx import EdgeType
-from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.components import BgCube, ZxEdge
 from qelebrimbor.core.path import Path
 from qelebrimbor.core.attributes_bg import CubeKind
 from qelebrimbor.core.coordinates import Coordinates
@@ -42,7 +42,7 @@ class ColorlessPath:
     def final(self):
         return self.__positions[-1]
 
-    def manhattan_length(self):
+    def manhattan_length(self) -> int:
         return len(self.__positions) - 1
 
     def visits(self, position: Coordinates):
@@ -68,31 +68,33 @@ class ColorlessPath:
 
         return cp
 
-    def compatible(self, source_kind: CubeKind, target_kind: CubeKind, edge_type: EdgeType) -> bool:
-        if edge_type == EdgeType.IDENTITY:
-            return self.__overall_shuffling.compatible(source_kind, target_kind)
+    def compatible(self, edge: ZxEdge) -> bool:
+        start: BgCube = edge.source.realising_cube
+        final: BgCube = edge.target.realising_cube
+        if edge.type == EdgeType.IDENTITY:
+            return self.__overall_shuffling.compatible(start.kind, final.kind)
         else:
-            return self.__overall_shuffling.hadamard().compatible(source_kind, target_kind)
+            return self.__overall_shuffling.hadamard().compatible(start.kind, final.kind)
 
-    def painted(self, start: BgCube, final: BgCube, edge_type: EdgeType) -> Path:
+    def painted(self, edge: ZxEdge) -> Path:
         """
         Paint a ColorlessPath of successive Coordinates into a Path made of BgCubes with CubeKind and Coordinates.
         The current strategy when dealing with Hadamard edges consists in making the first pipe into a Hadamard pipe.
-        :param start: The start cube from which the ColorlessPath emerges.
-        :param final: The final cube towards which the ColorlessPath goes.
-        :param edge_type: The type of edge the Path ought to have.
+        :param edge: The edge specifying how to paint the ColorlessPath
         :return:
         """
-        if not self.compatible(start.kind, final.kind, edge_type):
-            raise ValueError(f"ColorlessPath provided cannot be painted for edge : {start} -{repr(edge_type)}- {final}")
+        start: BgCube = edge.source.realising_cube
+        final: BgCube = edge.target.realising_cube
+        if not self.compatible(edge):
+            raise ValueError(f"ColorlessPath provided cannot be painted for edge : {start} -{repr(edge.type)}- {final}")
 
         path = Path(start)
         current: CubeKind = start.kind
         for index in range(1, len(self.__positions) - 1):
             assigned = self.__positions[index]
-            current_edge_type = edge_type if index == 1 else EdgeType.IDENTITY
+            current_pipe_type = edge.type if index == 1 else EdgeType.IDENTITY
             preceding_shuffling = self.__successive_shuffling[index - 1]
-            preceding_shuffling = preceding_shuffling.hadamard() if current_edge_type == EdgeType.HADAMARD else preceding_shuffling
+            preceding_shuffling = preceding_shuffling.hadamard() if current_pipe_type == EdgeType.HADAMARD else preceding_shuffling
 
             remaining_shuffling = reduce(ColorShuffling.extend, self.__successive_shuffling[index:], ColorShuffling.identity())
             compatibles = filter(
@@ -101,7 +103,7 @@ class ColorlessPath:
             )
             selected = next(compatibles)
             path = path.extend(
-                cube = BgCube(kind = selected, position = assigned), pipe_type = current_edge_type
+                cube = BgCube(kind = selected, position = assigned), pipe_type = current_pipe_type
             )
             current = selected
 
@@ -111,8 +113,8 @@ class ColorlessPath:
             except StopIteration as si:
                 pass
 
-        current_edge_type = edge_type if len(self.__positions) == 2 else EdgeType.IDENTITY
-        path = path.extend(final, pipe_type = current_edge_type)
+        current_pipe_type = edge.type if len(self.__positions) == 2 else EdgeType.IDENTITY
+        path = path.extend(final, pipe_type = current_pipe_type)
         return path
 
     def __lt__(self, other):
