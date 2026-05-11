@@ -145,8 +145,6 @@ def main():
 
     # Validation stage
     if arguments.check_equivalence:
-        if verbose:
-            print(f"VALIDATION STAGE.")
         with open(arguments.filepath, 'r') as file:
             pyzx_input = pyzx.Graph().from_json(file.read())
         pyzx_output = PYZX.into_pyzx_graph(vzx)

@@ -18,7 +18,7 @@ from qelebrimbor.core.bg.strand import Strand
 from qelebrimbor.core.zx.chain import ZxChain
 from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.core.coordinates import Coordinates
-from qelebrimbor.core.colorless_strand import ColorlessStrand
+from qelebrimbor.core.colorless.strand import ColorlessStrand
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper

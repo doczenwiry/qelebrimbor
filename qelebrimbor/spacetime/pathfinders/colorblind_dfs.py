@@ -15,10 +15,8 @@
 import heapq
 
 from qelebrimbor.core.bg.path import Path
-from qelebrimbor.core.components import BgCube, ZxEdge
-from qelebrimbor.core.zx.attributes import EdgeType
-from qelebrimbor.core.coordinates import Coordinates
-from qelebrimbor.core.colorless_path import ColorlessPath
+from qelebrimbor.core.components import ZxEdge
+from qelebrimbor.core.colorless.path import ColorlessPath
 from qelebrimbor.helpers.calculator import ManhattanCalculator
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
