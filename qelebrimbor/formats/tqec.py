@@ -13,8 +13,8 @@
 #   limitations under the License.
 
 from qelebrimbor.core.components import BgCube
-from qelebrimbor.core.attributes_bg import CubeKind
-from qelebrimbor.core.attributes_zx import EdgeType
+from qelebrimbor.core.bg.attributes import CubeKind
+from qelebrimbor.core.zx.attributes import EdgeType
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 

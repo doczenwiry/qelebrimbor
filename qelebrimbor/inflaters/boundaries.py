@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.attributes_zx import NodeType
+from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.spacetime.placefinders.breadth_first_search import PlacefinderBFS
 

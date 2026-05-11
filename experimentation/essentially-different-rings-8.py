@@ -16,8 +16,8 @@ import pyzx
 import networkx as nx
 
 from qelebrimbor.core.components import BgCube
-from qelebrimbor.core.attributes_bg import CubeKind
-from qelebrimbor.core.attributes_zx import NodeId, EdgeId, NodeType, EdgeType
+from qelebrimbor.core.bg.attributes import CubeKind
+from qelebrimbor.core.zx.attributes import NodeId, EdgeId, NodeType, EdgeType
 from qelebrimbor.core.coordinates import Coordinates
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Step

@@ -15,8 +15,8 @@
 from ast import literal_eval as make_tuple
 
 from qelebrimbor.core.coordinates import Coordinates
-from qelebrimbor.core.attributes_zx import NodeId, NodeType, QubitId, LayerId, EdgeId, EdgeType
-from qelebrimbor.core.attributes_bg import CubeId, PipeId, CubeKind
+from qelebrimbor.core.zx.attributes import NodeId, NodeType, QubitId, LayerId, EdgeId, EdgeType
+from qelebrimbor.core.bg.attributes import CubeId, PipeId, CubeKind
 from qelebrimbor.core.components import BgCube, BgPipe
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 

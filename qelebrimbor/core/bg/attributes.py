@@ -19,7 +19,7 @@ from functools import total_ordering
 
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.core.attributes_zx import NodeType
+from qelebrimbor.core.zx.attributes import NodeType
 
 CubeId = int
 PipeId = tuple[CubeId, CubeId]

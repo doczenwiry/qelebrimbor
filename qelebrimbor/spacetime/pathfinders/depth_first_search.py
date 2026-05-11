@@ -14,14 +14,14 @@
 
 import heapq
 
-from qelebrimbor.core.attributes_bg import CubeKind
-from qelebrimbor.core.attributes_zx import NodeType, EdgeType
+from qelebrimbor.core.bg.attributes import CubeKind
+from qelebrimbor.core.zx.attributes import NodeType, EdgeType
 from qelebrimbor.core.components import BgCube, ZxEdge
 
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.calculator import ManhattanCalculator
-from qelebrimbor.core.path import Length, Path
+from qelebrimbor.core.bg.path import Length, Path
 from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
 from qelebrimbor.spacetime.connectivity.default import DefaultConnectivityTracker
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport

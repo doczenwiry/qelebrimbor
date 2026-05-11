@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 from qelebrimbor.core.components import ZxNode, ZxEdge
-from qelebrimbor.core.attributes_zx import NodeType, EdgeType
+from qelebrimbor.core.zx.attributes import NodeType, EdgeType
 
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
 

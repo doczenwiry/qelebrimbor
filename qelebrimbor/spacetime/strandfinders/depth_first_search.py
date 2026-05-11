@@ -14,10 +14,10 @@
 
 import heapq
 
-from qelebrimbor.core.strand import Strand
+from qelebrimbor.core.bg.strand import Strand
 from qelebrimbor.core.common import ZxChain
-from qelebrimbor.core.attributes_zx import NodeType, EdgeType
-from qelebrimbor.core.attributes_bg import CubeKind
+from qelebrimbor.core.zx.attributes import NodeType, EdgeType
+from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.core.components import BgCube
 

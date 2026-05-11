@@ -23,11 +23,11 @@ from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 
 from qelebrimbor.core.common import ZxChain, ZxCycle
 from qelebrimbor.core.components import ZxNode, ZxEdge, BgCube, BgPipe
-from qelebrimbor.core.attributes_zx import NodeId, NodeType, EdgeType, QubitId, LayerId
-from qelebrimbor.core.attributes_bg import CubeId, CubeKind
-from qelebrimbor.core.path import Path
-from qelebrimbor.core.strand import Strand
-from qelebrimbor.core.ring import Ring
+from qelebrimbor.core.zx.attributes import NodeId, NodeType, EdgeType, QubitId, LayerId
+from qelebrimbor.core.bg.attributes import CubeId, CubeKind
+from qelebrimbor.core.bg.path import Path
+from qelebrimbor.core.bg.strand import Strand
+from qelebrimbor.core.bg.ring import Ring
 
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
 

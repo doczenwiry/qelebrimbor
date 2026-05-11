@@ -17,7 +17,7 @@ import pyzx
 import networkx as nx
 
 from qelebrimbor.core.components import BgCube
-from qelebrimbor.core.attributes_zx import NodeId, QubitId, LayerId, NodeType, EdgeType
+from qelebrimbor.core.zx.attributes import NodeId, QubitId, LayerId, NodeType, EdgeType
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph, LayerTransition
 
 import logging

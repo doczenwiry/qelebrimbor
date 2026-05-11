@@ -19,7 +19,7 @@ from time import time
 import pyzx
 
 from qelebrimbor.analysis.cycles import CycleAnalyser
-from qelebrimbor.core import attributes_zx
+from qelebrimbor.core.zx import attributes
 from qelebrimbor.core.common import ZxCycle
 
 from qelebrimbor.formats.pyzx import PYZX

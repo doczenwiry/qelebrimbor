@@ -15,10 +15,8 @@
 from recordclass import RecordClass  # type: ignore[import-untyped]
 from typing import cast
 
-from termcolor import colored
-
-from qelebrimbor.core.attributes_zx import NodeId, NodeType, QubitId, LayerId, EdgeType
-from qelebrimbor.core.attributes_bg import CubeId, CubeKind
+from qelebrimbor.core.zx.attributes import NodeId, NodeType, QubitId, LayerId, EdgeType
+from qelebrimbor.core.bg.attributes import CubeId, CubeKind
 from qelebrimbor.core.coordinates import Coordinates
 
 import logging

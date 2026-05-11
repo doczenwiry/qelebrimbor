@@ -16,7 +16,7 @@ from functools import total_ordering
 
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.core.components import BgCube
-from qelebrimbor.core.attributes_zx import EdgeType
+from qelebrimbor.core.zx.attributes import EdgeType
 
 import logging
 console = logging.getLogger(__name__)

@@ -14,9 +14,9 @@
 
 from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.coordinates import Coordinates
-from qelebrimbor.core.attributes_zx import NodeId, EdgeId
-from qelebrimbor.core.attributes_bg import CubeId, CubeKind
-from qelebrimbor.core.path import Path
+from qelebrimbor.core.zx.attributes import NodeId, EdgeId
+from qelebrimbor.core.bg.attributes import CubeId, CubeKind
+from qelebrimbor.core.bg.path import Path
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 import logging

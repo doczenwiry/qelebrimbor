@@ -15,13 +15,13 @@
 from collections import deque
 
 from qelebrimbor.core.coordinates import Coordinates
-from qelebrimbor.core.attributes_bg import CubeKind
-from qelebrimbor.core.attributes_zx import EdgeType
+from qelebrimbor.core.bg.attributes import CubeKind
+from qelebrimbor.core.zx.attributes import EdgeType
 from qelebrimbor.core.components import BgCube, ZxNode
 
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.core.path import Path
+from qelebrimbor.core.bg.path import Path
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 

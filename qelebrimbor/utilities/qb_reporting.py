@@ -15,8 +15,8 @@
 import math
 from termcolor import colored
 
-from qelebrimbor.core.attributes_bg import CubeKind
-from qelebrimbor.core.attributes_zx import NodeType, EdgeType
+from qelebrimbor.core.bg.attributes import CubeKind
+from qelebrimbor.core.zx.attributes import NodeType, EdgeType
 from qelebrimbor.core.common import ZxCycle
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.analysis.cycles import CycleAnalyser

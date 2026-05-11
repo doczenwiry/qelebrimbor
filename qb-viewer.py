@@ -14,7 +14,7 @@
 
 import argparse
 
-from qelebrimbor.core.attributes_bg import CubeKind
+from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer

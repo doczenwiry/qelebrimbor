@@ -12,13 +12,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import sys
 import itertools
 from time import time
 
-from qelebrimbor.core.attributes_bg import CubeKind
-from qelebrimbor.core.attributes_zx import NodeType, EdgeType
-from qelebrimbor.core.components import BgCube, ZxNode
+from qelebrimbor.core.bg.attributes import CubeKind
+from qelebrimbor.core.zx.attributes import NodeType, EdgeType
+from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.coordinates import Coordinates
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper

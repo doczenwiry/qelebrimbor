@@ -15,15 +15,14 @@
 import sys
 from time import time
 
-from qelebrimbor.core.attributes_bg import CubeKind
-from qelebrimbor.core.attributes_zx import NodeType, EdgeType
+from qelebrimbor.core.bg.attributes import CubeKind
+from qelebrimbor.core.zx.attributes import NodeType, EdgeType
 from qelebrimbor.core.components import BgCube
 from qelebrimbor.helpers.calculator import ManhattanCalculator
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 from qelebrimbor.spacetime.pathfinders.depth_first_search import PathfinderDFS
-from qelebrimbor.spacetime.pathfinders.dijkstra import PathfinderDijkstra
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph

@@ -14,7 +14,7 @@
 
 from vedo import Assembly, Cube, Box, Text3D  # type: ignore[import-untyped]
 
-from qelebrimbor.core.attributes_zx import NodeType
+from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 from numpy import array

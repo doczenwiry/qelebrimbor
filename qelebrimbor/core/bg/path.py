@@ -15,7 +15,7 @@
 from functools import total_ordering
 
 from qelebrimbor.core.components import BgCube
-from qelebrimbor.core.attributes_zx import EdgeType
+from qelebrimbor.core.zx.attributes import EdgeType
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 
@@ -27,7 +27,7 @@ type Length = int
 
 
 @total_ordering
-class Strand:
+class Path:
     def __init__(self, start: BgCube):
         self.start: BgCube = start
         self.final: BgCube = start
@@ -58,7 +58,7 @@ class Strand:
 
         console.debug(f"Extending path : {self} -{pipe_type.name[0]}- {cube}")
 
-        extended = Strand(self.start)
+        extended = Path(self.start)
         extended.extra_cubes.extend(self.extra_cubes)
 
         if self.start != self.final:

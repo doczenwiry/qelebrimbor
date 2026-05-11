@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 from qelebrimbor.core.components import ZxNode, ZxEdge
-from qelebrimbor.core.attributes_zx import NodeId
+from qelebrimbor.core.zx.attributes import NodeId
 import qelebrimbor.core.volumetric_zx_graph as vzg
 
 

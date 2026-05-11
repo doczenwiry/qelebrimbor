@@ -14,7 +14,7 @@
 
 from vedo import get_color  # type: ignore[import-untyped]
 
-from qelebrimbor.core.attributes_zx import NodeType
+from qelebrimbor.core.zx.attributes import NodeType
 
 class ZxPalette:
     BLACK = [ 255 * c for c in get_color(rgb='black')]

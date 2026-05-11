@@ -20,8 +20,8 @@ import networkx as nx
 from qelebrimbor.core.components import BgCube
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.core.attributes_bg import CubeKind
-from qelebrimbor.core.attributes_zx import NodeId, NodeType, EdgeId, EdgeType
+from qelebrimbor.core.bg.attributes import CubeKind
+from qelebrimbor.core.zx.attributes import NodeId, NodeType, EdgeId, EdgeType
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Step
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer

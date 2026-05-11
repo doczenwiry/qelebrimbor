@@ -12,12 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.path import Path
-from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
 
 from qelebrimbor.spacetime.ringfinders.depth_first_search import RingfinderDFS
-from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
 from qelebrimbor.spacetime.strandfinders.depth_first_search import StrandfinderDFS
 
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker

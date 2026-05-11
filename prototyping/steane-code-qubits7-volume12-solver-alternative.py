@@ -12,10 +12,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.path import Path
+from qelebrimbor.core.bg.path import Path
 from qelebrimbor.core.components import BgCube
-from qelebrimbor.core.attributes_zx import EdgeType
-from qelebrimbor.core.attributes_bg import CubeKind
+from qelebrimbor.core.zx.attributes import EdgeType
+from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.coordinates import Coordinates
 
 from qelebrimbor.formats.pyzx import PYZX

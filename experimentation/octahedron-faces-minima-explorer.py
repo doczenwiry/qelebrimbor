@@ -26,7 +26,7 @@ getLogger('qelebrimbor.utilities').setLevel(INFO)
 from functools import cmp_to_key
 from collections import defaultdict
 
-from qelebrimbor.core.attributes_bg import CubeKind
+from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
 from qelebrimbor.helpers.octahedron import OctahedronHelper

@@ -27,13 +27,13 @@
 import heapq
 
 from qelebrimbor.core.components import BgCube
-from qelebrimbor.core.attributes_zx import NodeType, EdgeType
-from qelebrimbor.core.attributes_bg import CubeKind
+from qelebrimbor.core.zx.attributes import NodeType, EdgeType
+from qelebrimbor.core.bg.attributes import CubeKind
 
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
-from qelebrimbor.core.ring import Ring
+from qelebrimbor.core.bg.ring import Ring
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker

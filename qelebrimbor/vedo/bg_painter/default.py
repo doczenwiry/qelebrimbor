@@ -14,8 +14,8 @@
 
 from numpy import array
 
-from qelebrimbor.core.attributes_bg import CubeKind
-from qelebrimbor.core.attributes_zx import NodeType
+from qelebrimbor.core.bg.attributes import CubeKind
+from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.core.components import BgCube
 from qelebrimbor.vedo.bg_painter.abstract import BlockGraphPainter
 from qelebrimbor.vedo.zx_palette import ZxPalette

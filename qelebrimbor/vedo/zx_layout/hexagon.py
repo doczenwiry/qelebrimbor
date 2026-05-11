@@ -15,7 +15,7 @@
 import numpy as np
 
 from qelebrimbor.core.components import ZxNode
-from qelebrimbor.core.attributes_zx import NodeId, NodeType
+from qelebrimbor.core.zx.attributes import NodeId, NodeType
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph

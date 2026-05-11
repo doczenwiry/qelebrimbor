@@ -14,10 +14,9 @@
 
 from qelebrimbor.core.components import BgCube
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.core.coordinates import Coordinates
 
-from qelebrimbor.core.attributes_zx import NodeType, EdgeType
-from qelebrimbor.core.attributes_bg import CubeKind
+from qelebrimbor.core.zx.attributes import NodeType, EdgeType
+from qelebrimbor.core.bg.attributes import CubeKind
 
 from logging import getLogger
 console = getLogger(__name__)

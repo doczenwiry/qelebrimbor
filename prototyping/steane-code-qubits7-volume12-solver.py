@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core import attributes_zx
+from qelebrimbor.core.zx import attributes
 
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.inflaters.boundaries import ZxGraphInflaterBoundaries

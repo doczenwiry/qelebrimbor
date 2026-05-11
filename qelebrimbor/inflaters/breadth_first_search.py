@@ -16,7 +16,7 @@ from typing import cast
 
 import networkx as nx
 
-from qelebrimbor.core.attributes_bg import CubeKind
+from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.components import ZxNode, BgCube
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
