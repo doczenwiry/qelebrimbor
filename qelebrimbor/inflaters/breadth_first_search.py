@@ -146,7 +146,7 @@ class ZxGraphInflaterBFS:
         # Place a sequence of cubes connected by pipes in between the source and target realising cubes.
         console.info(f"> Searching for edge-realisation : {source} - {target}")
 
-        path = self.__pathfinder.find_optimum(source.realising_cube, target.realising_cube)
+        path = self.__pathfinder.find_optimum(goal = self.__graph.get_zx_edge(source.id, target.id))
 
         if path is None:
             console.error(f"Failed to find any path for edge-realisation {source} - {target}")

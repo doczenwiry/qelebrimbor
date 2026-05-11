@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
         # Perform the pathfinding from source to target
         start_time = time()
-        path = pathfinder.find_optimum(source.realising_cube, target.realising_cube, EdgeType.IDENTITY)
+        path = pathfinder.find_optimum(goal = vzx.get_zx_edge(SOURCE, TARGET))
         final_time = time()
         runtime = round(final_time - start_time, 2)
 

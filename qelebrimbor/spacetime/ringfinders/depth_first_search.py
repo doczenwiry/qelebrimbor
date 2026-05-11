@@ -62,13 +62,10 @@ class RingfinderDFS:
         # TODO: is this heuristic admissible ?
         return max(len(node_types), ManhattanCalculator.minimal_manhattan_length(source, target))
 
-    def find_optimum(self,
-            cycle: ZxCycle,
-            maximal_excess: int = None
-    ):
-        node_restrictions, edge_restrictions = zip(*cycle)
+    def find_optimum(self, goal: ZxCycle, maximal_excess: int = None) -> Ring | None:
+        node_restrictions, edge_restrictions = zip(*goal)
         number_of_restrictions = len(node_restrictions)
-        maximal_volume: int | None = len(cycle) + maximal_excess if maximal_excess is not None else None
+        maximal_volume: int | None = len(goal) + maximal_excess if maximal_excess is not None else None
 
         optimum: Ring | None = None
         unrelaxed: list[tuple[int, Ring]] = []

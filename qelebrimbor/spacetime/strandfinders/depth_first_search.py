@@ -16,7 +16,6 @@ import heapq
 
 from qelebrimbor.core.strand import Strand
 from qelebrimbor.core.common import ZxChain
-from qelebrimbor.core.path import Path, Length
 from qelebrimbor.core.attributes_zx import NodeType, EdgeType
 from qelebrimbor.core.attributes_bg import CubeKind
 from qelebrimbor.core.coordinates import Coordinates
@@ -24,8 +23,10 @@ from qelebrimbor.core.components import BgCube
 
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.calculator import ManhattanCalculator
+
 from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
-from qelebrimbor.spacetime.fabric import SpacetimeFabric
+from qelebrimbor.spacetime.connectivity.default import DefaultConnectivityTracker
+
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
@@ -49,9 +50,8 @@ class StrandfinderDFS:
         Proof of the possibility would be nice. Refutation thereof would be better.
         :param tracing: Controls whether a tracing/reporting of all vertices explored is performed.
         """
-        self.__graph = graph if graph else VolumetricZxGraph()
-        self.__spacetime = graph.spacetime if graph else SpacetimeFabric()
-        self.__connectivity = connectivity
+        self.__graph = graph or VolumetricZxGraph()
+        self.__connectivity = connectivity or DefaultConnectivityTracker()
         self.__branch_and_bound = branch_and_bound
         self.__tracing = tracing
 
@@ -65,12 +65,12 @@ class StrandfinderDFS:
         # TODO: is this heuristic admissible ?
         return max(len(node_types), ManhattanCalculator.minimal_manhattan_length(source, target))
 
-    def find_optimum(self, chain: ZxChain, maximal_excess: int = None) -> Strand | None:
+    def find_optimum(self, goal: ZxChain, maximal_excess: int = None) -> Strand | None:
         optimum: Strand | None = None
+        unrelaxed: list[tuple[int, Strand]] = []
         minimal_paths: dict[tuple[CubeKind, Coordinates], Strand] = dict()
-        unrelaxed: list[tuple[Length, Strand]] = []
 
-        source, nodes, edges, target = chain
+        source, nodes, edges, target = goal
         start = source.realising_cube
         final = target.realising_cube
 
@@ -163,7 +163,7 @@ class StrandfinderDFS:
                     continue
 
                 # Ignore neighbor if the position is already occupied in spacetime
-                if self.__spacetime.occupied(neighbor.position):
+                if self.__graph.spacetime.occupied(neighbor.position):
                     continue
 
                 # Ignore neighbor if the position is already reserved in spacetime
@@ -188,6 +188,8 @@ class StrandfinderDFS:
 
                     # Update minimal distance discovered
                     minimal_paths[neighbor_point] = extended_path
+
+        console.info(f"Optimum strand found : {optimum}")
 
         # Tracing exploration
         if tracer:
