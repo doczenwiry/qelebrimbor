@@ -44,9 +44,10 @@ class Strand:
         return self.start.position if len(self.extra_cubes) == 0 else self.extra_cubes[-1].position
 
     def overhead(self):
-        return self.manhattan_length() - self.start.position.get_manhattan_distance(self.final.position)
+        return self.length - self.start.position.get_manhattan_distance(self.final.position)
 
-    def manhattan_length(self) -> int:
+    @property
+    def length(self) -> int:
         return len(self.extra_cubes) + 1 if self.start != self.final else 0
 
     def occupies(self, position: Coordinates):
@@ -75,7 +76,7 @@ class Strand:
         return extended
 
     def __lt__(self, other):
-        return self.manhattan_length().__lt__(other.manhattan_length())
+        return self.length.__lt__(other.length)
 
     def __str__(self):
         content = f"{self.start}"

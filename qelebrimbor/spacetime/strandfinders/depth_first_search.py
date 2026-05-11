@@ -116,15 +116,14 @@ class StrandfinderDFS:
             hv, current_path = heapq.heappop(unrelaxed)
             terminal = current_path.final
 
-            manhattan_length = current_path.manhattan_length()
-
+            manhattan_length = current_path.length
             if maximal_length and maximal_length < manhattan_length:
                 continue
 
             # Branch-and-bound
             if self.__branch_and_bound and optimum:
-                manhattan_length_projected: int = current_path.manhattan_length() + StrandfinderDFS.heuristic(terminal, final, node_types[manhattan_length:])
-                if optimum.manhattan_length() <= manhattan_length_projected:
+                manhattan_length_projected: int = current_path.length + StrandfinderDFS.heuristic(terminal, final, node_types[manhattan_length:])
+                if optimum.length <= manhattan_length_projected:
                     if tracer:
                         tracer.prune_node(terminal)
                     continue
@@ -132,7 +131,7 @@ class StrandfinderDFS:
             console.debug(f"Current [{terminal}] : {current_path}")
 
             # Check whether the goal has been accomplished
-            if current_path.manhattan_length() > node_type_nr:
+            if current_path.length > node_type_nr:
                 final_pipe_type = edge_types[-1] if edge_types else EdgeType.IDENTITY
                 if BlockGraphHelper.connectable(terminal, final, final_pipe_type):
                     completed_path = current_path.extend(cube = final, pipe_type = final_pipe_type)
@@ -144,7 +143,7 @@ class StrandfinderDFS:
                         tracer.add_edge(terminal, final)
 
                     # Update the optimum only if it improves our current knowledge
-                    if optimum is None or completed_path.manhattan_length() < optimum.manhattan_length():
+                    if optimum is None or completed_path.length < optimum.length:
                         optimum = completed_path
 
             if manhattan_length < node_type_nr:
@@ -176,14 +175,14 @@ class StrandfinderDFS:
                 if manhattan_length < node_type_nr:
                     neighbor.realised_node = nodes[manhattan_length]
                 extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
-                extended_distance = extended_path.manhattan_length()
+                extended_distance = extended_path.length
 
                 # Tracing exploration
                 if tracer:
                     tracer.add_node(neighbor)
                     tracer.add_edge(terminal, neighbor)
 
-                if neighbor_point not in minimal_paths or extended_distance < minimal_paths[neighbor_point].manhattan_length():
+                if neighbor_point not in minimal_paths or extended_distance < minimal_paths[neighbor_point].length:
                     # Filtering out the neighbor from unrelaxed
                     unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].final != neighbor ]
                     # Compute the minimal manhattan length required to connect neighbor to target (heuristic).

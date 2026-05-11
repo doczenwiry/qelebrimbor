@@ -95,29 +95,30 @@ class PathfinderDFS:
         while len(unrelaxed) > 0 and (self.__branch_and_bound or optimum is None):
             # Restore the heap invariant
             heapq.heapify(unrelaxed)
-            vertex: tuple[Length, Path] = heapq.heappop(unrelaxed)
+            remaining: int
+            current: Path
+            remaining, current = heapq.heappop(unrelaxed)
 
-            manhattan_length_remaining, current_path = vertex
-            next_pipe_type = goal.type if current_path.manhattan_length() == 0 else EdgeType.IDENTITY
-            terminal = current_path.final
+            next_pipe_type = goal.type if current.length == 0 else EdgeType.IDENTITY
+            terminal = current.final
 
             # Discard the current_path if it is longer than what was requested.
-            if maximal_length and maximal_length < current_path.manhattan_length():
+            if maximal_length and maximal_length < current.length:
                 continue
 
             # Branch-and-bound
             if self.__branch_and_bound and optimum:
-                manhattan_length_projected = current_path.manhattan_length() + manhattan_length_remaining
-                if optimum.manhattan_length() <= manhattan_length_projected:
+                manhattan_length_projected = current.length + remaining
+                if optimum.length <= manhattan_length_projected:
                     if tracer:
                         tracer.prune_node(terminal)
                     continue
 
-            console.debug(f"{'>' * (current_path.manhattan_length()+1)} Current : {current_path}")
+            console.debug(f"{'>' * (current.length + 1)} Current : {current}")
 
             if BlockGraphHelper.connectable(terminal, final, next_pipe_type) and not self.__graph.has_bg_pipe(terminal, final):
                 console.debug(f"> Connectable to {final} : {BlockGraphHelper.connectable(terminal, final, next_pipe_type)}")
-                completed_path = current_path.extend(cube = final, pipe_type = next_pipe_type)
+                completed_path = current.extend(cube = final, pipe_type = next_pipe_type)
 
                 # Tracing exploration
                 if tracer:
@@ -125,7 +126,7 @@ class PathfinderDFS:
                     tracer.add_edge(terminal, final)
 
                 # Update the optimum only if it improves our current knowledge
-                if optimum is None or completed_path.manhattan_length() < optimum.manhattan_length():
+                if optimum is None or completed_path.length < optimum.length:
                     optimum = completed_path
 
             constellation = BlockGraphHelper.get_candidate_constellation(
@@ -136,7 +137,7 @@ class PathfinderDFS:
                 neighbor_point = (neighbor.kind, neighbor.position)
 
                 # Ignore neighbor if it introduces a loop
-                if current_path.occupies(neighbor.position):
+                if current.occupies(neighbor.position):
                     continue
 
                 # Ignore neighbor if its position is already occupied in spacetime
@@ -152,18 +153,17 @@ class PathfinderDFS:
                     tracer.add_node(neighbor)
                     tracer.add_edge(terminal, neighbor)
 
-                extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
-                extended_distance = extended_path.manhattan_length()
+                extended = current.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
 
-                if neighbor_point not in minimal_paths or extended_distance < minimal_paths[neighbor_point].manhattan_length():
+                if neighbor_point not in minimal_paths or extended.length < minimal_paths[neighbor_point].length:
                     # Filtering out the neighbor from unrelaxed
                     unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].final != neighbor ]
 
                     # Compute the minimal manhattan length required to connect neighbor to target (HEURISTIC).
-                    unrelaxed.append( (PathfinderDFS.heuristic(neighbor, final), extended_path) )
+                    unrelaxed.append( (PathfinderDFS.heuristic(neighbor, final), extended) )
 
                     # Update minimal distance discovered
-                    minimal_paths[neighbor_point] = extended_path
+                    minimal_paths[neighbor_point] = extended
 
         console.info(f"Optimum path found : {optimum}")
 

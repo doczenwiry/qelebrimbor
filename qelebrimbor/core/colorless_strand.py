@@ -46,7 +46,8 @@ class ColorlessStrand:
     def final(self):
         return self.__positions[-1]
 
-    def manhattan_length(self):
+    @property
+    def length(self):
         return len(self.__positions) - 1
 
     def visits(self, position: Coordinates):
@@ -92,7 +93,7 @@ class ColorlessStrand:
         if not SpacetimeHelper.contains(final.kind.get_reach(), self.__positions[-2] - final.position):
             return False
 
-        if self.manhattan_length() < len(nodes):
+        if self.length < len(nodes):
             return False
 
         try:
@@ -202,7 +203,7 @@ class ColorlessStrand:
         return strand
 
     def __lt__(self, other):
-        return self.manhattan_length().__lt__(other.manhattan_length())
+        return self.length.__lt__(other.length)
 
     def __str__(self):
         content  = f"{self.start}"

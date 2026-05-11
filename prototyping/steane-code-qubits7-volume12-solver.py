@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     strand = strandfinder.find_optimum(chain, maximal_excess = 8)
     if strand:
-        console.info(f"Found strand [volume={strand.manhattan_length() - 1}] for chain : {chain}")
+        console.info(f"Found strand [volume={strand.length - 1}] for chain : {chain}")
         console.info(f"> {strand}")
         vzx.realise_zx_chain(chain, strand)
 

@@ -70,7 +70,7 @@ class PlacefinderBFS:
                 neighbor_point = (neighbor.kind, neighbor.position)
                 console.debug(f"> Neighbor : {neighbor}")
 
-                if maximal_distance and maximal_distance < current_path.manhattan_length():
+                if maximal_distance and maximal_distance < current_path.length:
                     continue
 
                 # Ignore neighbor if it introduces a loop

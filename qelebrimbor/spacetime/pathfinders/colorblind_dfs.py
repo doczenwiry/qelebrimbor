@@ -55,14 +55,6 @@ class PathfinderColorblindDFS:
         self.__branch_and_bound = branch_and_bound
         self.__tracing = tracing
 
-    @staticmethod
-    def initial(edge: ZxEdge) -> ColorlessPath:
-        return ColorlessPath(start = edge.source.realising_cube.position)
-
-    @staticmethod
-    def heuristic(source: Coordinates, target: Coordinates) -> int:
-        return source.get_manhattan_distance(target)
-
     def find_optimum(self, goal: ZxEdge, maximal_excess: int | None = None) -> Path | None:
         """
         Search for a path connecting cubes source and target.
@@ -78,9 +70,9 @@ class PathfinderColorblindDFS:
         start = goal.source.realising_cube
         final = goal.target.realising_cube
 
-        initial = PathfinderColorblindDFS.initial(goal)
+        initial: ColorlessPath = ColorlessPath(start = start.position)
 
-        heapq.heappush(unrelaxed, (PathfinderColorblindDFS.heuristic(start.position, final.position), initial))
+        heapq.heappush(unrelaxed, (start.position.get_manhattan_distance(final.position), initial))
 
         if maximal_excess:
             maximal_length = ManhattanCalculator.manhattan_distance(start, final) + maximal_excess
@@ -100,50 +92,47 @@ class PathfinderColorblindDFS:
         while len(unrelaxed) > 0 and (self.__branch_and_bound or optimum is None):
             # Restore the heap invariant
             heapq.heapify(unrelaxed)
-            remaining: int
+            remaining_distance: int
             current: ColorlessPath
-            remaining, current = heapq.heappop(unrelaxed)
+            remaining_distance, current = heapq.heappop(unrelaxed)
 
             terminal = current.final
 
             # Discard the current_path if it is longer than what is acceptable.
-            if maximal_length and maximal_length < current.manhattan_length():
+            if maximal_length and maximal_length < current.length:
                 continue
 
             # Branch-and-bound
             if self.__branch_and_bound and optimum is not None:
-                manhattan_length_projected = current.manhattan_length() + remaining
-                if optimum.manhattan_length() <= manhattan_length_projected:
+                if optimum.length <= current.length + remaining_distance:
                     if tracer:
                         tracer.prune_node(terminal)
                     continue
 
-            console.debug(f"{'>' * (current.manhattan_length()+1)} Current : {current}")
+            console.debug(f"{'>' * (current.length + 1)} Current : {current}")
 
             # Check whether the goal has been reached
             if terminal.get_manhattan_distance(final.position) == 1:
                 # Ignore the incoming path if it doesn't line up with a port of the final cube.
-                if not SpacetimeHelper.contains(final.kind.get_reach(), final.position - terminal):
-                    continue
+                if SpacetimeHelper.contains(final.kind.get_reach(), final.position - terminal):
+                    completed: ColorlessPath = current.extend(final.position)
+                    console.debug(f"Candidate : {completed} {completed.compatible(goal)}")
+                    if completed.compatible(goal):
+                        # Tracing exploration
+                        if tracer:
+                            tracer.add_node(final.position, label = str(final.position))
+                            tracer.add_edge(terminal, final.position)
 
-                completed_path = current.extend(final.position)
-                console.info(f"Candidate : {completed_path} {completed_path.compatible(goal)}")
-                if completed_path.compatible(goal):
-                    # Tracing exploration
-                    if tracer:
-                        tracer.add_node(final.position, label = str(final.position))
-                        tracer.add_edge(terminal, final.position)
-
-                    # Update the optimum only if it improves our current knowledge
-                    if optimum is None or completed_path.manhattan_length() < optimum.manhattan_length():
-                        optimum = completed_path.painted(goal)
+                        # Update the optimum only if it improves our current knowledge
+                        if optimum is None or completed.length < optimum.length:
+                            optimum = completed.painted(goal)
 
             # Restrict the outgoing paths to lie in the reach of the CubeKind of the start.
             constellation = SpacetimeHelper.get_constellation(
-                position = terminal, restriction = start.kind.get_reach() if current.manhattan_length() == 0 else None
+                position = terminal, restriction = start.kind.get_reach() if current.length == 0 else None
             )
 
-            console.debug(f"{'>' * (current.manhattan_length()+2)} : {constellation}")
+            console.debug(f"{'>' * (current.length + 2)} : {constellation}")
             for adjacent in constellation:
                 # Ignore neighbor if it introduces a loop
                 if current.visits(adjacent):
@@ -168,7 +157,7 @@ class PathfinderColorblindDFS:
                 unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].final != adjacent ]
 
                 # Compute the minimal manhattan length required to connect neighbor to target (HEURISTIC).
-                unrelaxed.append((PathfinderColorblindDFS.heuristic(adjacent, final.position), extended))
+                unrelaxed.append((adjacent.get_manhattan_distance(final.position), extended))
 
         console.info(f"Optimum found ? {optimum}")
 

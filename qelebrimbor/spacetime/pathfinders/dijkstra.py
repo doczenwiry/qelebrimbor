@@ -46,7 +46,7 @@ class PathfinderDijkstra:
         initial = Path(start = source)
         minimal_paths[ (source.kind, source.position) ] = initial
 
-        vertex: tuple[Length, Path] = (initial.manhattan_length(), initial)
+        vertex: tuple[Length, Path] = (initial.length, initial)
         heapq.heappush(unrelaxed, vertex)
 
         manhattan_distance = source.position.get_manhattan_distance(target.position)
@@ -97,13 +97,13 @@ class PathfinderDijkstra:
                     tracer.add_edge(terminal, neighbor)
 
                 extended_path = current_path.extend(neighbor, pipe_type = EdgeType.IDENTITY)
-                extended_distance = extended_path.manhattan_length()
+                extended_distance = extended_path.length
                 console.debug(f">> {current_path}   =Relax=   {extended_path}")
 
-                if neighbor_point not in minimal_paths or extended_distance < minimal_paths[neighbor_point].manhattan_length():
+                if neighbor_point not in minimal_paths or extended_distance < minimal_paths[neighbor_point].length:
                     # Filtering out the neighbor from unrelaxed
                     unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].final != neighbor ]
-                    unrelaxed.append( (extended_path.manhattan_length(), extended_path) )
+                    unrelaxed.append((extended_path.length, extended_path))
 
                     # Update minimal distance discovered
                     minimal_paths[neighbor_point] = extended_path

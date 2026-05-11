@@ -45,8 +45,13 @@ class ColorlessPath:
     def final(self):
         return self.__positions[-1]
 
-    def manhattan_length(self) -> int:
+    @property
+    def length(self) -> int:
         return len(self.__positions) - 1
+
+    @property
+    def distance(self) -> int:
+        return self.start.get_manhattan_distance(self.final)
 
     def visits(self, position: Coordinates):
         return position in self.__occupied

@@ -131,7 +131,7 @@ class ZxGraphInflaterRings:
             console.error(f"Failed to find a strand for : {chain}")
             return -1
 
-        excess_volume = strand.manhattan_length() - chain.length - 1
+        excess_volume = strand.length - chain.length - 1
         console.info(f"Found a suitable strand for chain [EV:+{excess_volume}] : {strand}")
 
         self.__graph.realise_zx_chain(chain, strand)

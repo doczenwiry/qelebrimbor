@@ -85,7 +85,7 @@ def __benchmark_restrictions(node_type_restrictions: list[NodeType]):
 
     vzx.realise_zx_chain(chain, strand)
 
-    length = strand.manhattan_length()
+    length = strand.length
     distance = strand.start.position.get_manhattan_distance(strand.final.position)
 
     label = f"number of restrictions = {len(node_type_restrictions)}, manhattan length = {length}, excess volume = +{length - distance - len(node_type_restrictions)}, time={runtime}s"

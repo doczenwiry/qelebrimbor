@@ -18,11 +18,12 @@ from time import time
 from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.zx.attributes import NodeType, EdgeType
 from qelebrimbor.core.components import BgCube
-from qelebrimbor.helpers.calculator import ManhattanCalculator
 
+from qelebrimbor.helpers.calculator import ManhattanCalculator
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 from qelebrimbor.spacetime.pathfinders.depth_first_search import PathfinderDFS
+from qelebrimbor.spacetime.pathfinders.colorblind_dfs import PathfinderColorblindDFS
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
@@ -31,8 +32,9 @@ from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 
 import logging
-logging.basicConfig(level=logging.CRITICAL)
-logging.getLogger("qelebrimbor.spacetime").setLevel(logging.INFO)
+logging.basicConfig(level=logging.INFO)
+logging.getLogger("qelebrimbor.core.colorless_path").setLevel(logging.CRITICAL)
+logging.getLogger("matplotlib").setLevel(logging.CRITICAL)
 
 SOURCE: int = 0
 TARGET: int = 1
@@ -57,11 +59,12 @@ if __name__ == "__main__":
 
         # Instantiate the Pathfinder to benchmark
         pathfinder = PathfinderDFS(vzx, branch_and_bound = False, tracing = SpacetimeTracingReport.FINAL)
+        # pathfinder = PathfinderColorblindDFS(vzx, tracing = SpacetimeTracingReport.FINAL)
         # pathfinder = PathfinderDijkstra(vzx, tracing = SpacetimeTracingReport.FINAL)
 
-        # Perform the pathfinding from source to target
+        # Perform the pathfinding for the edge between SOURCE and TARGET
         start_time = time()
-        path = pathfinder.find_optimum(goal = vzx.get_zx_edge(SOURCE, TARGET))
+        path = pathfinder.find_optimum(goal = vzx.get_zx_edge(SOURCE, TARGET), maximal_excess = 6)
         final_time = time()
         runtime = round(final_time - start_time, 2)
 
@@ -72,12 +75,12 @@ if __name__ == "__main__":
 
         sys.stderr.flush()
 
-        md = ManhattanCalculator.manhattan_distance(source.realising_cube, target.realising_cube)
-        ml = path.manhattan_length()
+        md = path.distance
+        ml = path.length
 
-        print(f"Runtime : {runtime} seconds. Manhattan distance = {md}, Manhattan length = {ml}")
+        print(f"Runtime : {runtime} seconds. Manhattan distance = {md}, Manhattan length = {ml}, Excess = +{ml - md}")
 
-        label = f"manhattan distance = {md}, manhattan length = {ml}, manhattan excess = +{ml - md}, time={runtime}s"
+        label = f"{pathfinder.__class__.__name__}: manhattan distance = {md}, manhattan length = {ml}, excess = +{ml - md}, time={runtime}s"
         layout = CircuitLayout(vzx)
 
         viewer = VolumetricZxGraphViewer(graph = vzx, label = label, layout = layout)

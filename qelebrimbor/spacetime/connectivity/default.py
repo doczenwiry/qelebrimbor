@@ -22,22 +22,23 @@ console = logging.getLogger(__name__)
 
 
 class DefaultConnectivityTracker(ConnectivityTracker):
-    def preserved(self, start: BgCube, final: BgCube, position: Coordinates) -> bool:
+    def __init__(self):
         console.warning(f"DefaultConnectivityTracker doesn't track anything.")
+
+    def preserved(self, start: BgCube, final: BgCube, position: Coordinates) -> bool:
         return True
 
     def available(self, start: BgCube, final: BgCube) -> bool:
-        console.warning(f"DefaultConnectivityTracker doesn't track anything.")
         return True
 
     def reserve(self, cube: BgCube, required: int):
-        console.warning(f"DefaultConnectivityTracker doesn't track anything.")
+        pass
 
     def connect(self, source: tuple[BgCube, Port], target: tuple[BgCube, Port]):
-        console.warning(f"DefaultConnectivityTracker doesn't track anything.")
+        pass
 
     def occlude(self, position: Coordinates):
-        console.warning(f"DefaultConnectivityTracker doesn't track anything.")
+        pass
 
     def report(self, verbose: bool = False):
-        console.warning(f"DefaultConnectivityTracker doesn't track anything.")
+        pass
