@@ -16,7 +16,7 @@ import itertools
 from time import time
 from typing import Iterable
 
-from qelebrimbor.core.zx import attributes
+from qelebrimbor.core.zx import attributes as zx_attributes
 from qelebrimbor.core.zx.attributes import NodeId, NodeType, EdgeType
 
 from qelebrimbor.spacetime.ringfinders.depth_first_search import RingfinderDFS
@@ -49,7 +49,7 @@ def __benchmark_ring(restrictions: Iterable[tuple[NodeType, EdgeType]]):
     vzx = VolumetricZxGraph(nodes, edges)
 
     zx_cycle = CycleAnalyser.decompose(vzx, minimal = True)[0]
-    print(f"Cycle : {CycleAnalyser.string(zx_cycle)}")
+    print(f"Cycle : {str(zx_cycle)}")
 
     # ringfinder = RingfinderBFS(graph = vzx, tracing = SpacetimeTracingReport.FINAL)
     ringfinder = RingfinderDFS(graph = vzx, tracing = SpacetimeTracingReport.FINAL)
@@ -75,7 +75,7 @@ def __benchmark_ring(restrictions: Iterable[tuple[NodeType, EdgeType]]):
 
     return volume, runtime, ring
 
-attributes_zx.ZX_COLORING = True
+zx_attributes.ZX_COLORING = True
 # The number of spiders in the ring to realise
 RING_SIZE = 4
 # The choices of restrictions among which to pick for the chain requested

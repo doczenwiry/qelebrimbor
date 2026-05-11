@@ -14,7 +14,7 @@
 
 from vedo.plotter import Plotter  # type: ignore[import-untyped]
 
-from qelebrimbor.core.common import ZxCycle
+from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.core.components import ZxNode, ZxEdge
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker

@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     ring = ringfinder.find_optimum(cycle, maximal_excess = 4)
     if ring:
-        console.info(f"Found realisation [volume={ring.volume()}] for cycle : {CycleAnalyser.string(cycle)}")
+        console.info(f"Found realisation [volume={ring.volume()}] for cycle : {str(cycle)}")
         console.info(f"> {ring}")
         vzx.realise_zx_cycle(cycle, ring)
 

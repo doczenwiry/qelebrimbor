@@ -12,7 +12,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import math
 from time import time
 from typing import cast
 from collections import defaultdict
@@ -24,13 +23,16 @@ from matplotlib.ticker import MaxNLocator
 
 import networkx as nx
 
-from qelebrimbor.analysis.cycle_sharing import CycleSharingGraph
-from qelebrimbor.core.common import ZxCycle, ZxChain
+from qelebrimbor.core.zx.chain import ZxChain
+from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.core.components import ZxEdge, ZxNode
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
+from qelebrimbor.analysis.cycle_sharing import CycleSharingGraph
+
 import logging
 console = logging.getLogger(__name__)
+
 
 class CycleAnalyser:
     @staticmethod
@@ -40,18 +42,6 @@ class CycleAnalyser:
             return True
         except nx.NetworkXNoCycle:
             return False
-
-    @staticmethod
-    def string(cycle: ZxCycle) -> str:
-        content = ""
-
-        for node, edge in cycle:
-            content += f"{str(node)} --{repr(edge.type)}-- "
-
-        if len(cycle) > 0:
-            content += f"{cycle[0][0]}"
-
-        return content
 
     @staticmethod
     def analyse(graph: VolumetricZxGraph, plot: bool = False, minimal: bool = False) -> list[ZxCycle]:
@@ -93,12 +83,13 @@ class CycleAnalyser:
         cycle_basis = nx.minimum_cycle_basis(nxg) if minimal else nx.cycle_basis(nxg)
 
         for cycle in cycle_basis:
-            zx_cycle = []
+            zx_cycle = ZxCycle()
 
             for index in range(len(cycle)):
-                current_node = graph.get_zx_node(cycle[index])
-                current_edge = graph.get_zx_edge(cycle[index], cycle[(index + 1) % len(cycle)])
-                zx_cycle.append( (current_node, current_edge ))
+                zx_cycle.extend(
+                    node = graph.get_zx_node(cycle[index]),
+                    edge = graph.get_zx_edge(cycle[index], cycle[(index + 1) % len(cycle)])
+                )
 
             zx_cycles.append( zx_cycle )
 
@@ -109,7 +100,8 @@ class CycleAnalyser:
         if len(cycle) < 2:
             raise Exception(f"Cannot breakdown cycle with less than 2 edges.")
 
-        nodes, edges = zip(*cycle)
+        nodes = list(cycle.nodes)
+        edges = list(cycle.edges)
 
         chain_nodes: list[ZxNode] = []
         chain_edges: list[ZxEdge] = []
@@ -125,37 +117,31 @@ class CycleAnalyser:
             following = edges[(index+1) % len(cycle)]
             index += 1
 
-
-        if index == len(cycle):
-            console.debug(f"> Cycle {cycle} is already complete.")
+        if index == cycle.length:
+            console.debug(f"> Cycle {cycle} has no unrealised chain.")
             return None
 
-        start: ZxNode = nodes[index]
-        console.debug(f"Found start of chain : {start}")
-        chain_edges.append( edges[index] )
-        index: int = (index + 1) % len(cycle)
-        following = edges[index % len(cycle)]
+        chain = ZxChain(start = nodes[index])
+        console.debug(f"Found start of chain : {chain.source}")
+        current = edges[index]
 
-        # Construct the chain from index until the following edge that is realised
-        while not following.is_realised():
-            chain_nodes.append( nodes[index] )
-            chain_edges.append( edges[index] )
-            index = (index + 1) % len(cycle)
-            following = edges[index]
+        # Construct the chain from index up to and including the last edge that is realised
+        while not current.is_realised():
+            index = (index + 1) % cycle.length
+            chain.append(nodes[index], current)
+            current = edges[index]
 
-        # Add the final node of the chain
-        final: ZxNode = nodes[index]
-        console.debug(f"Found final of chain : {final}")
-
+        console.debug(f"Found final of chain : {chain.target}")
         console.debug(f"Chain identified : {chain_nodes} , {chain_edges}")
 
-        return start, chain_nodes, chain_edges, final
+        return chain # start, chain_nodes, chain_edges, final
 
     @staticmethod
     def identify_chains(*cycles: ZxCycle) -> list[ZxChain]:
         chains: list[ZxChain] = []
         for index in range(len(cycles)):
             cycle = cycles[index]
+            console.critical(f"Identifying chains in cycle : {cycle}")
             nodes, edges = zip(*cycle)
 
             if all(edge.is_realised() for edge in edges):
@@ -166,9 +152,10 @@ class CycleAnalyser:
                 console.debug(f"> Cycle {cycle} intersects current construct.")
                 chain: ZxChain | None = CycleAnalyser.breakdown(cycle)
                 if chain is not None:
+                    console.critical(f"> Chain found : {chain}")
                     chains.append( chain )
 
-        chains = sorted(chains, key = len)
+        chains = sorted(chains, key = lambda c: c.length)
 
         return chains
 

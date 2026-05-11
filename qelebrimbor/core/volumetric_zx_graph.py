@@ -21,13 +21,16 @@ import networkx as nx
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 
-from qelebrimbor.core.common import ZxChain, ZxCycle
-from qelebrimbor.core.components import ZxNode, ZxEdge, BgCube, BgPipe
 from qelebrimbor.core.zx.attributes import NodeId, NodeType, EdgeType, QubitId, LayerId
+from qelebrimbor.core.zx.chain import ZxChain
+from qelebrimbor.core.zx.cycle import ZxCycle
+
 from qelebrimbor.core.bg.attributes import CubeId, CubeKind
 from qelebrimbor.core.bg.path import Path
-from qelebrimbor.core.bg.strand import Strand
 from qelebrimbor.core.bg.ring import Ring
+from qelebrimbor.core.bg.strand import Strand
+
+from qelebrimbor.core.components import ZxNode, ZxEdge, BgCube, BgPipe
 
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
 
@@ -315,15 +318,12 @@ class VolumetricZxGraph(nx.Graph):
         self.realise_zx_edge(source = terminal.id, target = anchor.id, proposal = path)
 
     def realise_zx_chain(self, chain: ZxChain, proposal: Strand):
-        start, nodes, edges, final = chain
-
         # TODO: assumption is that len(proposal.extra_cubes) >= len(nodes)
 
         # Realise the successive nodes of the chain
-        preceding_node: ZxNode = start
+        preceding_node: ZxNode = chain.source
         matching_index: int = 0 # The index of the extra cube corresponding to the preceding_node
-        for index in range(len(nodes)):
-            following_node: ZxNode = nodes[index]
+        for following_node in chain.nodes:
             path = Path(start = preceding_node.realising_cube)
 
             extra_cube = proposal.extra_cubes[matching_index]
@@ -341,7 +341,7 @@ class VolumetricZxGraph(nx.Graph):
             preceding_node = following_node
 
         # Realise the final edge to close the ring
-        following_node: ZxNode = final
+        following_node: ZxNode = chain.target
         path = Path(start = preceding_node.realising_cube)
 
         while matching_index < len(proposal.extra_cubes):

@@ -15,7 +15,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 
-from qelebrimbor.core.common import (ZxCycle)
+from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.core.components import ZxNode
 
 
@@ -58,7 +58,7 @@ class CycleSharingGraph:
 
     @staticmethod
     def cycle_sharing_graph(cycles: list[ZxCycle]) -> tuple[nx.Graph, int]:
-        basis_sets: list[set[ZxNode]] = [ set(nodes) for nodes, _ in map(lambda cc: zip(*cc), cycles) ]
+        basis_sets: list[set[ZxNode]] = [ set(cycle.nodes) for cycle in cycles ]
 
         sharing: nx.Graph = nx.Graph()
 

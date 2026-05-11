@@ -50,11 +50,11 @@ if __name__ == "__main__":
 
     index = 0
     cycle = cycles[index][6:] + cycles[index][:6]
-    console.info(f"Cycle {index} : {CycleAnalyser.string(cycle)}")
+    console.info(f"Cycle {index} : {str(cycle)}")
 
     ring = ringfinder.find_optimum(cycle, maximal_excess = 6)
     if ring:
-        console.info(f"Found realisation [volume={ring.volume()}] for cycle : {CycleAnalyser.string(cycle)}")
+        console.info(f"Found realisation [volume={ring.volume()}] for cycle : {str(cycle)}")
         console.info(f"> {ring}")
         vzx.realise_zx_cycle(cycle, ring)
 

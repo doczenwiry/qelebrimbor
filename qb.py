@@ -19,8 +19,9 @@ from time import time
 import pyzx
 
 from qelebrimbor.analysis.cycles import CycleAnalyser
-from qelebrimbor.core.zx import attributes
-from qelebrimbor.core.common import ZxCycle
+
+from qelebrimbor.core.zx import attributes as zx_attributes
+from qelebrimbor.core.zx.cycle import ZxCycle
 
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
@@ -67,7 +68,7 @@ def main():
     vzx = PYZX.from_file(arguments.filepath)
 
     if arguments.zx_coloring:
-        attributes_zx.ZX_COLORING = True
+        zx_attributes.ZX_COLORING = True
 
     verbose: bool = not arguments.summary
 
@@ -165,7 +166,6 @@ def main():
 
     # Visualisation stage
     if arguments.visualization or arguments.force_visualization:
-        if verbose: print(f"VISUALIZATION STAGE.")
         if arguments.force_visualization or vzx.volume() <= 100:
             window_size = "full" if arguments.fullscreen else "auto"
             viewer = VolumetricZxGraphViewer(

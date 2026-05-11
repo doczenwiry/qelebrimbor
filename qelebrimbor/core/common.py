@@ -13,11 +13,5 @@
 #   limitations under the License.
 
 from qelebrimbor.core.coordinates import Coordinates
-from qelebrimbor.core.components import ZxNode, ZxEdge
-
-type ZxCycle = list[tuple[ZxNode, ZxEdge]]
-type ZxChain = tuple[ZxNode, list[ZxNode], list[ZxEdge], ZxNode]
-type ZxChainNodes = list[ZxNode]
-type ZxChainEdges = list[ZxEdge]
 
 type Port = Coordinates

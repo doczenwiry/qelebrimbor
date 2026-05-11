@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.common import ZxCycle
+from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.core.zx.attributes import NodeType, EdgeType
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 

@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.zx import attributes
+from qelebrimbor.core.zx import attributes as zx_attributes
 
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.inflaters.boundaries import ZxGraphInflaterBoundaries
@@ -32,7 +32,7 @@ logging.basicConfig(level=logging.CRITICAL)
 logging.getLogger("qelebrimbor.spacetime").setLevel(logging.INFO)
 
 
-attributes_zx.ZX_COLORING = True
+zx_attributes.ZX_COLORING = True
 if __name__ == "__main__":
     vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders8.json")
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     ring = ringfinder.find_optimum(cycle, maximal_excess = 6)
     if ring:
-        console.info(f"Found realisation [volume={ring.volume()}] for cycle : {CycleAnalyser.string(cycle)}")
+        console.info(f"Found realisation [volume={ring.volume()}] for cycle : {str(cycle)}")
         console.info(f"> {ring}")
         vzx.realise_zx_cycle(cycle, ring)
 
@@ -59,11 +59,11 @@ if __name__ == "__main__":
     console.info(f"Cycle {index} : {cycle}")
     console.info(f"> Chain : {chain}")
 
-    completion = strandfinder.find_optimum(chain, maximal_excess = 8)
-    if completion:
-        console.info(f"Found completion [volume={completion.manhattan_length()-1}] for chain : {chain}")
-        console.info(f"> {completion}")
-        vzx.realise_zx_chain(chain, completion)
+    strand = strandfinder.find_optimum(chain, maximal_excess = 8)
+    if strand:
+        console.info(f"Found strand [volume={strand.manhattan_length() - 1}] for chain : {chain}")
+        console.info(f"> {strand}")
+        vzx.realise_zx_chain(chain, strand)
 
     ZxGraphInflaterBoundaries(graph = vzx).process()
 

@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.zx import attributes
+from qelebrimbor.core.zx import attributes as zx_attributes
 
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.inflaters.boundaries import ZxGraphInflaterBoundaries
@@ -34,7 +34,7 @@ logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('qelebrimbor.vedo').setLevel(logging.CRITICAL)
 
 
-attributes_zx.ZX_COLORING = True
+zx_attributes.ZX_COLORING = True
 if __name__ == "__main__":
     vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders7.json")
 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     ring = ringfinder.find_optimum(cycle, maximal_excess = 2)
     if ring:
-        console.info(f"Found realisation [volume={ring.volume()}] for cycle : {CycleAnalyser.string(cycle)}")
+        console.info(f"Found realisation [volume={ring.volume()}] for cycle : {str(cycle)}")
         console.info(f"> {ring}")
         vzx.realise_zx_cycle(cycle, ring)
 
@@ -73,16 +73,16 @@ if __name__ == "__main__":
     chains = CycleAnalyser.identify_chains(cycle)
     chain = chains[0]
 
-    console.info(f"Cycle {index} : {CycleAnalyser.string(cycle)}")
+    console.info(f"Cycle {index} : {str(cycle)}")
     console.info(f"> Chain : {chain}")
-    completion = strandfinder.find_optimum(chain, maximal_excess = 12)
+    strand = strandfinder.find_optimum(chain, maximal_excess = 12)
 
-    if completion:
-        console.info(f"Found completion [volume={completion.manhattan_length()-1}] for chain : {chain}")
-        console.info(f"> {completion}")
-        vzx.realise_zx_chain(chain, completion)
+    if strand:
+        console.info(f"Found completion [volume={strand.manhattan_length() - 1}] for chain : {chain}")
+        console.info(f"> {strand}")
+        vzx.realise_zx_chain(chain, strand)
 
-        for cube in completion.extra_cubes[len(chain):]:
+        for cube in strand.extra_cubes[chain.length:]:
             connectivity.occlude(cube.position)
 
     index = 2
@@ -91,16 +91,16 @@ if __name__ == "__main__":
     chains = CycleAnalyser.identify_chains(cycle)
     chain = chains[0]
 
-    console.info(f"Cycle {index} : {CycleAnalyser.string(cycle)}")
+    console.info(f"Cycle {index} : {str(cycle)}")
     console.info(f"> Chain : {chain}")
-    completion = strandfinder.find_optimum(chain, maximal_excess = 8)
+    strand = strandfinder.find_optimum(chain, maximal_excess = 8)
 
-    if completion:
-        console.info(f"Found completion [volume={completion.manhattan_length()-1}] for chain : {chain}")
-        console.info(f"> {completion}")
-        vzx.realise_zx_chain(chain, completion)
+    if strand:
+        console.info(f"Found completion [volume={strand.manhattan_length() - 1}] for chain : {chain}")
+        console.info(f"> {strand}")
+        vzx.realise_zx_chain(chain, strand)
 
-        for cube in completion.extra_cubes[len(chain):]:
+        for cube in strand.extra_cubes[chain.length:]:
             connectivity.occlude(cube.position)
 
     ZxGraphInflaterBoundaries(vzx).process()

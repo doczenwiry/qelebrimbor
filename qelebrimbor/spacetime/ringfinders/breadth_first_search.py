@@ -78,7 +78,7 @@ class RingfinderBFS:
         unrelaxed.append( root )
 
         console.info(f"Searching for ring anchored at {root.anchor} [ringsize={number_of_restrictions}]")
-        console.info(f"> {CycleAnalyser.string(cycle)}")
+        console.info(f"> {str(cycle)}")
 
         # Initialise a tracer if it is needed
         tracer: SpacetimeTracer[BgCube] | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None

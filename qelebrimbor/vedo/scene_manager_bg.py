@@ -14,7 +14,7 @@
 
 from vedo.plotter.runtime import Plotter  # type: ignore[import-untyped]
 
-from qelebrimbor.core.common import ZxCycle
+from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.core.components import BgCube, BgPipe
 from qelebrimbor.vedo.bg_painter.default import DefaultBlockGraphPainter
 from qelebrimbor.vedo.bg_painter.grayscale import GrayscaleBlockGraphPainter

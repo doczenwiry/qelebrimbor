@@ -14,14 +14,14 @@
 
 import heapq
 
+from qelebrimbor.core.bg.ring import Ring
+from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.zx.attributes import EdgeType, NodeType
-from qelebrimbor.core.common import ZxCycle
 from qelebrimbor.core.components import BgCube
-from qelebrimbor.core.bg.ring import Ring
+
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.calculator import ManhattanCalculator
-
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
@@ -63,9 +63,10 @@ class RingfinderDFS:
         return max(len(node_types), ManhattanCalculator.minimal_manhattan_length(source, target))
 
     def find_optimum(self, goal: ZxCycle, maximal_excess: int = None) -> Ring | None:
-        node_restrictions, edge_restrictions = zip(*goal)
-        number_of_restrictions = len(node_restrictions)
-        maximal_volume: int | None = len(goal) + maximal_excess if maximal_excess is not None else None
+        node_restrictions = list(goal.nodes)
+        edge_restrictions = list(goal.edges)
+        number_of_restrictions = goal.length
+        maximal_volume: int | None = goal.length + maximal_excess if maximal_excess is not None else None
 
         optimum: Ring | None = None
         unrelaxed: list[tuple[int, Ring]] = []

@@ -14,8 +14,8 @@
 
 import heapq
 
+from qelebrimbor.core.zx.chain import ZxChain
 from qelebrimbor.core.bg.strand import Strand
-from qelebrimbor.core.common import ZxChain
 from qelebrimbor.core.zx.attributes import NodeType, EdgeType
 from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.coordinates import Coordinates
@@ -70,9 +70,12 @@ class StrandfinderDFS:
         unrelaxed: list[tuple[int, Strand]] = []
         minimal_paths: dict[tuple[CubeKind, Coordinates], Strand] = dict()
 
-        source, nodes, edges, target = goal
-        start = source.realising_cube
-        final = target.realising_cube
+        # source, nodes, edges, target = goal
+        start = goal.source.realising_cube
+        final = goal.target.realising_cube
+
+        nodes = list(goal.nodes)
+        edges = list(goal.edges)
 
         node_types = list(map(lambda node: node.type, nodes))
         edge_types = list(map(lambda edge: edge.type, edges))

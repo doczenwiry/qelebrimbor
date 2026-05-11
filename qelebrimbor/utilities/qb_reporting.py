@@ -15,12 +15,13 @@
 import math
 from termcolor import colored
 
+from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.zx.attributes import NodeType, EdgeType
-from qelebrimbor.core.common import ZxCycle
-from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+
+from qelebrimbor.analysis.cycles import CycleAnalyser
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 import logging
 console = logging.getLogger(__name__)
@@ -147,7 +148,7 @@ def print_report(vzx: VolumetricZxGraph, cycles: list[ZxCycle], detailed: bool =
             optimum = 1.0
         ) for nodetype, count in realised_nodes.items())
         print(f">> Nodes realised : {sum(realised_nodes.values())}/{vzx.number_of_nodes()} [{node_realisation_rate}]; {breakdown}")
-        print(f">>> having insufficient ports : {insufficient_ports_count}/{vzx.number_of_nodes()} [{insufficient_ports_rate}]")
+        print(f">>> Insufficient ports : {insufficient_ports_count}/{vzx.number_of_nodes()} [{insufficient_ports_rate}]")
 
         realised_edges: dict[EdgeType, int] = {
             edgetype : sum(1 for node in vzx.get_zx_edges(edge_type = edgetype) if node.is_realised())

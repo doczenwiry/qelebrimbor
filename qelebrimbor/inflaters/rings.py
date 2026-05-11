@@ -54,8 +54,7 @@ class ZxGraphInflaterRings:
         candidate: ZxChain | None = self.__identify_next_chain(*zx_cycles)
 
         while candidate is not None and index < len(zx_cycles):
-            distance = candidate[0].realising_cube.position.get_manhattan_distance(candidate[3].realising_cube.position)
-            console.info(f"Attempting realisation of chain [index={index}, md={distance}] : {candidate}")
+            console.info(f"Attempting realisation of chain [index={index}, md={candidate.distance}] : {candidate}")
 
             if index == abort_on_index:
                 console.info(f"> Premature abortion for inspection of specific example.")
@@ -72,31 +71,26 @@ class ZxGraphInflaterRings:
             self.__connectivity.report()
             index += 1
 
-            candidate = self.__identify_next_chain(*zx_cycles)
+            candidate = ZxGraphInflaterRings.__identify_next_chain(*zx_cycles)
 
         console.info(f"Cycles processed : {index}/{len(zx_cycles)}.")
 
     # TODO: handle case of disjoint rings (i.e. multiple connected components that contain cycles).
-    def __identify_next_chain(self, *cycles: ZxCycle) -> ZxChain | None:
+    @staticmethod
+    def __identify_next_chain(*cycles: ZxCycle) -> ZxChain | None:
         all_chains: list[ZxChain] = CycleAnalyser.identify_chains(*cycles)
-        selected_length: int | None = None
-        selected_distance: int | None = None
+        console.critical(f"All chains identified :")
+        for chain in all_chains:
+            console.critical(f"> Chain : {chain}")
         selected: ZxChain | None = None
         for chain in all_chains:
-            start, chain_nodes, chain_edges, final = chain
-            length = len(chain_edges)
-            distance = start.realising_cube.position.get_manhattan_distance(final.realising_cube.position)
             if selected:
-                if length < selected_length or (length == selected_length and distance > selected_distance):
+                if chain.length < selected.length or (chain.length == selected.length and chain.distance > selected.distance):
                     selected = chain
-                    selected_length = length
-                    selected_distance = distance
             else:
                 selected = chain
-                selected_length = length
-                selected_distance = distance
 
-            console.debug(f"> Chain [L:{len(chain_edges)}, D:{distance}] : {start} - {chain_nodes} - {final}")
+        console.debug(f"> Chain : {str(selected) if selected is not None else None}")
 
         return selected
 
@@ -123,31 +117,31 @@ class ZxGraphInflaterRings:
         return len(ring.cubes) - len(zx_cycle)
 
     def __attempt_chain_realisation(self, chain: ZxChain, maximal_excess: int = 0) -> int:
-        start, nodes, edges, final = chain
+        # start, nodes, edges, final = chain
 
-        if not start.is_realised() or not final.is_realised():
+        if not chain.source.is_realised() or not chain.source.is_realised():
             return -1
 
-        if not self.__connectivity.available(start.realising_cube, final.realising_cube):
+        if not self.__connectivity.available(chain.source.realising_cube, chain.source.realising_cube):
             return -1
 
         strand = self.__strandfinder.find_optimum(chain, maximal_excess = maximal_excess)
 
         if strand is None:
-            console.error(f"Failed to find a chain for {start} - {nodes} - {final}")
+            console.error(f"Failed to find a strand for : {chain}")
             return -1
 
-        excess_volume = strand.manhattan_length() - len(nodes) - 1
+        excess_volume = strand.manhattan_length() - chain.length - 1
         console.info(f"Found a suitable strand for chain [EV:+{excess_volume}] : {strand}")
 
         self.__graph.realise_zx_chain(chain, strand)
 
         # Reserve the ports for all the nodes that were realised as part of this ring.
-        for node in nodes:
+        for node in chain.nodes:
             # Since each of these node is part of a ring, it already has two of its edges realised.
             self.__connectivity.reserve(node.realising_cube, required =self.__graph.get_zx_degree(node.id) - 2)
 
-        for cube in strand.extra_cubes[len(nodes):]:
+        for cube in strand.extra_cubes[chain.length-1:]:
             self.__connectivity.occlude(cube.position)
 
         return excess_volume

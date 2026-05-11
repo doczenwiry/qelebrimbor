@@ -14,7 +14,7 @@
 
 from vedo import settings, Plotter, ButtonWidget, Text3D  # type: ignore[import-untyped]
 
-from qelebrimbor.core.common import ZxCycle
+from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.core.components import ZxNode
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 

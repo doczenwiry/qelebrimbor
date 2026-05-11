@@ -64,6 +64,7 @@ def __benchmark_restrictions(node_type_restrictions: list[NodeType]):
 
     strandfinder = StrandfinderDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
 
+    # TODO: fix the construction of the chain to use the new ZxChain class.
     chain_nodes = [ vzx.get_zx_node(node_id) for node_id in range(1, len(node_type_restrictions) + 1 )]
     chain_edges = [ vzx.get_zx_edge(node_id, node_id + 1) for node_id in range(len(node_type_restrictions) + 1) ]
     chain = (source, chain_nodes, chain_edges, target)
