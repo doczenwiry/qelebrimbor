@@ -19,8 +19,8 @@ from qelebrimbor.core.components import ZxNode, ZxEdge
 
 
 class ZxChain:
-    def __init__(self, start: ZxNode):
-        self.__nodes = [ start ]
+    def __init__(self, source: ZxNode):
+        self.__nodes = [source]
         self.__edges = []
 
     @property

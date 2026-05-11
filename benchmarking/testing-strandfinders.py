@@ -19,11 +19,14 @@ from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.zx.attributes import NodeType, EdgeType
 from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.zx.chain import ZxChain
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 from qelebrimbor.spacetime.strandfinders.depth_first_search import StrandfinderDFS
+from qelebrimbor.spacetime.strandfinders.colorblind_dfs import StrandfinderColorblindDFS
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
+
 from qelebrimbor.vedo.zx_layout.planar import PlanarLayout
 
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
@@ -62,28 +65,28 @@ def __benchmark_restrictions(node_type_restrictions: list[NodeType]):
     vzx.realise_zx_node(node = source, cube = ENDPOINTS['source'])
     vzx.realise_zx_node(node = target, cube = ENDPOINTS['target'])
 
-    strandfinder = StrandfinderDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
+    # strandfinder = StrandfinderDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
+    strandfinder = StrandfinderColorblindDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
 
-    # TODO: fix the construction of the chain to use the new ZxChain class.
-    chain_nodes = [ vzx.get_zx_node(node_id) for node_id in range(1, len(node_type_restrictions) + 1 )]
-    chain_edges = [ vzx.get_zx_edge(node_id, node_id + 1) for node_id in range(len(node_type_restrictions) + 1) ]
-    chain = (source, chain_nodes, chain_edges, target)
+    chain = ZxChain(source = vzx.get_zx_node(nodes[0][0]))
+    for node_id, _ in nodes[1:]:
+        chain.append(vzx.get_zx_node(node_id), vzx.get_zx_edge(node_id - 1, node_id))
 
     print(f"Chain : {chain}")
 
     start = time()
-    completion = strandfinder.find_optimum(chain, maximal_excess = 12)
+    strand = strandfinder.find_optimum(chain, maximal_excess = 12)
     final = time()
     runtime = round(final - start, 2)
 
-    if completion is None:
+    if strand is None:
         print(f"> Failed to find optimal chain.")
         return -1, -1, chain
 
-    vzx.realise_zx_chain(chain, completion)
+    vzx.realise_zx_chain(chain, strand)
 
-    length = completion.manhattan_length()
-    distance = completion.start.position.get_manhattan_distance(completion.final.position)
+    length = strand.manhattan_length()
+    distance = strand.start.position.get_manhattan_distance(strand.final.position)
 
     label = f"number of restrictions = {len(node_type_restrictions)}, manhattan length = {length}, excess volume = +{length - distance - len(node_type_restrictions)}, time={runtime}s"
     viewer = VolumetricZxGraphViewer(graph = vzx, label = label, layout = PlanarLayout(vzx, scale = 2))

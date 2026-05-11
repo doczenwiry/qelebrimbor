@@ -73,9 +73,10 @@ class ColorlessStrand:
         return cp
 
     def paintable(self, chain: ZxChain) -> bool:
-        source, nodes, edges, target = chain
-        start = source.realising_cube
-        final = target.realising_cube
+        start = chain.source.realising_cube
+        final = chain.target.realising_cube
+        nodes = list(chain.nodes)
+        edges = list(chain.edges)
 
         if start.position != self.__positions[0]:
             raise ValueError(f"ColorlessStrand is not connected to the source of the chain : {chain}")
@@ -111,9 +112,10 @@ class ColorlessStrand:
         # if not self.paintable(chain):
         #     raise ValueError(f"ColorlessStrand provided cannot be painted with the chain : {chain}")
 
-        source, nodes, edges, target = chain
-        start = source.realising_cube
-        final = target.realising_cube
+        start = chain.source.realising_cube
+        final = chain.target.realising_cube
+        nodes = list(chain.nodes)
+        edges = list(chain.edges)
 
         console.info(f"Attempting to paint ColorlessStrand {self}")
         console.info(f"> Using ZxChain : {chain}")

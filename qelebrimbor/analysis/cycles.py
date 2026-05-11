@@ -121,7 +121,7 @@ class CycleAnalyser:
             console.debug(f"> Cycle {cycle} has no unrealised chain.")
             return None
 
-        chain = ZxChain(start = nodes[index])
+        chain = ZxChain(source= nodes[index])
         console.debug(f"Found start of chain : {chain.source}")
         current = edges[index]
 

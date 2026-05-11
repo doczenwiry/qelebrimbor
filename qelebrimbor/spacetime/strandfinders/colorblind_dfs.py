@@ -70,9 +70,11 @@ class StrandfinderColorblindDFS:
         :return: A Path or None if no path was found.
         """
         # Prepare the parameters for the search
-        source, nodes, edges, target = goal
-        start = source.realising_cube
-        final = target.realising_cube
+        start = goal.source.realising_cube
+        final = goal.target.realising_cube
+
+        nodes = list(goal.nodes)
+        edges = list(goal.edges)
 
         node_types = list(map(lambda node: node.type, nodes))
         edge_types = list(map(lambda edge: edge.type, edges))
