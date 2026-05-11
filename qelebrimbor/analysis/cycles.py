@@ -24,6 +24,7 @@ from matplotlib.ticker import MaxNLocator
 
 import networkx as nx
 
+from qelebrimbor.analysis.cycle_sharing import CycleSharingGraph
 from qelebrimbor.core.common import ZxCycle, ZxChain
 from qelebrimbor.core.components import ZxEdge, ZxNode
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
@@ -71,6 +72,9 @@ class CycleAnalyser:
                 plt.xlabel("Number of nodes")
                 plt.ylabel("Number of cycles")
                 plt.show()
+
+                CycleSharingGraph.plot(zx_cycles)
+
             else:
                 histogram: dict[int, int] = defaultdict(int)
                 for index in range(len(zx_cycles)):
@@ -99,27 +103,6 @@ class CycleAnalyser:
             zx_cycles.append( zx_cycle )
 
         return list(sorted(zx_cycles, key = len, reverse = True))
-
-    @staticmethod
-    def decompose_nodes(vzx: VolumetricZxGraph, minimal: bool = False) -> list[list[ZxNode]]:
-        nxg = cast(nx.Graph, vzx)
-        cycle_basis = nx.minimum_cycle_basis(nxg) if minimal else nx.cycle_basis(nxg)
-        return list(map(
-            lambda cycle: list(map(vzx.get_zx_node, cycle)),
-            sorted(cycle_basis, key = len, reverse = True)
-        ))
-
-    @staticmethod
-    def decompose_edges(vzx: VolumetricZxGraph, minimal: bool = False) -> list[list[ZxEdge]]:
-        decomposition: list[list[ZxEdge]] = []
-        for cycle in CycleAnalyser.decompose_nodes(vzx, minimal):
-            nc = len(cycle)
-            current: list[ZxEdge] = []
-            for index in range(len(cycle)):
-                source, target = (cycle[index], cycle[(index+1) % nc])
-                current.append( vzx.get_zx_edge(source.id, target.id) )
-            decomposition.append(current)
-        return decomposition
 
     @staticmethod
     def breakdown(cycle: ZxCycle) -> ZxChain | None:
@@ -191,16 +174,18 @@ class CycleAnalyser:
 
     @staticmethod
     def cycle_node_realisation_rate(graph: VolumetricZxGraph, minimal: bool = False) -> float:
-        all_cycle_nodes = set()
-        for cycle in CycleAnalyser.decompose_nodes(graph, minimal = minimal):
-            all_cycle_nodes.update(cycle)
+        all_cycle_nodes: set[ZxNode] = set()
+        for cycle in CycleAnalyser.decompose(graph, minimal = minimal):
+            nodes, _ = zip(*cycle)
+            all_cycle_nodes.update(nodes)
         realised_nodes: int = sum(1 for node in all_cycle_nodes if node.is_realised())
         return realised_nodes / len(all_cycle_nodes)
 
     @staticmethod
     def cycle_edge_realisation_rate(graph: VolumetricZxGraph, minimal: bool = False) -> float:
-        all_cycle_edges = set()
-        for cycle in CycleAnalyser.decompose_edges(graph, minimal = minimal):
-            all_cycle_edges.update(cycle)
+        all_cycle_edges: set[ZxEdge] = set()
+        for cycle in CycleAnalyser.decompose(graph, minimal = minimal):
+            _, edges = zip(*cycle)
+            all_cycle_edges.update(edges)
         realised_edges: int = sum(1 for edge in all_cycle_edges if edge.is_realised())
         return realised_edges / len(all_cycle_edges)
