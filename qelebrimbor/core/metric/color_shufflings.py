@@ -14,6 +14,7 @@
 
 from dataclasses import dataclass
 
+from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
@@ -25,8 +26,11 @@ class ColorShuffling:
     GENERATORS = {
         SpacetimeHelper.ORIGIN: 'xyz',
         SpacetimeHelper.XP: 'oyz',
+        SpacetimeHelper.XM: 'oyz',
         SpacetimeHelper.YP: 'xoz',
-        SpacetimeHelper.ZP: 'xyo'
+        SpacetimeHelper.YM: 'xoz',
+        SpacetimeHelper.ZP: 'xyo',
+        SpacetimeHelper.ZM: 'xyo'
     }
 
     start: str = 'xyz'
@@ -47,17 +51,25 @@ class ColorShuffling:
         self.final = final
 
     @staticmethod
-    def convert(move: Coordinates):
-        return ColorShuffling.GENERATORS[move]
+    def convert(move: Coordinates) -> ColorShuffling:
+        return ColorShuffling(ColorShuffling.GENERATORS[move])
 
     @staticmethod
     def identity():
         return ColorShuffling('xyz')
 
+    def hadamard(self) -> ColorShuffling:
+        if self.is_identity():
+            raise NotImplementedError(f"Hadamard not supported for identity shuffling.")
+
+        color_one, color_two = tuple(filter(lambda face : face != 'o', self.start))
+        color_permutation = str.maketrans({ color_one : color_two, color_two : color_one })
+        return ColorShuffling(self.start, self.final.translate(color_permutation))
+
     def is_identity(self):
         return self.start == 'xyz' and self.final == 'xyz'
 
-    def extend(self, other):
+    def extend(self, other) -> ColorShuffling:
         if self.is_identity():
             return other
         elif other.is_identity():
@@ -71,6 +83,24 @@ class ColorShuffling:
                 symbol = other.start[closing] if idx == opening else other.start[idx]
                 shuffled[ locations[symbol] ] = self.final[idx]
             return ColorShuffling(self.start, "".join(shuffled))
+
+    def compatible(self, source: CubeKind, target: CubeKind) -> bool:
+        encoded_source: dict[str, str] = dict()
+        for marker, face in zip(self.start, source.name):
+            encoded_source[marker] = face
+
+        encoded_target: dict[str, str] = dict()
+        for marker, face in zip(self.final, target.name):
+            encoded_target[marker] = face
+
+        for marker in 'xyz':
+            if marker in encoded_source and marker in encoded_target:
+                if encoded_source[marker] != encoded_target[marker]:
+                    return False
+            elif marker in encoded_source or marker in encoded_target:
+                raise Exception(f"Internal inconsistency {marker} {encoded_source} {encoded_target}.")
+
+        return True
 
     def __eq__(self, other):
         return self.start == other.start and self.final == other.final
@@ -107,7 +137,8 @@ if __name__ == '__main__':
     generated = ColorShuffling.generate()
     print(f"Elements [{len(generated)}]:")
     for element in generated:
-        print(f"> {element}")
+        if not element.is_identity():
+            print(f"> {element} =H=> {element.hadamard()}")
 
     cs = ColorShuffling('oyz', 'yzo')
     cs2 = cs.extend(cs)
