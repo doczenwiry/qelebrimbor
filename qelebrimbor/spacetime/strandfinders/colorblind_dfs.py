@@ -87,13 +87,9 @@ class StrandfinderColorblindDFS:
 
         node_type_nr = len(node_types)
 
-        # Maximal length of acceptable paths
-        if maximal_excess:
-            maximal_length = StrandfinderColorblindDFS.heuristic(start.position, final.position) + maximal_excess
-            extra = f"[max length={maximal_length}]"
-        else:
-            maximal_length = None
-            extra = ""
+        # Maximal length of acceptable strands
+        maximal_length = goal.length + maximal_excess if maximal_excess is not None else None
+        extra = f"[max length={maximal_length}]" if maximal_length is not None else ""
 
         # Initialize a tracer if tracing has been requested
         tracer: SpacetimeTracer | None = SpacetimeTracer(

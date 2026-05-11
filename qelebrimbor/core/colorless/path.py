@@ -139,7 +139,7 @@ class ColorlessPath:
         return path
 
     def __lt__(self, other):
-        return len(self.__positions).__lt__(len(other.__positions))
+        return self.length.__lt__(other.length)
 
     def __str__(self):
         return " -> ".join(map(str, self.__positions))

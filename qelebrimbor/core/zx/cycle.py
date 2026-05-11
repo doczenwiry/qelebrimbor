@@ -23,6 +23,10 @@ class ZxCycle:
         self.__edges: list[ZxEdge] = []
 
     @property
+    def anchor(self) -> ZxNode:
+        return self.__nodes[0]
+
+    @property
     def nodes(self) -> Iterator[ZxNode]:
         return iter(self.__nodes)
 

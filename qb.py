@@ -27,7 +27,7 @@ from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
 from qelebrimbor.formats.vzx import VZX
 
-from qelebrimbor.analysis.analyser import VolumetricZxGraphAnalyser
+from qelebrimbor.analysis.vzx_analyser import VolumetricZxGraphAnalyser
 
 from qelebrimbor.inflaters.rings import ZxGraphInflaterRings
 from qelebrimbor.inflaters.breadth_first_search import ZxGraphInflaterBFS
@@ -80,12 +80,12 @@ def main():
     if verbose:
         start = time()
         zx_cycles = VolumetricZxGraphAnalyser.analyse(
-            graph = vzx, minimal = False, plot = arguments.analysis_style == 'plot'
+            graph = vzx, minimal = True, plot = arguments.analysis_style == 'plot'
         )
         runtime = round(time() - start, 2)
         print(f"> Completed in {"{:.2f}".format(runtime)} seconds.")
     else:
-        zx_cycles = CycleAnalyser.decompose(graph = vzx, minimal = False)
+        zx_cycles = CycleAnalyser.decompose(graph = vzx, minimal = True)
 
     if arguments.analysis:
         return 0
