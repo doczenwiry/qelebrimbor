@@ -134,14 +134,14 @@ class CycleAnalyser:
         console.debug(f"Found final of chain : {chain.target}")
         console.debug(f"Chain identified : {chain_nodes} , {chain_edges}")
 
-        return chain # start, chain_nodes, chain_edges, final
+        return chain
 
     @staticmethod
     def identify_chains(*cycles: ZxCycle) -> list[ZxChain]:
         chains: list[ZxChain] = []
         for index in range(len(cycles)):
             cycle = cycles[index]
-            console.critical(f"Identifying chains in cycle : {cycle}")
+            console.info(f"Identifying chains in cycle : {cycle}")
             nodes, edges = zip(*cycle)
 
             if all(edge.is_realised() for edge in edges):
@@ -152,7 +152,7 @@ class CycleAnalyser:
                 console.debug(f"> Cycle {cycle} intersects current construct.")
                 chain: ZxChain | None = CycleAnalyser.breakdown(cycle)
                 if chain is not None:
-                    console.critical(f"> Chain found : {chain}")
+                    console.debug(f"> Chain found : {chain}")
                     chains.append( chain )
 
         chains = sorted(chains, key = lambda c: c.length)
