@@ -29,24 +29,24 @@ console = logging.getLogger(__name__)
 
 class PainterZxEdge:
     @staticmethod
-    def paintable(path: ColorlessPath, edge: ZxEdge) -> bool:
+    def paintable(colorless: ColorlessPath, edge: ZxEdge) -> bool:
         start: BgCube = edge.source.realising_cube
         final: BgCube = edge.target.realising_cube
 
         # The ColorlessPath is not compatible if its endpoints' positions don't match those of start and final.
-        if path.start != start.position or path.final != final.position:
+        if colorless.start != start.position or colorless.final != final.position:
             return False
 
         # The ColorlessPath is not compatible if it doesn't line up with a port in the reach of the CubeKind of start.
-        if not SpacetimeHelper.contains(start.kind.get_reach(), path.outgoing_port - start.position):
+        if not SpacetimeHelper.contains(start.kind.get_reach(), colorless.outgoing_port - start.position):
             return False
 
         # The ColorlessPath is not compatible if it doesn't line up with a port in the reach of the CubeKind of final.
-        if not SpacetimeHelper.contains(final.kind.get_reach(), path.incoming_port - final.position):
+        if not SpacetimeHelper.contains(final.kind.get_reach(), colorless.incoming_port - final.position):
             return False
 
         overall: ColorShuffling = reduce(
-            ColorShuffling.extend, map(ColorShuffling.convert, path.steps), ColorShuffling.identity())
+            ColorShuffling.extend, map(ColorShuffling.convert, colorless.steps), ColorShuffling.identity())
 
         if edge.type == EdgeType.HADAMARD:
             overall = overall.hadamard()

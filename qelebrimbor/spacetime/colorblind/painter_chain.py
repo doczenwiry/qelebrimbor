@@ -11,6 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+
 from functools import reduce
 
 from qelebrimbor.core.bg.attributes import CubeKind
@@ -30,30 +31,30 @@ console = logging.getLogger(__name__)
 
 class PainterZxChain:
     @staticmethod
-    def paintable(path: ColorlessPath, chain: ZxChain) -> bool:
+    def paintable(colorless: ColorlessPath, chain: ZxChain) -> bool:
         start: BgCube = chain.source.realising_cube
         final: BgCube = chain.target.realising_cube
 
         nodes = list(chain.nodes)
         edges = list(chain.edges)
 
-        if path.start != start.position or path.final != final.position:
+        if colorless.start != start.position or colorless.final != final.position:
             return False
 
         # The ColorlessPath is not paintable if it doesn't line up with a port in the reach of the CubeKind of start.
-        if not SpacetimeHelper.contains(start.kind.get_reach(), path.outgoing_port - start.position):
+        if not SpacetimeHelper.contains(start.kind.get_reach(), colorless.outgoing_port - start.position):
             return False
 
         # The ColorlessPath is not paintable if it doesn't line up with a port in the reach of the CubeKind of final.
-        if not SpacetimeHelper.contains(final.kind.get_reach(), path.incoming_port - final.position):
+        if not SpacetimeHelper.contains(final.kind.get_reach(), colorless.incoming_port - final.position):
             return False
 
         # The ColorlessPath is not paintable if it doesn't provide at least one BgCube per ZxNode
-        if path.length < len(nodes):
+        if colorless.length < len(nodes):
             return False
 
         try:
-            PainterZxChain.paint(path, chain)
+            PainterZxChain.paint(colorless, chain)
         except ValueError as ve:
             return False
 
