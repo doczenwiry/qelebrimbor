@@ -84,7 +84,7 @@ class PathfinderDFS:
             maximal_length = None
             extra = ""
 
-        console.info(f"Searching for path from {start} to {final} {extra}")
+        console.info(f"Searching for {goal.type} path from {start} to {final} {extra}")
 
         tracer: SpacetimeTracer[BgCube] | None = SpacetimeTracer(
             pruning = self.__branch_and_bound, reporting = self.__tracing
@@ -130,7 +130,7 @@ class PathfinderDFS:
                     optimum = completed_path
 
             constellation = BlockGraphHelper.get_candidate_constellation(
-                origin = terminal, node_types = PathfinderDFS.__INTERCONNECTING_TYPES
+                origin = terminal, node_types = PathfinderDFS.__INTERCONNECTING_TYPES, pipe_type = next_pipe_type
             )
 
             for neighbor in constellation:
@@ -153,7 +153,7 @@ class PathfinderDFS:
                     tracer.add_node(neighbor)
                     tracer.add_edge(terminal, neighbor)
 
-                extended = current.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
+                extended = current.extend(cube = neighbor, pipe_type = next_pipe_type)
 
                 if neighbor_point not in minimal_paths or extended.length < minimal_paths[neighbor_point].length:
                     # Filtering out the neighbor from unrelaxed

@@ -14,6 +14,10 @@
 
 from functools import total_ordering
 
+import itertools
+from typing import Iterator
+
+from qelebrimbor.core.common import Port
 from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.zx.attributes import EdgeType
 from qelebrimbor.core.coordinates import Coordinates
@@ -29,26 +33,36 @@ type Length = int
 @total_ordering
 class Path:
     def __init__(self, start: BgCube):
-        self.start: BgCube = start
-        self.final: BgCube = start
-        self.extra_cubes: list[BgCube] = []
-        self.pipes_types: list[EdgeType] = []
+        self.cubes: list[BgCube] = [ start ]
+        self.pipes: list[EdgeType] = []
         self.occupied: set[Coordinates] = { start.position }
 
     @property
-    def start_port(self):
-        return self.final.position if len(self.extra_cubes) == 0 else self.extra_cubes[0].position
+    def start(self) -> BgCube:
+        return self.cubes[0]
 
     @property
-    def final_port(self):
-        return self.start.position if len(self.extra_cubes) == 0 else self.extra_cubes[-1].position
+    def final(self) -> BgCube:
+        return self.cubes[-1]
 
-    def overhead(self):
-        return self.length - self.start.position.get_manhattan_distance(self.final.position)
+    @property
+    def outgoing(self) -> Port:
+        return self.final.position if self.length == 0 else self.cubes[-2].position
+
+    @property
+    def incoming(self) -> Port:
+        return self.start.position if self.length == 0 else self.cubes[1].position
+
+    @property
+    def extras(self) -> Iterator[BgCube]:
+        return itertools.islice(self.cubes, 1, self.length)
+
+    def excess(self):
+        return self.length - self.distance
 
     @property
     def length(self) -> int:
-        return len(self.extra_cubes) + 1 if self.start != self.final else 0
+        return len(self.cubes) - 1
 
     @property
     def distance(self) -> int:
@@ -57,25 +71,21 @@ class Path:
     def occupies(self, position: Coordinates):
         return position in self.occupied
 
+    def append(self, cube: BgCube, pipe: EdgeType):
+        if not BlockGraphHelper.connectable(self.final, cube, pipe):
+            raise Exception(f"Attempting to extend Path with incompatible pipe/cube [path:{self} -{pipe.name[0]}- {cube}].")
+
+        self.cubes.append(cube)
+        self.pipes.append(pipe)
+        self.occupied.add(cube.position)
+
     def extend(self, cube: BgCube, pipe_type: EdgeType):
-        if not BlockGraphHelper.connectable(self.final, cube, pipe_type):
-            raise Exception(f"Attempting to extend Path with incompatible pipe/cube [path:{self} -{pipe_type.name[0]}- {cube}].")
-
-        console.debug(f"Extending path : {self} -{pipe_type.name[0]}- {cube}")
-
         extended = Path(self.start)
-        extended.extra_cubes.extend(self.extra_cubes)
-
-        if self.start != self.final:
-            extended.extra_cubes.append(self.final)
-
-        extended.pipes_types.extend(self.pipes_types)
-        extended.pipes_types.append(pipe_type)
-
-        extended.final = cube
-
+        extended.cubes.extend(self.cubes[1:])
+        extended.pipes.extend(self.pipes)
         extended.occupied.update(self.occupied)
-        extended.occupied.add(cube.position)
+
+        extended.append(cube, pipe_type)
 
         return extended
 
@@ -83,25 +93,9 @@ class Path:
         return self.length.__lt__(other.length)
 
     def __str__(self):
-        content = f"{self.start}"
-        if self.start == self.final:
-            content += " {self-loop}"
-        else:
-            if len(self.extra_cubes) != 0:
-                content += f" -> {self.extra_cubes}"
-            content += f" -> {self.final}"
-        return content
-
-    def string(self):
-        content = f"{self.start} --{repr(self.pipes_types[0])}-- "
-
-        for index in range(len(self.extra_cubes)):
-            cube = self.extra_cubes[index]
-            pipe = self.pipes_types[index+1]
-            content += f"{str(cube)} --{repr(pipe)}-- "
-
-        content += f"{self.final}"
-
+        content = f"{self.start} "
+        for index in range(1, len(self.cubes)):
+            content += f" --{repr(self.pipes[index-1])}-- {self.cubes[index]}"
         return content
 
 

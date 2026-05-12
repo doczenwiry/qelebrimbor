@@ -161,7 +161,7 @@ def check_consistency(kinds: Iterable[CubeKind], faces: Iterable[Octant], manhat
                 path = pathfinder.find_optimum(source, target, EdgeType.IDENTITY)
                 if path is None:
                     raise Exception(f"No path found between {source} and {target}")
-                explored_overhead = path.overhead()
+                explored_overhead = path.excess()
                 statistics[explored_overhead] += 1
                 explored_overheads[target_position] = explored_overhead
                 computed_overheads[target_position] = ManhattanCalculator.minimal_manhattan_excess(source, target)

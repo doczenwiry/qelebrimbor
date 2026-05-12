@@ -15,11 +15,11 @@
 import sys
 from time import time
 
+import qelebrimbor.core.zx.attributes
 from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.zx.attributes import NodeType, EdgeType
 from qelebrimbor.core.components import BgCube
 
-from qelebrimbor.helpers.calculator import ManhattanCalculator
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 from qelebrimbor.spacetime.pathfinders.depth_first_search import PathfinderDFS
@@ -32,12 +32,12 @@ from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 
 import logging
-logging.basicConfig(level=logging.INFO)
-logging.getLogger("qelebrimbor.core.colorless.path").setLevel(logging.CRITICAL)
-logging.getLogger("matplotlib").setLevel(logging.CRITICAL)
+logging.basicConfig(level=logging.CRITICAL)
 
 SOURCE: int = 0
 TARGET: int = 1
+
+qelebrimbor.core.zx.attributes.ZX_COLORING = True
 
 if __name__ == "__main__":
     nodes = [(SOURCE, NodeType.X), (TARGET, NodeType.Z)]
@@ -69,6 +69,8 @@ if __name__ == "__main__":
 
         if path is None:
             continue
+
+        print(f"Optimal path found : {path}")
 
         vzx.realise_zx_edge(SOURCE, TARGET, path)
 

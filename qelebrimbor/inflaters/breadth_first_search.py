@@ -136,8 +136,8 @@ class ZxGraphInflaterBFS:
         self.__connectivity.occlude(path.final.position)
 
         self.__connectivity.connect(
-            source = (source.realising_cube, path.start_port),
-            target = (target.realising_cube, path.final_port)
+            source = (source.realising_cube, path.outgoing),
+            target = (target.realising_cube, path.incoming)
         )
 
         return True
@@ -161,8 +161,8 @@ class ZxGraphInflaterBFS:
             self.__connectivity.occlude(position)
 
         self.__connectivity.connect(
-            source = (source.realising_cube, path.start_port),
-            target = (target.realising_cube, path.final_port)
+            source = (source.realising_cube, path.outgoing),
+            target = (target.realising_cube, path.incoming)
         )
 
         return True
