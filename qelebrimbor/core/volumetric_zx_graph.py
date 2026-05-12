@@ -317,23 +317,23 @@ class VolumetricZxGraph(nx.Graph):
 
         self.realise_zx_edge(source = terminal.id, target = anchor.id, proposal = path)
 
+    # TODO: assumption is that len(proposal.extra_cubes) >= len(nodes)
     def realise_zx_chain(self, chain: ZxChain, proposal: Strand):
-        # TODO: assumption is that len(proposal.extra_cubes) >= len(nodes)
-
         # Realise the successive nodes of the chain
         preceding_node: ZxNode = chain.source
         matching_index: int = 0 # The index of the extra cube corresponding to the preceding_node
+        extra_cubes = list(proposal.extras)
         for following_node in chain.nodes:
             path = Path(start = preceding_node.realising_cube)
 
-            extra_cube = proposal.extra_cubes[matching_index]
-            while extra_cube.realised_node != following_node and matching_index < len(proposal.extra_cubes)-1:
-                path = path.extend(cube = extra_cube, pipe_type = proposal.pipes_types[matching_index])
+            extra_cube = extra_cubes[matching_index]
+            while extra_cube.realised_node != following_node and matching_index < len(extra_cubes)-1:
+                path = path.extend(cube = extra_cube, pipe_type = proposal.pipes[matching_index])
                 matching_index += 1
-                extra_cube = proposal.extra_cubes[matching_index]
+                extra_cube = extra_cubes[matching_index]
 
             # Extend with the final cube/pipe matching the following_node
-            path = path.extend(cube = extra_cube, pipe_type = proposal.pipes_types[matching_index])
+            path = path.extend(cube = extra_cube, pipe_type = proposal.pipes[matching_index])
             matching_index += 1
 
             cube_id = self.realise_zx_node(following_node, extra_cube)
@@ -344,12 +344,12 @@ class VolumetricZxGraph(nx.Graph):
         following_node: ZxNode = chain.target
         path = Path(start = preceding_node.realising_cube)
 
-        while matching_index < len(proposal.extra_cubes):
-            extra_cube = proposal.extra_cubes[matching_index]
-            path = path.extend(cube = extra_cube, pipe_type = proposal.pipes_types[matching_index])
+        while matching_index < len(extra_cubes):
+            extra_cube = extra_cubes[matching_index]
+            path = path.extend(cube = extra_cube, pipe_type = proposal.pipes[matching_index])
             matching_index += 1
 
-        path = path.extend(cube = following_node.realising_cube, pipe_type = proposal.pipes_types[-1])
+        path = path.extend(cube = following_node.realising_cube, pipe_type = proposal.pipes[-1])
         self.realise_zx_edge(source = preceding_node.id, target = following_node.id, proposal = path)
 
     def place_cube(self, cube: BgCube) -> CubeId:

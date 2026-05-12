@@ -127,7 +127,7 @@ class PainterZxChain:
 
                 cube_index += 1
 
-                strand.append(cube=cube, pipe_type=current_edge_type)
+                strand.append(cube = cube, pipe = current_edge_type)
 
                 last_kind = selected
                 preceding_shuffling = preceding_shuffling.extend(successive_shuffling[cube_index - 1])
@@ -163,11 +163,12 @@ class PainterZxChain:
             cube = BgCube(kind=selected, position=assigned)
             cube_index += 1
 
-            strand.append(cube=cube, pipe_type = current_edge_type)
+            strand.append(cube=cube, pipe = current_edge_type)
 
             preceding_shuffling = preceding_shuffling.extend(successive_shuffling[cube_index - 1])
 
-        strand.append(cube = final, pipe_type = EdgeType.IDENTITY)
+        # TODO: investigate the cases where pipe ought to be edges[..].type.
+        strand.append(cube = final, pipe = EdgeType.IDENTITY)
         console.info(f"Colored Strand : {strand}")
 
         return strand

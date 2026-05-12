@@ -61,6 +61,10 @@ if __name__ == "__main__":
         # strandfinder = StrandfinderDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
         strandfinder = StrandfinderColorblindDFS(vzx, branch_and_bound = False, tracing = SpacetimeTracingReport.FINAL)
 
+        if strandfinder.__class__ == StrandfinderBFS and md > 5:
+            print(f"StrandfinderBFS is too slow with md > 5. Not even trying {md}.")
+            continue
+
         preceding: ZxNode = vzx.get_zx_node(0)
         chain = ZxChain(source = vzx.get_zx_node(0))
         for index in range(1, len(nodes)):
