@@ -33,7 +33,7 @@ from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 
 import logging
 logging.basicConfig(level=logging.INFO)
-logging.getLogger("qelebrimbor.core.colorless_path").setLevel(logging.CRITICAL)
+logging.getLogger("qelebrimbor.core.colorless.path").setLevel(logging.CRITICAL)
 logging.getLogger("matplotlib").setLevel(logging.CRITICAL)
 
 SOURCE: int = 0
@@ -46,10 +46,6 @@ if __name__ == "__main__":
     layers = {SOURCE: 0, TARGET: 1}
 
     for md in [1, 5, 10, 25, 100, 200]:
-        print(f"Benchmarking pathfinder with distance {md}.")
-
-        sys.stdout.flush()
-
         # Prepare the VolumetricZxGraph.
         vzx = VolumetricZxGraph(nodes, edges, qubits, layers)
         source = vzx.get_zx_node(SOURCE)
@@ -61,6 +57,9 @@ if __name__ == "__main__":
         pathfinder = PathfinderDFS(vzx, branch_and_bound = False, tracing = SpacetimeTracingReport.FINAL)
         # pathfinder = PathfinderColorblindDFS(vzx, tracing = SpacetimeTracingReport.FINAL)
         # pathfinder = PathfinderDijkstra(vzx, tracing = SpacetimeTracingReport.FINAL)
+
+        print(f"Benchmarking {pathfinder.__class__.__name__} with distance {md}.")
+        sys.stdout.flush()
 
         # Perform the pathfinding for the edge between SOURCE and TARGET
         start_time = time()

@@ -52,6 +52,9 @@ class ColorShuffling:
 
     @staticmethod
     def convert(move: Coordinates) -> ColorShuffling:
+        if SpacetimeHelper.ORIGIN.get_manhattan_distance(move) != 1:
+            raise ValueError(f"ColorShuffling conversion only works with unit steps in spacetime. [move={move}]")
+
         return ColorShuffling(ColorShuffling.GENERATORS[move])
 
     @staticmethod

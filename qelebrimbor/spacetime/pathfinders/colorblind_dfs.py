@@ -20,6 +20,7 @@ from qelebrimbor.core.colorless.path import ColorlessPath
 from qelebrimbor.helpers.calculator import ManhattanCalculator
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
+from qelebrimbor.spacetime.colorblind.painter_edge import PainterZxEdge
 
 from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
 from qelebrimbor.spacetime.connectivity.default import DefaultConnectivityTracker
@@ -114,8 +115,8 @@ class PathfinderColorblindDFS:
                 # Ignore the incoming path if it doesn't line up with a port of the final cube.
                 if SpacetimeHelper.contains(final.kind.get_reach(), final.position - terminal):
                     completed: ColorlessPath = current.extend(final.position)
-                    console.debug(f"Candidate : {completed} {completed.compatible(goal)}")
-                    if completed.compatible(goal):
+                    console.debug(f"Candidate : {completed} {PainterZxEdge.paintable(completed, goal)}")
+                    if PainterZxEdge.paintable(completed, goal):
                         # Tracing exploration
                         if tracer:
                             tracer.add_node(final.position, label = str(final.position))
@@ -123,7 +124,7 @@ class PathfinderColorblindDFS:
 
                         # Update the optimum only if it improves our current knowledge
                         if optimum is None or completed.length < optimum.length:
-                            optimum = completed.painted(goal)
+                            optimum = PainterZxEdge.paint(completed, goal)
 
             # Restrict the outgoing paths to lie in the reach of the CubeKind of the start.
             constellation = SpacetimeHelper.get_constellation(
