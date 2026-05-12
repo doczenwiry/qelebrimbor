@@ -36,15 +36,19 @@ class Strand:
         self.occupied: set[Coordinates] = { start.position }
 
     @property
-    def start_port(self):
+    def outgoing_port(self):
         return self.final.position if len(self.extra_cubes) == 0 else self.extra_cubes[0].position
 
     @property
-    def final_port(self):
+    def incoming_port(self):
         return self.start.position if len(self.extra_cubes) == 0 else self.extra_cubes[-1].position
 
     def overhead(self):
-        return self.length - self.start.position.get_manhattan_distance(self.final.position)
+        return self.length - self.distance
+
+    @property
+    def distance(self):
+        return self.start.position.get_manhattan_distance(self.final.position)
 
     @property
     def length(self) -> int:
@@ -53,25 +57,26 @@ class Strand:
     def occupies(self, position: Coordinates):
         return position in self.occupied
 
-    def extend(self, cube: BgCube, pipe_type: EdgeType):
+    def append(self, cube: BgCube, pipe_type: EdgeType):
         if not BlockGraphHelper.connectable(self.final, cube, pipe_type):
             raise ValueError(f"Attempting to extend Strand with incompatible pipe/cube [strand:{self}  with -{pipe_type.name[0]}- {cube}].")
 
+        if self.start != self.final:
+            self.extra_cubes.append(self.final)
+
+        self.pipes_types.append(pipe_type)
+        self.final = cube
+        self.occupied.add(cube.position)
+
+    def extend(self, cube: BgCube, pipe_type: EdgeType) -> Strand:
         console.debug(f"Extending strand : {self} -{pipe_type.name[0]}- {cube}")
 
         extended = Strand(self.start)
         extended.extra_cubes.extend(self.extra_cubes)
-
-        if self.start != self.final:
-            extended.extra_cubes.append(self.final)
-
         extended.pipes_types.extend(self.pipes_types)
-        extended.pipes_types.append(pipe_type)
-
-        extended.final = cube
-
         extended.occupied.update(self.occupied)
-        extended.occupied.add(cube.position)
+
+        extended.append(cube, pipe_type)
 
         return extended
 
@@ -79,16 +84,6 @@ class Strand:
         return self.length.__lt__(other.length)
 
     def __str__(self):
-        content = f"{self.start}"
-        if self.start == self.final:
-            content += " {self-loop}"
-        else:
-            if len(self.extra_cubes) != 0:
-                content += f" -> {self.extra_cubes}"
-            content += f" -> {self.final}"
-        return content
-
-    def string(self):
         content = f"{self.start} --{repr(self.pipes_types[0])}-- "
 
         for index in range(len(self.extra_cubes)):
@@ -99,7 +94,6 @@ class Strand:
         content += f"{self.final}"
 
         return content
-
 
     def __repr__(self):
         return str(self)

@@ -18,10 +18,11 @@ from qelebrimbor.core.bg.strand import Strand
 from qelebrimbor.core.zx.chain import ZxChain
 from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.core.coordinates import Coordinates
-from qelebrimbor.core.colorless.strand import ColorlessStrand
+from qelebrimbor.core.colorless.path import ColorlessPath
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
+from qelebrimbor.spacetime.colorblind.painter_chain import PainterZxChain
 
 from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
 from qelebrimbor.spacetime.connectivity.default import DefaultConnectivityTracker
@@ -52,9 +53,9 @@ class StrandfinderColorblindDFS:
         self.__tracing = tracing
 
     @staticmethod
-    def initial(chain: ZxChain) -> ColorlessStrand:
+    def initial(chain: ZxChain) -> ColorlessPath:
         source, _, _, _ = chain
-        return ColorlessStrand(start = source.realising_cube.position)
+        return ColorlessPath(start = source.realising_cube.position)
 
     @staticmethod
     def heuristic(source: Coordinates, target: Coordinates) -> int:
@@ -100,9 +101,9 @@ class StrandfinderColorblindDFS:
 
         # Main variables of the DFS
         optimum: Strand | None = None
-        unrelaxed: list[tuple[int, ColorlessStrand]] = []
+        unrelaxed: list[tuple[int, ColorlessPath]] = []
 
-        initial = ColorlessStrand(start = start.position)
+        initial = ColorlessPath(start = start.position)
         heapq.heappush(unrelaxed, (start.position.get_manhattan_distance(final.position), initial))
 
         console.info(f"Searching for strand for {start} -> {nodes} -> {final} {extra}")
@@ -111,7 +112,7 @@ class StrandfinderColorblindDFS:
             # Restore the heap invariant
             heapq.heapify(unrelaxed)
             remaining_distance: int
-            current: ColorlessStrand
+            current: ColorlessPath
             remaining_distance, current = heapq.heappop(unrelaxed)
 
             terminal = current.final
@@ -132,15 +133,15 @@ class StrandfinderColorblindDFS:
             console.debug(f"{'>' * (current.length + 1)} Current : {current}")
 
             # Check whether the goal has been accomplished
-            if terminal.get_manhattan_distance(final.position) == 1 and current.length > node_type_nr:
+            if terminal.get_manhattan_distance(final.position) == 1 and current.length >= node_type_nr:
                 # Ignore the incoming path if it doesn't line up with a port of the final cube.
                 if not SpacetimeHelper.contains(final.kind.get_reach(), final.position - terminal):
                     continue
 
-                candidate: ColorlessStrand = current.extend(final.position)
+                candidate: ColorlessPath = current.extend(final.position)
                 console.info(f"Candidate ColorlessStrand : {candidate}")
 
-                if candidate.paintable(goal):
+                if PainterZxChain.paintable(candidate, goal):
                     # Tracing exploration
                     if tracer:
                         tracer.add_node(final, label = str(final))
@@ -148,7 +149,7 @@ class StrandfinderColorblindDFS:
 
                     # Update the optimum only if it improves our current knowledge
                     if optimum is None or candidate.length < optimum.length:
-                        optimum = candidate.painted(goal)
+                        optimum = PainterZxChain.paint(candidate, goal)
 
             # Restrict the outgoing paths to lie in the reach of the CubeKind of the start.
             constellation = SpacetimeHelper.get_constellation(

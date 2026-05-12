@@ -11,10 +11,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+
 from typing import cast
-
 import networkx as nx
-
 import benchmark
 
 from qelebrimbor.formats.pyzx import PYZX
@@ -24,7 +23,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
-    print(f"Benchmarking dataset {benchmark.DATASET}")
+    print(f"Analysing features of dataset {benchmark.DATASET}")
 
     if not benchmark.dataset_detected():
         print(f"Generating dataset into {benchmark.DATASET_DIRECTORY}")
@@ -40,7 +39,7 @@ if __name__ == "__main__":
 
         largest_component = len(max(nx.connected_components(cast(nx.Graph, vzx)), key = len))
         if CycleAnalyser.has_cycles(vzx):
-            largest_cycle = len(max(CycleAnalyser.decompose(vzx, minimal = True)))
+            largest_cycle = len(max(CycleAnalyser.decompose(vzx, minimal = True), key = lambda c : c.length))
         else:
             largest_cycle = "n/a"
 

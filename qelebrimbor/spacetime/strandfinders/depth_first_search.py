@@ -131,7 +131,7 @@ class StrandfinderDFS:
             console.debug(f"Current [{terminal}] : {current_path}")
 
             # Check whether the goal has been accomplished
-            if current_path.length > node_type_nr:
+            if current_path.length >= node_type_nr:
                 final_pipe_type = edge_types[-1] if edge_types else EdgeType.IDENTITY
                 if BlockGraphHelper.connectable(terminal, final, final_pipe_type):
                     completed_path = current_path.extend(cube = final, pipe_type = final_pipe_type)

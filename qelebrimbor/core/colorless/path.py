@@ -18,6 +18,9 @@ from typing import Iterator
 from qelebrimbor.core.coordinates import Coordinates
 
 import logging
+
+from qelebrimbor.helpers.spacetime import Step, SpacetimeHelper
+
 console = logging.getLogger(__name__)
 
 
@@ -84,5 +87,18 @@ class ColorlessPath:
     def __lt__(self, other):
         return self.length.__lt__(other.length)
 
+    __STEP_LABELS = {
+        SpacetimeHelper.XP : '+X', SpacetimeHelper.XM : '-X',
+        SpacetimeHelper.YP : '+Y', SpacetimeHelper.YM : '-Y',
+        SpacetimeHelper.ZP : '+Z', SpacetimeHelper.ZM : '-Z'
+    }
     def __str__(self):
-        return " -> ".join(map(str, self.__positions))
+        content  = f"{self.start}"
+        for index in range(1, len(self.__positions)):
+            step = self.__positions[index] - self.__positions[index - 1]
+            content += f" -> "
+            if index < len(self.__positions) - 1:
+                content += f"{ColorlessPath.__STEP_LABELS[step]}"
+            else:
+                content += f"{self.__positions[index]}"
+        return content

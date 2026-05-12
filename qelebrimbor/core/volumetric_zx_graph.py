@@ -327,7 +327,7 @@ class VolumetricZxGraph(nx.Graph):
             path = Path(start = preceding_node.realising_cube)
 
             extra_cube = proposal.extra_cubes[matching_index]
-            while extra_cube.realised_node != following_node:
+            while extra_cube.realised_node != following_node and matching_index < len(proposal.extra_cubes)-1:
                 path = path.extend(cube = extra_cube, pipe_type = proposal.pipes_types[matching_index])
                 matching_index += 1
                 extra_cube = proposal.extra_cubes[matching_index]

@@ -12,17 +12,19 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import itertools
 from time import time
 
+from qelebrimbor.core.zx import attributes as zx_attributes
+
+from qelebrimbor.core.zx.chain import ZxChain
 from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.zx.attributes import NodeType, EdgeType
 from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.coordinates import Coordinates
-from qelebrimbor.core.zx.chain import ZxChain
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
+from qelebrimbor.spacetime.strandfinders.breadth_first_search import StrandfinderBFS
 from qelebrimbor.spacetime.strandfinders.depth_first_search import StrandfinderDFS
 from qelebrimbor.spacetime.strandfinders.colorblind_dfs import StrandfinderColorblindDFS
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
@@ -35,6 +37,7 @@ from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 import logging
 logging.basicConfig(level=logging.CRITICAL)
+logging.getLogger("qelebrimbor.spacetime.colorblind.painter_chain").setLevel(logging.DEBUG)
 
 # The distance between the SOURCE and TARGET in spacetime
 DISTANCE = 3
@@ -49,7 +52,14 @@ ENDPOINTS: dict[str, BgCube] = {
     'target' : BgCube(CubeKind.XXZ, DISTANCE * SpacetimeHelper.XM)
 }
 
-def __benchmark_restrictions(node_type_restrictions: list[NodeType]):
+zx_attributes.ZX_COLORING = True
+
+if __name__ == "__main__":
+    node_type_restrictions = [
+        # NodeType.Z, NodeType.X,
+        NodeType.Z, NodeType.X
+    ]
+
     nodes = [ (0, ENDPOINTS['source'].kind.get_type()) ]
     for index in range(len(node_type_restrictions)):
         nodes.append( (index+1, node_type_restrictions[index]) )
@@ -65,8 +75,9 @@ def __benchmark_restrictions(node_type_restrictions: list[NodeType]):
     vzx.realise_zx_node(node = source, cube = ENDPOINTS['source'])
     vzx.realise_zx_node(node = target, cube = ENDPOINTS['target'])
 
+    # strandfinder = StrandfinderBFS(vzx,tracing = SpacetimeTracingReport.FINAL)
     # strandfinder = StrandfinderDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
-    strandfinder = StrandfinderColorblindDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
+    strandfinder = StrandfinderColorblindDFS(vzx, branch_and_bound = False) #, tracing = SpacetimeTracingReport.FINAL)
 
     chain = ZxChain(source = vzx.get_zx_node(nodes[0][0]))
     for node_id, _ in nodes[1:]:
@@ -75,50 +86,20 @@ def __benchmark_restrictions(node_type_restrictions: list[NodeType]):
     print(f"Chain : {chain}")
 
     start = time()
-    strand = strandfinder.find_optimum(chain, maximal_excess = 12)
+    strand = strandfinder.find_optimum(chain, maximal_excess = 6)
     final = time()
     runtime = round(final - start, 2)
 
-    if strand is None:
+    if strand is not None:
+        print(f"Strand : {strand}")
+
+        vzx.realise_zx_chain(chain, strand)
+
+        volume = strand.length
+        excess = strand.length - chain.length
+
+        label = f"{strandfinder.__class__.__name__} : chain length = {chain.length}, strand length = {strand.length}, excess volume = +{excess}, time={runtime}s"
+        viewer = VolumetricZxGraphViewer(graph = vzx, label = label, layout = PlanarLayout(vzx, scale = 2))
+        viewer.display()
+    else:
         print(f"> Failed to find optimal chain.")
-        return -1, -1, chain
-
-    vzx.realise_zx_chain(chain, strand)
-
-    length = strand.length
-    distance = strand.start.position.get_manhattan_distance(strand.final.position)
-
-    label = f"number of restrictions = {len(node_type_restrictions)}, manhattan length = {length}, excess volume = +{length - distance - len(node_type_restrictions)}, time={runtime}s"
-    viewer = VolumetricZxGraphViewer(graph = vzx, label = label, layout = PlanarLayout(vzx, scale = 2))
-    viewer.display()
-
-    return length, runtime, chain
-
-if __name__ == "__main__":
-    all_possible_permutations = list(
-        itertools.chain.from_iterable(
-            itertools.permutations(combination)
-            for combination in itertools.combinations_with_replacement(RESTRICTIONS_CHOICES, RESTRICTIONS_COUNT)
-        )
-    )
-
-    _, _ ,_ = __benchmark_restrictions([
-        NodeType.Z, NodeType.X,
-        NodeType.Z, NodeType.X,
-        NodeType.Z, NodeType.X,
-        NodeType.Z, NodeType.X
-    ])
-
-    # inconsistencies_with_calculator = 0
-    #
-    # print(f"Benchmarking chainfinder for distance {DISTANCE} [restrictions:{RESTRICTIONS_COUNT}, permutations:{len(all_possible_permutations)}].")
-    # for node_type_restrictions in all_possible_permutations:
-    #     md, ml, runtime, chain = __benchmark_restrictions(node_type_restrictions)
-    #
-    #     mce = ManhattanCalculator.minimal_manhattan_excess(chain.start, chain.final)
-    #     print(f"> Manhattan distance = {md}, Manhattan length = {ml}, Excess volume : +{ml - md} [MC:{mce}] ({runtime} seconds)")
-    #
-    #     if mce != ml - md:
-    #         inconsistencies_with_calculator += 1
-    #
-    # print(f"Inconsistencies w.r.t. minimal Manhattan Calculator : {inconsistencies_with_calculator}")
