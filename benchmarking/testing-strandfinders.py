@@ -14,13 +14,14 @@
 
 from time import time
 
-from qelebrimbor.core.zx import attributes as zx_attributes
+import itertools
+
+import qelebrimbor.core.zx.attributes
 
 from qelebrimbor.core.zx.chain import ZxChain
 from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.zx.attributes import NodeType, EdgeType
-from qelebrimbor.core.components import BgCube
-from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.components import BgCube, ZxNode
 
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
@@ -29,77 +30,63 @@ from qelebrimbor.spacetime.strandfinders.depth_first_search import StrandfinderD
 from qelebrimbor.spacetime.strandfinders.colorblind_dfs import StrandfinderColorblindDFS
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 
-from qelebrimbor.vedo.zx_layout.planar import PlanarLayout
-
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 import logging
 logging.basicConfig(level=logging.CRITICAL)
-logging.getLogger("qelebrimbor.spacetime.colorblind.painter_chain").setLevel(logging.DEBUG)
+logging.getLogger("qelebrimbor.spacetime.strandfinders").setLevel(logging.INFO)
 
-# The distance between the SOURCE and TARGET in spacetime
-DISTANCE = 3
-# The number of restrictions to consider along the chain requested
-RESTRICTIONS_COUNT = 2
-# The choices of restrictions among which to pick for the chain requested
-RESTRICTIONS_CHOICES = [ NodeType.X, NodeType.Z ]
-
-# Endpoints considered
-ENDPOINTS: dict[str, BgCube] = {
-    'source' : BgCube(CubeKind.ZXZ, Coordinates(0, 0, 0)),
-    'target' : BgCube(CubeKind.XXZ, DISTANCE * SpacetimeHelper.XM)
-}
-
-zx_attributes.ZX_COLORING = True
+qelebrimbor.core.zx.attributes.ZX_COLORING = True
 
 if __name__ == "__main__":
-    node_type_restrictions = [
-        # NodeType.Z, NodeType.X,
-        NodeType.Z, NodeType.X
-    ]
+    nodes = list(zip(itertools.count(0, 1),
+        [ NodeType.X, NodeType.Z, NodeType.X, NodeType.Z ]
+    ))
+    edges = [ (index, index+1, EdgeType.IDENTITY) for index in range(len(nodes)-1) ]
+    qubits = {node_id : 0 for node_id, _ in nodes}
+    layers = {node_id : node_id for node_id, _ in nodes}
 
-    nodes = [ (0, ENDPOINTS['source'].kind.get_type()) ]
-    for index in range(len(node_type_restrictions)):
-        nodes.append( (index+1, node_type_restrictions[index]) )
-    nodes.append( (len(node_type_restrictions) + 1, ENDPOINTS['target'].kind.get_type()) )
+    for md in [1, 5, 10, 25, 100]:
+        vzx = VolumetricZxGraph(nodes, edges, qubits, layers)
 
-    edges = [ (index, index+1, EdgeType.IDENTITY) for index in range(len(node_type_restrictions) + 1) ]
+        source = vzx.get_zx_node(0)
+        target = vzx.get_zx_node(len(nodes) - 1)
 
-    vzx = VolumetricZxGraph(nodes, edges)
+        vzx.realise_zx_node(node=source, cube=BgCube(CubeKind.XZZ, SpacetimeHelper.ORIGIN))
+        vzx.realise_zx_node(node=target, cube=BgCube(CubeKind.ZXX, md * SpacetimeHelper.XM))
 
-    source = vzx.get_zx_node(0)
-    target = vzx.get_zx_node(len(node_type_restrictions) + 1)
+        # strandfinder = StrandfinderBFS(vzx,tracing = SpacetimeTracingReport.FINAL)
+        # strandfinder = StrandfinderDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
+        strandfinder = StrandfinderColorblindDFS(vzx, branch_and_bound = False, tracing = SpacetimeTracingReport.FINAL)
 
-    vzx.realise_zx_node(node = source, cube = ENDPOINTS['source'])
-    vzx.realise_zx_node(node = target, cube = ENDPOINTS['target'])
+        preceding: ZxNode = vzx.get_zx_node(0)
+        chain = ZxChain(source = vzx.get_zx_node(0))
+        for index in range(1, len(nodes)):
+            following = vzx.get_zx_node(index)
+            chain.append(vzx.get_zx_node(following.id), vzx.get_zx_edge(preceding.id, following.id))
+            preceding = following
 
-    # strandfinder = StrandfinderBFS(vzx,tracing = SpacetimeTracingReport.FINAL)
-    # strandfinder = StrandfinderDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
-    strandfinder = StrandfinderColorblindDFS(vzx, branch_and_bound = False) #, tracing = SpacetimeTracingReport.FINAL)
+        print(f"Chain : {chain}")
 
-    chain = ZxChain(source = vzx.get_zx_node(nodes[0][0]))
-    for node_id, _ in nodes[1:]:
-        chain.append(vzx.get_zx_node(node_id), vzx.get_zx_edge(node_id - 1, node_id))
+        start = time()
+        strand = strandfinder.find_optimum(chain, maximal_excess = 6)
+        final = time()
+        runtime = round(final - start, 2)
 
-    print(f"Chain : {chain}")
+        if strand is not None:
+            print(f"Strand : {strand}")
 
-    start = time()
-    strand = strandfinder.find_optimum(chain, maximal_excess = 6)
-    final = time()
-    runtime = round(final - start, 2)
+            vzx.realise_zx_chain(chain, strand)
 
-    if strand is not None:
-        print(f"Strand : {strand}")
+            volume = strand.length
+            excess = strand.length - max(chain.length, md)
+        else:
+            volume = "n/a"
+            excess = "n/a"
+            print(f"> Failed to find optimal chain.")
 
-        vzx.realise_zx_chain(chain, strand)
-
-        volume = strand.length
-        excess = strand.length - chain.length
-
-        label = f"{strandfinder.__class__.__name__} : chain length = {chain.length}, strand length = {strand.length}, excess volume = +{excess}, time={runtime}s"
-        viewer = VolumetricZxGraphViewer(graph = vzx, label = label, layout = PlanarLayout(vzx, scale = 2))
+        label = f"{strandfinder.__class__.__name__} : volume = {volume}, excess = +{excess}, time={runtime}s"
+        viewer = VolumetricZxGraphViewer(graph = vzx, label = label)
         viewer.display()
-    else:
-        print(f"> Failed to find optimal chain.")

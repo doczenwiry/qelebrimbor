@@ -63,9 +63,9 @@ class StrandfinderColorblindDFS:
 
     def find_optimum(self, goal: ZxChain, maximal_excess: int | None = None) -> Strand | None:
         """
-        Search for a path connecting cubes source and target.
-        WARNING: if there exists no colorless strand in spacetime between the source and the target; infinite loop.
-        :param goal: The chain specifying a strand that must be searched for.
+        Search for a Strand connecting the source and target of a Chain with the intermediate nodes along the way.
+        WARNING: if there exists no ColorlessPath in spacetime between the source and the target; infinite loop.
+        :param goal: The Chain specifying a Strand that must be searched for.
         :param maximal_excess: The maximum number of additional cubes permitted on top of the Manhattan Distance.
         N.B. maximal_excess = None forces the PathfinderDFS to search until it finds a Path.
         :return: A Path or None if no path was found.
@@ -89,7 +89,7 @@ class StrandfinderColorblindDFS:
         node_type_nr = len(node_types)
 
         # Maximal length of acceptable strands
-        maximal_length = goal.length + maximal_excess if maximal_excess is not None else None
+        maximal_length = max(goal.length, start.position.get_manhattan_distance(final.position)) + maximal_excess if maximal_excess is not None else None
         extra = f"[max length={maximal_length}]" if maximal_length is not None else ""
 
         # Initialize a tracer if tracing has been requested
