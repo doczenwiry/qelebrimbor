@@ -25,6 +25,11 @@ class TestColorShuffling(unittest.TestCase):
             self.assertEqual(elt, elt.extend(identity))
             self.assertEqual(elt, identity.extend(elt))
 
+    def test_extend(self):
+        testing = ColorShuffling('xyz')
+        testing = testing.extend(ColorShuffling.convert(SpacetimeHelper.YP))
+        print(f"Testing : {testing}")
+
     def test_associativity(self):
         elements = ColorShuffling.generate()
         for elt1, elt2, elt3 in product(elements, repeat = 3):
@@ -33,9 +38,9 @@ class TestColorShuffling(unittest.TestCase):
             self.assertEqual(associative_l, associative_r, msg = f"({elt1} * {elt2}) * {elt3} != {elt1} * ({elt2} * {elt3}) / {elt1.extend(elt2)}")
 
     def test_other(self):
-        step1 = ColorShuffling(ColorShuffling.convert(SpacetimeHelper.YP))
-        step2 = ColorShuffling(ColorShuffling.convert(SpacetimeHelper.ZP))
-        step3 = ColorShuffling(ColorShuffling.convert(SpacetimeHelper.XP))
+        step1 = ColorShuffling.convert(SpacetimeHelper.YP)
+        step2 = ColorShuffling.convert(SpacetimeHelper.ZP)
+        step3 = ColorShuffling.convert(SpacetimeHelper.XP)
 
         all = ColorShuffling.generate()
         print(f"Generated [{len(all)}]")
