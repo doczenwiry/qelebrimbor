@@ -23,7 +23,8 @@ from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.core.zx.attributes import EdgeType
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
+from qelebrimbor.spacetime.connectivity.default import DefaultConnectivityTracker
+from qelebrimbor.spacetime.connectivity.open_ports import ConnectivityTracker
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
 console = logging.getLogger(__name__)
@@ -33,13 +34,13 @@ class PlacefinderBFS:
     def __init__(
         self,
         graph: VolumetricZxGraph,
-        ports_tracker: OpenPortsTracker | None = None,
-        tracing: SpacetimeTracingReport | None = None,
+        connectivity: ConnectivityTracker | None = None,
+        reporting: SpacetimeTracingReport | None = None,
     ):
         self.__graph = graph
         self.__spacetime = graph.spacetime
-        self.__connectivity = ports_tracker if ports_tracker else OpenPortsTracker(self.__graph)
-        self.__tracing = tracing
+        self.__connectivity = connectivity or DefaultConnectivityTracker()
+        self.__reporting = reporting
 
     # TODO: consider the type of Edge between source and target (IDENTITY or HADAMARD)
     def find_closest_realisation(
@@ -59,7 +60,9 @@ class PlacefinderBFS:
         target_suitable_kinds: list[CubeKind] = CubeKind.suitable_kinds(target.type)
 
         # Tracing exploration
-        tracer: SpacetimeTracer[BgCube] | None = SpacetimeTracer(reporting=self.__tracing) if self.__tracing else None
+        tracer: SpacetimeTracer[BgCube] | None = (
+            SpacetimeTracer(reporting=self.__reporting) if self.__reporting else None
+        )
         if tracer:
             tracer.add_node(source, label=str(source))
 

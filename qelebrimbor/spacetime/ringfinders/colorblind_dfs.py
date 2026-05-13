@@ -68,7 +68,7 @@ class RingfinderColorblindDFS:
         # Prepare the parameters for the search
         nodes = list(goal.nodes)
 
-        node_types = list(map(lambda node: node.color, nodes))
+        node_types = list(map(lambda node: node.type, nodes))
 
         if any(nt == NodeType.O or nt == NodeType.Y for nt in node_types):
             raise Exception("Node restrictions cannot contain NodeType.O or NodeType.Y.")

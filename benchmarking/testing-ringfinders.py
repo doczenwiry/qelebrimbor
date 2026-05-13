@@ -38,7 +38,7 @@ if __name__ == "__main__":
     cycle0 = CycleAnalyser.decompose(vzx, minimal=True)[0]
     print(f"Cycle : {str(cycle0)}")
 
-    ringfinder = RingfinderBFS(graph=vzx, tracing=SpacetimeTracingReport.FINAL)
+    ringfinder = RingfinderBFS(graph=vzx, reporting=SpacetimeTracingReport.FINAL)
     # ringfinder = RingfinderDFS(graph = vzx, tracing = SpacetimeTracingReport.FINAL)
     # ringfinder = RingfinderColorblindDFS(graph = vzx, reporting = SpacetimeTracingReport.FINAL)
 

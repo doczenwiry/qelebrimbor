@@ -35,8 +35,8 @@ from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.core.zx.attributes import EdgeType, NodeType
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
-from qelebrimbor.spacetime.fabric import SpacetimeFabric
+from qelebrimbor.spacetime.connectivity.default import DefaultConnectivityTracker
+from qelebrimbor.spacetime.connectivity.open_ports import ConnectivityTracker
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
 console = logging.getLogger(__name__)
@@ -46,13 +46,12 @@ class RingfinderBFS:
     def __init__(
         self,
         graph: VolumetricZxGraph | None = None,
-        ports_tracker: OpenPortsTracker | None = None,
-        tracing: SpacetimeTracingReport | None = None,
+        connectivity: ConnectivityTracker | None = None,
+        reporting: SpacetimeTracingReport | None = None,
     ):
         self.__graph = graph or VolumetricZxGraph()
-        self.__ports_tracker = ports_tracker if ports_tracker else OpenPortsTracker(self.__graph)
-        self.__spacetime = graph.spacetime if graph else SpacetimeFabric()
-        self.__tracing = tracing
+        self.__connectivity = connectivity or DefaultConnectivityTracker()
+        self.__reporting = reporting
 
     def find_optimum(self, cycle: ZxCycle, maximal_excess: int | None = None) -> Ring | None:
         # Prepare the parameters for the search
@@ -70,13 +69,16 @@ class RingfinderBFS:
                 position=SpacetimeHelper.ORIGIN,
             )
         )
+        root.anchor.realised_node = node_restrictions[0]
         unrelaxed.append(root)
 
         console.info(f"Searching for ring anchored at {root.anchor} [ringsize={number_of_restrictions}]")
         console.info(f"> {str(cycle)}")
 
         # Initialise a tracer if it is needed
-        tracer: SpacetimeTracer[BgCube] | None = SpacetimeTracer(reporting=self.__tracing) if self.__tracing else None
+        tracer: SpacetimeTracer[BgCube] | None = (
+            SpacetimeTracer(reporting=self.__reporting) if self.__reporting else None
+        )
         if tracer:
             tracer.add_node(root.anchor, label=str(root.anchor))
 
@@ -127,7 +129,7 @@ class RingfinderBFS:
                 if partial_ring.occupies(neighbor.position):
                     continue
 
-                if self.__spacetime.occupied(neighbor.position):
+                if self.__graph.spacetime.occupied(neighbor.position):
                     continue
 
                 # Tracing exploration
@@ -135,6 +137,8 @@ class RingfinderBFS:
                     tracer.add_node(neighbor)
                     tracer.add_edge(partial_ring.terminal, neighbor)
 
+                if realised_nodes < number_of_restrictions:
+                    neighbor.realised_node = node_restrictions[realised_nodes]
                 # Extend the ring with the neighbor
                 extended = partial_ring.extend(neighbor, edge_type_required)
 

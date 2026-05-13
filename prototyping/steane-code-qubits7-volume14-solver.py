@@ -35,9 +35,9 @@ zx_attributes.ZX_COLORING = True
 if __name__ == "__main__":
     vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders7.json")
 
-    connectivity = OpenPortsTracker(vzx)
-    ringfinder = RingfinderBFS(graph=vzx, ports_tracker=connectivity)
-    strandfinder = StrandfinderDFS(graph=vzx, connectivity=connectivity, branch_and_bound=True)
+    ports_tracker = OpenPortsTracker(vzx)
+    ringfinder = RingfinderBFS(graph=vzx, connectivity=ports_tracker)
+    strandfinder = StrandfinderDFS(graph=vzx, connectivity=ports_tracker, branch_and_bound=True)
 
     CycleAnalyser.analyse(vzx)
     cycles = CycleAnalyser.decompose(vzx, minimal=True)
@@ -56,12 +56,13 @@ if __name__ == "__main__":
         # Reserve the ports for all the nodes that were realised as part of this ring.
         for node, _ in cycle:
             # Since each of these node is part of a ring, it already has two of its edges realised.
-            connectivity.reserve(node.realising_cube, required=vzx.get_zx_degree(node.id) - 2)
+            ports_tracker.reserve(node.realising_cube, required=vzx.get_zx_degree(node.id) - 2)
 
-        for cube in ring.cubes[len(cycle) :]:
-            connectivity.occlude(cube.position)
+        cubes = list(ring.cubes)
+        for cube in cubes[len(cycle) :]:
+            ports_tracker.occlude(cube.position)
 
-    connectivity.report()
+    ports_tracker.report()
 
     # Realise the remaining chains
     index = 1
@@ -81,7 +82,7 @@ if __name__ == "__main__":
 
         extra_cubes = list(strand.extras)
         for cube in extra_cubes[chain.length :]:
-            connectivity.occlude(cube.position)
+            ports_tracker.occlude(cube.position)
 
     index = 2
     cycle = cycles[index]
@@ -100,7 +101,7 @@ if __name__ == "__main__":
 
         extra_cubes = list(strand.extras)
         for cube in extra_cubes[chain.length :]:
-            connectivity.occlude(cube.position)
+            ports_tracker.occlude(cube.position)
 
     ZxGraphInflaterBoundaries(vzx).process()
 

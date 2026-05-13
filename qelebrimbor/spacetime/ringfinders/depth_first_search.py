@@ -24,8 +24,8 @@ from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.calculator import ManhattanCalculator
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
-from qelebrimbor.spacetime.fabric import SpacetimeFabric
+from qelebrimbor.spacetime.connectivity.default import DefaultConnectivityTracker
+from qelebrimbor.spacetime.connectivity.open_ports import ConnectivityTracker
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
 console = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ class RingfinderDFS:
     def __init__(
         self,
         graph: VolumetricZxGraph | None = None,
-        ports_tracker: OpenPortsTracker | None = None,
+        connectivity: ConnectivityTracker | None = None,
         branch_and_bound: bool = False,
         tracing: SpacetimeTracingReport | None = None,
     ):
@@ -48,8 +48,7 @@ class RingfinderDFS:
         :param tracing: Controls whether a tracing/reporting of all vertices explored is performed.
         """
         self.__graph = graph if graph else VolumetricZxGraph()
-        self.__ports_tracker = ports_tracker if ports_tracker else OpenPortsTracker(self.__graph)
-        self.__spacetime = graph.spacetime if graph else SpacetimeFabric()
+        self.__connectivity = connectivity or DefaultConnectivityTracker()
         self.__branch_and_bound = branch_and_bound
         self.__tracing = tracing
 
@@ -152,7 +151,7 @@ class RingfinderDFS:
                 if partial_ring.occupies(neighbor.position):
                     continue
 
-                if self.__spacetime.occupied(neighbor.position):
+                if self.__graph.spacetime.occupied(neighbor.position):
                     continue
 
                 # Tracing exploration

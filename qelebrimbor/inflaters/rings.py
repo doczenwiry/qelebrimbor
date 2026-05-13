@@ -112,10 +112,11 @@ class ZxGraphInflaterRings:
             # Since each of these node is realised as part of a ring, it already has two of its edges realised.
             self.__connectivity.reserve(node.realising_cube, required=self.__graph.get_zx_degree(node.id) - 2)
 
-        for cube in ring.cubes[len(zx_cycle) :]:
+        cubes = list(ring.cubes)
+        for cube in cubes[len(zx_cycle) :]:
             self.__connectivity.occlude(cube.position)
 
-        return len(ring.cubes) - len(zx_cycle)
+        return len(cubes) - len(zx_cycle)
 
     def __attempt_chain_realisation(self, chain: ZxChain, maximal_excess: int = 0) -> int:
         # start, nodes, edges, final = chain
