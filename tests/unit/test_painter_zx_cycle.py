@@ -29,10 +29,36 @@ class TestPainterZxCycle(TestCase):
         cycle = ZxCycle.make(
             node_types=[NodeType.X for _ in range(4)], edge_types=[EdgeType.IDENTITY for _ in range(4)]
         )
+        print(f"ZxCycle: {cycle}")
+
         colorless = ColorlessRing()
         for position in [(0, 0, 0), (0, 1, 0), (0, 1, 1), (0, 0, 1)]:
             colorless.append(Coordinates(*position))
         print(f"ColorlessRing: {colorless}")
+
+        expected = "N0:XZZ@( 0, 0, 0) --I-- N1:XZZ@( 0, 1, 0) --I-- N2:XZZ@( 0, 1, 1) --I-- N3:XZZ@( 0, 0, 1)"
+        print(f"Expected Ring : {expected}")
+        computed = str(PainterZxCycle.paint(colorless, cycle))
+        print(f"Computed Ring : {computed}")
+
+        self.assertEqual(computed, expected)
+
+    def test_painter_two(self):
+        cycle = ZxCycle.make(
+            node_types=[NodeType.X if node_id % 2 == 0 else NodeType.Z for node_id in range(6)],
+            edge_types=[EdgeType.IDENTITY for _ in range(6)],
+        )
         print(f"ZxCycle: {cycle}")
 
-        print(f"Painted Ring : {PainterZxCycle.paint(colorless, cycle)}")
+        colorless = ColorlessRing()
+        for position in [(0, 0, 0), (0, 1, 0), (0, 1, 1), (1, 1, 1), (1, 0, 1), (1, 0, 0)]:
+            colorless.append(Coordinates(*position))
+        print(f"ColorlessRing: {colorless}")
+
+        expected = "N0:ZZX@( 0, 0, 0) --I-- N1:ZXX@( 0, 1, 0) --I-- N2:ZXZ@( 0, 1, 1)"
+        expected += " --I-- N3:XXZ@( 1, 1, 1) --I-- N4:XZZ@( 1, 0, 1) --I-- N5:XZX@( 1, 0, 0)"
+        print(f"Expected Ring : {expected}")
+        computed = str(PainterZxCycle.paint(colorless, cycle))
+        print(f"Computed Ring : {computed}")
+
+        self.assertEqual(computed, expected)
