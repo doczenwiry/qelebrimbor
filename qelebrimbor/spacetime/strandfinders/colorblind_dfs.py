@@ -142,15 +142,17 @@ class StrandfinderColorblindDFS:
                 candidate: ColorlessPath = current.extend(final.position)
                 console.info(f"Candidate ColorlessStrand : {candidate}")
 
-                if PainterZxChain.paintable(candidate, goal):
+                strand = PainterZxChain.paint(candidate, goal)
+
+                if strand is not None:
                     # Tracing exploration
                     if tracer:
                         tracer.add_node(final, label = str(final))
                         tracer.add_edge(terminal, final)
 
                     # Update the optimum only if it improves our current knowledge
-                    if optimum is None or candidate.length < optimum.length:
-                        optimum = PainterZxChain.paint(candidate, goal)
+                    if optimum is None or strand.length < optimum.length:
+                        optimum = strand
 
             # Restrict the outgoing paths to lie in the reach of the CubeKind of the start.
             constellation = SpacetimeHelper.get_constellation(

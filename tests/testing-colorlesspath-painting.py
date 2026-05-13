@@ -67,4 +67,4 @@ if __name__ == "__main__":
 
     print(f"ColorlessPath : {str(colorless)}")
 
-    print(f"Painted : {PainterZxChain.paint(colorless, chain)}")
+    print(f"Painted     : {PainterZxChain.paint(colorless, chain)}")

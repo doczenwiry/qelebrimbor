@@ -103,10 +103,5 @@ class ColorlessPath:
     def __str__(self):
         content  = f"{self.start}"
         for index in range(1, len(self.__positions)):
-            step = self.__positions[index] - self.__positions[index - 1]
-            content += f" -> "
-            if index < len(self.__positions) - 1:
-                content += f"{ColorlessPath.__STEP_LABELS[step]}"
-            else:
-                content += f"{self.__positions[index]}"
+            content += f" -> {self.__positions[index]}"
         return content
