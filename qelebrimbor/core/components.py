@@ -15,6 +15,7 @@
 from recordclass import RecordClass  # type: ignore[import-untyped]
 from typing import cast
 
+from qelebrimbor.core.reach import Reach
 from qelebrimbor.core.zx.attributes import NodeId, NodeType, QubitId, LayerId, EdgeType
 from qelebrimbor.core.bg.attributes import CubeId, CubeKind
 from qelebrimbor.core.coordinates import Coordinates
@@ -117,6 +118,14 @@ class BgCube(RecordClass):
 
     def matches(self, other):
         return self.kind == other.kind and self.position == other.position
+
+    @property
+    def color(self) -> NodeType:
+        return self.kind.color
+
+    @property
+    def reach(self) -> Reach:
+        return self.kind.reach
 
     @property
     def realised_node(self):

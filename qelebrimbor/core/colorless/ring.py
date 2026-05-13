@@ -11,6 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+from typing import Iterator
 
 from qelebrimbor.core.coordinates import Coordinates
 
@@ -37,6 +38,10 @@ class ColorlessRing:
     @property
     def volume(self) -> int:
         return len(self.__positions)
+
+    @property
+    def positions(self) -> Iterator[Coordinates]:
+        return iter(self.__positions)
 
     @property
     def distance(self) -> int:

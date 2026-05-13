@@ -47,6 +47,9 @@ class Coordinates(NamedTuple):
     def dot(self, other) -> float:
         return sum([ s * o for s, o in zip(self, other) ])
 
+    def abs(self) -> Coordinates:
+        return Coordinates(abs(self.x), abs(self.y), abs(self.z))
+
     def cross(self, other):
         return Coordinates(self.y * other.z - self.z * other.y,
                            self.z * other.x - self.x * other.z,

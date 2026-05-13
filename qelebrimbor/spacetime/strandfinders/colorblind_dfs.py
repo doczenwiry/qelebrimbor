@@ -58,8 +58,9 @@ class StrandfinderColorblindDFS:
         return ColorlessPath(start = source.realising_cube.position)
 
     @staticmethod
-    def heuristic(source: Coordinates, target: Coordinates) -> int:
-        return source.get_manhattan_distance(target)
+    def heuristic(source: Coordinates, target: Coordinates, node_types: list[NodeType]) -> int:
+        # return source.get_manhattan_distance(target)
+        return max(len(node_types), source.get_manhattan_distance(target))
 
     def find_optimum(self, goal: ZxChain, maximal_excess: int | None = None) -> Strand | None:
         """
@@ -104,7 +105,7 @@ class StrandfinderColorblindDFS:
         unrelaxed: list[tuple[int, ColorlessPath]] = []
 
         initial = ColorlessPath(start = start.position)
-        heapq.heappush(unrelaxed, (start.position.get_manhattan_distance(final.position), initial))
+        heapq.heappush(unrelaxed, (StrandfinderColorblindDFS.heuristic(start.position, final.position, node_types), initial))
 
         console.info(f"Searching for strand for {start} -> {nodes} -> {final} {extra}")
 
@@ -182,7 +183,7 @@ class StrandfinderColorblindDFS:
                 unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].final != adjacent ]
 
                 # Compute the minimal manhattan length required to connect neighbor to target (HEURISTIC).
-                unrelaxed.append((adjacent.get_manhattan_distance(final.position), extended))
+                unrelaxed.append(( StrandfinderColorblindDFS.heuristic(adjacent, final.position, node_types[extended.length:]), extended))
 
         console.info(f"Optimum found : {optimum}")
 

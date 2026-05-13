@@ -14,17 +14,17 @@
 
 import itertools
 from time import time
-from typing import Iterable
 
-from qelebrimbor.core.zx import attributes as zx_attributes
+import qelebrimbor.core.zx
 from qelebrimbor.core.zx.attributes import NodeId, NodeType, EdgeType
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
+from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
+from qelebrimbor.spacetime.ringfinders.colorblind_dfs import RingfinderColorblindDFS
 from qelebrimbor.spacetime.ringfinders.depth_first_search import RingfinderDFS
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 
 from qelebrimbor.analysis.cycles import CycleAnalyser
-
-from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 from qelebrimbor.vedo.zx_layout.cycle import CycleLayout
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
@@ -32,78 +32,42 @@ from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 import logging
 logging.basicConfig(level=logging.INFO)
 
-def __benchmark_ring(restrictions: Iterable[tuple[NodeType, EdgeType]]):
-    node_type_restrictions, edge_type_restrictions = zip(*restrictions)
-    print(f"NodeType restrictions : {node_type_restrictions}")
-    print(f"EdgeType restrictions : {edge_type_restrictions}")
+qelebrimbor.core.zx.attributes.ZX_COLORING = True
 
-    ring_size = len(node_type_restrictions)
-    nodes: list[tuple[NodeId, NodeType]] = [
-        (node_id, node_type_restrictions[node_id]) for node_id in range(ring_size)
-    ]
-
-    edges: list[tuple[NodeId, NodeId, EdgeType]] = [
-        (node_id, (node_id+1) % ring_size, edge_type_restrictions[node_id]) for node_id in range(ring_size)
-    ]
+if __name__ == "__main__":
+    nodes = list(zip(itertools.count(0, 1),
+        [ NodeType.X, NodeType.Z, NodeType.X, NodeType.Z ]
+    ))
+    edges = [ (index, (index+1) % len(nodes), EdgeType.IDENTITY) for index in range(len(nodes)) ]
 
     vzx = VolumetricZxGraph(nodes, edges)
 
-    zx_cycle = CycleAnalyser.decompose(vzx, minimal = True)[0]
-    print(f"Cycle : {str(zx_cycle)}")
+    cycle0 = CycleAnalyser.decompose(vzx, minimal = True)[0]
+    print(f"Cycle : {str(cycle0)}")
 
-    # ringfinder = RingfinderBFS(graph = vzx, tracing = SpacetimeTracingReport.FINAL)
-    ringfinder = RingfinderDFS(graph = vzx, tracing = SpacetimeTracingReport.FINAL)
+    ringfinder = RingfinderBFS(graph = vzx, tracing = SpacetimeTracingReport.FINAL)
+    # ringfinder = RingfinderDFS(graph = vzx, tracing = SpacetimeTracingReport.FINAL)
+    # ringfinder = RingfinderColorblindDFS(graph = vzx, reporting = SpacetimeTracingReport.FINAL)
 
     start = time()
-    ring = ringfinder.find_optimum(zx_cycle, maximal_excess = 6)
+    ring = ringfinder.find_optimum(cycle0, maximal_excess = 6)
     final = time()
     runtime = round(final - start, 2)
 
-    if ring is None:
+    if ring is not None:
+        print(f"Found a ring with volume : {ring.volume()}")
+        print(f"> {ring}")
+
+        vzx.realise_zx_cycle(cycle0, ring)
+
+        volume = ring.volume()
+        excess = volume - cycle0.length
+    else:
         print(f"> Failed to find optimal ring.")
-        return -1
-    print(f"Found a ring with volume : {ring.volume()}")
-    print(f"> {ring}")
+        volume = None
+        excess = None
 
-    vzx.realise_zx_cycle(zx_cycle, ring)
 
-    volume = vzx.volume()
-
-    label = f"volume = {volume}, excess = +{volume - len(node_type_restrictions)}, time={runtime}s"
+    label = f"volume = {volume}, excess = +{excess}, time={runtime}s"
     viewer = VolumetricZxGraphViewer(graph = vzx, label = label, layout = CycleLayout(vzx))
     viewer.display()
-
-    return volume, runtime, ring
-
-zx_attributes.ZX_COLORING = True
-# The number of spiders in the ring to realise
-RING_SIZE = 4
-# The choices of restrictions among which to pick for the chain requested
-NODE_TYPE_CHOICES = [NodeType.X, NodeType.Z]
-
-if __name__ == "__main__":
-    all_spider_permutations = set(
-        itertools.chain.from_iterable(
-            itertools.permutations(combination)
-            for combination in itertools.combinations_with_replacement(NODE_TYPE_CHOICES, RING_SIZE)
-        )
-    )
-    all_legs_permutations = set(
-        itertools.chain.from_iterable(
-            itertools.permutations(combination)
-            for combination in itertools.combinations_with_replacement(EdgeType, RING_SIZE)
-        )
-    )
-
-    __benchmark_ring(restrictions = zip(
-        [ NodeType.X for _ in range(4) ],
-        [ EdgeType.IDENTITY if e % 2 == 0 else EdgeType.HADAMARD for e in range(4) ]
-    ))
-
-    # count = 0
-    # for spiders, legs in itertools.product(all_spider_permutations, all_legs_permutations):
-    #     __benchmark_ring(restrictions = zip(spiders, legs))
-    #
-    #     count += 1
-    #     if count == 1:
-    #         break

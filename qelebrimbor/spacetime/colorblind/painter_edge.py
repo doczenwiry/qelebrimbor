@@ -21,7 +21,7 @@ from qelebrimbor.core.colorless.path import ColorlessPath
 from qelebrimbor.core.components import ZxEdge, BgCube
 from qelebrimbor.core.metric.color_shufflings import ColorShuffling
 
-from qelebrimbor.helpers.spacetime import SpacetimeHelper
+from qelebrimbor.helpers.spacetime import SpacetimeHelper, Step
 
 import logging
 console = logging.getLogger(__name__)
@@ -37,24 +37,27 @@ class PainterZxEdge:
         if colorless.start != start.position or colorless.final != final.position:
             return False
 
-        # The ColorlessPath is not compatible if it doesn't line up with a port in the reach of the CubeKind of start.
-        if not SpacetimeHelper.contains(start.kind.get_reach(), colorless.outgoing_port - start.position):
+        # The ColorlessPath is not compatible if its first step doesn't lie in the reach of start.
+        if not start.reach.contains(Step(colorless.outgoing - start.position)):
             return False
 
-        # The ColorlessPath is not compatible if it doesn't line up with a port in the reach of the CubeKind of final.
-        if not SpacetimeHelper.contains(final.kind.get_reach(), colorless.incoming_port - final.position):
+        # The ColorlessPath is not compatible if its last step doesn't lie in the reach of final.
+        if not final.reach.contains(Step(colorless.incoming - final.position)):
             return False
 
         overall: ColorShuffling = reduce(
-            ColorShuffling.extend, map(ColorShuffling.convert, colorless.steps), ColorShuffling.identity())
+            ColorShuffling.extend, map(ColorShuffling.convert, colorless.steps), ColorShuffling.identity()
+        )
 
+        # If the edge type considered is of type Hadamard, we apply a Hadamard on the ColorShuffling.
         if edge.type == EdgeType.HADAMARD:
             overall = overall.hadamard()
 
+        # The ColorlessPath is compatible only if its overall ColorShuffling matches the colors of the endpoints.
         return overall.compatible(start.kind, final.kind)
 
     @staticmethod
-    def paint(proposal: ColorlessPath, edge: ZxEdge) -> Path:
+    def paint(colorless: ColorlessPath, edge: ZxEdge) -> Path:
         """
         Paint a ColorlessPath of successive Coordinates into a Path made of BgCubes with CubeKind and Coordinates.
         The current strategy when dealing with Hadamard edges consists in making the first pipe into a Hadamard pipe.
@@ -64,36 +67,30 @@ class PainterZxEdge:
         start: BgCube = edge.source.realising_cube
         final: BgCube = edge.target.realising_cube
 
-        if not PainterZxEdge.paintable(proposal, edge):
+        if not PainterZxEdge.paintable(colorless, edge):
             raise ValueError(f"ColorlessPath provided cannot be painted for edge : {start} -{repr(edge.type)}- {final}")
 
-        successive_shuffling = list(map(ColorShuffling.convert, proposal.steps))
-
         path = Path(start)
-        current: CubeKind = start.kind
-        for index in range(1, proposal.length):
-            assigned = proposal[index]
-            current_pipe_type = edge.type if index == 1 else EdgeType.IDENTITY
-            preceding_shuffling = successive_shuffling[index - 1]
-            preceding_shuffling = preceding_shuffling.hadamard() if current_pipe_type == EdgeType.HADAMARD else preceding_shuffling
-
-            remaining_shuffling = reduce(ColorShuffling.extend, successive_shuffling[index:], ColorShuffling.identity())
-            compatibles = filter(
-                lambda kind: preceding_shuffling.compatible(current, kind) and remaining_shuffling.compatible(kind, final.kind),
+        last_cube: BgCube = start
+        current_pipe_type: EdgeType = edge.type
+        for position, reaches in zip(colorless.extras, colorless.as_reaches()):
+            step = Step(position - last_cube.position)
+            compatible_kinds = filter(
+                lambda kind : CubeKind.compatible(last_cube.kind, kind, step, current_pipe_type) and kind.reach in reaches,
                 CubeKind
             )
-            selected = next(compatibles)
-            path = path.extend(
-                cube = BgCube(kind = selected, position = assigned), pipe_type = current_pipe_type
-            )
-            current = selected
+
+            selected = next(compatible_kinds)
+            path.append(cube = BgCube(kind = selected, position = position), pipe = current_pipe_type)
 
             try:
-                extra = f"[selected:{selected},alternative:{next(compatibles)}]"
-                console.warning(f"Ambiguity in inference of a CubeKind at {assigned} was arbitrarily resolved {extra}.")
+                extra = f"[selected:{selected},alternative:{next(compatible_kinds)}]"
+                console.warning(f"Ambiguity in inference of a CubeKind at {position} was arbitrarily resolved {extra}.")
             except StopIteration as si:
                 pass
 
-        current_pipe_type = edge.type if proposal.length == 2 else EdgeType.IDENTITY
-        path = path.extend(final, pipe_type = current_pipe_type)
+            last_cube = path.final
+            current_pipe_type = EdgeType.IDENTITY
+
+        path.append(final, pipe = current_pipe_type)
         return path

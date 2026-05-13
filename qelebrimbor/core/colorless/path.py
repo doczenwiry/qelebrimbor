@@ -14,13 +14,14 @@
 
 from functools import total_ordering
 from typing import Iterator
+import itertools
 
+from qelebrimbor.core.common import Port
 from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.reach import Reach
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 import logging
-
-from qelebrimbor.helpers.spacetime import Step, SpacetimeHelper
-
 console = logging.getLogger(__name__)
 
 
@@ -40,11 +41,11 @@ class ColorlessPath:
         return self.__positions[-1]
 
     @property
-    def outgoing_port(self):
+    def outgoing(self) -> Port:
         return self.__positions[1] if len(self.__positions) > 2 else self.final
 
     @property
-    def incoming_port(self):
+    def incoming(self) -> Port:
         return self.__positions[-2] if len(self.__positions) > 2 else self.start
 
     @property
@@ -59,8 +60,15 @@ class ColorlessPath:
         return self.__positions[index]
 
     @property
+    def extras(self) -> Iterator[Coordinates]:
+        return itertools.islice(self.__positions, 1, len(self.__positions) - 1)
+
+    @property
     def steps(self) -> Iterator[Coordinates]:
         return iter(self.__positions[index] - self.__positions[index - 1] for index in range(1, len(self.__positions)))
+
+    def as_reaches(self) -> Iterator[set[Reach]]:
+        return Reach.from_positions(self.__positions)
 
     def visits(self, position: Coordinates):
         return position in self.__occupied

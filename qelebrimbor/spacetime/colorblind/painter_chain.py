@@ -24,7 +24,7 @@ from qelebrimbor.core.colorless.path import ColorlessPath
 
 import logging
 
-from qelebrimbor.helpers.spacetime import SpacetimeHelper
+from qelebrimbor.helpers.spacetime import SpacetimeHelper, Step
 
 console = logging.getLogger(__name__)
 
@@ -41,12 +41,12 @@ class PainterZxChain:
         if colorless.start != start.position or colorless.final != final.position:
             return False
 
-        # The ColorlessPath is not paintable if it doesn't line up with a port in the reach of the CubeKind of start.
-        if not SpacetimeHelper.contains(start.kind.get_reach(), colorless.outgoing_port - start.position):
+        # The ColorlessPath is not compatible if its first step doesn't lie in the reach of start.
+        if not start.reach.contains(Step(colorless.outgoing - start.position)):
             return False
 
-        # The ColorlessPath is not paintable if it doesn't line up with a port in the reach of the CubeKind of final.
-        if not SpacetimeHelper.contains(final.kind.get_reach(), colorless.incoming_port - final.position):
+        # The ColorlessPath is not compatible if its last step doesn't lie in the reach of final.
+        if not final.reach.contains(Step(colorless.incoming - final.position)):
             return False
 
         # The ColorlessPath is not paintable if it doesn't provide at least one BgCube per ZxNode
