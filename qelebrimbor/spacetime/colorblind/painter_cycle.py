@@ -120,6 +120,6 @@ class PainterZxCycle:
         if not CubeKind.compatible(last_cube.kind, ring.anchor.kind, step, preceding_pipe):
             return None
 
-        ring.close(preceding_pipe)
+        ring = ring.close(preceding_pipe)
 
         return ring

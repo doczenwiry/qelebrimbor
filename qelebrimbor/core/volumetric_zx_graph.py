@@ -310,37 +310,63 @@ class VolumetricZxGraph(nx.Graph):
 
         # TODO: validate the Ring ?
 
-        # Realise the anchor of the cycle.
-        anchor = nodes[0]
-        anchor_id = self.realise_zx_node(anchor, proposal.anchor)  # noqa: F841
+        remaining_nodes = cycle.nodes
+        remaining_cubes = proposal.cubes
+        remaining_pipes = proposal.pipes
 
-        cubes = list(proposal.cubes)
-        pipes = list(proposal.pipes)
+        current_node: ZxNode | None = next(remaining_nodes, None)
+        current_cube: BgCube | None = next(remaining_cubes, None)
+
+        if current_node is None:
+            raise Exception("Cycle must contain at least 4 nodes. None found.")
+
+        if current_cube is None:
+            raise Exception("Ring must contain at least 4 cubes. None found.")
+
+        # Realise the anchor of the cycle.
+        if current_node.id != current_cube.realised_node.id:
+            raise Exception("Ring must be anchored at a cube realising the first node of the cycle.")
+
+        anchor_id: CubeId = self.realise_zx_node(current_cube.realised_node, current_cube)  # noqa: F841
+
+        last_cube: BgCube = self.get_bg_cube(anchor_id)
+        path: Path = Path(start=last_cube)
 
         # Realise the successive nodes of the cycle
-        preceding: ZxNode = anchor
-        for index in range(1, len(cycle)):
-            following: ZxNode = nodes[index]
-            current_id: CubeId = self.realise_zx_node(following, cubes[index])  # noqa: F841
+        previous_node: ZxNode = current_node
+        current_node = next(remaining_nodes, None)
+        current_cube = next(remaining_cubes, None)
+        current_pipe = next(remaining_pipes)
+        while current_cube is not None:
+            if current_cube.realised_node is not None:
+                if current_node is None:
+                    raise Exception("Ring is realising a node not belonging to the cycle.")
 
-            self.realise_zx_edge(
-                source=preceding.id,
-                target=following.id,
-                proposal=Path(start=preceding.realising_cube).extend(
-                    cube=following.realising_cube, pipe_type=pipes[index - 1]
-                ),
-            )
+                if current_cube.realised_node.id != current_node.id:
+                    raise Exception("Ring is not respecting the order of the nodes of the cycle.")
 
-            preceding = following
+                cube_id = self.realise_zx_node(current_node, current_cube)
+                last_cube = self.get_bg_cube(cube_id)
+                path.append(last_cube, pipe=current_pipe)
+                self.realise_zx_edge(previous_node.id, current_node.id, path)
+                previous_node = current_node
+                current_node = next(remaining_nodes, None)
+                path = Path(start=last_cube)
+            else:
+                path.append(current_cube, pipe=current_pipe)
+                last_cube = current_cube
+
+            current_cube = next(remaining_cubes, None)
+            current_pipe = next(remaining_pipes)
+
+        if current_node is not None:
+            raise Exception("Ring is not realising the cycle completely.")
 
         # Realise the final edge to close the ring
-        terminal = nodes[-1]
-        path = Path(start=terminal.realising_cube)
-        for index in range(len(cycle), len(cubes)):
-            path = path.extend(cube=cubes[index], pipe_type=pipes[index - 1])
-        path = path.extend(cube=anchor.realising_cube, pipe_type=pipes[-1])
+        anchor = self.get_bg_cube(anchor_id)
+        path.append(anchor, pipe=current_pipe)
 
-        self.realise_zx_edge(source=terminal.id, target=anchor.id, proposal=path)
+        self.realise_zx_edge(source=previous_node.id, target=anchor.realised_node.id, proposal=path)
 
     # TODO: assumption is that len(proposal.extra_cubes) >= len(nodes)
     def realise_zx_chain(self, chain: ZxChain, proposal: Strand):

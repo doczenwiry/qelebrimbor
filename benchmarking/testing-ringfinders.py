@@ -56,9 +56,9 @@ if __name__ == "__main__":
 
         volume = ring.volume()
         excess = volume - cycle0.length
-        label = f"volume = {ring.volume()}, excess = +{ring.volume() - cycle0.length}"
+        label += f", volume = {ring.volume()}, excess = +{ring.volume() - cycle0.length}"
     else:
-        label = "volume =n/a, excess = +n/a"
+        label += ", volume =n/a, excess = +n/a"
         print("> Failed to find optimal ring.")
 
     viewer = VolumetricZxGraphViewer(graph=vzx, label=label, layout=CycleLayout(vzx))

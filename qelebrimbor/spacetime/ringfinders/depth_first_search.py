@@ -78,6 +78,7 @@ class RingfinderDFS:
                 position=SpacetimeHelper.ORIGIN,
             )
         )
+        root.anchor.realised_node = node_restrictions[0]
         unrelaxed.append((RingfinderDFS.heuristic(root.anchor, root.anchor, node_restrictions), root))
 
         console.info(f"Searching for ring anchored at {root.anchor} [ringsize={number_of_restrictions}]")
@@ -160,6 +161,8 @@ class RingfinderDFS:
                     tracer.add_edge(partial_ring.terminal, neighbor)
 
                 # Extend the ring with the neighbor
+                if realised_nodes < number_of_restrictions:
+                    neighbor.realised_node = node_restrictions[realised_nodes]
                 extended = partial_ring.extend(neighbor, edge_type_required)
 
                 if not maximal_volume or extended.volume() <= maximal_volume:
