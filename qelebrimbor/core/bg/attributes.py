@@ -12,18 +12,19 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import numpy as np
-
 from enum import Enum
 from functools import total_ordering
 
+import numpy as np
+
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.core.reach import Reach
+from qelebrimbor.core.zx.attributes import EdgeType, NodeType
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Step
-from qelebrimbor.core.zx.attributes import NodeType, EdgeType
 
 CubeId = int
 PipeId = tuple[CubeId, CubeId]
+
 
 @total_ordering
 class CubeKind(Enum):
@@ -38,7 +39,7 @@ class CubeKind(Enum):
 
     def differences(self, other) -> np.ndarray:
         combination = self.value ^ other.value
-        result = np.zeros(3, dtype = np.int32)
+        result = np.zeros(3, dtype=np.int32)
         for i in range(3):
             result[2 - i] = combination & 0x1
             combination >>= 1
@@ -46,29 +47,29 @@ class CubeKind(Enum):
 
     @property
     def color(self) -> NodeType:
-        if self in [ CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX ]:
+        if self in [CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX]:
             return NodeType.X
         elif self == CubeKind.YYY:
             return NodeType.Y
-        elif self in [ CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ ]:
+        elif self in [CubeKind.ZXX, CubeKind.XZX, CubeKind.XXZ]:
             return NodeType.Z
-        else: # self in [ CubeKind.OOO ]
+        else:  # self in [ CubeKind.OOO ]
             return NodeType.O
 
     @property
     def reach(self) -> Reach:
-        if self in [CubeKind.OOO , CubeKind.YYY]:
+        if self in [CubeKind.OOO, CubeKind.YYY]:
             return Reach.XYZ
         elif self in [CubeKind.ZZX, CubeKind.XXZ]:
             return Reach.XY
         elif self in [CubeKind.ZXZ, CubeKind.XZX]:
             return Reach.XZ
-        else: # self in [ CubeKind.XZZ, CubeKind.ZXX ]
+        else:  # self in [ CubeKind.XZZ, CubeKind.ZXX ]
             return Reach.YZ
 
     @staticmethod
     def suitable_kinds(node_type: NodeType):
-        if   node_type == NodeType.X:
+        if node_type == NodeType.X:
             return [CubeKind.XZZ, CubeKind.ZXZ, CubeKind.ZZX]
         elif node_type == NodeType.Y:
             return [CubeKind.YYY]
@@ -97,17 +98,17 @@ class CubeKind(Enum):
                 return CubeKind.ZXX
         elif node_type == NodeType.Y:
             return CubeKind.YYY
-        else: # node_type == NodeType.O:
+        else:  # node_type == NodeType.O:
             return CubeKind.OOO
 
     def get_type(self) -> NodeType:
-        if   self == CubeKind.XZZ or self == CubeKind.ZXZ or self == CubeKind.ZZX:
+        if self == CubeKind.XZZ or self == CubeKind.ZXZ or self == CubeKind.ZZX:
             return NodeType.X
         elif self == CubeKind.ZXX or self == CubeKind.XZX or self == CubeKind.XXZ:
             return NodeType.Z
         elif self == CubeKind.YYY:
             return NodeType.Y
-        else: # self == CubeKind.OOO
+        else:  # self == CubeKind.OOO
             return NodeType.O
 
     # TODO: a CubeKind.YYY has Spacetime.XYZ and single port ?
@@ -134,7 +135,7 @@ class CubeKind(Enum):
 
         if pipe == EdgeType.IDENTITY:
             return same_color == same_reach
-        else: # pipe == EdgeType.HADAMARD
+        else:  # pipe == EdgeType.HADAMARD
             return same_color != same_reach
 
     def __lt__(self, other):
@@ -150,6 +151,7 @@ class CubeKind(Enum):
             content += f"{str(NodeType[face])}"
 
         return content
+
 
 class PipeType(Enum):
     IDENTITY = 0

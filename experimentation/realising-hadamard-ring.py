@@ -12,38 +12,40 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.components import ZxNode, ZxEdge
-from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
+import logging
+
+from qelebrimbor.analysis.cycles import CycleAnalyser
+from qelebrimbor.core.components import ZxEdge, ZxNode
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.core.zx.attributes import NodeType, EdgeType
+from qelebrimbor.core.zx.attributes import EdgeType, NodeType
+from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.cycle import CycleLayout
 
-import logging
 console = logging.getLogger(__name__)
 logging.basicConfig(level=logging.CRITICAL)
 
 LENGTH = 6
 MAX_OVERHEAD = 2 if LENGTH <= 5 else 1 if LENGTH % 2 != 0 else 0
 if __name__ == "__main__":
-    nodes = [ NodeType.Z for _ in range(LENGTH) ]
-    edges = [ EdgeType.HADAMARD for _ in range(LENGTH)]
+    nodes = [NodeType.Z for _ in range(LENGTH)]
+    edges = [EdgeType.HADAMARD for _ in range(LENGTH)]
 
-    zx_nodes = [ ZxNode(id = i, type = nodes[i]) for i in range(LENGTH) ]
-    zx_edges = [ ZxEdge(source = zx_nodes[s], target = zx_nodes[(s+1) % LENGTH], type = edges[s]) for s in range(LENGTH)]
+    zx_nodes = [ZxNode(id=i, type=nodes[i]) for i in range(LENGTH)]
+    zx_edges = [ZxEdge(source=zx_nodes[s], target=zx_nodes[(s + 1) % LENGTH], type=edges[s]) for s in range(LENGTH)]
 
     vzx = VolumetricZxGraph(
-        nodes = zip(range(LENGTH), nodes),
-        edges = ( (s, (s + 1) % LENGTH, edges[s]) for s in range(LENGTH) )
+        nodes=zip(range(LENGTH), nodes),
+        edges=((s, (s + 1) % LENGTH, edges[s]) for s in range(LENGTH)),
     )
 
     ringfinder = RingfinderBFS(vzx)
 
     vzx.log_summary()
 
-    zx_cycle = list(zip(zx_nodes, zx_edges))
+    zx_cycle = CycleAnalyser.decompose(vzx, minimal=True)[0]
 
-    ring = ringfinder.find_optimum(zx_cycle, maximal_excess = 0)
+    ring = ringfinder.find_optimum(zx_cycle, maximal_excess=0)
 
     if ring is None:
         console.info(f"No optimum found for {zx_cycle}")
@@ -51,12 +53,8 @@ if __name__ == "__main__":
         console.info(f"Found an optimal Hadamard Ring of length {ring.volume()}")
 
         console.info(f"> Realisation [{ring.volume()}] : {ring}")
-        vzx = VolumetricZxGraph(
-            nodes = zip(range(LENGTH), nodes),
-            edges = ( (s, (s + 1) % LENGTH, edges[s]) for s in range(LENGTH) )
-        )
 
         vzx.realise_zx_cycle(zx_cycle, ring)
 
-        viewer = VolumetricZxGraphViewer(vzx, f"Hadamard Ring, n={LENGTH}", CycleLayout(vzx))
+        viewer = VolumetricZxGraphViewer(vzx, label=f"Hadamard Ring, n={LENGTH}", layout=CycleLayout(vzx))
         viewer.display()

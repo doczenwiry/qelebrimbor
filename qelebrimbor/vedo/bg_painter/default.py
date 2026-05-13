@@ -15,8 +15,8 @@
 from numpy import array
 
 from qelebrimbor.core.bg.attributes import CubeKind
-from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.vedo.bg_painter.abstract import BlockGraphPainter
 from qelebrimbor.vedo.zx_palette import ZxPalette
 
@@ -29,7 +29,7 @@ class DefaultBlockGraphPainter(BlockGraphPainter):
 
     @staticmethod
     def get_cube_colors(cube: BgCube):
-        return array([ DefaultBlockGraphPainter.__query_color(cube, f) for f in range(6) ])
+        return array([DefaultBlockGraphPainter.__query_color(cube, f) for f in range(6)])
 
     @staticmethod
     def get_pipe_colors(source: BgCube, target: BgCube):
@@ -38,10 +38,11 @@ class DefaultBlockGraphPainter(BlockGraphPainter):
         colors = []
         for c in range(3):
             if distances[c] == 0 and (
-                    source.kind not in [CubeKind.OOO, CubeKind.YYY] or target.kind not in [CubeKind.OOO, CubeKind.YYY]):
+                source.kind not in [CubeKind.OOO, CubeKind.YYY] or target.kind not in [CubeKind.OOO, CubeKind.YYY]
+            ):
                 color = source.kind.name[c] if source.kind not in [CubeKind.OOO, CubeKind.YYY] else target.kind.name[c]
             else:
-                color = 'O'
+                color = "O"
             colors.append(ZxPalette.get_major(NodeType[color]))
             colors.append(ZxPalette.get_major(NodeType[color]))
         return colors

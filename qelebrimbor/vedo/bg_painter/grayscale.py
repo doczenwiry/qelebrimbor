@@ -12,18 +12,18 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from vedo import get_color  # type: ignore[import-untyped]
 from numpy import array
+from vedo import get_color  # type: ignore[import-untyped]
 
-from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.vedo.bg_painter.abstract import BlockGraphPainter
 
 
 class GrayscaleBlockGraphPainter(BlockGraphPainter):
-    NAUGHT = [ 255 * c for c in get_color(rgb='white') ]
-    BRIGHT = [ 255 * c for c in get_color(rgb='k5') ]
-    SHADED = [ 255 * c for c in get_color(rgb='k2') ]
+    NAUGHT = [255 * c for c in get_color(rgb="white")]
+    BRIGHT = [255 * c for c in get_color(rgb="k5")]
+    SHADED = [255 * c for c in get_color(rgb="k2")]
 
     @staticmethod
     def __convert_color(node_type: NodeType):
@@ -52,9 +52,9 @@ class GrayscaleBlockGraphPainter(BlockGraphPainter):
         for c in range(3):
             face_type = NodeType.O
             if distances[c] == 0:
-                if source_type not in [ NodeType.O, NodeType.Y ]:
+                if source_type not in [NodeType.O, NodeType.Y]:
                     face_type = NodeType[source.kind.name[c]]
-                elif target_type not in [ NodeType.O, NodeType.Y ]:
+                elif target_type not in [NodeType.O, NodeType.Y]:
                     face_type = NodeType[target.kind.name[c]]
             colors.append(GrayscaleBlockGraphPainter.__convert_color(face_type))
             colors.append(GrayscaleBlockGraphPainter.__convert_color(face_type))

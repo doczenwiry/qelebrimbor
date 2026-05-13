@@ -19,4 +19,21 @@ dependencies = [
     "termcolor>=3.3.0",
     "seaborn>=0.13.2",
     "pandas>=3.0.2",
+    "pre-commit>=4.6.0",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.12",
+]
+
+[tool.ruff]
+# Target version of your Python runtime
+target-version = "py314"
+line-length = 120
+output-format = "concise"
+
+[tool.ruff.lint]
+# E: pycodestyle, F: Pyflakes (default), I: isort (import sorting)
+select = ["E", "F", "I"]
+ignore = []

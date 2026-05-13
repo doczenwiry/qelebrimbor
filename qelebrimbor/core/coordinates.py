@@ -32,11 +32,13 @@ class Coordinates(NamedTuple):
             return Coordinates(self.x * scalar, self.y * scalar, self.z * scalar)
         raise NotImplementedError("Scalar multiplication requires <int> or <float>.")
 
-    def __mul__(self, scalar: int | float):
+    def __mul__(self, scalar):
         if isinstance(scalar, (int, float)):
             return Coordinates(self.x * scalar, self.y * scalar, self.z * scalar)
         raise NotImplementedError("Scalar multiplication requires <int> or <float>.")
-    __rmul__ = __mul__
+
+    def __rmul__(self, scalar):
+        return self * scalar
 
     def __truediv__(self, scalar: float):
         return Coordinates(self.x / scalar, self.y / scalar, self.z / scalar)
@@ -45,18 +47,20 @@ class Coordinates(NamedTuple):
         return self / sqrt(self.dot(self))
 
     def dot(self, other) -> float:
-        return sum([ s * o for s, o in zip(self, other) ])
+        return sum([s * o for s, o in zip(self, other)])
 
     def abs(self) -> Coordinates:
         return Coordinates(abs(self.x), abs(self.y), abs(self.z))
 
     def cross(self, other):
-        return Coordinates(self.y * other.z - self.z * other.y,
-                           self.z * other.x - self.x * other.z,
-                           self.x * other.y - self.y * other.x)
+        return Coordinates(
+            self.y * other.z - self.z * other.y,
+            self.z * other.x - self.x * other.z,
+            self.x * other.y - self.y * other.x,
+        )
 
     def get_manhattan_distance(self, other):
-        return sum([ abs(s - o) for s, o in zip(self, other) ])
+        return sum([abs(s - o) for s, o in zip(self, other)])
 
     def __different_components(self, other):
         different_x = 1 if self.x != other.x else 0

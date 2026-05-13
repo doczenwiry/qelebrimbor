@@ -13,34 +13,31 @@
 #   limitations under the License.
 
 import heapq
+import logging
 
-from qelebrimbor.core.zx.chain import ZxChain
-from qelebrimbor.core.bg.strand import Strand
-from qelebrimbor.core.zx.attributes import NodeType, EdgeType
 from qelebrimbor.core.bg.attributes import CubeKind
-from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.bg.strand import Strand
 from qelebrimbor.core.components import BgCube
-
+from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.zx.attributes import EdgeType, NodeType
+from qelebrimbor.core.zx.chain import ZxChain
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.calculator import ManhattanCalculator
-
 from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
 from qelebrimbor.spacetime.connectivity.default import DefaultConnectivityTracker
-
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
-from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-
-import logging
 console = logging.getLogger(__name__)
 
 
 class StrandfinderDFS:
-    def __init__(self,
-            graph: VolumetricZxGraph = None,
-            connectivity: ConnectivityTracker | None = None,
-            branch_and_bound: bool = False,
-            tracing: SpacetimeTracingReport | None = None
+    def __init__(
+        self,
+        graph: VolumetricZxGraph | None = None,
+        connectivity: ConnectivityTracker | None = None,
+        branch_and_bound: bool = False,
+        tracing: SpacetimeTracingReport | None = None,
     ):
         """
         Create a PathfinderDFS to search for optimal paths between cubes in spacetime.
@@ -63,9 +60,12 @@ class StrandfinderDFS:
         # TODO: this heuristic is not admissible ...
         # return len(node_types) + ManhattanCalculator.minimal_manhattan_length(source, target)
         # TODO: is this heuristic admissible ?
-        return max(len(node_types), ManhattanCalculator.minimal_manhattan_length(source, target))
+        return max(
+            len(node_types),
+            ManhattanCalculator.minimal_manhattan_length(source, target),
+        )
 
-    def find_optimum(self, goal: ZxChain, maximal_excess: int = None) -> Strand | None:
+    def find_optimum(self, goal: ZxChain, maximal_excess: int | None = None) -> Strand | None:
         optimum: Strand | None = None
         unrelaxed: list[tuple[int, Strand]] = []
         minimal_paths: dict[tuple[CubeKind, Coordinates], Strand] = dict()
@@ -81,10 +81,10 @@ class StrandfinderDFS:
         edge_types = list(map(lambda edge: edge.type, edges))
 
         if any(nt == NodeType.O or nt == NodeType.Y for nt in node_types):
-            raise Exception(f"Node restrictions cannot contain NodeType.O or NodeType.Y.")
+            raise Exception("Node restrictions cannot contain NodeType.O or NodeType.Y.")
 
         if len(edge_types) != len(node_types) + 1:
-            raise Exception(f"A chain must have <n> node restriction and <n+1> edge restrictions.")
+            raise Exception("A chain must have <n> node restriction and <n+1> edge restrictions.")
 
         node_type_nr = len(node_types)
         edge_type_nr = len(edge_types)
@@ -96,17 +96,17 @@ class StrandfinderDFS:
             maximal_length = None
             extra = ""
 
-        tracer: SpacetimeTracer[BgCube] | None = SpacetimeTracer(
-            pruning = self.__branch_and_bound, reporting = self.__tracing
-        ) if self.__tracing else None
+        tracer: SpacetimeTracer[BgCube] | None = (
+            SpacetimeTracer(pruning=self.__branch_and_bound, reporting=self.__tracing) if self.__tracing else None
+        )
         if tracer:
-            tracer.add_node(start, label = str(start))
+            tracer.add_node(start, label=str(start))
 
-        initial = Strand(start = start)
+        initial = Strand(start=start)
         minimal_paths[(start.kind, start.position)] = initial
 
         vertex = (StrandfinderDFS.heuristic(start, final, node_types), initial)
-        heapq.heappush(unrelaxed, vertex )
+        heapq.heappush(unrelaxed, vertex)
 
         console.info(f"Searching for chain from {start} to {final} [{extra}{node_types}/{edge_types}]")
 
@@ -121,7 +121,9 @@ class StrandfinderDFS:
 
             # Branch-and-bound
             if self.__branch_and_bound and optimum:
-                manhattan_length_projected: int = current.length + StrandfinderDFS.heuristic(terminal, final, node_types[current.length:])
+                manhattan_length_projected: int = current.length + StrandfinderDFS.heuristic(
+                    terminal, final, node_types[current.length :]
+                )
                 if optimum.length <= manhattan_length_projected:
                     if tracer:
                         tracer.prune_node(terminal)
@@ -133,12 +135,12 @@ class StrandfinderDFS:
             if current.length >= node_type_nr:
                 final_pipe_type = edge_types[-1] if edge_types else EdgeType.IDENTITY
                 if BlockGraphHelper.connectable(terminal, final, final_pipe_type):
-                    completed_path = current.extend(cube = final, pipe = final_pipe_type)
+                    completed_path = current.extend(cube=final, pipe=final_pipe_type)
                     console.debug(f"> Completed path : {completed_path}")
 
                     # Tracing exploration
                     if tracer:
-                        tracer.add_node(final, label = str(final))
+                        tracer.add_node(final, label=str(final))
                         tracer.add_edge(terminal, final)
 
                     # Update the optimum only if it improves our current knowledge
@@ -146,16 +148,18 @@ class StrandfinderDFS:
                         optimum = completed_path
 
             if current.length < node_type_nr:
-                node_type_required = { node_types[current.length] }
+                node_type_required = {node_types[current.length]}
             else:
-                node_type_required = { NodeType.X, NodeType.Z }
+                node_type_required = {NodeType.X, NodeType.Z}
             if current.length < edge_type_nr:
                 pipe_type_required = edge_types[current.length]
             else:
                 pipe_type_required = EdgeType.IDENTITY
             console.debug(f"> Restriction on node/edge : {node_type_required} / {pipe_type_required}")
 
-            for neighbor in BlockGraphHelper.get_candidate_constellation(terminal, node_types = node_type_required, pipe_type = pipe_type_required):
+            for neighbor in BlockGraphHelper.get_candidate_constellation(
+                terminal, node_types=node_type_required, pipe_type=pipe_type_required
+            ):
                 neighbor_point = (neighbor.kind, neighbor.position)
                 console.debug(f"> Neighbor : {neighbor}")
 
@@ -173,7 +177,7 @@ class StrandfinderDFS:
 
                 if current.length < node_type_nr:
                     neighbor.realised_node = nodes[current.length]
-                extended = current.extend(cube = neighbor, pipe = EdgeType.IDENTITY)
+                extended = current.extend(cube=neighbor, pipe=EdgeType.IDENTITY)
 
                 # Tracing exploration
                 if tracer:
@@ -182,9 +186,14 @@ class StrandfinderDFS:
 
                 if neighbor_point not in minimal_paths or extended.length < minimal_paths[neighbor_point].length:
                     # Filtering out the neighbor from unrelaxed
-                    unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].final != neighbor ]
+                    unrelaxed = [vertex for vertex in unrelaxed if vertex[1].final != neighbor]
                     # Compute the minimal manhattan length required to connect neighbor to target (heuristic).
-                    unrelaxed.append((StrandfinderDFS.heuristic(neighbor, final, node_types[extended.length:]), extended))
+                    unrelaxed.append(
+                        (
+                            StrandfinderDFS.heuristic(neighbor, final, node_types[extended.length :]),
+                            extended,
+                        )
+                    )
 
                     # Update minimal distance discovered
                     minimal_paths[neighbor_point] = extended

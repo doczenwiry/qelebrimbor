@@ -13,30 +13,30 @@
 #   limitations under the License.
 
 import heapq
+import logging
 
 from qelebrimbor.core.bg.ring import Ring
-from qelebrimbor.core.coordinates import Coordinates
-from qelebrimbor.core.zx.cycle import ZxCycle
-from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.core.colorless.ring import ColorlessRing
+from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-
+from qelebrimbor.core.zx.attributes import NodeType
+from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-
+from qelebrimbor.spacetime.colorblind.painter_cycle import PainterZxCycle
 from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
 from qelebrimbor.spacetime.connectivity.default import DefaultConnectivityTracker
-from qelebrimbor.spacetime.colorblind.painter_cycle import PainterZxCycle
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
-import logging
 console = logging.getLogger(__name__)
 
+
 class RingfinderColorblindDFS:
-    def __init__(self,
-            graph: VolumetricZxGraph = None,
-            connectivity: ConnectivityTracker | None = None,
-            branch_and_bound: bool = False,
-            reporting: SpacetimeTracingReport | None = None
+    def __init__(
+        self,
+        graph: VolumetricZxGraph | None = None,
+        connectivity: ConnectivityTracker | None = None,
+        branch_and_bound: bool = False,
+        reporting: SpacetimeTracingReport | None = None,
     ):
         """
         Instantiate a RingfinderColorblindDFS to search for shortest valid Ring suitable for ZxCycle.
@@ -67,13 +67,11 @@ class RingfinderColorblindDFS:
         """
         # Prepare the parameters for the search
         nodes = list(goal.nodes)
-        edges = list(goal.edges)
 
         node_types = list(map(lambda node: node.color, nodes))
-        edge_types = list(map(lambda edge: edge.color, edges))
 
         if any(nt == NodeType.O or nt == NodeType.Y for nt in node_types):
-            raise Exception(f"Node restrictions cannot contain NodeType.O or NodeType.Y.")
+            raise Exception("Node restrictions cannot contain NodeType.O or NodeType.Y.")
 
         node_type_nr = len(node_types)
 
@@ -82,19 +80,19 @@ class RingfinderColorblindDFS:
         extra = f"[max volume={maximal_volume}]" if maximal_volume is not None else ""
 
         # Initialize a tracer if tracing has been requested
-        tracer: SpacetimeTracer | None = SpacetimeTracer(
-            pruning = self.__branch_and_bound, reporting = self.__reporting
-        ) if self.__reporting else None
+        tracer: SpacetimeTracer | None = (
+            SpacetimeTracer(pruning=self.__branch_and_bound, reporting=self.__reporting) if self.__reporting else None
+        )
 
         # Main variables of the DFS
         optimum: Ring | None = None
         unrelaxed: list[tuple[int, ColorlessRing]] = []
 
-        initial = ColorlessRing(anchor = Coordinates(0,0,0))
+        initial = ColorlessRing(anchor=Coordinates(0, 0, 0))
         heapq.heappush(unrelaxed, (RingfinderColorblindDFS.heuristic(initial, node_types), initial))
 
         if tracer:
-            tracer.add_node(initial.anchor, label = str(initial.anchor))
+            tracer.add_node(initial.anchor, label=str(initial.anchor))
 
         console.info(f"Searching for ring for {goal} {extra}")
 
@@ -137,7 +135,7 @@ class RingfinderColorblindDFS:
                         optimum = PainterZxCycle.paint(current, goal)
 
             # Restrict the outgoing paths to lie in the reach of the CubeKind of the start.
-            constellation = SpacetimeHelper.get_constellation(position = terminal)
+            constellation = SpacetimeHelper.get_constellation(position=terminal)
 
             console.debug(f"{'>' * (current.volume + 2)} {terminal} has constellation : {constellation}")
 
@@ -162,10 +160,15 @@ class RingfinderColorblindDFS:
                 extended = current.extend(adjacent)
 
                 # Filtering out the neighbor from unrelaxed
-                unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].terminal != adjacent ]
+                unrelaxed = [vertex for vertex in unrelaxed if vertex[1].terminal != adjacent]
 
                 # Compute the minimal manhattan length required to connect neighbor to target (HEURISTIC).
-                unrelaxed.append((RingfinderColorblindDFS.heuristic(extended, node_types[extended.volume:]), extended))
+                unrelaxed.append(
+                    (
+                        RingfinderColorblindDFS.heuristic(extended, node_types[extended.volume :]),
+                        extended,
+                    )
+                )
 
         console.info(f"Optimum found : {optimum}")
 

@@ -12,21 +12,19 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from typing import Iterable
+import logging
+
 from recordclass import RecordClass
 
 from qelebrimbor.core.common import Port
-from qelebrimbor.core.components import BgCube, ZxNode, ZxEdge
+from qelebrimbor.core.components import BgCube, ZxNode
 from qelebrimbor.core.coordinates import Coordinates
-from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-
-
-import logging
-
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
 
 console = logging.getLogger(__name__)
+
 
 class TrackingInformation(RecordClass):
     required: int
@@ -45,6 +43,7 @@ class TrackingInformation(RecordClass):
 
     def __repr__(self):
         return str(self)
+
 
 class OpenPortsTracker(ConnectivityTracker):
     def __init__(self, graph: VolumetricZxGraph):
@@ -73,7 +72,7 @@ class OpenPortsTracker(ConnectivityTracker):
         prioritized = 0
         unreachable = 0
         if verbose:
-            console.critical(f"Reporting on all tracked cubes.")
+            console.critical("Reporting on all tracked cubes.")
         for holder, vertex in self.__reserved_ports.items():
             console.debug(f"Verifying {holder} [{vertex}]")
             if verbose:
@@ -86,18 +85,18 @@ class OpenPortsTracker(ConnectivityTracker):
                 unreachable += 1
 
         if prioritized == 0:
-            console.info(f"No tracked cubes requires to be prioritized.")
+            console.info("No tracked cubes requires to be prioritized.")
 
         if unreachable == 0:
             if verbose:
-                console.critical(f"All tracked cubes have enough ports.")
-            console.info(f"All tracked cubes have enough ports.")
+                console.critical("All tracked cubes have enough ports.")
+            console.info("All tracked cubes have enough ports.")
 
     def reachable(self, cube: BgCube):
         raise NotImplementedError("Method reachable(..) has been deprecated. Use available(..) instead.")
 
     def reserve(self, cube: BgCube, required: int):
-        vertex = TrackingInformation(required = required, available = set())
+        vertex = TrackingInformation(required=required, available=set())
 
         for port in SpacetimeHelper.get_constellation(cube.position, cube.kind.get_reach()):
             if port not in self.__ports_holders and self.__spacetime.available(port):
@@ -143,12 +142,14 @@ class OpenPortsTracker(ConnectivityTracker):
         nodes_with_insufficient_ports = []
         for node in filter(ZxNode.is_realised, graph.get_zx_nodes()):
             edges_unrealised = sum(
-                1 for neighbor in graph.get_zx_neighbors(node) if
-                not graph.get_zx_edge(node.id, neighbor.id).is_realised()
+                1
+                for neighbor in graph.get_zx_neighbors(node)
+                if not graph.get_zx_edge(node.id, neighbor.id).is_realised()
             )
             cube = node.realising_cube
             open_ports = sum(
-                1 for position in SpacetimeHelper.get_constellation(cube.position, cube.kind.get_reach())
+                1
+                for position in SpacetimeHelper.get_constellation(cube.position, cube.kind.get_reach())
                 if not graph.spacetime.occupied(position)
             )
             if open_ports < edges_unrealised:

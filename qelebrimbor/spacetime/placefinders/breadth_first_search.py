@@ -12,28 +12,29 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 from collections import deque
 
-from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.core.bg.attributes import CubeKind
-from qelebrimbor.core.zx.attributes import EdgeType
+from qelebrimbor.core.bg.path import Path
 from qelebrimbor.core.components import BgCube, ZxNode
-
+from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.zx.attributes import EdgeType
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.core.bg.path import Path
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
-from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-
-import logging
 console = logging.getLogger(__name__)
 
+
 class PlacefinderBFS:
-    def __init__(self,
-        graph: VolumetricZxGraph, ports_tracker: OpenPortsTracker | None = None,
-        tracing: SpacetimeTracingReport | None = None
+    def __init__(
+        self,
+        graph: VolumetricZxGraph,
+        ports_tracker: OpenPortsTracker | None = None,
+        tracing: SpacetimeTracingReport | None = None,
     ):
         self.__graph = graph
         self.__spacetime = graph.spacetime
@@ -41,14 +42,16 @@ class PlacefinderBFS:
         self.__tracing = tracing
 
     # TODO: consider the type of Edge between source and target (IDENTITY or HADAMARD)
-    def find_closest_realisation(self, source: BgCube, target: ZxNode, maximal_distance: int = None) -> Path | None:
+    def find_closest_realisation(
+        self, source: BgCube, target: ZxNode, maximal_distance: int | None = None
+    ) -> Path | None:
         optimum: Path | None = None
         minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
         unrelaxed: deque[Path] = deque()
 
-        initial = Path(start = source)
-        unrelaxed.append( initial )
-        minimal_paths[ (source.kind, source.position) ] = initial
+        initial = Path(start=source)
+        unrelaxed.append(initial)
+        minimal_paths[(source.kind, source.position)] = initial
 
         number_of_ports_required = self.__graph.get_zx_degree(target.id)
         console.info(f"Searching for placement from {source} to {target} [ports required:{number_of_ports_required}]")
@@ -56,9 +59,9 @@ class PlacefinderBFS:
         target_suitable_kinds: list[CubeKind] = CubeKind.suitable_kinds(target.type)
 
         # Tracing exploration
-        tracer: SpacetimeTracer[BgCube] | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None
+        tracer: SpacetimeTracer[BgCube] | None = SpacetimeTracer(reporting=self.__tracing) if self.__tracing else None
         if tracer:
-            tracer.add_node(source, label = str(source))
+            tracer.add_node(source, label=str(source))
 
         while len(unrelaxed) != 0 and optimum is None:
             current_path = unrelaxed.pop()
@@ -86,16 +89,18 @@ class PlacefinderBFS:
                 if not self.__connectivity.preserved(source, target, neighbor.position):
                     continue
 
-                extended_path = current_path.extend(cube = neighbor, pipe_type = EdgeType.IDENTITY)
+                extended_path = current_path.extend(cube=neighbor, pipe_type=EdgeType.IDENTITY)
                 console.debug(f"> Extended Path : {extended_path}")
 
                 # If a suitable Cube has been reached for the target, consider it further
                 console.debug(f"> Neighbor has kind {neighbor.kind} in {target_suitable_kinds} ?")
                 if neighbor.kind in target_suitable_kinds:
-                    open_ports = list(filter(
-                        lambda pos : not extended_path.occupies(pos) and not self.__spacetime.occupied(pos),
-                        SpacetimeHelper.get_constellation(neighbor.position, neighbor.kind.get_reach())
-                    ))
+                    open_ports = list(
+                        filter(
+                            lambda pos: not extended_path.occupies(pos) and not self.__spacetime.occupied(pos),
+                            SpacetimeHelper.get_constellation(neighbor.position, neighbor.kind.get_reach()),
+                        )
+                    )
                     number_of_open_ports = len(open_ports)
                     # If the position offers enough open ports, consider it as the optimum
                     console.debug(f"> Open ports found for {neighbor} : {open_ports} [req.{number_of_ports_required}]")
@@ -104,12 +109,12 @@ class PlacefinderBFS:
                         continue
 
                 # Don't attempt to extend if the neighbor is a terminal cube.
-                if neighbor.kind in [ CubeKind.OOO , CubeKind.YYY ]:
+                if neighbor.kind in [CubeKind.OOO, CubeKind.YYY]:
                     continue
 
                 # Update position of neighbor in unrelaxed as its distance is being updated
                 if neighbor not in minimal_paths:
-                    unrelaxed.append( extended_path )
+                    unrelaxed.append(extended_path)
 
                 # Tracing exploration
                 if tracer:

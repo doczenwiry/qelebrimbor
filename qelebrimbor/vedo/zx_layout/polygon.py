@@ -12,17 +12,24 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
+
 import numpy as np
 
 from qelebrimbor.core.zx.attributes import NodeId, NodeType
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 
-import logging
 console = logging.getLogger(__name__)
 
+
 class PolygonLayout(ZxLayout):
-    def __init__(self, graph: VolumetricZxGraphViewer, nodes: list[NodeId], extras: dict[NodeId, tuple[float, float]]):
+    def __init__(
+        self,
+        graph: VolumetricZxGraphViewer,
+        nodes: list[NodeId],
+        extras: dict[NodeId, tuple[float, float]],
+    ):
         self.placements: dict[NodeId, tuple[float, float]] = {}
 
         step = 2.0 * np.pi / len(nodes)
@@ -37,10 +44,13 @@ class PolygonLayout(ZxLayout):
                 continue
             x = rho * np.cos(theta)
             y = rho * np.sin(theta)
-            self.placements[node] = (x,y)
-            boundaries = list(filter(
-                lambda bd: graph.has_edge(node, bd.id), graph.get_zx_nodes(node_type = NodeType.O)
-            ))
+            self.placements[node] = (x, y)
+            boundaries = list(
+                filter(
+                    lambda bd: graph.has_edge(node, bd.id),
+                    graph.get_zx_nodes(node_type=NodeType.O),
+                )
+            )
             console.info(f"Node {node} has boundaries : {boundaries}")
             try:
                 boundary = next(iter(boundaries))

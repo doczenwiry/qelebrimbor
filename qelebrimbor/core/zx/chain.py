@@ -15,13 +15,13 @@
 import itertools
 from typing import Iterator
 
-from qelebrimbor.core.components import ZxNode, ZxEdge
+from qelebrimbor.core.components import ZxEdge, ZxNode
 
 
 class ZxChain:
     def __init__(self, source: ZxNode):
-        self.__nodes = [source]
-        self.__edges = []
+        self.__nodes: list[ZxNode] = [source]
+        self.__edges: list[ZxEdge] = []
 
     @property
     def source(self) -> ZxNode:
@@ -33,7 +33,7 @@ class ZxChain:
 
     @property
     def nodes(self) -> Iterator[ZxNode]:
-        return itertools.islice(self.__nodes, 1, len(self.__nodes)-1)
+        return itertools.islice(self.__nodes, 1, len(self.__nodes) - 1)
 
     @property
     def edges(self) -> Iterator[ZxEdge]:
@@ -64,9 +64,9 @@ class ZxChain:
         content = f"{self.source}"
 
         for index in range(1, len(self.__nodes)):
-            content += f" --{repr(self.__edges[index-1].type)}-- {self.__nodes[index]}"
+            content += f" --{repr(self.__edges[index - 1].type)}-- {self.__nodes[index]}"
 
         if len(self.__nodes) == 1:
-            content += f" [self-loop]"
+            content += " [self-loop]"
 
         return content

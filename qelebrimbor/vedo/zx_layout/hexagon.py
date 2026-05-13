@@ -12,19 +12,25 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
+
 import numpy as np
 
 from qelebrimbor.core.components import ZxNode
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.core.zx.attributes import NodeId, NodeType
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 
-from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-
-import logging
 console = logging.getLogger(__name__)
 
+
 class HexagonLayout(ZxLayout):
-    def __init__(self, graph: VolumetricZxGraph, nodes: list[NodeId], extras: dict[NodeId, tuple[float, float]]):
+    def __init__(
+        self,
+        graph: VolumetricZxGraph,
+        nodes: list[NodeId],
+        extras: dict[NodeId, tuple[float, float]],
+    ):
         self.placements: dict[ZxNode, tuple[float, float]] = {}
 
         step = 2.0 * np.pi / 6.0
@@ -39,10 +45,13 @@ class HexagonLayout(ZxLayout):
                 continue
             x = rho * np.cos(theta)
             y = rho * np.sin(theta)
-            self.placements[node] = (x,y)
-            boundaries = list(filter(
-                lambda bd: graph.has_edge(node.id, bd.id), graph.get_zx_nodes(node_type = NodeType.O)
-            ))
+            self.placements[node] = (x, y)
+            boundaries = list(
+                filter(
+                    lambda bd: graph.has_edge(node.id, bd.id),
+                    graph.get_zx_nodes(node_type=NodeType.O),
+                )
+            )
             console.debug(f"Node {node} has boundaries : {boundaries}")
             try:
                 boundary = next(iter(boundaries))

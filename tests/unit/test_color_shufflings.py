@@ -12,30 +12,35 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import unittest
 from itertools import product
+from unittest import TestCase
 
-from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.core.metric.color_shufflings import ColorShuffling
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
-class TestColorShuffling(unittest.TestCase):
+
+class TestColorShuffling(TestCase):
     def test_identity(self):
-        identity = ColorShuffling('xyz')
+        identity = ColorShuffling("xyz")
         for elt in ColorShuffling.generate():
             self.assertEqual(elt, elt.extend(identity))
             self.assertEqual(elt, identity.extend(elt))
 
     def test_extend(self):
-        testing = ColorShuffling('xyz')
+        testing = ColorShuffling("xyz")
         testing = testing.extend(ColorShuffling.convert(SpacetimeHelper.YP))
         print(f"Testing : {testing}")
 
     def test_associativity(self):
         elements = ColorShuffling.generate()
-        for elt1, elt2, elt3 in product(elements, repeat = 3):
+        for elt1, elt2, elt3 in product(elements, repeat=3):
             associative_l = elt1.extend(elt2).extend(elt3)
             associative_r = elt1.extend(elt2.extend(elt3))
-            self.assertEqual(associative_l, associative_r, msg = f"({elt1} * {elt2}) * {elt3} != {elt1} * ({elt2} * {elt3}) / {elt1.extend(elt2)}")
+            self.assertEqual(
+                associative_l,
+                associative_r,
+                msg=f"({elt1} * {elt2}) * {elt3} != {elt1} * ({elt2} * {elt3}) / {elt1.extend(elt2)}",
+            )
 
     def test_other(self):
         step1 = ColorShuffling.convert(SpacetimeHelper.YP)

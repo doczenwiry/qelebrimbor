@@ -13,9 +13,9 @@
 #   limitations under the License.
 
 from qelebrimbor.core.components import ZxNode
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.core.zx.attributes import NodeId
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
-from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 
 class ManualLayout(ZxLayout):

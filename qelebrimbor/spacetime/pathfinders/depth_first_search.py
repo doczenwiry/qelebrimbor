@@ -13,30 +13,30 @@
 #   limitations under the License.
 
 import heapq
+import logging
 
 from qelebrimbor.core.bg.attributes import CubeKind
-from qelebrimbor.core.zx.attributes import NodeType, EdgeType
+from qelebrimbor.core.bg.path import Length, Path
 from qelebrimbor.core.components import BgCube, ZxEdge
-
 from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.zx.attributes import EdgeType, NodeType
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.calculator import ManhattanCalculator
-from qelebrimbor.core.bg.path import Length, Path
 from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
 from qelebrimbor.spacetime.connectivity.default import DefaultConnectivityTracker
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
-from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-
-import logging
 console = logging.getLogger(__name__)
 
+
 class PathfinderDFS:
-    def __init__(self,
-        graph: VolumetricZxGraph = None,
+    def __init__(
+        self,
+        graph: VolumetricZxGraph | None = None,
         connectivity: ConnectivityTracker | None = None,
         branch_and_bound: bool = False,
-        tracing: SpacetimeTracingReport | None = None
+        tracing: SpacetimeTracingReport | None = None,
     ):
         """
         Instantiate a PathfinderDFS to search for shortest valid paths between cubes in spacetime.
@@ -56,7 +56,8 @@ class PathfinderDFS:
     def heuristic(source: BgCube, target: BgCube):
         return ManhattanCalculator.minimal_manhattan_length(source, target)
 
-    __INTERCONNECTING_TYPES = { NodeType.X, NodeType.Z }
+    __INTERCONNECTING_TYPES = {NodeType.X, NodeType.Z}
+
     def find_optimum(self, goal: ZxEdge, maximal_excess: int | None = None) -> Path | None:
         """
         Search for a path connecting cubes source and target.
@@ -72,8 +73,8 @@ class PathfinderDFS:
         start = goal.source.realising_cube
         final = goal.target.realising_cube
 
-        initial = Path(start = start)
-        minimal_paths[ (start.kind, start.position) ] = initial
+        initial = Path(start=start)
+        minimal_paths[(start.kind, start.position)] = initial
 
         heapq.heappush(unrelaxed, (PathfinderDFS.heuristic(start, final), initial))
 
@@ -86,11 +87,11 @@ class PathfinderDFS:
 
         console.info(f"Searching for {goal.type} path from {start} to {final} {extra}")
 
-        tracer: SpacetimeTracer[BgCube] | None = SpacetimeTracer(
-            pruning = self.__branch_and_bound, reporting = self.__tracing
-        ) if self.__tracing else None
+        tracer: SpacetimeTracer[BgCube] | None = (
+            SpacetimeTracer(pruning=self.__branch_and_bound, reporting=self.__tracing) if self.__tracing else None
+        )
         if tracer:
-            tracer.add_node(start, label = str(start))
+            tracer.add_node(start, label=str(start))
 
         while len(unrelaxed) > 0 and (self.__branch_and_bound or optimum is None):
             # Restore the heap invariant
@@ -116,13 +117,17 @@ class PathfinderDFS:
 
             console.debug(f"{'>' * (current.length + 1)} Current : {current}")
 
-            if BlockGraphHelper.connectable(terminal, final, next_pipe_type) and not self.__graph.has_bg_pipe(terminal, final):
-                console.debug(f"> Connectable to {final} : {BlockGraphHelper.connectable(terminal, final, next_pipe_type)}")
-                completed_path = current.extend(cube = final, pipe_type = next_pipe_type)
+            if BlockGraphHelper.connectable(terminal, final, next_pipe_type) and not self.__graph.has_bg_pipe(
+                terminal, final
+            ):
+                console.debug(
+                    f"> Connectable to {final} : {BlockGraphHelper.connectable(terminal, final, next_pipe_type)}"
+                )
+                completed_path = current.extend(cube=final, pipe_type=next_pipe_type)
 
                 # Tracing exploration
                 if tracer:
-                    tracer.add_node(final, label = str(final))
+                    tracer.add_node(final, label=str(final))
                     tracer.add_edge(terminal, final)
 
                 # Update the optimum only if it improves our current knowledge
@@ -130,7 +135,9 @@ class PathfinderDFS:
                     optimum = completed_path
 
             constellation = BlockGraphHelper.get_candidate_constellation(
-                origin = terminal, node_types = PathfinderDFS.__INTERCONNECTING_TYPES, pipe_type = next_pipe_type
+                origin=terminal,
+                node_types=PathfinderDFS.__INTERCONNECTING_TYPES,
+                pipe_type=next_pipe_type,
             )
 
             for neighbor in constellation:
@@ -153,14 +160,14 @@ class PathfinderDFS:
                     tracer.add_node(neighbor)
                     tracer.add_edge(terminal, neighbor)
 
-                extended = current.extend(cube = neighbor, pipe_type = next_pipe_type)
+                extended = current.extend(cube=neighbor, pipe_type=next_pipe_type)
 
                 if neighbor_point not in minimal_paths or extended.length < minimal_paths[neighbor_point].length:
                     # Filtering out the neighbor from unrelaxed
-                    unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].final != neighbor ]
+                    unrelaxed = [vertex for vertex in unrelaxed if vertex[1].final != neighbor]
 
                     # Compute the minimal manhattan length required to connect neighbor to target (HEURISTIC).
-                    unrelaxed.append( (PathfinderDFS.heuristic(neighbor, final), extended) )
+                    unrelaxed.append((PathfinderDFS.heuristic(neighbor, final), extended))
 
                     # Update minimal distance discovered
                     minimal_paths[neighbor_point] = extended

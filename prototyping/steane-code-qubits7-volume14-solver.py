@@ -12,26 +12,23 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.zx import attributes as zx_attributes
+import logging
 
+from qelebrimbor.analysis.cycles import CycleAnalyser
+from qelebrimbor.core.zx import attributes as zx_attributes
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.inflaters.boundaries import ZxGraphInflaterBoundaries
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
-
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
 from qelebrimbor.spacetime.strandfinders.depth_first_search import StrandfinderDFS
-
-from qelebrimbor.analysis.cycles import CycleAnalyser
-
-from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
+from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
 
-import logging
 console = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 # logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
 # logging.getLogger('qelebrimbor.utilities.cycle_analyser').setLevel(logging.DEBUG)
-logging.getLogger('qelebrimbor.vedo').setLevel(logging.CRITICAL)
+logging.getLogger("qelebrimbor.vedo").setLevel(logging.CRITICAL)
 
 
 zx_attributes.ZX_COLORING = True
@@ -39,18 +36,18 @@ if __name__ == "__main__":
     vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders7.json")
 
     connectivity = OpenPortsTracker(vzx)
-    ringfinder = RingfinderBFS(graph = vzx, ports_tracker = connectivity)
-    strandfinder = StrandfinderDFS(graph = vzx, connectivity = connectivity, branch_and_bound = True)
+    ringfinder = RingfinderBFS(graph=vzx, ports_tracker=connectivity)
+    strandfinder = StrandfinderDFS(graph=vzx, connectivity=connectivity, branch_and_bound=True)
 
     CycleAnalyser.analyse(vzx)
-    cycles = CycleAnalyser.decompose(vzx, minimal = True)
+    cycles = CycleAnalyser.decompose(vzx, minimal=True)
 
     # Realise the root ring
     index = 0
     cycle = cycles[index]
     console.info(f"Cycle {index} : {cycle}")
 
-    ring = ringfinder.find_optimum(cycle, maximal_excess = 2)
+    ring = ringfinder.find_optimum(cycle, maximal_excess=2)
     if ring:
         console.info(f"Found realisation [volume={ring.volume()}] for cycle : {str(cycle)}")
         console.info(f"> {ring}")
@@ -59,9 +56,9 @@ if __name__ == "__main__":
         # Reserve the ports for all the nodes that were realised as part of this ring.
         for node, _ in cycle:
             # Since each of these node is part of a ring, it already has two of its edges realised.
-            connectivity.reserve(node.realising_cube, required =vzx.get_zx_degree(node.id) - 2)
+            connectivity.reserve(node.realising_cube, required=vzx.get_zx_degree(node.id) - 2)
 
-        for cube in ring.cubes[len(cycle):]:
+        for cube in ring.cubes[len(cycle) :]:
             connectivity.occlude(cube.position)
 
     connectivity.report()
@@ -75,14 +72,15 @@ if __name__ == "__main__":
 
     console.info(f"Cycle {index} : {str(cycle)}")
     console.info(f"> Chain : {chain}")
-    strand = strandfinder.find_optimum(chain, maximal_excess = 12)
+    strand = strandfinder.find_optimum(chain, maximal_excess=12)
 
     if strand:
         console.info(f"Found completion [volume={strand.length - 1}] for chain : {chain}")
         console.info(f"> {strand}")
         vzx.realise_zx_chain(chain, strand)
 
-        for cube in strand.extra_cubes[chain.length:]:
+        extra_cubes = list(strand.extras)
+        for cube in extra_cubes[chain.length :]:
             connectivity.occlude(cube.position)
 
     index = 2
@@ -93,14 +91,15 @@ if __name__ == "__main__":
 
     console.info(f"Cycle {index} : {str(cycle)}")
     console.info(f"> Chain : {chain}")
-    strand = strandfinder.find_optimum(chain, maximal_excess = 8)
+    strand = strandfinder.find_optimum(chain, maximal_excess=8)
 
     if strand:
         console.info(f"Found completion [volume={strand.length - 1}] for chain : {chain}")
         console.info(f"> {strand}")
         vzx.realise_zx_chain(chain, strand)
 
-        for cube in strand.extra_cubes[chain.length:]:
+        extra_cubes = list(strand.extras)
+        for cube in extra_cubes[chain.length :]:
             connectivity.occlude(cube.position)
 
     ZxGraphInflaterBoundaries(vzx).process()
@@ -108,7 +107,10 @@ if __name__ == "__main__":
     vzx.log_report()
 
     hexagon = HexagonLayout(graph=vzx, nodes=[0, 2, 4, 5, 6, 3], extras={1: (0.0, 0.0), 7: (0.7, 1.0 / 6.0)})
-    viewer = VolumetricZxGraphViewer(graph= vzx, label ="steane-code-7", layout = hexagon)
+    viewer = VolumetricZxGraphViewer(graph=vzx, label="steane-code-7", layout=hexagon)
     viewer.display()
 
-    PYZX.into_file(vzx, filepath ="../assets/pyzx/steane/steane-code-qubits7-spiders7-blockgraph.pyzx.json")
+    PYZX.into_file(
+        vzx,
+        filepath="../assets/pyzx/steane/steane-code-qubits7-spiders7-blockgraph.pyzx.json",
+    )

@@ -13,13 +13,13 @@
 #   limitations under the License.
 
 from collections import defaultdict
-from typing import cast
 from time import time
-import networkx as nx
+from typing import cast
 
+import matplotlib.pyplot as plt
+import networkx as nx
 import pandas
 import seaborn
-import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
@@ -33,8 +33,8 @@ class ConnectedComponentsAnalyser:
         runtime = round(time() - start, 2)
 
         if plot:
-            ax = seaborn.histplot(data = pandas.Series(map(len, components), dtype = int))
-            ax.yaxis.set_major_locator(MaxNLocator(integer = True))
+            ax = seaborn.histplot(data=pandas.Series(map(len, components), dtype=int))
+            ax.yaxis.set_major_locator(MaxNLocator(integer=True))
             plt.title(f"Connected components [computed in {str(runtime).rjust(2, ' ')}]")
             plt.xlabel("Number of nodes")
             plt.ylabel("Number of components")
@@ -44,7 +44,7 @@ class ConnectedComponentsAnalyser:
             for index in range(len(components)):
                 component = components[index]
                 histogram[len(component)] += 1
-            size = sorted(histogram.keys(), reverse = True)[0]
+            size = sorted(histogram.keys(), reverse=True)[0]
             print(f"> Total number of connected components : {len(components)}")
             print(f"> Largest connected component has size {size} [count={histogram[size]}]")
 

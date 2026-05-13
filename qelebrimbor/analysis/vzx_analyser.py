@@ -12,35 +12,36 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.zx.cycle import ZxCycle
-from qelebrimbor.core.zx.attributes import NodeType, EdgeType
-from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-
-from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.analysis.components import ConnectedComponentsAnalyser
+from qelebrimbor.analysis.cycles import CycleAnalyser
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.zx.attributes import EdgeType, NodeType
+from qelebrimbor.core.zx.cycle import ZxCycle
 
 
 class VolumetricZxGraphAnalyser:
     @staticmethod
     def analyse(graph: VolumetricZxGraph, minimal: bool = False, plot: bool = False) -> list[ZxCycle]:
         node_counts: dict[NodeType, int] = {
-            nodetype : len(list(graph.get_zx_nodes(node_type = nodetype)))
-            for nodetype in NodeType if graph.number_of_zx_nodes(node_type = nodetype) > 0
+            nodetype: len(list(graph.get_zx_nodes(node_type=nodetype)))
+            for nodetype in NodeType
+            if graph.number_of_zx_nodes(node_type=nodetype) > 0
         }
-        breakdown = ",".join(str(nodetype) + ':' + str(count) for nodetype, count in node_counts.items())
+        breakdown = ",".join(str(nodetype) + ":" + str(count) for nodetype, count in node_counts.items())
         print(f"> Number of nodes : {graph.number_of_nodes()} [{breakdown}]")
 
         edge_counts = {
-            edgetype : len(list(graph.get_zx_edges(edge_type = edgetype)))
-            for edgetype in EdgeType if graph.number_of_zx_edges(edge_type = edgetype) > 0
+            edgetype: len(list(graph.get_zx_edges(edge_type=edgetype)))
+            for edgetype in EdgeType
+            if graph.number_of_zx_edges(edge_type=edgetype) > 0
         }
-        breakdown = ",".join(str(edgetype) + ':' + str(count) for edgetype, count in edge_counts.items())
+        breakdown = ",".join(str(edgetype) + ":" + str(count) for edgetype, count in edge_counts.items())
         print(f"> Number of edges : {graph.number_of_edges()} [{breakdown}]")
 
         print(f"> Number of qubits : {len(graph.get_zx_qubits())}")
         print(f"> Number of layers : {len(graph.get_zx_layers())}")
 
-        zx_cycles = CycleAnalyser.analyse(graph = graph, minimal = minimal, plot = plot)
-        _, _ = ConnectedComponentsAnalyser.analyse(graph = graph, plot = plot)
+        zx_cycles = CycleAnalyser.analyse(graph=graph, minimal=minimal, plot=plot)
+        _, _ = ConnectedComponentsAnalyser.analyse(graph=graph, plot=plot)
 
         return zx_cycles

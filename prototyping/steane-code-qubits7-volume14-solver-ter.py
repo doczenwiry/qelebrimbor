@@ -12,23 +12,23 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.formats.pyzx import PYZX
-from qelebrimbor.analysis.cycles import CycleAnalyser
-
-from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
-from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
-
 import logging
+
+from qelebrimbor.analysis.cycles import CycleAnalyser
+from qelebrimbor.formats.pyzx import PYZX
+from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
+from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
+
 console = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
-logging.getLogger('qelebrimbor.vedo').setLevel(logging.INFO)
+logging.getLogger("qelebrimbor.volumetric_zx_graph").setLevel(logging.INFO)
+logging.getLogger("qelebrimbor.vedo").setLevel(logging.INFO)
 
 if __name__ == "__main__":
     vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders7.json")
 
-    CycleAnalyser.analyse(vzx, minimal = True)
-    cycles = CycleAnalyser.decompose(vzx, minimal = True)
+    CycleAnalyser.analyse(vzx, minimal=True)
+    cycles = CycleAnalyser.decompose(vzx, minimal=True)
 
     index = 0
     cycle = cycles[index]
@@ -70,6 +70,6 @@ if __name__ == "__main__":
 
     vzx.log_report()
 
-    hexagon = HexagonLayout(graph = vzx, nodes = [0,2,4,5,6,3], extras = { 1 : (0.0, 0.0), 7 : (0.7, 1.0 / 6.0) })
-    viewer = VolumetricZxGraphViewer(graph= vzx, label ="steane-code-7", layout = hexagon)
+    hexagon = HexagonLayout(graph=vzx, nodes=[0, 2, 4, 5, 6, 3], extras={1: (0.0, 0.0), 7: (0.7, 1.0 / 6.0)})
+    viewer = VolumetricZxGraphViewer(graph=vzx, label="steane-code-7", layout=hexagon)
     viewer.display()

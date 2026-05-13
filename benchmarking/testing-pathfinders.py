@@ -12,26 +12,21 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 import sys
 from time import time
 
 import qelebrimbor.core.zx.attributes
 from qelebrimbor.core.bg.attributes import CubeKind
-from qelebrimbor.core.zx.attributes import NodeType, EdgeType
 from qelebrimbor.core.components import BgCube
-
-from qelebrimbor.helpers.spacetime import SpacetimeHelper
-
-from qelebrimbor.spacetime.pathfinders.depth_first_search import PathfinderDFS
-from qelebrimbor.spacetime.pathfinders.colorblind_dfs import PathfinderColorblindDFS
-from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
-
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-
+from qelebrimbor.core.zx.attributes import EdgeType, NodeType
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
+from qelebrimbor.spacetime.pathfinders.depth_first_search import PathfinderDFS
+from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 
-import logging
 logging.basicConfig(level=logging.CRITICAL)
 
 SOURCE: int = 0
@@ -50,11 +45,11 @@ if __name__ == "__main__":
         vzx = VolumetricZxGraph(nodes, edges, qubits, layers)
         source = vzx.get_zx_node(SOURCE)
         target = vzx.get_zx_node(TARGET)
-        vzx.realise_zx_node(node = source, cube = BgCube(CubeKind.XZZ, SpacetimeHelper.ORIGIN))
-        vzx.realise_zx_node(node = target, cube = BgCube(CubeKind.ZXX, md * SpacetimeHelper.XP))
+        vzx.realise_zx_node(node=source, cube=BgCube(CubeKind.XZZ, SpacetimeHelper.ORIGIN))
+        vzx.realise_zx_node(node=target, cube=BgCube(CubeKind.ZXX, md * SpacetimeHelper.XP))
 
         # Instantiate the Pathfinder to benchmark
-        pathfinder = PathfinderDFS(vzx, branch_and_bound = False, tracing = SpacetimeTracingReport.FINAL)
+        pathfinder = PathfinderDFS(vzx, branch_and_bound=False, tracing=SpacetimeTracingReport.FINAL)
         # pathfinder = PathfinderColorblindDFS(vzx, tracing = SpacetimeTracingReport.FINAL)
         # pathfinder = PathfinderDijkstra(vzx, tracing = SpacetimeTracingReport.FINAL)
 
@@ -63,7 +58,7 @@ if __name__ == "__main__":
 
         # Perform the pathfinding for the edge between SOURCE and TARGET
         start_time = time()
-        path = pathfinder.find_optimum(goal = vzx.get_zx_edge(SOURCE, TARGET), maximal_excess = 6)
+        path = pathfinder.find_optimum(goal=vzx.get_zx_edge(SOURCE, TARGET), maximal_excess=6)
         final_time = time()
         runtime = round(final_time - start_time, 2)
 
@@ -81,8 +76,8 @@ if __name__ == "__main__":
 
         print(f"Runtime : {runtime} seconds. Manhattan distance = {md}, Manhattan length = {ml}, Excess = +{ml - md}")
 
-        label = f"{pathfinder.__class__.__name__}: manhattan distance = {md}, manhattan length = {ml}, excess = +{ml - md}, time={runtime}s"
+        label = f"{pathfinder.__class__.__name__}: manhattan distance = {md}, manhattan length = {ml}, excess = +{ml - md}, time={runtime}s"  # noqa: E501
         layout = CircuitLayout(vzx)
 
-        viewer = VolumetricZxGraphViewer(graph = vzx, label = label, layout = layout)
+        viewer = VolumetricZxGraphViewer(graph=vzx, label=label, layout=layout)
         viewer.display()

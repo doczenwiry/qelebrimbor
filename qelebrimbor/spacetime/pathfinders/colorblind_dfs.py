@@ -13,31 +13,30 @@
 #   limitations under the License.
 
 import heapq
+import logging
 
 from qelebrimbor.core.bg.path import Path
-from qelebrimbor.core.components import ZxEdge
 from qelebrimbor.core.colorless.path import ColorlessPath
+from qelebrimbor.core.components import ZxEdge
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.helpers.calculator import ManhattanCalculator
-
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.spacetime.colorblind.painter_edge import PainterZxEdge
-
 from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
 from qelebrimbor.spacetime.connectivity.default import DefaultConnectivityTracker
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
-from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-
-import logging
 console = logging.getLogger(__name__)
 
+
 class PathfinderColorblindDFS:
-    def __init__(self,
-            graph: VolumetricZxGraph = None,
-            connectivity: ConnectivityTracker | None = None,
-            branch_and_bound: bool = False,
-            tracing: SpacetimeTracingReport | None = None
+    def __init__(
+        self,
+        graph: VolumetricZxGraph | None = None,
+        connectivity: ConnectivityTracker | None = None,
+        branch_and_bound: bool = False,
+        tracing: SpacetimeTracingReport | None = None,
     ):
         """
         Instantiate a PathfinderDFS to search for shortest valid paths between cubes in spacetime.
@@ -69,7 +68,7 @@ class PathfinderColorblindDFS:
         start = goal.source.realising_cube
         final = goal.target.realising_cube
 
-        initial: ColorlessPath = ColorlessPath(start = start.position)
+        initial: ColorlessPath = ColorlessPath(start=start.position)
 
         heapq.heappush(unrelaxed, (start.position.get_manhattan_distance(final.position), initial))
 
@@ -82,11 +81,11 @@ class PathfinderColorblindDFS:
 
         console.info(f"Searching for path from {start} to {final} {extra}")
 
-        tracer: SpacetimeTracer | None = SpacetimeTracer(
-            pruning = self.__branch_and_bound, reporting = self.__tracing
-        ) if self.__tracing else None
+        tracer: SpacetimeTracer | None = (
+            SpacetimeTracer(pruning=self.__branch_and_bound, reporting=self.__tracing) if self.__tracing else None
+        )
         if tracer:
-            tracer.add_node(start.position, label = str(start.position))
+            tracer.add_node(start.position, label=str(start.position))
 
         while len(unrelaxed) > 0 and (self.__branch_and_bound or optimum is None):
             # Restore the heap invariant
@@ -119,7 +118,7 @@ class PathfinderColorblindDFS:
                     if PainterZxEdge.paintable(completed, goal):
                         # Tracing exploration
                         if tracer:
-                            tracer.add_node(final.position, label = str(final.position))
+                            tracer.add_node(final.position, label=str(final.position))
                             tracer.add_edge(terminal, final.position)
 
                         # Update the optimum only if it improves our current knowledge
@@ -128,7 +127,8 @@ class PathfinderColorblindDFS:
 
             # Restrict the outgoing paths to lie in the reach of the CubeKind of the start.
             constellation = SpacetimeHelper.get_constellation(
-                position = terminal, restriction = start.kind.get_reach() if current.length == 0 else None
+                position=terminal,
+                restriction=start.kind.get_reach() if current.length == 0 else None,
             )
 
             console.debug(f"{'>' * (current.length + 2)} : {constellation}")
@@ -153,7 +153,7 @@ class PathfinderColorblindDFS:
                 extended = current.extend(adjacent)
 
                 # Filtering out the neighbor from unrelaxed
-                unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].final != adjacent ]
+                unrelaxed = [vertex for vertex in unrelaxed if vertex[1].final != adjacent]
 
                 # Compute the minimal manhattan length required to connect neighbor to target (HEURISTIC).
                 unrelaxed.append((adjacent.get_manhattan_distance(final.position), extended))

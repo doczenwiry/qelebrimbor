@@ -12,18 +12,20 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from vedo import Assembly, Disc, Line, Text3D, Box  # type: ignore[import-untyped]
+from logging import getLogger
 
-from qelebrimbor.core.components import ZxNode, ZxEdge
-from qelebrimbor.core.zx.attributes import NodeType, EdgeType
+from vedo import Assembly, Disc, Line, Text3D  # type: ignore[import-untyped]
+
+from qelebrimbor.core.components import ZxEdge, ZxNode
 from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.zx.attributes import EdgeType, NodeType
 from qelebrimbor.vedo.zx_palette import ZxPalette
 
-from logging import getLogger
 console = getLogger(__name__)
 
 SPACING_X = 6.0
 SPACING_Y = 6.0
+
 
 class VdNode(Assembly):
     def __init__(self, node: ZxNode, placement: tuple[float, float]):
@@ -39,13 +41,20 @@ class VdNode(Assembly):
         radius *= 1.25
         color = ZxPalette.get_major(node.type)
 
-        self.__disc = Disc(pos = disc_position, r1 = 0.0, r2 = radius, c = color).z(0.01)
-        self.add( self.__disc )
+        self.__disc = Disc(pos=disc_position, r1=0.0, r2=radius, c=color).z(0.01)
+        self.add(self.__disc)
 
-        self.__background = Disc(pos = disc_position, r1 = 0.0, r2 = 1.40 * radius, c = 'white')
-        self.add( self.__background )
+        self.__background = Disc(pos=disc_position, r1=0.0, r2=1.40 * radius, c="white")
+        self.add(self.__background)
 
-        self.__node_id = Text3D(str(node.id), s = radius, pos = text_position, font ='Calco', justify ='centered', c ='white').z(0.02)
+        self.__node_id = Text3D(
+            str(node.id),
+            s=radius,
+            pos=text_position,
+            font="Calco",
+            justify="centered",
+            c="white",
+        ).z(0.02)
         self.add(self.__node_id)
 
     def alter_highlighting(self, highlight: bool, unreachable: bool = False, concealed: bool = False):
@@ -55,28 +64,32 @@ class VdNode(Assembly):
 
         if highlight:
             if unreachable or not self.zx_node.is_realised():
-                color = 'red6'
+                color = "red6"
             else:
-                color = 'green6'
+                color = "green6"
         else:
-            color = 'white'
+            color = "white"
 
         self.__disc.alpha(alpha)
         self.__node_id.alpha(alpha)
         self.__background.alpha(alpha)
         self.__background.color(color)
 
+
 class VdEdge(Assembly):
     LENGTH = 3.00
     DIAMETER = 0.50
 
-    def __init__(self,
-            edge: ZxEdge, source_placement: tuple[float, float], target_placement: tuple[float, float]
+    def __init__(
+        self,
+        edge: ZxEdge,
+        source_placement: tuple[float, float],
+        target_placement: tuple[float, float],
     ):
         super().__init__()
         self.zx_edge: ZxEdge = edge
 
-        color = 'k' if edge.type == EdgeType.IDENTITY else 'y4'
+        color = "k" if edge.type == EdgeType.IDENTITY else "y4"
 
         offset = 0.00
         if edge.source.layer == edge.target.layer:
@@ -86,10 +99,12 @@ class VdEdge(Assembly):
         target_position = Coordinates(SPACING_X * target_placement[0], SPACING_Y * target_placement[1], -0.05)
 
         # Create the line of this edge
-        self.__vd_edge = Line(p0 = source_position, p1 = target_position, lw = 8, c = color).z(offset + 0.01)
+        self.__vd_edge = Line(p0=source_position, p1=target_position, lw=8, c=color).z(offset + 0.01)
         self.add(self.__vd_edge)
 
-        console.debug(f"ZxEdge {edge.source}L{source_placement}@{source_position} - {edge.target}L{target_placement}@{target_position}")
+        console.debug(
+            f"ZxEdge {edge.source}L{source_placement}@{source_position} - {edge.target}L{target_placement}@{target_position}"  # noqa: E501
+        )
         console.debug(f"> Manhattan Excess Volume : {edge.excess_volume}")
 
         # Create the Manhattan Excess annotation
@@ -100,14 +115,19 @@ class VdEdge(Assembly):
             elif edge.source.layer != -1 and edge.target.layer != -1 and edge.source.layer == edge.target.layer:
                 excess_position += Coordinates(3.0, 2.5, 0.0)
             self.__manhattan_excess = Text3D(
-                txt = f"+{edge.excess_volume}", s = 1.5, pos = excess_position,
-                font = 'Roboto', depth = 5.0, justify = 'centered', c = 'red6'
+                txt=f"+{edge.excess_volume}",
+                s=1.5,
+                pos=excess_position,
+                font="Roboto",
+                depth=5.0,
+                justify="centered",
+                c="red6",
             ).z(0.5)
         else:
             self.__manhattan_excess = None
 
         # Create the background of this edge for highlighting
-        self.__background = Line(p0 = source_position, p1 = target_position, lw = 16, c = 'white').z(offset + 0.005)
+        self.__background = Line(p0=source_position, p1=target_position, lw=16, c="white").z(offset + 0.005)
         self.add(self.__background)
 
     def alter_highlighting(self, highlight: bool, excess: bool = False, concealed: bool = False):
@@ -123,12 +143,12 @@ class VdEdge(Assembly):
 
         if highlight:
             if (excess and self.__manhattan_excess) or not self.zx_edge.is_realised():
-                color = 'red6'
+                color = "red6"
             else:
-                color = 'green6'
+                color = "green6"
         else:
-            color = 'white'
+            color = "white"
 
         self.__vd_edge.alpha(alpha)
         self.__background.alpha(alpha)
-        self.__background.linecolor(lc = color)
+        self.__background.linecolor(lc=color)

@@ -12,30 +12,29 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 import random
+
 import pyzx as zx
 
-from qelebrimbor.formats.pyzx import PYZX
-
 from qelebrimbor.analysis.cycles import CycleAnalyser
-
+from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 SEED = 42
 QUBITS = 4
 LAYERS = 10
 
-import logging
 logging.basicConfig(level=logging.INFO)
-
 random.seed(SEED)
+
 if __name__ == "__main__":
-    pyzx_input = zx.generate.cnots(qubits = QUBITS, depth = LAYERS)
-    zx.draw(pyzx_input, labels = True)
+    pyzx_input = zx.generate.cnots(qubits=QUBITS, depth=LAYERS)
+    zx.draw(pyzx_input, labels=True)
     zx.full_reduce(pyzx_input)
     vzx = PYZX.from_pyzx_graph(pyzx_input)
 
     CycleAnalyser.analyse(vzx)
 
-    viewer = VolumetricZxGraphViewer(vzx, label = f"random-s{SEED}-q{QUBITS}-d{LAYERS}")
+    viewer = VolumetricZxGraphViewer(vzx, label=f"random-s{SEED}-q{QUBITS}-d{LAYERS}")
     viewer.display()

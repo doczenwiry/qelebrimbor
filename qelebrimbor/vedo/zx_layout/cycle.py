@@ -16,7 +16,7 @@ import numpy as np
 
 from qelebrimbor.core.components import ZxNode
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.vedo.zx_layout.abstract import ZxLayout, Placement
+from qelebrimbor.vedo.zx_layout.abstract import Placement, ZxLayout
 
 
 class CycleLayout(ZxLayout):

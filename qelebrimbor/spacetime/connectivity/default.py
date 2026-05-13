@@ -12,18 +12,19 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
+
 from qelebrimbor.core.common import Port
 from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
 
-import logging
 console = logging.getLogger(__name__)
 
 
 class DefaultConnectivityTracker(ConnectivityTracker):
     def __init__(self):
-        console.warning(f"DefaultConnectivityTracker doesn't track anything.")
+        console.warning("DefaultConnectivityTracker doesn't track anything.")
 
     def preserved(self, start: BgCube, final: BgCube, position: Coordinates) -> bool:
         return True

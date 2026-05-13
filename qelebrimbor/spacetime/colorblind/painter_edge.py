@@ -12,18 +12,17 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 from functools import reduce
 
 from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.bg.path import Path
-from qelebrimbor.core.zx.attributes import EdgeType
 from qelebrimbor.core.colorless.path import ColorlessPath
-from qelebrimbor.core.components import ZxEdge, BgCube
+from qelebrimbor.core.components import BgCube, ZxEdge
 from qelebrimbor.core.metric.color_shufflings import ColorShuffling
+from qelebrimbor.core.zx.attributes import EdgeType
+from qelebrimbor.helpers.spacetime import Step
 
-from qelebrimbor.helpers.spacetime import SpacetimeHelper, Step
-
-import logging
 console = logging.getLogger(__name__)
 
 
@@ -46,7 +45,9 @@ class PainterZxEdge:
             return False
 
         overall: ColorShuffling = reduce(
-            ColorShuffling.extend, map(ColorShuffling.convert, colorless.steps), ColorShuffling.identity()
+            ColorShuffling.extend,
+            map(ColorShuffling.convert, colorless.steps),
+            ColorShuffling.identity(),
         )
 
         # If the edge type considered is of type Hadamard, we apply a Hadamard on the ColorShuffling.
@@ -76,21 +77,23 @@ class PainterZxEdge:
         for position, reaches in zip(colorless.extras, colorless.as_reaches()):
             step = Step(position - last_cube.position)
             compatible_kinds = filter(
-                lambda kind : CubeKind.compatible(last_cube.kind, kind, step, current_pipe_type) and kind.reach in reaches,
-                CubeKind
+                lambda kind: (
+                    CubeKind.compatible(last_cube.kind, kind, step, current_pipe_type) and kind.reach in reaches
+                ),
+                CubeKind,
             )
 
             selected = next(compatible_kinds)
-            path.append(cube = BgCube(kind = selected, position = position), pipe = current_pipe_type)
+            path.append(cube=BgCube(kind=selected, position=position), pipe=current_pipe_type)
 
             try:
                 extra = f"[selected:{selected},alternative:{next(compatible_kinds)}]"
                 console.warning(f"Ambiguity in inference of a CubeKind at {position} was arbitrarily resolved {extra}.")
-            except StopIteration as si:
+            except StopIteration:
                 pass
 
             last_cube = path.final
             current_pipe_type = EdgeType.IDENTITY
 
-        path.append(final, pipe = current_pipe_type)
+        path.append(final, pipe=current_pipe_type)
         return path

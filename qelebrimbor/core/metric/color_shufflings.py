@@ -21,27 +21,29 @@ from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 @dataclass
 class ColorShuffling:
-    VALID_SYMBOLS = ['o', 'x', 'y', 'z']
+    VALID_SYMBOLS = ["o", "x", "y", "z"]
 
     GENERATORS = {
-        SpacetimeHelper.ORIGIN: 'xyz',
-        SpacetimeHelper.XP: 'oyz',
-        SpacetimeHelper.XM: 'oyz',
-        SpacetimeHelper.YP: 'xoz',
-        SpacetimeHelper.YM: 'xoz',
-        SpacetimeHelper.ZP: 'xyo',
-        SpacetimeHelper.ZM: 'xyo'
+        SpacetimeHelper.ORIGIN: "xyz",
+        SpacetimeHelper.XP: "oyz",
+        SpacetimeHelper.XM: "oyz",
+        SpacetimeHelper.YP: "xoz",
+        SpacetimeHelper.YM: "xoz",
+        SpacetimeHelper.ZP: "xyo",
+        SpacetimeHelper.ZM: "xyo",
     }
 
-    start: str = 'xyz'
-    final: str = 'xyz'
+    start: str = "xyz"
+    final: str = "xyz"
 
-    def __init__(self, start: str, final: str = None):
+    def __init__(self, start: str, final: str | None = None):
         if final is None:
             final = start
 
         if len(start) != 3 or len(final) != 3:
-            raise Exception(f"Invalid color shuffling. Must contain three specifiers among {ColorShuffling.VALID_SYMBOLS}.")
+            raise Exception(
+                f"Invalid color shuffling. Must contain three specifiers among {ColorShuffling.VALID_SYMBOLS}."
+            )
 
         for symbol in ColorShuffling.VALID_SYMBOLS:
             if start.count(symbol) > 1 or final.count(symbol) > 1:
@@ -59,18 +61,18 @@ class ColorShuffling:
 
     @staticmethod
     def identity():
-        return ColorShuffling('xyz')
+        return ColorShuffling("xyz")
 
     def hadamard(self) -> ColorShuffling:
         if self.is_identity():
-            raise NotImplementedError(f"Hadamard not supported for identity shuffling.")
+            raise NotImplementedError("Hadamard not supported for identity shuffling.")
 
-        color_one, color_two = tuple(filter(lambda face : face != 'o', self.start))
-        color_permutation = str.maketrans({ color_one : color_two, color_two : color_one })
+        color_one, color_two = tuple(filter(lambda face: face != "o", self.start))
+        color_permutation = str.maketrans({color_one: color_two, color_two: color_one})
         return ColorShuffling(self.start, self.final.translate(color_permutation))
 
     def is_identity(self):
-        return self.start == 'xyz' and self.final == 'xyz'
+        return self.start == "xyz" and self.final == "xyz"
 
     def extend(self, other) -> ColorShuffling:
         if self.is_identity():
@@ -78,13 +80,13 @@ class ColorShuffling:
         elif other.is_identity():
             return self
         else:
-            closing = self.final.index('o')
-            opening = other.start.index('o')
-            shuffled = [ sym for sym in other.final ]
-            locations = { shuffled[idx] : idx for idx in range(3) }
-            for idx in filter(lambda i : i != closing, range(3)):
+            closing = self.final.index("o")
+            opening = other.start.index("o")
+            shuffled = [sym for sym in other.final]
+            locations = {shuffled[idx]: idx for idx in range(3)}
+            for idx in filter(lambda i: i != closing, range(3)):
                 symbol = other.start[closing] if idx == opening else other.start[idx]
-                shuffled[ locations[symbol] ] = self.final[idx]
+                shuffled[locations[symbol]] = self.final[idx]
             return ColorShuffling(self.start, "".join(shuffled))
 
     def compatible(self, source: CubeKind, target: CubeKind) -> bool:
@@ -96,7 +98,7 @@ class ColorShuffling:
         for marker, face in zip(self.final, target.name):
             encoded_target[marker] = face
 
-        for marker in 'xyz':
+        for marker in "xyz":
             if marker in encoded_source and marker in encoded_target:
                 if encoded_source[marker] != encoded_target[marker]:
                     return False
@@ -116,7 +118,7 @@ class ColorShuffling:
 
     @staticmethod
     def generate():
-        elements = { ColorShuffling(gen) for gen in ColorShuffling.GENERATORS.values() }
+        elements = {ColorShuffling(gen) for gen in ColorShuffling.GENERATORS.values()}
         discovered = elements.copy()
         while discovered:
             discovered.clear()
@@ -128,11 +130,12 @@ class ColorShuffling:
             elements.update(discovered)
         return elements
 
-if __name__ == '__main__':
-    csO = ColorShuffling('xyz')
-    csX = ColorShuffling('oyz')
-    csY = ColorShuffling('xoz')
-    csZ = ColorShuffling('xyo')
+
+if __name__ == "__main__":
+    csO = ColorShuffling("xyz")
+    csX = ColorShuffling("oyz")
+    csY = ColorShuffling("xoz")
+    csZ = ColorShuffling("xyo")
     print(f"{csO} -> {csX} = {csO.extend(csX)}")
     print(f"({csY} ->  {csX}) -> {csZ}  = {csY.extend(csX).extend(csZ)}")
     print(f" {csY} -> ({csX}  -> {csZ}) = {csY.extend(csX.extend(csZ))}")
@@ -143,7 +146,7 @@ if __name__ == '__main__':
         if not element.is_identity():
             print(f"> {element} =H=> {element.hadamard()}")
 
-    cs = ColorShuffling('oyz', 'yzo')
+    cs = ColorShuffling("oyz", "yzo")
     cs2 = cs.extend(cs)
 
     print(f"{cs} * {cs} = {cs2}")

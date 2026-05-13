@@ -12,14 +12,16 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from logging import getLogger
 from typing import Iterable
+
 from vedo import Mesh
 from vedo.plotter.runtime import Plotter
 
-from logging import getLogger
 console = getLogger(__name__)
 
 FrameIndex = int
+
 
 class FrameManager:
     def __init__(self, plotter: Plotter):
@@ -30,7 +32,7 @@ class FrameManager:
         self.__subframe_index = 0
 
     def log_frame_report(self):
-        console.debug(f"Cumulative Frame Manager report")
+        console.debug("Cumulative Frame Manager report")
         for f in range(len(self.__frames)):
             frame = self.__frames[f][0]
             listing = ":"
@@ -48,7 +50,7 @@ class FrameManager:
         return self.__frame_count
 
     def create_next_frame(self) -> FrameIndex:
-        self.__frames.append( [] )
+        self.__frames.append([])
         frame_index = self.__frame_count
         self.__frames[frame_index].append([])
         self.__frame_count += 1
@@ -61,7 +63,7 @@ class FrameManager:
         self.__frames[frame_index][subframe_index].extend(meshes)
 
     def create_next_subframe(self, frame_index: int) -> FrameIndex:
-        self.__frames[frame_index].append( [] )
+        self.__frames[frame_index].append([])
         return len(self.__frames[frame_index]) - 1
 
     def set_current_frame(self, frame_index: int, subframe_index: int = 0):

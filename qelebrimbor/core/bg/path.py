@@ -12,18 +12,17 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from functools import total_ordering
-
 import itertools
+import logging
+from functools import total_ordering
 from typing import Iterator
 
 from qelebrimbor.core.common import Port
 from qelebrimbor.core.components import BgCube
-from qelebrimbor.core.zx.attributes import EdgeType
 from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.zx.attributes import EdgeType
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 
-import logging
 console = logging.getLogger(__name__)
 
 
@@ -33,9 +32,9 @@ type Length = int
 @total_ordering
 class Path:
     def __init__(self, start: BgCube):
-        self.cubes: list[BgCube] = [ start ]
+        self.cubes: list[BgCube] = [start]
         self.pipes: list[EdgeType] = []
-        self.occupied: set[Coordinates] = { start.position }
+        self.occupied: set[Coordinates] = {start.position}
 
     @property
     def start(self) -> BgCube:
@@ -73,7 +72,9 @@ class Path:
 
     def append(self, cube: BgCube, pipe: EdgeType):
         if not BlockGraphHelper.connectable(self.final, cube, pipe):
-            raise Exception(f"Attempting to extend Path with incompatible pipe/cube [path:{self} -{pipe.name[0]}- {cube}].")
+            raise Exception(
+                f"Attempting to extend Path with incompatible pipe/cube [path:{self} -{pipe.name[0]}- {cube}]."
+            )
 
         self.cubes.append(cube)
         self.pipes.append(pipe)
@@ -95,9 +96,8 @@ class Path:
     def __str__(self):
         content = f"{self.start} "
         for index in range(1, len(self.cubes)):
-            content += f" --{repr(self.pipes[index-1])}-- {self.cubes[index]}"
+            content += f" --{repr(self.pipes[index - 1])}-- {self.cubes[index]}"
         return content
-
 
     def __repr__(self):
         return str(self)

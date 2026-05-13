@@ -14,11 +14,11 @@
 
 from typing import Iterator
 
-from qelebrimbor.core.components import ZxNode, ZxEdge
+from qelebrimbor.core.components import ZxEdge, ZxNode
 
 
 class ZxCycle:
-    def __init__(self):
+    def __init__(self) -> None:
         self.__nodes: list[ZxNode] = []
         self.__edges: list[ZxEdge] = []
 

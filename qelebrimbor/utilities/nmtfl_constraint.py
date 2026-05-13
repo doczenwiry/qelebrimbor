@@ -12,9 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.components import ZxNode, ZxEdge
-from qelebrimbor.core.zx.attributes import NodeId
 import qelebrimbor.core.volumetric_zx_graph as vzg
+from qelebrimbor.core.components import ZxEdge, ZxNode
+from qelebrimbor.core.zx.attributes import NodeId
 
 
 class NoMoreThanFourLegsConstraint:
@@ -38,14 +38,21 @@ class NoMoreThanFourLegsConstraint:
             zx_node = graph.get_zx_node(node)
 
             remaining_neighbors = degree - 3
-            next(neighbors); next(neighbors); next(neighbors)
+            next(neighbors)
+            next(neighbors)
+            next(neighbors)
             previous = node
             while remaining_neighbors > 0:
                 extra_id = graph.number_of_nodes()
 
                 graph.add_node(extra_id)
                 extra_node = graph.nodes[extra_id]
-                extra_zx_node = ZxNode(id = extra_id, type = zx_node.type, qubit = zx_node.qubit, layer = zx_node.layer)
+                extra_zx_node = ZxNode(
+                    id=extra_id,
+                    type=zx_node.type,
+                    qubit=zx_node.qubit,
+                    layer=zx_node.layer,
+                )
                 extra_node[vzg.VolumetricZxGraph.KEY_ZX_NODE] = extra_zx_node
 
                 # Make zx-edge between previous node of chain and new extra_node
@@ -57,9 +64,14 @@ class NoMoreThanFourLegsConstraint:
                     edge_type = graph.get_zx_edge(extra_id, neighbor_id).type
 
                     graph.remove_edge(node, neighbor_id)
-                    source, target = (extra_id, neighbor_id) if extra_id < neighbor_id else neighbor_id, extra_id
+                    source, target = (
+                        (extra_id, neighbor_id) if extra_id < neighbor_id else neighbor_id,
+                        extra_id,
+                    )
                     graph.add_edge(extra_id, neighbor_id)
-                    graph.edges[extra_id, neighbor_id][vzg.VolumetricZxGraph.KEY_ZX_EDGE] = ZxEdge(source, target, edge_type)
+                    graph.edges[extra_id, neighbor_id][vzg.VolumetricZxGraph.KEY_ZX_EDGE] = ZxEdge(
+                        source, target, edge_type
+                    )
                     # extra_edge[vzg.VolumetricZxGraph.KEY_ZX_EDGE_TYPE] = edge_type
                     # extra_edge[vzg.VolumetricZxGraph.KEY_ZX_EDGE_BG_PATH] = []
 

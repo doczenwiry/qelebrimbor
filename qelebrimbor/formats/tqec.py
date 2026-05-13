@@ -12,10 +12,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.bg.attributes import CubeKind
-from qelebrimbor.core.zx.attributes import EdgeType
+from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.zx.attributes import EdgeType
 
 
 class TQEC:
@@ -26,14 +26,15 @@ class TQEC:
         distances = target.position - source.position
         for c in range(3):
             if distances[c] == 0 and (
-                    source.kind not in [CubeKind.OOO, CubeKind.YYY] or target.kind not in [CubeKind.OOO, CubeKind.YYY]):
+                source.kind not in [CubeKind.OOO, CubeKind.YYY] or target.kind not in [CubeKind.OOO, CubeKind.YYY]
+            ):
                 color = source.kind.name[c] if source.kind not in [CubeKind.OOO, CubeKind.YYY] else target.kind.name[c]
             else:
-                color = 'o'
+                color = "o"
             colors += color
 
         if graph.get_bg_pipe(source.id, target.id).type == EdgeType.HADAMARD:
-            colors += 'h'
+            colors += "h"
 
         return colors.lower()
 
@@ -50,14 +51,14 @@ class TQEC:
 
     @staticmethod
     def into_tqec_file(graph: VolumetricZxGraph, filepath: str):
-        with (open(filepath, 'w') as file):
-            file.write(f"BLOCKGRAPH 0.0.1\n")
+        with open(filepath, "w") as file:
+            file.write("BLOCKGRAPH 0.0.1\n")
 
             # Store cube information
             file.write("\nCUBES: index;x;y;z;kind;label;\n")
             file.writelines(
                 [
-                    f"{cube.id};{';'.join(map(str, iter(cube.position)))};{cube.kind.name.lower()};{TQEC.__format_label(graph, cube)};\n"
+                    f"{cube.id};{';'.join(map(str, iter(cube.position)))};{cube.kind.name.lower()};{TQEC.__format_label(graph, cube)};\n"  # noqa: E501
                     for cube in graph.get_bg_cubes()
                 ]
             )

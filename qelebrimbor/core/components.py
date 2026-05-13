@@ -12,16 +12,18 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from recordclass import RecordClass  # type: ignore[import-untyped]
+import logging
 from typing import cast
 
-from qelebrimbor.core.reach import Reach
-from qelebrimbor.core.zx.attributes import NodeId, NodeType, QubitId, LayerId, EdgeType
+from recordclass import RecordClass  # type: ignore[import-untyped]
+
 from qelebrimbor.core.bg.attributes import CubeId, CubeKind
 from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.reach import Reach
+from qelebrimbor.core.zx.attributes import EdgeType, LayerId, NodeId, NodeType, QubitId
 
-import logging
 console = logging.getLogger(__name__)
+
 
 class ZxNode(RecordClass):
     id: NodeId
@@ -51,6 +53,7 @@ class ZxNode(RecordClass):
 
     def __repr__(self):
         return str(self)
+
 
 class ZxEdge(RecordClass):
     source: ZxNode
@@ -82,17 +85,17 @@ class ZxEdge(RecordClass):
         return len(self.__realisation) - 1
 
     @property
-    def excess_cubes(self):
+    def excess_cubes(self) -> list[BgCube]:
         start_pipe = cast(BgPipe, self.__realisation[0])
         if self.source.realising_cube == start_pipe.source or self.source.realising_cube == start_pipe.target:
             previous_cube = self.source.realising_cube
         else:
             previous_cube = self.target.realising_cube
         excess: list[BgCube] = []
-        for index in range(self.number_of_pipes-1):
+        for index in range(self.number_of_pipes - 1):
             pipe = cast(BgPipe, self.__realisation[index])
             extra = pipe.source if pipe.source != previous_cube else pipe.target
-            excess.append( extra )
+            excess.append(extra)
             previous_cube = extra
         return excess
 
@@ -102,13 +105,14 @@ class ZxEdge(RecordClass):
 
     @realisation.setter
     def realisation(self, value: list[BgPipe]):
-        self.__realisation = value
+        self.__realisation = list(map(lambda bp: cast(BgPipe, bp), value))
 
     def __str__(self):
         return f"N{self.source.id}-{self.type.name[0]}-N{self.target.id}"
 
     def __repr__(self):
         return str(self)
+
 
 class BgCube(RecordClass):
     kind: CubeKind
@@ -148,7 +152,8 @@ class BgCube(RecordClass):
         return str(self)
 
     def __hash__(self):
-        return hash( (self.kind, self.position.x, self.position.y, self.position.z) )
+        return hash((self.kind, self.position.x, self.position.y, self.position.z))
+
 
 class BgPipe(RecordClass):
     source: BgCube

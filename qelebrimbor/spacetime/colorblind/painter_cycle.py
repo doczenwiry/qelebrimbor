@@ -12,14 +12,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.components import BgCube
-
-from qelebrimbor.core.bg.ring import Ring
-from qelebrimbor.core.zx.cycle import ZxCycle
-from qelebrimbor.core.colorless.ring import ColorlessRing
-from qelebrimbor.core.metric.color_shufflings import ColorShuffling
 
 import logging
+
+from qelebrimbor.core.bg.ring import Ring
+from qelebrimbor.core.colorless.ring import ColorlessRing
+from qelebrimbor.core.zx.cycle import ZxCycle
+
 console = logging.getLogger(__name__)
 
 
@@ -32,14 +31,14 @@ class PainterZxCycle:
 
         try:
             PainterZxCycle.paint(colorless, cycle)
-        except ValueError as ve:
+        except ValueError:
             return False
 
         return True
 
     @staticmethod
     # TODO: correct the determination of whether a ColorlessRing is paintable using a given ZxCycle.
-    def paint(colorless: ColorlessRing, cycle: ZxCycle) -> Ring:
+    def paint(colorless: ColorlessRing, cycle: ZxCycle) -> Ring | None:
         """
         Paint a ColorlessPath into a Strand of BgCubes with CubeKind and Coordinates based on the ZxNodes of a Chain.
         The current strategy when dealing with Hadamard edges consists in making the earliest pipe into a Hadamard pipe.
@@ -48,7 +47,7 @@ class PainterZxCycle:
         :return:
         """
 
-        pass
+        return None
 
         # if not self.paintable(chain):
         #     raise ValueError(f"ColorlessStrand provided cannot be painted with the chain : {chain}")
@@ -76,13 +75,13 @@ class PainterZxCycle:
         #     console.debug(f"> Current link : --{edges[restriction].type}-- {nodes[restriction]}")
         #
         #     preceding_shuffling = successive_shuffling[cube_index - 1]
-        #     preceding_shuffling = preceding_shuffling.hadamard() if current_edge_type == EdgeType.HADAMARD else preceding_shuffling
+        #     preceding_shuffling = preceding_shuffling.hadamard() if current_edge_type == EdgeType.HADAMARD else preceding_shuffling  # noqa: E501
         #     matched: bool = False
         #     while not matched and cube_index < colorless.length:
         #         assigned = colorless[cube_index]
-        #         remaining_shuffling = reduce(ColorShuffling.extend, successive_shuffling[cube_index:], ColorShuffling.identity())
+        #         remaining_shuffling = reduce(ColorShuffling.extend, successive_shuffling[cube_index:], ColorShuffling.identity())  # noqa: E501
         #
-        #         console.debug(f">> Considering cube {cube_index}@{assigned} [{preceding_shuffling}/{remaining_shuffling}]")
+        #         console.debug(f">> Considering cube {cube_index}@{assigned} [{preceding_shuffling}/{remaining_shuffling}]")  # noqa: E501
         #
         #         selected: CubeKind | None = None
         #         for kind in CubeKind:
@@ -118,10 +117,10 @@ class PainterZxCycle:
         # # TODO: append the last section towards final.
         # current_edge_type = edges[-1].type
         # preceding_shuffling = successive_shuffling[cube_index - 1]
-        # preceding_shuffling = preceding_shuffling.hadamard() if current_edge_type == EdgeType.HADAMARD else preceding_shuffling
+        # preceding_shuffling = preceding_shuffling.hadamard() if current_edge_type == EdgeType.HADAMARD else preceding_shuffling  # noqa: E501
         #
         # while cube_index < colorless.length:
-        #     remaining_shuffling = reduce(ColorShuffling.extend, successive_shuffling[cube_index:], ColorShuffling.identity())
+        #     remaining_shuffling = reduce(ColorShuffling.extend, successive_shuffling[cube_index:], ColorShuffling.identity())  # noqa: E501
         #
         #     assigned = colorless[cube_index]
         #     selected: CubeKind | None = None
@@ -135,7 +134,7 @@ class PainterZxCycle:
         #         if selected is None:
         #             selected = kind
         #         else:
-        #             console.warning(f"Ambiguity in CubeKind at {assigned} arbitrarily resolved [selected={selected}, alternative={kind}]")
+        #             console.warning(f"Ambiguity in CubeKind at {assigned} arbitrarily resolved [selected={selected}, alternative={kind}]")  # noqa: E501
         #
         #     if selected is None:
         #         raise ValueError(f"No suitable kind found for next cube when painting Strand.")

@@ -12,16 +12,17 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from itertools import product, combinations
 from dataclasses import dataclass
 from functools import total_ordering
+from itertools import combinations, product
 
 from qelebrimbor.core.metric.color_shufflings import ColorShuffling
+
 
 @dataclass
 @total_ordering
 class PathWeight:
-    shuffle : ColorShuffling = ColorShuffling.identity()
+    shuffle: ColorShuffling = ColorShuffling.identity()
     distance: int = 0
 
     def __post_init__(self):
@@ -48,7 +49,8 @@ class PathWeight:
         return self.shuffle == other.shuffle and self.distance < other.distance
 
     def __str__(self):
-        return str(self.shuffle) + ':' + str(self.distance)
+        return str(self.shuffle) + ":" + str(self.distance)
+
 
 @dataclass
 class PathWeights:
@@ -68,13 +70,14 @@ class PathWeights:
         return PathWeights(self.weights + other.weights)
 
     def extend(self, other):
-        return PathWeights([
-            weight_one.extend(weight_two) for weight_one, weight_two in product(self.weights, other.weights)
-        ])
+        return PathWeights(
+            [weight_one.extend(weight_two) for weight_one, weight_two in product(self.weights, other.weights)]
+        )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     pwI = PathWeight()
-    pws = PathWeight.generate(max_distance = 1)
+    pws = PathWeight.generate(max_distance=1)
 
     for c in combinations(pws, 2):
         pw = PathWeights(list(c))

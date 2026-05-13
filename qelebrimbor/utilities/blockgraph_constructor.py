@@ -12,21 +12,24 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.components import BgCube
-from qelebrimbor.core.coordinates import Coordinates
-from qelebrimbor.core.zx.attributes import NodeId, EdgeId
+import logging
+
 from qelebrimbor.core.bg.attributes import CubeId, CubeKind
 from qelebrimbor.core.bg.path import Path
+from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.zx.attributes import EdgeId, NodeId
 
-import logging
 console = logging.getLogger(__name__)
+
 
 class BlockGraphConstructor:
     @staticmethod
-    def realise(graph: VolumetricZxGraph,
-            nodes_specifications: dict[NodeId, BgCube],
-            edges_specifications: dict[EdgeId, Path]
+    def realise(
+        graph: VolumetricZxGraph,
+        nodes_specifications: dict[NodeId, BgCube],
+        edges_specifications: dict[EdgeId, Path],
     ):
         BlockGraphConstructor.realise_nodes(graph, nodes_specifications)
         BlockGraphConstructor.realise_edges(graph, edges_specifications)
@@ -44,11 +47,14 @@ class BlockGraphConstructor:
         return True
 
     @staticmethod
-    def place_cubes(graph: VolumetricZxGraph, specifications: list[tuple[CubeKind, CubeId, Coordinates]]):
+    def place_cubes(
+        graph: VolumetricZxGraph,
+        specifications: list[tuple[CubeKind, CubeId, Coordinates]],
+    ):
         for kind, cube_id, step in specifications:
             cube = graph.get_bg_cube(cube_id)
             position = cube.position + step
-            graph.place_cube(BgCube(kind = kind, position = position))
+            graph.place_cube(BgCube(kind=kind, position=position))
 
     @staticmethod
     def realise_edges(graph: VolumetricZxGraph, specifications: dict[EdgeId, Path]) -> bool:

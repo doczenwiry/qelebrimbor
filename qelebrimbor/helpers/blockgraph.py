@@ -12,14 +12,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from logging import getLogger
+
+from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.zx.attributes import EdgeType, NodeType
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
-from qelebrimbor.core.zx.attributes import NodeType, EdgeType
-from qelebrimbor.core.bg.attributes import CubeKind
-
-from logging import getLogger
 console = getLogger(__name__)
+
 
 class BlockGraphHelper:
     @staticmethod
@@ -29,23 +30,24 @@ class BlockGraphHelper:
         source_reach = source.get_reach()
         target_reach = target.get_reach()
 
-        if source_type in [ NodeType.O , NodeType.Y ] or target_type in [ NodeType.O , NodeType.Y ]:
-            return { EdgeType.IDENTITY , EdgeType.HADAMARD }
+        if source_type in [NodeType.O, NodeType.Y] or target_type in [
+            NodeType.O,
+            NodeType.Y,
+        ]:
+            return {EdgeType.IDENTITY, EdgeType.HADAMARD}
 
         same_type = source_type == target_type
         same_reach = source_reach == target_reach
 
-        return { EdgeType.IDENTITY } if same_type == same_reach else { EdgeType.HADAMARD }
+        return {EdgeType.IDENTITY} if same_type == same_reach else {EdgeType.HADAMARD}
 
     @staticmethod
-    def connectable(
-            source: BgCube,
-            target: BgCube,
-            edge_type: EdgeType
-    ) -> bool:
+    def connectable(source: BgCube, target: BgCube, edge_type: EdgeType) -> bool:
         step = target.position - source.position
         space_condition = source.position.get_manhattan_distance(target.position) == 1
-        reach_condition = SpacetimeHelper.contains(source.kind.get_reach(), step) and SpacetimeHelper.contains(target.kind.get_reach(), step)
+        reach_condition = SpacetimeHelper.contains(source.kind.get_reach(), step) and SpacetimeHelper.contains(
+            target.kind.get_reach(), step
+        )
         pipe_condition = edge_type in BlockGraphHelper.infer_pipe_type(source.kind, target.kind)
         console.debug(f"Connectable: {source} - {target} : {space_condition}/{reach_condition}/{pipe_condition}")
         return space_condition and reach_condition and pipe_condition
@@ -54,9 +56,14 @@ class BlockGraphHelper:
     def get_candidate_constellation(
         origin: BgCube,
         node_types: set[NodeType] | None = None,
-        pipe_type: EdgeType = EdgeType.IDENTITY
+        pipe_type: EdgeType = EdgeType.IDENTITY,
     ) -> list[BgCube]:
-        considered_node_types = node_types or { NodeType.O, NodeType.X, NodeType.Y, NodeType.Z }
+        considered_node_types = node_types or {
+            NodeType.O,
+            NodeType.X,
+            NodeType.Y,
+            NodeType.Z,
+        }
 
         constellation = []
 
@@ -68,7 +75,7 @@ class BlockGraphHelper:
                     cube_reach = candidate_kind.get_reach()
                     if SpacetimeHelper.contains(cube_reach, step):
                         if pipe_type in BlockGraphHelper.infer_pipe_type(candidate_kind, origin.kind):
-                            constellation.append( BgCube(kind = candidate_kind, position = candidate_position) )
+                            constellation.append(BgCube(kind=candidate_kind, position=candidate_position))
 
         console.debug(f"Constellation of {len(constellation)} points.")
         for cube in constellation:

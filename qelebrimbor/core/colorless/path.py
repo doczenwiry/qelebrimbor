@@ -12,25 +12,25 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import itertools
+import logging
 from functools import total_ordering
 from typing import Iterator
-import itertools
 
 from qelebrimbor.core.common import Port
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.core.reach import Reach
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
-import logging
 console = logging.getLogger(__name__)
 
 
 @total_ordering
-#TODO: replaces qelebrimbor.core.metric.colorless_path.py
+# TODO: replaces qelebrimbor.core.metric.colorless_path.py
 class ColorlessPath:
     def __init__(self, start: Coordinates):
-        self.__positions: list[Coordinates] = [ start ]
-        self.__occupied: set[Coordinates] = { start }
+        self.__positions: list[Coordinates] = [start]
+        self.__occupied: set[Coordinates] = {start}
 
     @property
     def start(self):
@@ -96,12 +96,16 @@ class ColorlessPath:
         return self.length.__lt__(other.length)
 
     __STEP_LABELS = {
-        SpacetimeHelper.XP : '+X', SpacetimeHelper.XM : '-X',
-        SpacetimeHelper.YP : '+Y', SpacetimeHelper.YM : '-Y',
-        SpacetimeHelper.ZP : '+Z', SpacetimeHelper.ZM : '-Z'
+        SpacetimeHelper.XP: "+X",
+        SpacetimeHelper.XM: "-X",
+        SpacetimeHelper.YP: "+Y",
+        SpacetimeHelper.YM: "-Y",
+        SpacetimeHelper.ZP: "+Z",
+        SpacetimeHelper.ZM: "-Z",
     }
+
     def __str__(self):
-        content  = f"{self.start}"
+        content = f"{self.start}"
         for index in range(1, len(self.__positions)):
             content += f" -> {self.__positions[index]}"
         return content

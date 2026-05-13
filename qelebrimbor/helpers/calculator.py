@@ -15,15 +15,15 @@
 import numpy as np
 
 from qelebrimbor.core.bg.attributes import CubeKind
-from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 
 class ManhattanCalculator:
     @staticmethod
     def manhattan_distance(source: BgCube, target: BgCube) -> int:
-        return sum([ abs(s - o) for s, o in zip(source.position, target.position) ])
+        return int(sum((abs(s - o) for s, o in zip(source.position, target.position)), 0))
 
     @staticmethod
     def minimal_manhattan_volume(source: BgCube, target: BgCube) -> int:
@@ -43,12 +43,17 @@ class ManhattanCalculator:
 
     @staticmethod
     def minimal_manhattan_length(source: BgCube, target: BgCube) -> int:
-        return source.position.get_manhattan_distance(target.position) + ManhattanCalculator.minimal_manhattan_excess(source, target)
+        return source.position.get_manhattan_distance(target.position) + ManhattanCalculator.minimal_manhattan_excess(
+            source, target
+        )
 
     @staticmethod
     def minimal_manhattan_excess(source: BgCube, target: BgCube) -> int:
-        if source.kind in [ CubeKind.OOO , CubeKind.YYY ] or target.kind in [ CubeKind.OOO , CubeKind.YYY ]:
-            raise NotImplementedError(f"Computation only implemented for NodeType X & Z.")
+        if source.kind in [CubeKind.OOO, CubeKind.YYY] or target.kind in [
+            CubeKind.OOO,
+            CubeKind.YYY,
+        ]:
+            raise NotImplementedError("Computation only implemented for NodeType X & Z.")
 
         excess = 0
 
@@ -58,9 +63,9 @@ class ManhattanCalculator:
         manhattan = source.position.get_manhattan_distance(target.position)
         relative = target.position - source.position
 
-        if np.sign( source_reach.dot(relative) ) == -1:
+        if np.sign(source_reach.dot(relative)) == -1:
             source_reach *= -1
-        if np.sign( target_reach.dot(relative) ) == -1:
+        if np.sign(target_reach.dot(relative)) == -1:
             target_reach *= -1
 
         # TODO: work out the formalisation and justification of the cases for all the overhead values.
@@ -69,14 +74,16 @@ class ManhattanCalculator:
                 excess += 2
 
             if manhattan >= 2:
-                if any(relative == source_reach.scale(manhattan - 1) + step
-                       for step in SpacetimeHelper.get_step_constellation(source_reach)
+                if any(
+                    relative == source_reach.scale(manhattan - 1) + step
+                    for step in SpacetimeHelper.get_step_constellation(source_reach)
                 ):
                     excess += 2
 
             if manhattan >= 3:
-                if any(relative == source_reach.scale(manhattan-2) + step + source_reach.cross(step)
-                       for step in SpacetimeHelper.get_step_constellation(source_reach)
+                if any(
+                    relative == source_reach.scale(manhattan - 2) + step + source_reach.cross(step)
+                    for step in SpacetimeHelper.get_step_constellation(source_reach)
                 ):
                     excess += 2
         else:
@@ -88,21 +95,26 @@ class ManhattanCalculator:
                 elif source_reach == target_reach != relative:
                     excess += 2
             elif manhattan == 2 and source.kind.get_type() != target.kind.get_type():
-                if source_reach == target_reach != relative and source_reach.dot(relative) == 0 and relative.dot(relative) != 4:
+                if (
+                    source_reach == target_reach != relative
+                    and source_reach.dot(relative) == 0
+                    and relative.dot(relative) != 4
+                ):
                     excess += 2
 
         return excess
 
     @staticmethod
     def minimal_manhattan_excess_prefix(source: BgCube, target: BgCube, restrictions: list[NodeType]) -> int:
-        if source.kind in [ CubeKind.OOO , CubeKind.YYY ] or target.kind in [ CubeKind.OOO , CubeKind.YYY ]:
-            raise NotImplementedError(f"Computation only implemented for NodeType X & Z.")
+        if source.kind in [CubeKind.OOO, CubeKind.YYY] or target.kind in [
+            CubeKind.OOO,
+            CubeKind.YYY,
+        ]:
+            raise NotImplementedError("Computation only implemented for NodeType X & Z.")
 
         if source.position.get_manhattan_distance(target.position) - 1 < len(restrictions):
-            raise ValueError(f"Computation only implemented for ")
+            raise ValueError("Computation only implemented for ")
 
         excess = 0
-
-        
 
         return excess

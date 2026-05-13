@@ -20,15 +20,15 @@ from qelebrimbor.helpers.spacetime import Step
 
 
 class Reach(Enum):
-    XYZ = Coordinates(+1,+1,+1)
-    XY  = Coordinates( 0, 0,+1)
-    XZ  = Coordinates( 0,+1, 0)
-    YZ  = Coordinates(+1, 0, 0)
+    XYZ = Coordinates(+1, +1, +1)
+    XY = Coordinates(0, 0, +1)
+    XZ = Coordinates(0, +1, 0)
+    YZ = Coordinates(+1, 0, 0)
 
     def contains(self, step: Step) -> bool:
         return self.value.dot(step.value) == 0
 
-    def get_constellation(self, position: Coordinates = Coordinates(0,0,0)) -> list[Coordinates]:
+    def get_constellation(self, position: Coordinates = Coordinates(0, 0, 0)) -> list[Coordinates]:
         constellation = []
         for step in Step:
             if self.contains(step):

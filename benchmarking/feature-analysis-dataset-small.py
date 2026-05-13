@@ -12,14 +12,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from typing import cast
-import networkx as nx
-import benchmark
-
-from qelebrimbor.formats.pyzx import PYZX
-from qelebrimbor.analysis.cycles import CycleAnalyser
-
 import logging
+from typing import cast
+
+import benchmark
+import networkx as nx
+
+from qelebrimbor.analysis.cycles import CycleAnalyser
+from qelebrimbor.formats.pyzx import PYZX
+
 logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
@@ -35,16 +36,15 @@ if __name__ == "__main__":
     longest_file_name = max(map(len, dataset_filepaths))
 
     for input_path in dataset_filepaths:
-        vzx = PYZX.from_file(benchmark.DATASET_DIRECTORY + '/' + input_path)
+        vzx = PYZX.from_file(benchmark.DATASET_DIRECTORY + "/" + input_path)
 
-        largest_component = len(max(nx.connected_components(cast(nx.Graph, vzx)), key = len))
+        largest_component = len(max(nx.connected_components(cast(nx.Graph, vzx)), key=len))
         if CycleAnalyser.has_cycles(vzx):
-            largest_cycle = len(max(CycleAnalyser.decompose(vzx, minimal = True), key = lambda c : c.length))
+            largest_cycle = str(len(max(CycleAnalyser.decompose(vzx, minimal=True), key=lambda c: c.length)))
         else:
             largest_cycle = "n/a"
 
         component = f"Largest component = {largest_component}"
-        cycle     = f"Largest cycle = {largest_cycle}"
+        cycle = f"Largest cycle = {largest_cycle}"
 
         print(f"Analysis of {input_path.ljust(longest_file_name, ' ')} : {component}, {cycle}")
-

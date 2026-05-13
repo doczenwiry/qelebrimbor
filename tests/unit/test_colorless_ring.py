@@ -12,31 +12,34 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import unittest
+from unittest import TestCase
 
-from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.core.colorless.ring import ColorlessRing
+from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 
-class TestColorlessRing(unittest.TestCase):
+class TestColorlessRing(TestCase):
     def test_ring(self):
-        colorless = ColorlessRing(anchor = Coordinates(0,0,0))
+        colorless = ColorlessRing(anchor=Coordinates(0, 0, 0))
         print(f"Ring : {colorless}")
         self.assertEqual(str(colorless), "( 0, 0, 0) -- [OPEN]")
 
     def test_append(self):
-        current = Coordinates(0,0,0)
-        colorless = ColorlessRing(anchor = current)
-        for step in [ SpacetimeHelper.YP, SpacetimeHelper.ZP, SpacetimeHelper.YM ]:
+        current = Coordinates(0, 0, 0)
+        colorless = ColorlessRing(anchor=current)
+        for step in [SpacetimeHelper.YP, SpacetimeHelper.ZP, SpacetimeHelper.YM]:
             current += step
             colorless.append(current)
         print(f"Ring : {colorless}")
-        self.assertEqual(str(colorless), "( 0, 0, 0) -- ( 0, 1, 0) -- ( 0, 1, 1) -- ( 0, 0, 1) -- ( 0, 0, 0)")
+        self.assertEqual(
+            str(colorless),
+            "( 0, 0, 0) -- ( 0, 1, 0) -- ( 0, 1, 1) -- ( 0, 0, 1) -- ( 0, 0, 0)",
+        )
 
     def test_extend(self):
-        current = Coordinates(0,0,0)
-        colorless = ColorlessRing(anchor = current)
+        current = Coordinates(0, 0, 0)
+        colorless = ColorlessRing(anchor=current)
         extended = colorless.extend(SpacetimeHelper.YP)
 
         self.assertEqual(str(colorless), "( 0, 0, 0) -- [OPEN]")

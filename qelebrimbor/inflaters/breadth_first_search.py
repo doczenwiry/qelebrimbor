@@ -12,20 +12,21 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 from typing import cast
 
 import networkx as nx
 
 from qelebrimbor.core.bg.attributes import CubeKind
-from qelebrimbor.core.components import ZxNode, BgCube
+from qelebrimbor.core.components import BgCube, ZxNode
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
-from qelebrimbor.spacetime.placefinders.breadth_first_search import PlacefinderBFS
 from qelebrimbor.spacetime.pathfinders.depth_first_search import PathfinderDFS
-from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.spacetime.placefinders.breadth_first_search import PlacefinderBFS
 
-import logging
 console = logging.getLogger("qelebrimbor.main")
+
 
 class ZxGraphInflaterBFS:
     def __init__(self, graph: VolumetricZxGraph):
@@ -46,16 +47,16 @@ class ZxGraphInflaterBFS:
         if root:
             root_node, root_kind = root
         else:
-            root_node = max(self.__graph.get_zx_nodes(), key=lambda zxn: self.__graph.get_zx_degree(zxn.id))
+            root_node = max(
+                self.__graph.get_zx_nodes(),
+                key=lambda zxn: self.__graph.get_zx_degree(zxn.id),
+            )
             root_kind = CubeKind.suitable_kinds(root_node.type)[0]
 
         # Realise the root of the construction.
-        root_cube = BgCube(
-            kind = root_kind,
-            position = SpacetimeHelper.ORIGIN
-        )
+        root_cube = BgCube(kind=root_kind, position=SpacetimeHelper.ORIGIN)
         self.__graph.realise_zx_node(root_node, root_cube)
-        self.__connectivity.reserve(root_cube, required = self.__graph.get_zx_degree(root_node.id))
+        self.__connectivity.reserve(root_cube, required=self.__graph.get_zx_degree(root_node.id))
 
         # Form the backbone with the bfs_edges
         # > Reserve needed positions based on remaining missing neighbors
@@ -70,7 +71,9 @@ class ZxGraphInflaterBFS:
                 console.warning(f"> Second attempt to realise edge : {edge}")
                 continue
 
-            source, target = (zx_edge.source, zx_edge.target) if zx_edge.source.is_realised() else (zx_edge.target, zx_edge.source)
+            source, target = (
+                (zx_edge.source, zx_edge.target) if zx_edge.source.is_realised() else (zx_edge.target, zx_edge.source)
+            )
 
             if source.is_realised() or target.is_realised():
                 if self.__connectivity.reachable(source.realising_cube):
@@ -86,7 +89,7 @@ class ZxGraphInflaterBFS:
         # Perform a pass of edge-realisations (a.k.a. cross edges)
         unrealised_edges = filter(
             lambda edge: not self.__graph.get_zx_edge(*edge).is_realised(),
-            nx.edge_bfs(cast(nx.Graph, self.__graph), root_node.id)
+            nx.edge_bfs(cast(nx.Graph, self.__graph), root_node.id),
         )
 
         for edge in unrealised_edges:
@@ -96,7 +99,9 @@ class ZxGraphInflaterBFS:
                 console.warning(f"> Second attempt to realise edge : {edge}")
                 continue
 
-            source, target = (zx_edge.source, zx_edge.target) if zx_edge.source.is_realised() else (zx_edge.target, zx_edge.source)
+            source, target = (
+                (zx_edge.source, zx_edge.target) if zx_edge.source.is_realised() else (zx_edge.target, zx_edge.source)
+            )
 
             if source.is_realised() and target.is_realised():
                 if not self.__connectivity.available(source.realising_cube, target.realising_cube):
@@ -126,18 +131,19 @@ class ZxGraphInflaterBFS:
         # Realise the target cube and the path connecting it to the source cube
         self.__graph.realise_zx_node(target, path.final)
         # TODO: use Path.to_specification(..)
-        self.__graph.realise_zx_edge(source.id, target.id, proposal = path)
+        self.__graph.realise_zx_edge(source.id, target.id, proposal=path)
 
-        self.__connectivity.reserve(path.final, required = self.__graph.get_zx_degree(path.final.realised_node))
+        self.__connectivity.reserve(path.final, required=self.__graph.get_zx_degree(path.final.realised_node))
 
         # Remove the reserved positions of ports from those available ones
-        for position in path.extra_cubes:
+        extra_cubes = list(path.extras)
+        for position in extra_cubes:
             self.__connectivity.occlude(position)
         self.__connectivity.occlude(path.final.position)
 
         self.__connectivity.connect(
-            source = (source.realising_cube, path.outgoing),
-            target = (target.realising_cube, path.incoming)
+            source=(source.realising_cube, path.outgoing),
+            target=(target.realising_cube, path.incoming),
         )
 
         return True
@@ -146,7 +152,7 @@ class ZxGraphInflaterBFS:
         # Place a sequence of cubes connected by pipes in between the source and target realising cubes.
         console.info(f"> Searching for edge-realisation : {source} - {target}")
 
-        path = self.__pathfinder.find_optimum(goal = self.__graph.get_zx_edge(source.id, target.id))
+        path = self.__pathfinder.find_optimum(goal=self.__graph.get_zx_edge(source.id, target.id))
 
         if path is None:
             console.error(f"Failed to find any path for edge-realisation {source} - {target}")
@@ -154,15 +160,16 @@ class ZxGraphInflaterBFS:
 
         console.info(f"> Optimal path found : {path}")
 
-        self.__graph.realise_zx_edge(source.id, target.id, proposal = path)
+        self.__graph.realise_zx_edge(source.id, target.id, proposal=path)
 
         # Remove the reserved positions of ports from those available ones
-        for position in path.extra_cubes:
+        extra_cubes = list(path.extras)
+        for position in extra_cubes:
             self.__connectivity.occlude(position)
 
         self.__connectivity.connect(
-            source = (source.realising_cube, path.outgoing),
-            target = (target.realising_cube, path.incoming)
+            source=(source.realising_cube, path.outgoing),
+            target=(target.realising_cube, path.incoming),
         )
 
         return True

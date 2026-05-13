@@ -11,21 +11,18 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import logging
 from typing import Iterator
 
 from qelebrimbor.core.coordinates import Coordinates
-
-import logging
-
-from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 console = logging.getLogger(__name__)
 
 
 class ColorlessRing:
     def __init__(self, anchor: Coordinates):
-        self.__positions: list[Coordinates] = [ anchor ]
-        self.__occupied: set[Coordinates] = { anchor }
+        self.__positions: list[Coordinates] = [anchor]
+        self.__occupied: set[Coordinates] = {anchor}
 
     @property
     def anchor(self) -> Coordinates:
@@ -79,6 +76,6 @@ class ColorlessRing:
         if self.closed():
             content += f" -- {self.anchor}"
         else:
-            content += f" -- [OPEN]"
+            content += " -- [OPEN]"
 
         return content

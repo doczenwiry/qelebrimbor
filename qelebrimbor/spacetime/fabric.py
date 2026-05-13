@@ -12,18 +12,17 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.components import ZxNode, BgCube
-from qelebrimbor.core.coordinates import Coordinates
-
-
 import logging
 
+from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 console = logging.getLogger(__name__)
 
+
 class SpacetimeFabric:
-    def __init__(self):
+    def __init__(self) -> None:
         self.__occupied_positions: dict[Coordinates, BgCube] = dict()
 
     def available(self, position: Coordinates) -> bool:

@@ -16,6 +16,7 @@ from abc import ABC, abstractmethod
 
 from qelebrimbor.core.components import BgCube
 
+
 class BlockGraphPainter(ABC):
     @staticmethod
     @abstractmethod

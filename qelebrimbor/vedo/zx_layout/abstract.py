@@ -18,6 +18,7 @@ from qelebrimbor.core.components import ZxNode
 
 Placement = tuple[float, float]
 
+
 class ZxLayout(ABC):
     @abstractmethod
     def get_node_placement(self, node: ZxNode) -> Placement:

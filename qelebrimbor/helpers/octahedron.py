@@ -13,13 +13,15 @@
 #   limitations under the License.
 
 import logging
-console = logging.getLogger(__name__)
-
 from typing import Iterable
+
 import numpy as np
 
-from qelebrimbor.helpers.spacetime import SpacetimeHelper, Octant
 from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.helpers.spacetime import Octant, SpacetimeHelper
+
+console = logging.getLogger(__name__)
+
 
 class OctahedronHelper:
     MOVE_XM_YP = SpacetimeHelper.XM + SpacetimeHelper.YP
@@ -32,7 +34,7 @@ class OctahedronHelper:
         octahedron = []
 
         x = 0
-        for z in range(- manhattan_distance, manhattan_distance + 1):
+        for z in range(-manhattan_distance, manhattan_distance + 1):
             current = Coordinates(x, 0, z)
             octahedron.append(current)
             for _ in range(x):
@@ -44,7 +46,7 @@ class OctahedronHelper:
             for _ in range(x):
                 current = current + OctahedronHelper.MOVE_XP_YM
                 octahedron.append(current)
-            for _ in range(x-1):
+            for _ in range(x - 1):
                 current = current + OctahedronHelper.MOVE_XP_YP
                 octahedron.append(current)
             x += +1 if np.sign(z) == -1 else -1
@@ -54,16 +56,15 @@ class OctahedronHelper:
     @staticmethod
     def get_face_positions(manhattan_distance: int, octant: Octant) -> Iterable[Coordinates]:
         return filter(
-            lambda position : SpacetimeHelper.in_octant(position, octant),
-            OctahedronHelper.get_positions(manhattan_distance)
+            lambda position: SpacetimeHelper.in_octant(position, octant),
+            OctahedronHelper.get_positions(manhattan_distance),
         )
 
     @staticmethod
     def get_hemi_positions(manhattan_distance: int, upper: bool = True) -> Iterable[Coordinates]:
         hemi = +1 if upper else -1
         positions = [
-            position for position in OctahedronHelper.get_positions(manhattan_distance)
-            if hemi * position.z >= 0
+            position for position in OctahedronHelper.get_positions(manhattan_distance) if hemi * position.z >= 0
         ]
 
         return positions

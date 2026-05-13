@@ -12,32 +12,29 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 from collections import defaultdict, deque
 from enum import Enum
-from typing import Iterable
 from itertools import chain
+from typing import Iterable
+
 import networkx as nx
-
-from qelebrimbor.helpers.spacetime import SpacetimeHelper
-from qelebrimbor.helpers.blockgraph import BlockGraphHelper
-
-from qelebrimbor.core.zx.attributes import NodeId, NodeType, EdgeType, QubitId, LayerId
-from qelebrimbor.core.zx.chain import ZxChain
-from qelebrimbor.core.zx.cycle import ZxCycle
 
 from qelebrimbor.core.bg.attributes import CubeId, CubeKind
 from qelebrimbor.core.bg.path import Path
 from qelebrimbor.core.bg.ring import Ring
 from qelebrimbor.core.bg.strand import Strand
-
-from qelebrimbor.core.components import ZxNode, ZxEdge, BgCube, BgPipe
-
+from qelebrimbor.core.components import BgCube, BgPipe, ZxEdge, ZxNode
+from qelebrimbor.core.zx.attributes import EdgeType, LayerId, NodeId, NodeType, QubitId
+from qelebrimbor.core.zx.chain import ZxChain
+from qelebrimbor.core.zx.cycle import ZxCycle
+from qelebrimbor.helpers.blockgraph import BlockGraphHelper
+from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
-
 from qelebrimbor.utilities.nmtfl_constraint import NoMoreThanFourLegsConstraint
 
-import logging
 console = logging.getLogger(__name__)
+
 
 class LayerTransition(Enum):
     EVERY = 0
@@ -55,8 +52,9 @@ class LayerTransition(Enum):
             return source_layer == target_layer
         elif self == LayerTransition.UPPER:
             return source_layer < target_layer
-        else: # self == LayerTransition.OUTER
+        else:  # self == LayerTransition.OUTER
             return False
+
 
 # TODO: figure out what the other VertexType and EdgeType represent
 # TODO: how do we deal with the last four VertexType (i.e. H_BOX, W_INPUT, W_OUTPUT, Z_BOX) ?
@@ -65,14 +63,15 @@ class LayerTransition(Enum):
 # TODO: benchmarking and timing various parts
 # TODO: construction of animation
 class VolumetricZxGraph(nx.Graph):
-    KEY_ZX_NODE = 'zx_node'
-    KEY_ZX_EDGE = 'zx_edge'
+    KEY_ZX_NODE = "zx_node"
+    KEY_ZX_EDGE = "zx_edge"
 
-    KEY_BG_CUBE = 'bg_cube'
-    KEY_BG_PIPE = 'bg_pipe'
+    KEY_BG_CUBE = "bg_cube"
+    KEY_BG_PIPE = "bg_pipe"
 
     # TODO: work around the assumption that the zx-nodes are numbered from 0..n-1
-    def __init__(self,
+    def __init__(
+        self,
         nodes: Iterable[tuple[NodeId, NodeType]] | None = None,
         edges: Iterable[tuple[NodeId, NodeId, EdgeType]] | None = None,
         qubits: dict[NodeId, QubitId] | None = None,
@@ -93,7 +92,7 @@ class VolumetricZxGraph(nx.Graph):
             for node, node_type in nodes:
                 qubit = qubits[node] if qubits and node in qubits else -1
                 layer = layers[node] if layers and node in layers else -1
-                zx_node = ZxNode(id = node, type = node_type, qubit = qubit, layer = layer)
+                zx_node = ZxNode(id=node, type=node_type, qubit=qubit, layer=layer)
                 self.add_node(zx_node.id)
                 self.nodes[zx_node.id][VolumetricZxGraph.KEY_ZX_NODE] = zx_node
 
@@ -107,7 +106,7 @@ class VolumetricZxGraph(nx.Graph):
             for endpoint0, endpoint1, edge_type in edges:
                 zx_source = self.get_zx_node(min(endpoint0, endpoint1))
                 zx_target = self.get_zx_node(max(endpoint0, endpoint1))
-                zx_edge = ZxEdge(source = zx_source, target = zx_target, type = edge_type)
+                zx_edge = ZxEdge(source=zx_source, target=zx_target, type=edge_type)
                 self.add_edge(zx_source.id, zx_target.id)
                 self.edges[zx_source.id, zx_target.id][VolumetricZxGraph.KEY_ZX_EDGE] = zx_edge
 
@@ -117,41 +116,61 @@ class VolumetricZxGraph(nx.Graph):
 
         self.__next_cube_id = self.number_of_nodes()
 
-    def get_zx_nodes(self, node_type: NodeType | None = None, qubit: QubitId | None = None, layer: LayerId | None = None):
+    def get_zx_nodes(
+        self,
+        node_type: NodeType | None = None,
+        qubit: QubitId | None = None,
+        layer: LayerId | None = None,
+    ):
         return filter(
-            lambda node: (node_type is None or node.type == node_type) and
-                         (qubit is None or node.qubit == qubit) and
-                         (layer is None or node.layer == layer),
-            map(lambda nd: self.get_zx_node(nd), self.nodes)
+            lambda node: (
+                (node_type is None or node.type == node_type)
+                and (qubit is None or node.qubit == qubit)
+                and (layer is None or node.layer == layer)
+            ),
+            map(lambda nd: self.get_zx_node(nd), self.nodes),
         )
 
-    def get_zx_edges(self, edge_type: EdgeType | None = None, layered: tuple[LayerId, LayerTransition] | None = None):
+    def get_zx_edges(
+        self,
+        edge_type: EdgeType | None = None,
+        layered: tuple[LayerId, LayerTransition] | None = None,
+    ) -> Iterable[ZxEdge]:
         if layered is None:
-            edges = map(lambda edge: self.get_zx_edge(*edge), self.edges)
+            edges = list(map(lambda edge: self.get_zx_edge(*edge), self.edges))
         else:
             layer, transition = layered
             if len(self.__zx_layers) == 0:
-                console.warning(f"Requesting layered edges but VolumetricZxGraph does not contain layer information.")
-            edges = chain.from_iterable(map(
-                lambda zxn: map(
-                    lambda neighbor : self.get_zx_edge(zxn.id, neighbor.id),
-                    filter(
-                        lambda nb: transition != LayerTransition.INTRA or zxn.id < nb.id,
-                        self.get_zx_neighbors(zxn, transition = transition)
+                console.warning("Requesting layered edges but VolumetricZxGraph does not contain layer information.")
+            edges = list(
+                chain.from_iterable(
+                    map(
+                        lambda zxn: map(
+                            lambda neighbor: self.get_zx_edge(zxn.id, neighbor.id),
+                            filter(
+                                lambda nb: transition != LayerTransition.INTRA or zxn.id < nb.id,
+                                self.get_zx_neighbors(zxn, transition=transition),
+                            ),
+                        ),
+                        self.get_zx_nodes(layer=layer),
                     )
-                ),
-                self.get_zx_nodes(layer = layer)
-            ))
+                )
+            )
 
         return filter(lambda edge: edge_type is None or edge.type == edge_type, edges)
 
     def get_zx_neighbors(
-            self, node: ZxNode, edge_type: EdgeType | None = None, transition: LayerTransition = LayerTransition.EVERY
+        self,
+        node: ZxNode,
+        edge_type: EdgeType | None = None,
+        transition: LayerTransition = LayerTransition.EVERY,
     ) -> Iterable[ZxNode]:
         return filter(
-            lambda neighbor: transition.matches(node.layer, neighbor.layer) and
-                             (edge_type is None or self.get_zx_edge(node.id, neighbor.id).type == edge_type),
-            map(self.get_zx_node, self.neighbors(node.id))
+            lambda neighbor: (
+                transition.matches(node.layer, neighbor.layer)
+                and (edge_type is None or self.get_zx_edge(node.id, neighbor.id).type == edge_type)
+            ),
+            map(self.get_zx_node, self.neighbors(node.id)),
         )
 
     def get_zx_degree(self, node_id: NodeId) -> int:
@@ -170,33 +189,36 @@ class VolumetricZxGraph(nx.Graph):
         return self.__zx_layers.keys()
 
     def volume(self) -> int:
-        return sum(1 for cube in self.get_bg_cubes() if cube.kind not in [ CubeKind.OOO, CubeKind.YYY ])
+        return sum(1 for cube in self.get_bg_cubes() if cube.kind not in [CubeKind.OOO, CubeKind.YYY])
 
     def number_of_zx_nodes(self, node_type: NodeType | None = None) -> int:
-        return sum(1 for _ in self.get_zx_nodes(node_type = node_type))
+        return sum(1 for _ in self.get_zx_nodes(node_type=node_type))
 
     def number_of_zx_edges(self, edge_type: EdgeType | None = None) -> int:
-        return sum(1 for _ in self.get_zx_edges(edge_type = edge_type))
+        return sum(1 for _ in self.get_zx_edges(edge_type=edge_type))
 
     def number_of_cubes(self, kind: CubeKind | None = None) -> int:
-        return sum(1 for _ in self.get_bg_cubes(kind = kind))
+        return sum(1 for _ in self.get_bg_cubes(kind=kind))
 
     def number_of_pipes(self, pipe_type: EdgeType | None = None) -> int:
-        return sum(1 for _ in self.get_bg_pipes(pipe_type = pipe_type))
+        return sum(1 for _ in self.get_bg_pipes(pipe_type=pipe_type))
 
     def get_bg_cubes(self, kind: CubeKind | None = None):
-        return map(lambda cb: self.get_bg_cube(cb),
+        return map(
+            lambda cb: self.get_bg_cube(cb),
             filter(
-                lambda cb: (kind is None or self.get_bg_cube(cb).kind == kind), self.blockgraph.nodes()
-            )
+                lambda cb: kind is None or self.get_bg_cube(cb).kind == kind,
+                self.blockgraph.nodes(),
+            ),
         )
 
     def get_bg_pipes(self, pipe_type: EdgeType | None = None):
-        return map(lambda pp: self.get_bg_pipe(*pp),
+        return map(
+            lambda pp: self.get_bg_pipe(*pp),
             filter(
-                lambda pp: (pipe_type is None or self.get_bg_pipe(*pp).type == pipe_type),
-                self.blockgraph.edges()
-            )
+                lambda pp: pipe_type is None or self.get_bg_pipe(*pp).type == pipe_type,
+                self.blockgraph.edges(),
+            ),
         )
 
     def get_bg_cube(self, cube_id: CubeId) -> BgCube:
@@ -210,18 +232,18 @@ class VolumetricZxGraph(nx.Graph):
 
     def get_bg_neighbours(self, cube: BgCube, pipe_type: EdgeType | None = None) -> Iterable[BgCube]:
         return filter(
-            lambda nb : (pipe_type is None or self.get_bg_pipe(cube.id, nb.id).type == pipe_type),
-            map(self.get_bg_cube, self.blockgraph.neighbors(cube.id))
+            lambda nb: pipe_type is None or self.get_bg_pipe(cube.id, nb.id).type == pipe_type,
+            map(self.get_bg_cube, self.blockgraph.neighbors(cube.id)),
         )
 
     def get_bg_degree(self, cube_id: CubeId) -> int:
         return int(self.blockgraph.degree[cube_id])
 
     def get_equivalent_bg_cubes(self, cube: BgCube) -> tuple[Iterable[BgCube], Iterable[BgPipe]]:
-        equivalent_cubes: set[BgCube] = { cube }
+        equivalent_cubes: set[BgCube] = {cube}
         connecting_pipes: set[BgPipe] = set()
 
-        queue: deque[BgCube] = deque([ cube ])
+        queue: deque[BgCube] = deque([cube])
         while queue:
             current = queue.popleft()
             for neighbor in self.get_bg_neighbours(current):
@@ -231,7 +253,7 @@ class VolumetricZxGraph(nx.Graph):
                 source, target = current.id, neighbor.id
                 if source > target:
                     source, target = target, source
-                connecting_pipes.add( self.get_bg_pipe(source, target) )
+                connecting_pipes.add(self.get_bg_pipe(source, target))
 
                 if neighbor not in equivalent_cubes:
                     equivalent_cubes.add(neighbor)
@@ -290,67 +312,67 @@ class VolumetricZxGraph(nx.Graph):
 
         # Realise the anchor of the cycle.
         anchor = nodes[0]
-        anchor_id = self.realise_zx_node(anchor, proposal.anchor)
+        anchor_id = self.realise_zx_node(anchor, proposal.anchor)  # noqa: F841
 
         # Realise the successive nodes of the cycle
         preceding: ZxNode = anchor
         for index in range(1, len(cycle)):
             following: ZxNode = nodes[index]
-            current_id: CubeId = self.realise_zx_node(following, proposal.cubes[index])
+            current_id: CubeId = self.realise_zx_node(following, proposal.cubes[index])  # noqa: F841
 
             self.realise_zx_edge(
-                source = preceding.id,
-                target = following.id,
-                proposal = Path(start = preceding.realising_cube).extend(
-                    cube = following.realising_cube, pipe_type = proposal.pipes[index-1]
-                )
+                source=preceding.id,
+                target=following.id,
+                proposal=Path(start=preceding.realising_cube).extend(
+                    cube=following.realising_cube, pipe_type=proposal.pipes[index - 1]
+                ),
             )
 
             preceding = following
 
         # Realise the final edge to close the ring
         terminal = nodes[-1]
-        path = Path(start = terminal.realising_cube)
+        path = Path(start=terminal.realising_cube)
         for index in range(len(cycle), len(proposal.cubes)):
-            path = path.extend(cube = proposal.cubes[index], pipe_type = proposal.pipes[index-1])
-        path = path.extend(cube = anchor.realising_cube, pipe_type = proposal.pipes[-1])
+            path = path.extend(cube=proposal.cubes[index], pipe_type=proposal.pipes[index - 1])
+        path = path.extend(cube=anchor.realising_cube, pipe_type=proposal.pipes[-1])
 
-        self.realise_zx_edge(source = terminal.id, target = anchor.id, proposal = path)
+        self.realise_zx_edge(source=terminal.id, target=anchor.id, proposal=path)
 
     # TODO: assumption is that len(proposal.extra_cubes) >= len(nodes)
     def realise_zx_chain(self, chain: ZxChain, proposal: Strand):
         # Realise the successive nodes of the chain
         preceding_node: ZxNode = chain.source
-        matching_index: int = 0 # The index of the extra cube corresponding to the preceding_node
+        matching_index: int = 0  # The index of the extra cube corresponding to the preceding_node
         extra_cubes = list(proposal.extras)
         for following_node in chain.nodes:
-            path = Path(start = preceding_node.realising_cube)
+            path = Path(start=preceding_node.realising_cube)
 
             extra_cube = extra_cubes[matching_index]
-            while extra_cube.realised_node != following_node and matching_index < len(extra_cubes)-1:
-                path = path.extend(cube = extra_cube, pipe_type = proposal.pipes[matching_index])
+            while extra_cube.realised_node != following_node and matching_index < len(extra_cubes) - 1:
+                path = path.extend(cube=extra_cube, pipe_type=proposal.pipes[matching_index])
                 matching_index += 1
                 extra_cube = extra_cubes[matching_index]
 
             # Extend with the final cube/pipe matching the following_node
-            path = path.extend(cube = extra_cube, pipe_type = proposal.pipes[matching_index])
+            path = path.extend(cube=extra_cube, pipe_type=proposal.pipes[matching_index])
             matching_index += 1
 
-            cube_id = self.realise_zx_node(following_node, extra_cube)
-            self.realise_zx_edge(source = preceding_node.id, target = following_node.id, proposal = path)
+            cube_id = self.realise_zx_node(following_node, extra_cube)  # noqa: F841
+            self.realise_zx_edge(source=preceding_node.id, target=following_node.id, proposal=path)
             preceding_node = following_node
 
         # Realise the final edge to close the ring
-        following_node: ZxNode = chain.target
-        path = Path(start = preceding_node.realising_cube)
+        following: ZxNode = chain.target
+        path = Path(start=preceding_node.realising_cube)
 
         while matching_index < len(extra_cubes):
             extra_cube = extra_cubes[matching_index]
-            path = path.extend(cube = extra_cube, pipe_type = proposal.pipes[matching_index])
+            path = path.extend(cube=extra_cube, pipe_type=proposal.pipes[matching_index])
             matching_index += 1
 
-        path = path.extend(cube = following_node.realising_cube, pipe_type = proposal.pipes[-1])
-        self.realise_zx_edge(source = preceding_node.id, target = following_node.id, proposal = path)
+        path = path.extend(cube=following.realising_cube, pipe_type=proposal.pipes[-1])
+        self.realise_zx_edge(source=preceding_node.id, target=following.id, proposal=path)
 
     def place_cube(self, cube: BgCube) -> CubeId:
         if self.spacetime.occupied(cube.position):
@@ -382,12 +404,12 @@ class VolumetricZxGraph(nx.Graph):
             extra_pipe_type = proposal.pipes[index]
 
             # Place the current cube and connect it to the previous cube.
-            extra_cube_id = self.place_cube(extra_cube)
+            extra_cube_id = self.place_cube(extra_cube)  # noqa: F841
             self.connect_pipe(previous_cube, extra_cube, extra_pipe_type)
 
             # Extend the sequence of extra node ids
-            pipe = BgPipe(source = previous_cube, target = extra_cube, type = extra_pipe_type)
-            pipe_ids.append( pipe )
+            pipe = BgPipe(source=previous_cube, target=extra_cube, type=extra_pipe_type)
+            pipe_ids.append(pipe)
 
             # Prepare for the next iteration
             previous_cube = extra_cube
@@ -396,12 +418,12 @@ class VolumetricZxGraph(nx.Graph):
         final_pipe_type = proposal.pipes[-1]
         self.connect_pipe(previous_cube, target_cube, final_pipe_type)
 
-        pipe = BgPipe(source = previous_cube, target = target_cube, type = final_pipe_type)
-        pipe_ids.append( pipe )
+        pipe = BgPipe(source=previous_cube, target=target_cube, type=final_pipe_type)
+        pipe_ids.append(pipe)
 
         return pipe_ids
 
-    def connect_pipe(self, source: BgCube, target: BgCube, pipe_type : EdgeType):
+    def connect_pipe(self, source: BgCube, target: BgCube, pipe_type: EdgeType):
         if not self.blockgraph.has_node(source.id):
             raise Exception(f"Cube {source} not found in the BG-graph.")
 
@@ -414,7 +436,7 @@ class VolumetricZxGraph(nx.Graph):
         if source.position.get_manhattan_distance(target.position) != 1:
             raise Exception(f"Cubes {source} and {target} are not at adjacent positions.")
 
-        if not pipe_type in BlockGraphHelper.infer_pipe_type(source.kind, target.kind):
+        if pipe_type not in BlockGraphHelper.infer_pipe_type(source.kind, target.kind):
             raise Exception(f"Pipe type {pipe_type} is incompatible with source and target kinds [{source}-{target}].")
 
         # TODO: validate with respect to inferred pipe type between source and target cubes
@@ -430,10 +452,14 @@ class VolumetricZxGraph(nx.Graph):
         final = proposal.final
 
         if not (edge.source.id != start.realised_node.id or edge.target.id != start.realised_node.id):
-            raise Exception(f"Start cube {start} is not realising either endpoint of edge {edge} [proposal={proposal}].")
+            raise Exception(
+                f"Start cube {start} is not realising either endpoint of edge {edge} [proposal={proposal}]."
+            )
 
         if not (edge.source.id != final.realised_node.id or edge.target.id != final.realised_node.id):
-            raise Exception(f"Final cube {final} is not realising either endpoint of edge {edge} [proposal={proposal}].")
+            raise Exception(
+                f"Final cube {final} is not realising either endpoint of edge {edge} [proposal={proposal}]."
+            )
 
         console.debug(f"Validating path proposal for {edge} : {proposal}.")
 
@@ -448,7 +474,7 @@ class VolumetricZxGraph(nx.Graph):
             current_reach = current.kind.get_reach()
 
             # Check that the cube type is either X or Z (Y and boundaries must be leaves)
-            if current.kind in [ CubeKind.OOO, CubeKind.YYY ]:
+            if current.kind in [CubeKind.OOO, CubeKind.YYY]:
                 console.warning(f"> CubeKind.OOO and CubeKind.YYY can only appear at the ends of a path : {current}.")
                 return False
 
@@ -470,15 +496,19 @@ class VolumetricZxGraph(nx.Graph):
                 console.warning(f"> Consecutive cubes are not adjacent [{previous}-{current}]")
                 return False
 
-            if not SpacetimeHelper.contains(previous_reach, step_taken) or not SpacetimeHelper.contains(current_reach, step_taken):
+            if not SpacetimeHelper.contains(previous_reach, step_taken) or not SpacetimeHelper.contains(
+                current_reach, step_taken
+            ):
                 console.warning(f"> Reaches do not contain step [{step_taken}]: {previous} {current}")
                 return False
 
             # Check that the current pipe has a type consistent with what is allowed
             current_pipe_type = proposal.pipes[index]
             inferred = BlockGraphHelper.infer_pipe_type(previous.kind, current.kind)
-            if not current_pipe_type in inferred:
-                console.warning(f"> Pipe type is not allowed between {previous} and {current} [{current_pipe_type} not in {inferred}].")
+            if current_pipe_type not in inferred:
+                console.warning(
+                    f"> Pipe type is not allowed between {previous} and {current} [{current_pipe_type} not in {inferred}]."  # noqa: E501
+                )
                 return False
 
             if current_pipe_type == EdgeType.HADAMARD:
@@ -495,7 +525,9 @@ class VolumetricZxGraph(nx.Graph):
             return False
 
         final_reach = final.kind.get_reach()
-        if not SpacetimeHelper.contains(previous_reach, step_taken) or not SpacetimeHelper.contains(final_reach, step_taken):
+        if not SpacetimeHelper.contains(previous_reach, step_taken) or not SpacetimeHelper.contains(
+            final_reach, step_taken
+        ):
             console.warning(f"> Reaches do not contain step [{step_taken}]: {previous} {final}")
             return False
 
@@ -503,7 +535,9 @@ class VolumetricZxGraph(nx.Graph):
         current_pipe_type = proposal.pipes[-1]
         inferred = BlockGraphHelper.infer_pipe_type(previous.kind, final.kind)
         if current_pipe_type not in inferred:
-            console.warning(f"> Pipe type is not allowed between {previous} and {final} [{current_pipe_type} not in {inferred}].")
+            console.warning(
+                f"> Pipe type is not allowed between {previous} and {final} [{current_pipe_type} not in {inferred}]."
+            )
             return False
 
         if current_pipe_type == EdgeType.HADAMARD:
@@ -515,12 +549,20 @@ class VolumetricZxGraph(nx.Graph):
         else:
             return True
 
-    def log_summary(self, nodes: bool = True, edges: bool = True, layers: bool = True, qubits: bool = True, cubes: bool = True, pipes: bool = True):
+    def log_summary(
+        self,
+        nodes: bool = True,
+        edges: bool = True,
+        layers: bool = True,
+        qubits: bool = True,
+        cubes: bool = True,
+        pipes: bool = True,
+    ):
         if nodes:
             for node_type in [NodeType.O, NodeType.X, NodeType.Y, NodeType.Z]:
                 content = ""
                 count = 0
-                for node in self.get_zx_nodes(node_type = node_type):
+                for node in self.get_zx_nodes(node_type=node_type):
                     content += f"{node.id} "
                     count += 1
                 console.info(f"Nodes {node_type.name} [{count}]: {content}")
@@ -535,11 +577,11 @@ class VolumetricZxGraph(nx.Graph):
 
         if layers:
             for layer in self.get_zx_layers():
-                console.info(f"Layer {layer}  : {list(map(lambda zn: zn.id, self.get_zx_nodes(layer = layer)))}")
+                console.info(f"Layer {layer}  : {list(map(lambda zn: zn.id, self.get_zx_nodes(layer=layer)))}")
 
         if qubits:
             for qubit in self.get_zx_qubits():
-                console.info(f"Qubit {qubit}  : {list(map(lambda zn: zn.id, self.get_zx_nodes(qubit = qubit)))}")
+                console.info(f"Qubit {qubit}  : {list(map(lambda zn: zn.id, self.get_zx_nodes(qubit=qubit)))}")
 
         if cubes:
             for cube in self.get_bg_cubes():
@@ -564,12 +606,14 @@ class VolumetricZxGraph(nx.Graph):
         for pipe in self.get_bg_pipes():
             print(f"Pipe {pipe}")
 
-    def log_report(self):
-        number_of_spiders = sum(1 for node in self.get_zx_nodes() if node.type in { NodeType.X , NodeType.Z })
-        number_of_realised_spiders = sum(1 for node in self.get_zx_nodes() if node.type in { NodeType.X, NodeType.Z } and node.is_realised())
+    def log_report(self) -> None:
+        number_of_spiders = sum(1 for node in self.get_zx_nodes() if node.type in {NodeType.X, NodeType.Z})
+        number_of_realised_spiders = sum(
+            1 for node in self.get_zx_nodes() if node.type in {NodeType.X, NodeType.Z} and node.is_realised()
+        )
         console.info(f"Realised spiders : {number_of_realised_spiders} of {number_of_spiders}")
-        number_of_boundaries = sum(1 for _ in self.get_zx_nodes(node_type = NodeType.O))
-        number_of_realised_boundaries = sum(1 for node in self.get_zx_nodes(node_type = NodeType.O) if node.is_realised())
+        number_of_boundaries = sum(1 for _ in self.get_zx_nodes(node_type=NodeType.O))
+        number_of_realised_boundaries = sum(1 for node in self.get_zx_nodes(node_type=NodeType.O) if node.is_realised())
         console.info(f"Realised boundaries : {number_of_realised_boundaries} of {number_of_boundaries}")
         console.info(f"Overall volume : {self.volume()}")
 
@@ -578,7 +622,7 @@ class VolumetricZxGraph(nx.Graph):
             if edge.is_realised():
                 count = sum(1 for _ in edge.realisation) - 1
                 if count > 0:
-                    excess_volume[ edge ] = count
+                    excess_volume[edge] = count
 
         console.info(f"Excess volume : +{sum(excess_volume.values())}")
         for edge, volume in excess_volume.items():

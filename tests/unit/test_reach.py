@@ -12,13 +12,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import unittest
+from unittest import TestCase
 
 from qelebrimbor.core.reach import Reach
 from qelebrimbor.helpers.spacetime import Step
 
 
-class TestColorlessRing(unittest.TestCase):
+class TestColorlessRing(TestCase):
     def test_reach_x_y_xy(self):
         self.assertEqual(Reach.from_steps(Step.XP, Step.YP), {Reach.XY})
 

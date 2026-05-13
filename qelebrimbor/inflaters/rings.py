@@ -12,25 +12,24 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
+import logging
 
+from qelebrimbor.analysis.cycles import CycleAnalyser, ZxChain, ZxCycle
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
+from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 from qelebrimbor.spacetime.ringfinders.depth_first_search import RingfinderDFS
 from qelebrimbor.spacetime.strandfinders.depth_first_search import StrandfinderDFS
 
-from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
-
-from qelebrimbor.analysis.cycles import CycleAnalyser, ZxCycle, ZxChain
-from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-
-import logging
 console = logging.getLogger(__name__)
+
 
 class ZxGraphInflaterRings:
     def __init__(self, graph: VolumetricZxGraph, cycles: list[ZxCycle]):
         self.__graph = graph
         self.__spacetime = graph.spacetime
         self.__connectivity: ConnectivityTracker = OpenPortsTracker(graph)
-        self.__ringfinder = RingfinderDFS(self.__graph, branch_and_bound = True)
+        self.__ringfinder = RingfinderDFS(self.__graph, branch_and_bound=True)
         self.__strandfinder = StrandfinderDFS(self.__graph, self.__connectivity)
 
         self.__zx_cycles = cycles
@@ -43,9 +42,9 @@ class ZxGraphInflaterRings:
 
         # Realise the root ring
         console.info(f"> Root ring identified : {root_cycle}")
-        excess_volume: int = self.__attempt_ring_realisation(root_cycle, maximal_excess = 6)
+        excess_volume: int = self.__attempt_ring_realisation(root_cycle, maximal_excess=6)
         if excess_volume == -1:
-            console.info(f"> Failure [cause:unknown]")
+            console.info("> Failure [cause:unknown]")
 
         console.info(f"> Realisation successful with excess volume : +{excess_volume} cubes.")
         index += 1
@@ -57,12 +56,12 @@ class ZxGraphInflaterRings:
             console.info(f"Attempting realisation of chain [index={index}, md={candidate.distance}] : {candidate}")
 
             if index == abort_on_index:
-                console.info(f"> Premature abortion for inspection of specific example.")
+                console.info("> Premature abortion for inspection of specific example.")
                 # TODO: fix occlusion of ports by realisation of long path.
-                self.__connectivity.report(verbose = True)
+                self.__connectivity.report(verbose=True)
                 break
 
-            excess_volume = self.__attempt_chain_realisation(candidate, maximal_excess = 12)
+            excess_volume = self.__attempt_chain_realisation(candidate, maximal_excess=12)
             if excess_volume == -1:
                 console.info(f"> Failure to complete chain : {candidate}")
                 if abort_on_failure:
@@ -79,13 +78,15 @@ class ZxGraphInflaterRings:
     @staticmethod
     def __identify_next_chain(*cycles: ZxCycle) -> ZxChain | None:
         all_chains: list[ZxChain] = CycleAnalyser.identify_chains(*cycles)
-        console.critical(f"All chains identified :")
+        console.critical("All chains identified :")
         for chain in all_chains:
             console.critical(f"> Chain : {chain}")
         selected: ZxChain | None = None
         for chain in all_chains:
             if selected:
-                if chain.length < selected.length or (chain.length == selected.length and chain.distance > selected.distance):
+                if chain.length < selected.length or (
+                    chain.length == selected.length and chain.distance > selected.distance
+                ):
                     selected = chain
             else:
                 selected = chain
@@ -96,7 +97,7 @@ class ZxGraphInflaterRings:
 
     def __attempt_ring_realisation(self, zx_cycle: ZxCycle, maximal_excess: int = 0) -> int:
         # TODO: the following call is the bottleneck of the overall inflation process ...
-        ring = self.__ringfinder.find_optimum(zx_cycle, maximal_excess = maximal_excess)
+        ring = self.__ringfinder.find_optimum(zx_cycle, maximal_excess=maximal_excess)
 
         if ring is None:
             return -1
@@ -109,9 +110,9 @@ class ZxGraphInflaterRings:
         # Reserve the ports for all the nodes that were realised as part of this ring.
         for node, _ in zx_cycle:
             # Since each of these node is realised as part of a ring, it already has two of its edges realised.
-            self.__connectivity.reserve(node.realising_cube, required = self.__graph.get_zx_degree(node.id) - 2)
+            self.__connectivity.reserve(node.realising_cube, required=self.__graph.get_zx_degree(node.id) - 2)
 
-        for cube in ring.cubes[len(zx_cycle):]:
+        for cube in ring.cubes[len(zx_cycle) :]:
             self.__connectivity.occlude(cube.position)
 
         return len(ring.cubes) - len(zx_cycle)
@@ -125,7 +126,7 @@ class ZxGraphInflaterRings:
         if not self.__connectivity.available(chain.source.realising_cube, chain.source.realising_cube):
             return -1
 
-        strand = self.__strandfinder.find_optimum(chain, maximal_excess = maximal_excess)
+        strand = self.__strandfinder.find_optimum(chain, maximal_excess=maximal_excess)
 
         if strand is None:
             console.error(f"Failed to find a strand for : {chain}")
@@ -139,9 +140,10 @@ class ZxGraphInflaterRings:
         # Reserve the ports for all the nodes that were realised as part of this ring.
         for node in chain.nodes:
             # Since each of these node is part of a ring, it already has two of its edges realised.
-            self.__connectivity.reserve(node.realising_cube, required =self.__graph.get_zx_degree(node.id) - 2)
+            self.__connectivity.reserve(node.realising_cube, required=self.__graph.get_zx_degree(node.id) - 2)
 
-        for cube in strand.extra_cubes[chain.length-1:]:
+        extra_cubes = list(strand.extras)
+        for cube in extra_cubes[chain.length - 1 :]:
             self.__connectivity.occlude(cube.position)
 
         return excess_volume

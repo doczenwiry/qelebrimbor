@@ -12,11 +12,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph, LayerTransition
+from qelebrimbor.core.volumetric_zx_graph import LayerTransition, VolumetricZxGraph
 
 
-def get_layer_density(graph: VolumetricZxGraph, layer: int) -> tuple[int,int]:
-    number_of_nodes = sum(1 for _ in graph.get_zx_nodes(layer = layer))
-    number_of_edges = sum(1 for _ in graph.get_zx_edges(layered = (layer, LayerTransition.INTRA)))
+def get_layer_density(graph: VolumetricZxGraph, layer: int) -> tuple[int, int]:
+    number_of_nodes = sum(1 for _ in graph.get_zx_nodes(layer=layer))
+    number_of_edges = sum(1 for _ in graph.get_zx_edges(layered=(layer, LayerTransition.INTRA)))
 
     return number_of_nodes, number_of_edges

@@ -12,22 +12,22 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 from functools import total_ordering
 
-from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.core.zx.attributes import EdgeType
 
-import logging
 console = logging.getLogger(__name__)
 
 
 @total_ordering
 class Ring:
     def __init__(self, anchor: BgCube):
-        self.cubes: list[BgCube] = [ anchor ]
+        self.cubes: list[BgCube] = [anchor]
         self.pipes: list[EdgeType] = []
-        self.occupied = { anchor.position }
+        self.occupied = {anchor.position}
 
     @property
     def anchor(self) -> BgCube:
@@ -50,7 +50,7 @@ class Ring:
         return len(self.cubes) == len(self.pipes)
 
     def __copy(self):
-        cp = Ring(anchor = self.cubes[0])
+        cp = Ring(anchor=self.cubes[0])
         cp.cubes.extend(self.cubes[1:])
         cp.pipes.extend(self.pipes)
         cp.occupied.update(self.occupied)
@@ -85,7 +85,7 @@ class Ring:
         content = f"{self.cubes[0]}"
 
         for index in range(1, len(self.cubes)):
-            cube, pipe = self.cubes[index], self.pipes[index-1]
+            cube, pipe = self.cubes[index], self.pipes[index - 1]
             content += f" --{repr(pipe)}-- {str(cube)}"
 
         if self.is_closed():

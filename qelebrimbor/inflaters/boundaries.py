@@ -12,11 +12,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.zx.attributes import NodeType
+import logging
+
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.spacetime.placefinders.breadth_first_search import PlacefinderBFS
 
-import logging
 console = logging.getLogger(__name__)
 
 
@@ -30,7 +31,7 @@ class ZxGraphInflaterBoundaries:
     def process(self):
         # Extend the boundaries
         for node in self.__graph.get_zx_nodes():
-            if not node.is_realised() or node.type not in { NodeType.X, NodeType.Z }:
+            if not node.is_realised() or node.type not in {NodeType.X, NodeType.Z}:
                 continue
 
             for neighbor in self.__graph.get_zx_neighbors(node):

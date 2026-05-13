@@ -12,21 +12,19 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from functools import reduce
+
+import logging
 
 from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.bg.strand import Strand
+from qelebrimbor.core.colorless.path import ColorlessPath
+from qelebrimbor.core.components import BgCube, ZxNode
 from qelebrimbor.core.coordinates import Coordinates
-from qelebrimbor.core.metric.color_shufflings import ColorShuffling
 from qelebrimbor.core.reach import Reach
 from qelebrimbor.core.zx.attributes import EdgeType
 from qelebrimbor.core.zx.chain import ZxChain
-from qelebrimbor.core.components import BgCube, ZxNode, ZxEdge
-from qelebrimbor.core.colorless.path import ColorlessPath
+from qelebrimbor.helpers.spacetime import Step
 
-from qelebrimbor.helpers.spacetime import SpacetimeHelper, Step
-
-import logging
 console = logging.getLogger(__name__)
 
 
@@ -51,7 +49,7 @@ class PainterZxChain:
         if not final.reach.contains(Step(colorless.incoming - final.position)):
             return None
 
-        strand = Strand(start = start)
+        strand = Strand(start=start)
 
         remaining_edges = chain.edges
         remaining_nodes = chain.nodes
@@ -83,10 +81,10 @@ class PainterZxChain:
             # Handle internal error of logic.
             if selected is None:
                 console.error(f"> Failure to paint cube at {position} w/ {reaches}")
-                raise Exception(f"No suitable kind found for next colorless cube when painting ColorlessPath.")
+                raise Exception("No suitable kind found for next colorless cube when painting ColorlessPath.")
 
             # Construct a colored cube and assign it to the current node if the kind is suitable for the type.
-            cube = BgCube(kind = selected, position = position)
+            cube = BgCube(kind=selected, position=position)
             if current_node is not None and selected.get_type() == current_node.type:
                 cube.realised_node = current_node
 

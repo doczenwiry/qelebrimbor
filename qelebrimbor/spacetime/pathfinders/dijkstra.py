@@ -13,29 +13,35 @@
 #   limitations under the License.
 
 import heapq
+import logging
 
 from qelebrimbor.core.bg.attributes import CubeKind
-from qelebrimbor.core.zx.attributes import NodeType, EdgeType
+from qelebrimbor.core.bg.path import Length, Path
 from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.coordinates import Coordinates
-from qelebrimbor.core.bg.path import Path, Length
-
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.zx.attributes import EdgeType, NodeType
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
-
 from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
-from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-
-import logging
 console = logging.getLogger(__name__)
 
+
 class PathfinderDijkstra:
-    def __init__(self, graph: VolumetricZxGraph = None, tracing: SpacetimeTracingReport | None = None):
-        self.__graph = graph
+    def __init__(
+        self,
+        graph: VolumetricZxGraph | None = None,
+        tracing: SpacetimeTracingReport | None = None,
+    ):
+        self.__graph = graph or VolumetricZxGraph()
         self.__tracing = tracing
 
     def find_optimum(
-            self, source: BgCube, target: BgCube, edge_type: EdgeType, maximal_excess: int | None = None
+        self,
+        source: BgCube,
+        target: BgCube,
+        edge_type: EdgeType,
+        maximal_excess: int | None = None,
     ) -> Path | None:
         optimum: Path | None = None
         minimal_paths: dict[tuple[CubeKind, Coordinates], Path] = dict()
@@ -43,8 +49,8 @@ class PathfinderDijkstra:
         # TODO: switch to a more efficient data-structure instead of heapq (i.e. fibo-heap)
         unrelaxed: list[tuple[Length, Path]] = []
 
-        initial = Path(start = source)
-        minimal_paths[ (source.kind, source.position) ] = initial
+        initial = Path(start=source)
+        minimal_paths[(source.kind, source.position)] = initial
 
         vertex: tuple[Length, Path] = (initial.length, initial)
         heapq.heappush(unrelaxed, vertex)
@@ -52,16 +58,16 @@ class PathfinderDijkstra:
         manhattan_distance = source.position.get_manhattan_distance(target.position)
         console.info(f"Searching for path from {source} to {target} [distance={manhattan_distance}].")
 
-        interconnect = { NodeType.X, NodeType.Z }
+        interconnect = {NodeType.X, NodeType.Z}
 
         # Tracing exploration
-        tracer: SpacetimeTracer[BgCube] | None = SpacetimeTracer(reporting = self.__tracing) if self.__tracing else None
+        tracer: SpacetimeTracer[BgCube] | None = SpacetimeTracer(reporting=self.__tracing) if self.__tracing else None
         if tracer:
-            tracer.add_node(source, label = str(source))
+            tracer.add_node(source, label=str(source))
 
         while len(unrelaxed) != 0 and optimum is None:
             heapq.heapify(unrelaxed)
-            vertex: tuple[Length, Path] = heapq.heappop(unrelaxed)
+            vertex = heapq.heappop(unrelaxed)
             manhattan_length, current_path = vertex
             terminal = current_path.final
 
@@ -69,17 +75,17 @@ class PathfinderDijkstra:
 
             if BlockGraphHelper.connectable(terminal, target, EdgeType.IDENTITY):
                 console.info(f">> Terminal {terminal} be connected to target {target} [{current_path}]")
-                completed_path = current_path.extend(target, pipe_type = EdgeType.IDENTITY)
+                completed_path = current_path.extend(target, pipe_type=EdgeType.IDENTITY)
 
                 # Tracing exploration
                 if tracer:
-                    tracer.add_node( target , label = str(target) )
-                    tracer.add_edge( terminal, target )
+                    tracer.add_node(target, label=str(target))
+                    tracer.add_edge(terminal, target)
 
                 optimum = completed_path
 
             # Relaxation step on every neighbor
-            for neighbor in BlockGraphHelper.get_candidate_constellation(terminal, node_types = interconnect):
+            for neighbor in BlockGraphHelper.get_candidate_constellation(terminal, node_types=interconnect):
                 neighbor_point = (neighbor.kind, neighbor.position)
                 console.debug(f"> Neighbor : {neighbor}")
 
@@ -96,13 +102,13 @@ class PathfinderDijkstra:
                     tracer.add_node(neighbor)
                     tracer.add_edge(terminal, neighbor)
 
-                extended_path = current_path.extend(neighbor, pipe_type = EdgeType.IDENTITY)
+                extended_path = current_path.extend(neighbor, pipe_type=EdgeType.IDENTITY)
                 extended_distance = extended_path.length
                 console.debug(f">> {current_path}   =Relax=   {extended_path}")
 
                 if neighbor_point not in minimal_paths or extended_distance < minimal_paths[neighbor_point].length:
                     # Filtering out the neighbor from unrelaxed
-                    unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].final != neighbor ]
+                    unrelaxed = [vertex for vertex in unrelaxed if vertex[1].final != neighbor]
                     unrelaxed.append((extended_path.length, extended_path))
 
                     # Update minimal distance discovered

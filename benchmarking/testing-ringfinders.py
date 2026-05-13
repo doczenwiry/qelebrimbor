@@ -13,47 +13,41 @@
 #   limitations under the License.
 
 import itertools
+import logging
 from time import time
 
 import qelebrimbor.core.zx
-from qelebrimbor.core.zx.attributes import NodeId, NodeType, EdgeType
-from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-
-from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
-from qelebrimbor.spacetime.ringfinders.colorblind_dfs import RingfinderColorblindDFS
-from qelebrimbor.spacetime.ringfinders.depth_first_search import RingfinderDFS
-from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
-
 from qelebrimbor.analysis.cycles import CycleAnalyser
-
-from qelebrimbor.vedo.zx_layout.cycle import CycleLayout
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.zx.attributes import EdgeType, NodeType
+from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
+from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
+from qelebrimbor.vedo.zx_layout.cycle import CycleLayout
 
-import logging
 logging.basicConfig(level=logging.INFO)
 
 qelebrimbor.core.zx.attributes.ZX_COLORING = True
 
 if __name__ == "__main__":
-    nodes = list(zip(itertools.count(0, 1),
-        [ NodeType.X, NodeType.Z, NodeType.X, NodeType.Z ]
-    ))
-    edges = [ (index, (index+1) % len(nodes), EdgeType.IDENTITY) for index in range(len(nodes)) ]
+    nodes = list(zip(itertools.count(0, 1), [NodeType.X, NodeType.Z, NodeType.X, NodeType.Z]))
+    edges = [(index, (index + 1) % len(nodes), EdgeType.IDENTITY) for index in range(len(nodes))]
 
     vzx = VolumetricZxGraph(nodes, edges)
 
-    cycle0 = CycleAnalyser.decompose(vzx, minimal = True)[0]
+    cycle0 = CycleAnalyser.decompose(vzx, minimal=True)[0]
     print(f"Cycle : {str(cycle0)}")
 
-    ringfinder = RingfinderBFS(graph = vzx, tracing = SpacetimeTracingReport.FINAL)
+    ringfinder = RingfinderBFS(graph=vzx, tracing=SpacetimeTracingReport.FINAL)
     # ringfinder = RingfinderDFS(graph = vzx, tracing = SpacetimeTracingReport.FINAL)
     # ringfinder = RingfinderColorblindDFS(graph = vzx, reporting = SpacetimeTracingReport.FINAL)
 
     start = time()
-    ring = ringfinder.find_optimum(cycle0, maximal_excess = 6)
+    ring = ringfinder.find_optimum(cycle0, maximal_excess=6)
     final = time()
     runtime = round(final - start, 2)
 
+    label = f"{ringfinder.__class__.__name__} : time = {runtime}s"
     if ring is not None:
         print(f"Found a ring with volume : {ring.volume()}")
         print(f"> {ring}")
@@ -62,12 +56,10 @@ if __name__ == "__main__":
 
         volume = ring.volume()
         excess = volume - cycle0.length
+        label = f"volume = {ring.volume()}, excess = +{ring.volume() - cycle0.length}"
     else:
-        print(f"> Failed to find optimal ring.")
-        volume = None
-        excess = None
+        label = "volume =n/a, excess = +n/a"
+        print("> Failed to find optimal ring.")
 
-
-    label = f"volume = {volume}, excess = +{excess}, time={runtime}s"
-    viewer = VolumetricZxGraphViewer(graph = vzx, label = label, layout = CycleLayout(vzx))
+    viewer = VolumetricZxGraphViewer(graph=vzx, label=label, layout=CycleLayout(vzx))
     viewer.display()

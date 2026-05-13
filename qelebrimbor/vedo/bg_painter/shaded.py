@@ -14,8 +14,8 @@
 
 from numpy import array
 
-from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.vedo.bg_painter.abstract import BlockGraphPainter
 from qelebrimbor.vedo.zx_palette import ZxPalette
 
@@ -29,7 +29,7 @@ class ShadedBlockGraphPainter(BlockGraphPainter):
 
     @staticmethod
     def get_cube_colors(cube: BgCube):
-        return array([ ShadedBlockGraphPainter.__query_color(cube, f) for f in range(6) ])
+        return array([ShadedBlockGraphPainter.__query_color(cube, f) for f in range(6)])
 
     @staticmethod
     def get_pipe_colors(source: BgCube, target: BgCube):

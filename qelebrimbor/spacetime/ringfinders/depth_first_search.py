@@ -13,33 +13,31 @@
 #   limitations under the License.
 
 import heapq
+import logging
 
-from qelebrimbor.core.bg.ring import Ring
-from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.core.bg.attributes import CubeKind
+from qelebrimbor.core.bg.ring import Ring
+from qelebrimbor.core.components import BgCube, ZxNode
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.core.zx.attributes import EdgeType, NodeType
-from qelebrimbor.core.components import BgCube
-
+from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.calculator import ManhattanCalculator
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-
-from qelebrimbor.spacetime.fabric import SpacetimeFabric
-from qelebrimbor.spacetime.tracer import SpacetimeTracingReport, SpacetimeTracer
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
+from qelebrimbor.spacetime.fabric import SpacetimeFabric
+from qelebrimbor.spacetime.tracer import SpacetimeTracer, SpacetimeTracingReport
 
-from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-
-import logging
 console = logging.getLogger(__name__)
 
 
 class RingfinderDFS:
-    def __init__(self,
-            graph: VolumetricZxGraph = None,
-            ports_tracker: OpenPortsTracker | None = None,
-            branch_and_bound: bool = False,
-            tracing: SpacetimeTracingReport | None = None
+    def __init__(
+        self,
+        graph: VolumetricZxGraph | None = None,
+        ports_tracker: OpenPortsTracker | None = None,
+        branch_and_bound: bool = False,
+        tracing: SpacetimeTracingReport | None = None,
     ):
         """
         Create a PathfinderDFS to search for optimal paths between cubes in spacetime.
@@ -56,13 +54,16 @@ class RingfinderDFS:
         self.__tracing = tracing
 
     @staticmethod
-    def heuristic(source: BgCube, target: BgCube, node_types: list[NodeType]):
+    def heuristic(source: BgCube, target: BgCube, node_restrictions: list[ZxNode]):
         # TODO: this heuristic is not admissible ...
         # return len(node_types) + ManhattanCalculator.minimal_manhattan_length(source, target)
         # TODO: is this heuristic admissible ?
-        return max(len(node_types), ManhattanCalculator.minimal_manhattan_length(source, target))
+        return max(
+            len(node_restrictions),
+            ManhattanCalculator.minimal_manhattan_length(source, target),
+        )
 
-    def find_optimum(self, goal: ZxCycle, maximal_excess: int = None) -> Ring | None:
+    def find_optimum(self, goal: ZxCycle, maximal_excess: int | None = None) -> Ring | None:
         node_restrictions = list(goal.nodes)
         edge_restrictions = list(goal.edges)
         number_of_restrictions = goal.length
@@ -73,22 +74,23 @@ class RingfinderDFS:
 
         # Prepare the anchor for the construct
         root = Ring(
-            anchor = BgCube(
-                kind = CubeKind.suitable_kinds(node_restrictions[0].type)[0],
-                position = SpacetimeHelper.ORIGIN
+            anchor=BgCube(
+                kind=CubeKind.suitable_kinds(node_restrictions[0].type)[0],
+                position=SpacetimeHelper.ORIGIN,
             )
         )
-        unrelaxed.append( (RingfinderDFS.heuristic(root.anchor, root.anchor, node_restrictions), root) )
+        unrelaxed.append((RingfinderDFS.heuristic(root.anchor, root.anchor, node_restrictions), root))
 
         console.info(f"Searching for ring anchored at {root.anchor} [ringsize={number_of_restrictions}]")
         console.info(f"Node restrictions: {node_restrictions}")
         console.info(f"Edge restrictions: {edge_restrictions}")
 
         # Initialise a tracer if it is needed
-        tracer: SpacetimeTracer[BgCube] | None = SpacetimeTracer(
-            pruning = self.__branch_and_bound, reporting = self.__tracing) if self.__tracing else None
+        tracer: SpacetimeTracer[BgCube] | None = (
+            SpacetimeTracer(pruning=self.__branch_and_bound, reporting=self.__tracing) if self.__tracing else None
+        )
         if tracer:
-            tracer.add_node(root.anchor, label = str(root.anchor))
+            tracer.add_node(root.anchor, label=str(root.anchor))
 
         while len(unrelaxed) > 0 and (self.__branch_and_bound or optimum is None):
             heapq.heapify(unrelaxed)
@@ -99,7 +101,11 @@ class RingfinderDFS:
 
             # Branch-and-bound
             if self.__branch_and_bound and optimum:
-                heuristic_value: int = RingfinderDFS.heuristic(partial_ring.terminal, partial_ring.anchor, node_restrictions[partial_volume:])
+                heuristic_value: int = RingfinderDFS.heuristic(
+                    partial_ring.terminal,
+                    partial_ring.anchor,
+                    node_restrictions[partial_volume:],
+                )
                 projected_volume: int = partial_ring.volume() + heuristic_value
                 if optimum.volume() <= projected_volume:
                     if tracer:
@@ -109,7 +115,9 @@ class RingfinderDFS:
             # Check whether the ring satisfies the requirements and can be closed.
             distance = partial_ring.anchor.position.get_manhattan_distance(partial_ring.terminal.position)
             if partial_volume >= number_of_restrictions and distance == 1:
-                final_pipe_type = edge_restrictions[-1].type if partial_volume == number_of_restrictions else EdgeType.IDENTITY
+                final_pipe_type = (
+                    edge_restrictions[-1].type if partial_volume == number_of_restrictions else EdgeType.IDENTITY
+                )
                 console.info(f"Candidate found : {partial_ring} with {final_pipe_type}")
                 if BlockGraphHelper.connectable(partial_ring.terminal, partial_ring.anchor, final_pipe_type):
                     ring = partial_ring.close(final_pipe_type)
@@ -124,9 +132,9 @@ class RingfinderDFS:
             # Prepare the node/edge type restriction
             realised_nodes = partial_ring.volume()
             if realised_nodes < number_of_restrictions:
-                node_type_required = { node_restrictions[realised_nodes].type }
+                node_type_required = {node_restrictions[realised_nodes].type}
             else:
-                node_type_required = { NodeType.X, NodeType.Z }
+                node_type_required = {NodeType.X, NodeType.Z}
 
             if realised_nodes <= number_of_restrictions:
                 edge_type_required = edge_restrictions[realised_nodes - 1].type
@@ -135,7 +143,9 @@ class RingfinderDFS:
 
             # Prepare the constellation of candidates to be visited
             candidate_constellation = BlockGraphHelper.get_candidate_constellation(
-                partial_ring.terminal, node_types= node_type_required, pipe_type = edge_type_required
+                partial_ring.terminal,
+                node_types=node_type_required,
+                pipe_type=edge_type_required,
             )
 
             for neighbor in candidate_constellation:
@@ -155,10 +165,17 @@ class RingfinderDFS:
 
                 if not maximal_volume or extended.volume() <= maximal_volume:
                     # Update the unrelaxed queue
-                    unrelaxed = [ vertex for vertex in unrelaxed if vertex[1].terminal != neighbor ]
+                    unrelaxed = [vertex for vertex in unrelaxed if vertex[1].terminal != neighbor]
                     # Compute the minimal manhattan length required to connect neighbor to target (heuristic).
                     unrelaxed.append(
-                        (RingfinderDFS.heuristic(neighbor, root.anchor, node_restrictions[extended.volume():]), extended)
+                        (
+                            RingfinderDFS.heuristic(
+                                neighbor,
+                                root.anchor,
+                                node_restrictions[extended.volume() :],
+                            ),
+                            extended,
+                        )
                     )
 
         console.info(f"Optimal ring found : {optimum}")

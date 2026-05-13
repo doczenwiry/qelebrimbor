@@ -12,26 +12,26 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import unittest
+from unittest import TestCase
 
-from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.core.colorless.path import ColorlessPath
+from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 
-class TestColorlessPath(unittest.TestCase):
+class TestColorlessPath(TestCase):
     def test_path(self):
-        colorless = ColorlessPath(start = Coordinates(0,0,0))
+        colorless = ColorlessPath(start=Coordinates(0, 0, 0))
         print(f"Path : {colorless}")
         self.assertEqual(str(colorless), "( 0, 0, 0)")
 
     def test_append(self):
-        colorless = ColorlessPath(start = Coordinates(0,0,0))
+        colorless = ColorlessPath(start=Coordinates(0, 0, 0))
         colorless.append(SpacetimeHelper.YP)
         self.assertEqual(str(colorless), "( 0, 0, 0) -> ( 0, 1, 0)")
 
     def test_extend(self):
-        colorless = ColorlessPath(start = Coordinates(0,0,0))
+        colorless = ColorlessPath(start=Coordinates(0, 0, 0))
         extended = colorless.extend(SpacetimeHelper.YP)
         self.assertEqual(str(colorless), "( 0, 0, 0)")
         self.assertEqual(str(extended), "( 0, 0, 0) -> ( 0, 1, 0)")

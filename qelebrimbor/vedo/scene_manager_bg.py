@@ -12,42 +12,59 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from logging import getLogger
+
 from vedo.plotter.runtime import Plotter  # type: ignore[import-untyped]
 
-from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.core.components import BgCube, BgPipe
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.vedo.bg_painter.default import DefaultBlockGraphPainter
 from qelebrimbor.vedo.bg_painter.grayscale import GrayscaleBlockGraphPainter
 from qelebrimbor.vedo.bg_painter.shaded import ShadedBlockGraphPainter
-from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.vedo.shapes_bg import VdCube, VdPipe
 
-from logging import getLogger
 console = getLogger(__name__)
 
+
 class BgSceneManager:
-    def __init__(self, graph: VolumetricZxGraph, plotter: Plotter, show_cubes: set[BgCube] | None = None):
+    def __init__(
+        self,
+        graph: VolumetricZxGraph,
+        plotter: Plotter,
+        show_cubes: set[BgCube] | None = None,
+    ):
         self.__plotter = plotter
         self.__graph = graph
 
         self.__cubes: dict[BgCube, VdCube] = dict()
         self.__pipes: dict[BgPipe, VdPipe] = dict()
-        self.__painters = [ ShadedBlockGraphPainter(), DefaultBlockGraphPainter(), GrayscaleBlockGraphPainter()]
+        self.__painters = [
+            ShadedBlockGraphPainter(),
+            DefaultBlockGraphPainter(),
+            GrayscaleBlockGraphPainter(),
+        ]
         self.__painter_index = 0
 
         for cube in graph.get_bg_cubes():
-            vd_cube = VdCube(cube = cube, painter = self.__painters[self.__painter_index])
-            self.__cubes[ cube ] = vd_cube
+            vd_cube = VdCube(cube=cube, painter=self.__painters[self.__painter_index])
+            self.__cubes[cube] = vd_cube
             if not show_cubes or cube in show_cubes:
-                self.__plotter.add( vd_cube )
+                self.__plotter.add(vd_cube)
 
         for pipe in graph.get_bg_pipes():
             source_cube = pipe.source
             target_cube = pipe.target
             if source_cube.id > target_cube.id:
                 source_cube, target_cube = target_cube, source_cube
-            vd_pipe = VdPipe(source_cube, target_cube, pipe.type, pipe, painter = self.__painters[self.__painter_index])
-            self.__pipes[ pipe ] = vd_pipe
+            vd_pipe = VdPipe(
+                source_cube,
+                target_cube,
+                pipe.type,
+                pipe,
+                painter=self.__painters[self.__painter_index],
+            )
+            self.__pipes[pipe] = vd_pipe
             if not show_cubes or (pipe.source in show_cubes and pipe.target in show_cubes):
                 self.__plotter.add(vd_pipe)
 
@@ -96,7 +113,7 @@ class BgSceneManager:
         alpha = 0.025 if highlight else 1.0
 
         for bg_pipe, vd_pipe in self.__pipes.items():
-            if bg_pipe not in pipes: # and bg_pipe not in piping:
+            if bg_pipe not in pipes:  # and bg_pipe not in piping:
                 vd_pipe.alpha(alpha)
 
         for bg_cube, vd_cube in self.__cubes.items():
@@ -108,7 +125,7 @@ class BgSceneManager:
         _, edges = zip(*cycle)
         for edge in edges:
             pipes.update(edge.realisation)
-        self.alter_path_highlighting(*pipes, highlight = highlight)
+        self.alter_path_highlighting(*pipes, highlight=highlight)
 
     def on_key_press(self, event):
         if event.keypress == "p":
@@ -117,4 +134,4 @@ class BgSceneManager:
                 cube.paint(self.__painters[self.__painter_index])
             for pipe in self.__pipes.values():
                 pipe.paint(self.__painters[self.__painter_index])
-        self.__plotter.render(resetcam = False)
+        self.__plotter.render(resetcam=False)

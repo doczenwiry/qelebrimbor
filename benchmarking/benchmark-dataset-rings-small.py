@@ -12,16 +12,16 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 import subprocess
 from typing import cast
-import networkx as nx
 
 import benchmark
+import networkx as nx
 
-from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.analysis.cycles import CycleAnalyser
+from qelebrimbor.formats.pyzx import PYZX
 
-import logging
 logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
@@ -36,14 +36,18 @@ if __name__ == "__main__":
     longest_file_name = max(map(len, dataset_filenames))
 
     for input_path in dataset_filenames:
-        vzx = PYZX.from_file(benchmark.DATASET_DIRECTORY + '/' + input_path)
+        vzx = PYZX.from_file(benchmark.DATASET_DIRECTORY + "/" + input_path)
 
         number_of_connected_components = nx.number_connected_components(cast(nx.Graph, vzx))
         if CycleAnalyser.has_cycles(vzx) and number_of_connected_components == 1:
-            print(f"> {input_path.ljust(longest_file_name, ' ')} :", end = ' ')
+            print(f"> {input_path.ljust(longest_file_name, ' ')} :", end=" ")
 
             try:
-                subprocess.run([f"python ../qb.py -s {benchmark.DATASET_DIRECTORY}/{input_path} 2> /dev/null"], shell = True, timeout = 20)
+                subprocess.run(
+                    [f"python ../qb.py -s {benchmark.DATASET_DIRECTORY}/{input_path} 2> /dev/null"],
+                    shell=True,
+                    timeout=20,
+                )
             except subprocess.TimeoutExpired:
                 print("ABORTED RUN [longer than 20 seconds].")
                 continue

@@ -12,25 +12,25 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
+
+from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
 from qelebrimbor.spacetime.strandfinders.depth_first_search import StrandfinderDFS
-from qelebrimbor.analysis.cycles import CycleAnalyser
-
-from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
+from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
 
-import logging
 console = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-logging.getLogger('qelebrimbor.volumetric_zx_graph').setLevel(logging.INFO)
-logging.getLogger('qelebrimbor.vedo').setLevel(logging.INFO)
+logging.getLogger("qelebrimbor.volumetric_zx_graph").setLevel(logging.INFO)
+logging.getLogger("qelebrimbor.vedo").setLevel(logging.INFO)
 
 if __name__ == "__main__":
     vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders7.json")
 
-    ringfinder = RingfinderBFS(graph = vzx)
-    strandfinder = StrandfinderDFS(graph = vzx, branch_and_bound = True)
+    ringfinder = RingfinderBFS(graph=vzx)
+    strandfinder = StrandfinderDFS(graph=vzx, branch_and_bound=True)
 
     CycleAnalyser.analyse(vzx)
     cycles = CycleAnalyser.decompose(vzx)
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     cycle = cycles[index]
     console.info(f"Cycle {index} : {cycle}")
 
-    ring = ringfinder.find_optimum(cycle, maximal_excess = 4)
+    ring = ringfinder.find_optimum(cycle, maximal_excess=4)
     if ring:
         console.info(f"Found realisation [volume={ring.volume()}] for cycle : {str(cycle)}")
         console.info(f"> {ring}")
@@ -90,8 +90,11 @@ if __name__ == "__main__":
 
     vzx.log_report()
 
-    hexagon = HexagonLayout(graph = vzx, nodes = [0,2,4,5,6,3], extras = { 1 : (0.0, 0.0), 7 : (0.7, 1.0 / 6.0) })
-    viewer = VolumetricZxGraphViewer(graph= vzx, label ="steane-code-7", layout = hexagon)
+    hexagon = HexagonLayout(graph=vzx, nodes=[0, 2, 4, 5, 6, 3], extras={1: (0.0, 0.0), 7: (0.7, 1.0 / 6.0)})
+    viewer = VolumetricZxGraphViewer(graph=vzx, label="steane-code-7", layout=hexagon)
     viewer.display()
 
-    PYZX.into_file(vzx, filepath ="../assets/pyzx/steane/steane-code-qubits7-spiders7-alt-blockgraph.pyzx.json")
+    PYZX.into_file(
+        vzx,
+        filepath="../assets/pyzx/steane/steane-code-qubits7-spiders7-alt-blockgraph.pyzx.json",
+    )

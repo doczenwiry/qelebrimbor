@@ -24,13 +24,14 @@ LayerId = int
 
 ZX_COLORING: bool = False
 
-class NodeType(Enum):
-    __COLORS: list[str] = ['light_grey', 'red', 'green', 'blue']
 
-    O = 0 # Boundary
-    X = 1 # X-Spider
-    Y = 2 # Y-Spider
-    Z = 3 # Z-Spider
+class NodeType(Enum):
+    __COLORS: list[str] = ["light_grey", "red", "green", "blue"]
+
+    O = 0  # Boundary  # noqa: E741
+    X = 1  # X-Spider
+    Y = 2  # Y-Spider
+    Z = 3  # Z-Spider
 
     @staticmethod
     def convert_from_pyzx(vertex_type: pyzx.VertexType):
@@ -59,18 +60,29 @@ class NodeType(Enum):
 
     def __str__(self):
         if ZX_COLORING:
-            return colored(self.name, NodeType.__COLORS[self.value], attrs = ['bold'], force_color = True)
+            return colored(
+                self.name,
+                NodeType.__COLORS[self.value],
+                attrs=["bold"],
+                force_color=True,
+            )
         else:
             return self.name
 
     def __repr__(self):
         if ZX_COLORING:
-            return colored(self.name, NodeType.__COLORS[self.value], attrs = ['bold'], force_color = True)
+            return colored(
+                self.name,
+                NodeType.__COLORS[self.value],
+                attrs=["bold"],
+                force_color=True,
+            )
         else:
             return self.name
 
+
 class EdgeType(Enum):
-    __COLORS: list[str] = [ None, 'yellow' ]
+    __COLORS: list[str | None] = [None, "yellow"]
     IDENTITY = 0
     HADAMARD = 1
 
@@ -87,17 +99,27 @@ class EdgeType(Enum):
     def convert_into_pyzx(self):
         if self == EdgeType.IDENTITY:
             return pyzx.EdgeType.SIMPLE
-        else: # self == EdgeType.HADAMARD:
+        else:  # self == EdgeType.HADAMARD:
             return pyzx.EdgeType.HADAMARD
 
     def __str__(self):
         if ZX_COLORING:
-            return colored(self.name, EdgeType.__COLORS[self.value], attrs = ['bold'], force_color = True)
+            return colored(
+                self.name,
+                EdgeType.__COLORS[self.value],
+                attrs=["bold"],
+                force_color=True,
+            )
         else:
             return self.name
 
     def __repr__(self):
         if ZX_COLORING:
-            return colored(self.name[0], EdgeType.__COLORS[self.value], attrs = ['bold'], force_color = True)
+            return colored(
+                self.name[0],
+                EdgeType.__COLORS[self.value],
+                attrs=["bold"],
+                force_color=True,
+            )
         else:
             return self.name[0]

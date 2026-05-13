@@ -12,20 +12,17 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from qelebrimbor.core.zx import attributes as zx_attributes
-
-from qelebrimbor.formats.pyzx import PYZX
-from qelebrimbor.inflaters.boundaries import ZxGraphInflaterBoundaries
-
-from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
-from qelebrimbor.spacetime.strandfinders.depth_first_search import StrandfinderDFS
+import logging
 
 from qelebrimbor.analysis.cycles import CycleAnalyser
-
-from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
+from qelebrimbor.core.zx import attributes as zx_attributes
+from qelebrimbor.formats.pyzx import PYZX
+from qelebrimbor.inflaters.boundaries import ZxGraphInflaterBoundaries
+from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
+from qelebrimbor.spacetime.strandfinders.depth_first_search import StrandfinderDFS
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
+from qelebrimbor.vedo.zx_layout.hexagon import HexagonLayout
 
-import logging
 console = logging.getLogger(__name__)
 console.setLevel(logging.INFO)
 logging.basicConfig(level=logging.CRITICAL)
@@ -36,17 +33,17 @@ zx_attributes.ZX_COLORING = True
 if __name__ == "__main__":
     vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders8.json")
 
-    ringfinder = RingfinderBFS(graph = vzx)
-    strandfinder = StrandfinderDFS(graph = vzx, branch_and_bound = True)
+    ringfinder = RingfinderBFS(graph=vzx)
+    strandfinder = StrandfinderDFS(graph=vzx, branch_and_bound=True)
 
-    CycleAnalyser.analyse(vzx, minimal = True)
-    cycles = CycleAnalyser.decompose(vzx, minimal = True)
+    CycleAnalyser.analyse(vzx, minimal=True)
+    cycles = CycleAnalyser.decompose(vzx, minimal=True)
 
     index = 0
     cycle = cycles[index]
     console.info(f"Cycle {index} : {cycle}")
 
-    ring = ringfinder.find_optimum(cycle, maximal_excess = 6)
+    ring = ringfinder.find_optimum(cycle, maximal_excess=6)
     if ring:
         console.info(f"Found realisation [volume={ring.volume()}] for cycle : {str(cycle)}")
         console.info(f"> {ring}")
@@ -59,20 +56,30 @@ if __name__ == "__main__":
     console.info(f"Cycle {index} : {cycle}")
     console.info(f"> Chain : {chain}")
 
-    strand = strandfinder.find_optimum(chain, maximal_excess = 8)
+    strand = strandfinder.find_optimum(chain, maximal_excess=8)
     if strand:
         console.info(f"Found strand [volume={strand.length - 1}] for chain : {chain}")
         console.info(f"> {strand}")
         vzx.realise_zx_chain(chain, strand)
 
-    ZxGraphInflaterBoundaries(graph = vzx).process()
+    ZxGraphInflaterBoundaries(graph=vzx).process()
 
     vzx.log_report()
 
-    hexagon = HexagonLayout(graph = vzx, nodes = [1, 4, 0, 7, 3, 6],
-        extras = {2 : (0.7, 1.5 / 6.0) , 5 : (0.7, 4.5 / 6.0), 9 : (0.7, 0.5 / 6.0), 12 : (0.7, 3.5 / 6.0)}
+    hexagon = HexagonLayout(
+        graph=vzx,
+        nodes=[1, 4, 0, 7, 3, 6],
+        extras={
+            2: (0.7, 1.5 / 6.0),
+            5: (0.7, 4.5 / 6.0),
+            9: (0.7, 0.5 / 6.0),
+            12: (0.7, 3.5 / 6.0),
+        },
     )
-    viewer = VolumetricZxGraphViewer(graph = vzx, label = "steane-code-7", layout = hexagon)
+    viewer = VolumetricZxGraphViewer(graph=vzx, label="steane-code-7", layout=hexagon)
     viewer.display()
 
-    PYZX.into_file(vzx, filepath ="../assets/pyzx/steane/steane-code-qubits7-spiders8-blockgraph.pyzx.json")
+    PYZX.into_file(
+        vzx,
+        filepath="../assets/pyzx/steane/steane-code-qubits7-spiders8-blockgraph.pyzx.json",
+    )

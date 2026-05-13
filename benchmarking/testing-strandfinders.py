@@ -12,41 +12,32 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import itertools
+import logging
 from time import time
 
-import itertools
-
 import qelebrimbor.core.zx.attributes
-
-from qelebrimbor.core.zx.chain import ZxChain
 from qelebrimbor.core.bg.attributes import CubeKind
-from qelebrimbor.core.zx.attributes import NodeType, EdgeType
 from qelebrimbor.core.components import BgCube, ZxNode
-
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.zx.attributes import EdgeType, NodeType
+from qelebrimbor.core.zx.chain import ZxChain
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
-
 from qelebrimbor.spacetime.strandfinders.breadth_first_search import StrandfinderBFS
-from qelebrimbor.spacetime.strandfinders.depth_first_search import StrandfinderDFS
 from qelebrimbor.spacetime.strandfinders.colorblind_dfs import StrandfinderColorblindDFS
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
-
-from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
-import logging
 logging.basicConfig(level=logging.CRITICAL)
 logging.getLogger("qelebrimbor.spacetime.strandfinders").setLevel(logging.INFO)
 
 qelebrimbor.core.zx.attributes.ZX_COLORING = True
 
 if __name__ == "__main__":
-    nodes = list(zip(itertools.count(0, 1),
-        [ NodeType.X, NodeType.Z, NodeType.X, NodeType.Z ]
-    ))
-    edges = [ (index, index+1, EdgeType.IDENTITY) for index in range(len(nodes)-1) ]
-    qubits = {node_id : 0 for node_id, _ in nodes}
-    layers = {node_id : node_id for node_id, _ in nodes}
+    nodes = list(zip(itertools.count(0, 1), [NodeType.X, NodeType.Z, NodeType.X, NodeType.Z]))
+    edges = [(index, index + 1, EdgeType.IDENTITY) for index in range(len(nodes) - 1)]
+    qubits = {node_id: 0 for node_id, _ in nodes}
+    layers = {node_id: node_id for node_id, _ in nodes}
 
     for md in [1, 5, 10, 25, 100]:
         vzx = VolumetricZxGraph(nodes, edges, qubits, layers)
@@ -59,38 +50,39 @@ if __name__ == "__main__":
 
         # strandfinder = StrandfinderBFS(vzx,tracing = SpacetimeTracingReport.FINAL)
         # strandfinder = StrandfinderDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
-        strandfinder = StrandfinderColorblindDFS(vzx, branch_and_bound = False, tracing = SpacetimeTracingReport.FINAL)
+        strandfinder = StrandfinderColorblindDFS(vzx, branch_and_bound=False, tracing=SpacetimeTracingReport.FINAL)
 
         if strandfinder.__class__ == StrandfinderBFS and md > 5:
             print(f"StrandfinderBFS is too slow with md > 5. Not even trying {md}.")
             continue
 
         preceding: ZxNode = vzx.get_zx_node(0)
-        chain = ZxChain(source = vzx.get_zx_node(0))
+        chain = ZxChain(source=vzx.get_zx_node(0))
         for index in range(1, len(nodes)):
             following = vzx.get_zx_node(index)
-            chain.append(vzx.get_zx_node(following.id), vzx.get_zx_edge(preceding.id, following.id))
+            chain.append(
+                vzx.get_zx_node(following.id),
+                vzx.get_zx_edge(preceding.id, following.id),
+            )
             preceding = following
 
         print(f"Chain : {chain}")
 
         start = time()
-        strand = strandfinder.find_optimum(chain, maximal_excess = 6)
+        strand = strandfinder.find_optimum(chain, maximal_excess=6)
         final = time()
         runtime = round(final - start, 2)
 
+        label = f"{strandfinder.__class__.__name__} : time = {runtime}s"
         if strand is not None:
             print(f"Strand : {strand}")
 
             vzx.realise_zx_chain(chain, strand)
 
-            volume = strand.length
-            excess = strand.length - max(chain.length, md)
+            label += f", volume = {strand.length}, excess = +{strand.length - max(chain.length, md)}"
         else:
-            volume = "n/a"
-            excess = "n/a"
-            print(f"> Failed to find optimal chain.")
+            label += ", volume = n/a, excess = n/a"
+            print("> Failed to find optimal chain.")
 
-        label = f"{strandfinder.__class__.__name__} : volume = {volume}, excess = +{excess}, time={runtime}s"
-        viewer = VolumetricZxGraphViewer(graph = vzx, label = label)
+        viewer = VolumetricZxGraphViewer(graph=vzx, label=label)
         viewer.display()
