@@ -15,14 +15,15 @@ import logging
 from typing import Iterator
 
 from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.reach import Reach
 
 console = logging.getLogger(__name__)
 
 
 class ColorlessRing:
-    def __init__(self, anchor: Coordinates):
-        self.__positions: list[Coordinates] = [anchor]
-        self.__occupied: set[Coordinates] = {anchor}
+    def __init__(self) -> None:
+        self.__positions: list[Coordinates] = list()
+        self.__occupied: set[Coordinates] = set()
 
     @property
     def anchor(self) -> Coordinates:
@@ -58,11 +59,21 @@ class ColorlessRing:
         self.__occupied.add(position)
 
     def extend(self, position: Coordinates) -> ColorlessRing:
-        cp = ColorlessRing(self.anchor)
-        cp.__positions.extend(self.__positions[1:])
+        cp = ColorlessRing()
+        cp.__positions.extend(self.__positions)
         cp.__occupied.update(self.__occupied)
         cp.append(position)
         return cp
+
+    def as_reaches(self) -> Iterator[set[Reach]]:
+        return iter(
+            Reach.from_moves(
+                start=self.__positions[(index - 1) % self.volume],
+                inter=self.__positions[index],
+                final=self.__positions[(index + 1) % self.volume],
+            )
+            for index in range(0, self.volume)
+        )
 
     def __lt__(self, other: ColorlessRing) -> bool:
         return self.volume.__lt__(other.volume)

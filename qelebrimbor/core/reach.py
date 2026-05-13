@@ -13,7 +13,6 @@
 #   limitations under the License.
 
 from enum import Enum
-from typing import Iterator
 
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.helpers.spacetime import Step
@@ -54,13 +53,6 @@ class Reach(Enum):
     @staticmethod
     def from_moves(start: Coordinates, inter: Coordinates, final: Coordinates) -> set[Reach]:
         return Reach.from_steps(Step(inter - start), Step(final - inter))
-
-    @staticmethod
-    def from_positions(positions: list[Coordinates]) -> Iterator[set[Reach]]:
-        return iter(
-            Reach.from_moves(positions[index - 1], positions[index], positions[index + 1])
-            for index in range(1, len(positions) - 1)
-        )
 
     def __str__(self):
         return f"Reach.{self.name}"

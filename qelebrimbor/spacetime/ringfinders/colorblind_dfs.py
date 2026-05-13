@@ -88,7 +88,7 @@ class RingfinderColorblindDFS:
         optimum: Ring | None = None
         unrelaxed: list[tuple[int, ColorlessRing]] = []
 
-        initial = ColorlessRing(anchor=Coordinates(0, 0, 0))
+        initial = ColorlessRing().extend(Coordinates(0, 0, 0))
         heapq.heappush(unrelaxed, (RingfinderColorblindDFS.heuristic(initial, node_types), initial))
 
         if tracer:

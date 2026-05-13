@@ -14,10 +14,17 @@
 
 
 import logging
+from typing import Iterator
 
+from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.bg.ring import Ring
 from qelebrimbor.core.colorless.ring import ColorlessRing
+from qelebrimbor.core.components import BgCube, ZxEdge, ZxNode
+from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.reach import Reach
+from qelebrimbor.core.zx.attributes import EdgeType
 from qelebrimbor.core.zx.cycle import ZxCycle
+from qelebrimbor.helpers.spacetime import Step
 
 console = logging.getLogger(__name__)
 
@@ -25,128 +32,94 @@ console = logging.getLogger(__name__)
 class PainterZxCycle:
     @staticmethod
     def paintable(colorless: ColorlessRing, cycle: ZxCycle) -> bool:
-        # The ColorlessPath is not paintable if it doesn't provide at least one BgCube per ZxNode
-        if colorless.volume < cycle.length:
-            return False
-
-        try:
-            PainterZxCycle.paint(colorless, cycle)
-        except ValueError:
-            return False
-
-        return True
+        return PainterZxCycle.paint(colorless, cycle) is not None
 
     @staticmethod
     # TODO: correct the determination of whether a ColorlessRing is paintable using a given ZxCycle.
     def paint(colorless: ColorlessRing, cycle: ZxCycle) -> Ring | None:
         """
-        Paint a ColorlessPath into a Strand of BgCubes with CubeKind and Coordinates based on the ZxNodes of a Chain.
+        Paint a ColorlessRing into a Ring of BgCubes with CubeKind and Coordinates based on the ZxNodes of a ZxCycle.
         The current strategy when dealing with Hadamard edges consists in making the earliest pipe into a Hadamard pipe.
-        :param colorless: ColorlessPath
-        :param chain: The ZxChain which specifies how to paint this ColorlessPath.
+        :param colorless: The ColorlessRing to be painted
+        :param cycle: The ZxCycle which specifies how to paint the ColorlessRing.
         :return:
         """
 
-        return None
+        # The ColorlessRing is not paintable if it doesn't provide at least one BgCube per ZxNode
+        if colorless.volume < cycle.length:
+            return None
 
-        # if not self.paintable(chain):
-        #     raise ValueError(f"ColorlessStrand provided cannot be painted with the chain : {chain}")
+        remaining_nodes: Iterator[ZxNode] = cycle.nodes
+        remaining_edges: Iterator[ZxEdge] = cycle.edges
+        colorless_cubes = zip(colorless.positions, colorless.as_reaches())
 
-        # start = chain.source.realising_cube
-        # final = chain.target.realising_cube
-        # nodes = list(chain.nodes)
-        # edges = list(chain.edges)
-        #
-        # console.info(f"Attempting to paint ColorlessPath : {colorless}")
-        # console.info(f"> Using ZxChain : {chain}")
-        #
-        # successive_shuffling = list(map(ColorShuffling.convert, colorless.steps))
-        # ring = Ring(anchor = colorless.anchor)
-        #
-        # console.debug(f"> Starting at {start}")
-        #
-        # last_match: int = 0
-        # last_kind: CubeKind = start.kind
-        # cube_index: int = 1
-        # for restriction in range(len(nodes)):
-        #     current_edge_type = edges[restriction].type if cube_index == last_match + 1 else EdgeType.IDENTITY
-        #     current_node_type = nodes[restriction].type
-        #
-        #     console.debug(f"> Current link : --{edges[restriction].type}-- {nodes[restriction]}")
-        #
-        #     preceding_shuffling = successive_shuffling[cube_index - 1]
-        #     preceding_shuffling = preceding_shuffling.hadamard() if current_edge_type == EdgeType.HADAMARD else preceding_shuffling  # noqa: E501
-        #     matched: bool = False
-        #     while not matched and cube_index < colorless.length:
-        #         assigned = colorless[cube_index]
-        #         remaining_shuffling = reduce(ColorShuffling.extend, successive_shuffling[cube_index:], ColorShuffling.identity())  # noqa: E501
-        #
-        #         console.debug(f">> Considering cube {cube_index}@{assigned} [{preceding_shuffling}/{remaining_shuffling}]")  # noqa: E501
-        #
-        #         selected: CubeKind | None = None
-        #         for kind in CubeKind:
-        #             if not preceding_shuffling.compatible(last_kind, kind):
-        #                 continue
-        #
-        #             if not remaining_shuffling.compatible(kind, final.kind):
-        #                 continue
-        #
-        #             if selected is None or kind.get_type() == current_node_type:
-        #                 selected = kind
-        #
-        #         if selected is None:
-        #             console.debug(f"> Failure to paint cube @ {assigned}")
-        #             raise ValueError(f"No suitable kind found for next cube when painting Strand.")
-        #
-        #         cube = BgCube(kind = selected, position = assigned)
-        #         if selected.get_type() == current_node_type:
-        #             cube.realised_node = nodes[restriction]
-        #             matched = True
-        #         console.debug(f"> Painted cube @ {assigned} : {cube}")
-        #
-        #         cube_index += 1
-        #
-        #         strand.append(cube=cube, pipe_type=current_edge_type)
-        #
-        #         last_kind = selected
-        #         preceding_shuffling = preceding_shuffling.extend(successive_shuffling[cube_index - 1])
-        #
-        #     if not matched:
-        #         raise ValueError(f"Cannot be painted")
-        #
-        # # TODO: append the last section towards final.
-        # current_edge_type = edges[-1].type
-        # preceding_shuffling = successive_shuffling[cube_index - 1]
-        # preceding_shuffling = preceding_shuffling.hadamard() if current_edge_type == EdgeType.HADAMARD else preceding_shuffling  # noqa: E501
-        #
-        # while cube_index < colorless.length:
-        #     remaining_shuffling = reduce(ColorShuffling.extend, successive_shuffling[cube_index:], ColorShuffling.identity())  # noqa: E501
-        #
-        #     assigned = colorless[cube_index]
-        #     selected: CubeKind | None = None
-        #     for kind in CubeKind:
-        #         if not preceding_shuffling.compatible(last_kind, kind):
-        #             continue
-        #
-        #         if not remaining_shuffling.compatible(kind, final.kind):
-        #             continue
-        #
-        #         if selected is None:
-        #             selected = kind
-        #         else:
-        #             console.warning(f"Ambiguity in CubeKind at {assigned} arbitrarily resolved [selected={selected}, alternative={kind}]")  # noqa: E501
-        #
-        #     if selected is None:
-        #         raise ValueError(f"No suitable kind found for next cube when painting Strand.")
-        #
-        #     cube = BgCube(kind=selected, position=assigned)
-        #     cube_index += 1
-        #
-        #     strand.append(cube=cube, pipe_type = current_edge_type)
-        #
-        #     preceding_shuffling = preceding_shuffling.extend(successive_shuffling[cube_index - 1])
-        #
-        # strand.append(cube = final, pipe_type = EdgeType.IDENTITY)
-        # console.info(f"Colored Strand : {strand}")
-        #
-        # return ring
+        current_node: ZxNode | None = next(remaining_nodes, None)
+        current_cube: tuple[Coordinates, set[Reach]] | None = next(colorless_cubes, None)
+
+        if current_node is None or current_cube is None:
+            return None
+
+        position, reaches = current_cube
+        console.debug(f"current_node : {current_node} ? {current_cube}")
+        # TODO: deal with both cases when multiple reaches are available.
+        ring = Ring(
+            anchor=BgCube(kind=CubeKind.convert(current_node.type, next(iter(reaches)).value), position=position)
+        )
+        ring.anchor.realised_node = current_node
+        console.debug(f"> painted_cube : {ring.anchor}")
+
+        preceding_pipe: EdgeType = next(remaining_edges).type
+
+        last_cube: BgCube = ring.anchor
+        current_node = next(remaining_nodes, None)
+        current_cube = next(colorless_cubes, None)
+        while current_cube is not None:
+            console.debug(f"current_node : {current_node} ? {current_cube} [{preceding_pipe}]")
+            position, reaches = current_cube
+            step = Step(position - last_cube.position)
+
+            selected: CubeKind | None = None
+            for kind in CubeKind:
+                if not CubeKind.compatible(last_cube.kind, kind, step, preceding_pipe):
+                    continue
+
+                if kind.reach not in reaches:
+                    continue
+
+                if selected is None or (current_node is not None and kind.get_type() == current_node.type):
+                    selected = kind
+
+            # Handle internal error of logic.
+            if selected is None:
+                console.error(f"> Failure to paint cube at {position} w/ {reaches}")
+                raise Exception("No suitable kind found for next colorless cube when painting ColorlessPath.")
+
+            # Construct a colored cube and assign it to the current node if the kind is suitable for the type.
+            cube = BgCube(kind=selected, position=position)
+            if current_node is not None and selected.get_type() == current_node.type:
+                cube.realised_node = current_node
+
+            console.debug(f"> painted_cube : {cube}")
+            ring.append(cube, preceding_pipe)
+
+            if current_node is not None and selected.get_type() == current_node.type:
+                current_node = next(remaining_nodes, None)
+                preceding_pipe = next(remaining_edges).type
+            else:
+                preceding_pipe = EdgeType.IDENTITY
+
+            current_cube = next(colorless_cubes, None)
+            last_cube = cube
+
+        # The ColorlessPath is not compatible if it doesn't provide enough colorless cubes to be painted with the nodes.
+        if current_node is not None:
+            return None
+
+        # The ColorlessPath is not compatible if the last cube cannot be connected to the final
+        step = Step(ring.anchor.position - last_cube.position)
+        if not CubeKind.compatible(last_cube.kind, ring.anchor.kind, step, preceding_pipe):
+            return None
+
+        ring.close(preceding_pipe)
+
+        return ring

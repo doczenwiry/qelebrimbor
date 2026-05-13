@@ -68,7 +68,10 @@ class ColorlessPath:
         return iter(self.__positions[index] - self.__positions[index - 1] for index in range(1, len(self.__positions)))
 
     def as_reaches(self) -> Iterator[set[Reach]]:
-        return Reach.from_positions(self.__positions)
+        return iter(
+            Reach.from_moves(self.__positions[index - 1], self.__positions[index], self.__positions[index + 1])
+            for index in range(1, len(self.__positions) - 1)
+        )
 
     def visits(self, position: Coordinates):
         return position in self.__occupied

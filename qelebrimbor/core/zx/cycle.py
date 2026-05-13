@@ -15,16 +15,13 @@
 from typing import Iterator
 
 from qelebrimbor.core.components import ZxEdge, ZxNode
+from qelebrimbor.core.zx.attributes import EdgeType, NodeType
 
 
 class ZxCycle:
     def __init__(self) -> None:
         self.__nodes: list[ZxNode] = []
         self.__edges: list[ZxEdge] = []
-
-    @property
-    def anchor(self) -> ZxNode:
-        return self.__nodes[0]
 
     @property
     def nodes(self) -> Iterator[ZxNode]:
@@ -38,9 +35,25 @@ class ZxCycle:
     def length(self) -> int:
         return len(self.__nodes)
 
-    def extend(self, node: ZxNode, edge: ZxEdge):
+    def append(self, node: ZxNode, edge: ZxEdge):
         self.__nodes.append(node)
         self.__edges.append(edge)
+
+    @staticmethod
+    def make(node_types: list[NodeType], edge_types: list[EdgeType]) -> ZxCycle:
+        if len(node_types) != len(edge_types):
+            raise ValueError("A ZxCycle must contain as many nodes as edges.")
+        cycle = ZxCycle()
+        nodes = [ZxNode(node_id, node_types[node_id]) for node_id in range(len(node_types))]
+        edges = [
+            ZxEdge(nodes[node_id], nodes[(node_id + 1) % len(nodes)], edge_types[node_id])
+            for node_id in range(len(nodes))
+        ]
+
+        for node, edge in zip(nodes, edges):
+            cycle.append(node, edge)
+
+        return cycle
 
     def __len__(self):
         return len(self.__nodes)

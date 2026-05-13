@@ -24,10 +24,14 @@ console = logging.getLogger(__name__)
 
 @total_ordering
 class Ring:
-    def __init__(self, anchor: BgCube):
-        self.cubes: list[BgCube] = [anchor]
+    def __init__(self, anchor: BgCube | None = None):
+        self.cubes: list[BgCube] = []
         self.pipes: list[EdgeType] = []
-        self.occupied = {anchor.position}
+        self.occupied: set[Coordinates] = set()
+
+        if anchor is not None:
+            self.cubes.append(anchor)
+            self.occupied.add(anchor.position)
 
     @property
     def anchor(self) -> BgCube:
@@ -36,6 +40,14 @@ class Ring:
     @property
     def terminal(self) -> BgCube:
         return self.cubes[-1]
+
+    @property
+    def last_cube(self) -> BgCube:
+        return self.cubes[-1]
+
+    @property
+    def last_pipe(self) -> EdgeType:
+        return self.pipes[-1]
 
     def manhattan_distance_anchor(self) -> int:
         return self.cubes[0].position.get_manhattan_distance(self.cubes[-1].position)
@@ -61,6 +73,14 @@ class Ring:
         closed.pipes.append(pipe)
         return closed
 
+    def extended(self, cube: BgCube, pipe: EdgeType) -> Ring:
+        extended = Ring()
+        extended.cubes.extend(self.cubes)
+        extended.pipes.extend(self.pipes)
+        extended.occupied.update(self.occupied)
+        extended.append(cube, pipe)
+        return extended
+
     def extend(self, cube: BgCube, pipe: EdgeType) -> Ring:
         extended = self.__copy()
         extended.cubes.append(cube)
@@ -68,8 +88,9 @@ class Ring:
         extended.occupied.add(cube.position)
         return extended
 
-    def append(self, cube: BgCube):
+    def append(self, cube: BgCube, pipe: EdgeType) -> None:
         self.cubes.append(cube)
+        self.pipes.append(pipe)
         self.occupied.add(cube.position)
 
     def copy(self):

@@ -85,7 +85,7 @@ class CycleAnalyser:
             zx_cycle = ZxCycle()
 
             for index in range(len(cycle)):
-                zx_cycle.extend(
+                zx_cycle.append(
                     node=graph.get_zx_node(cycle[index]),
                     edge=graph.get_zx_edge(cycle[index], cycle[(index + 1) % len(cycle)]),
                 )

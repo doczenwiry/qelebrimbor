@@ -80,7 +80,7 @@ class Path:
         self.pipes.append(pipe)
         self.occupied.add(cube.position)
 
-    def extend(self, cube: BgCube, pipe_type: EdgeType):
+    def extend(self, cube: BgCube, pipe_type: EdgeType) -> Path:
         extended = Path(self.start)
         extended.cubes.extend(self.cubes[1:])
         extended.pipes.extend(self.pipes)
