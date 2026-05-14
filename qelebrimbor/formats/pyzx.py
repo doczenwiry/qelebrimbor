@@ -11,6 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+
 import logging
 from collections import defaultdict
 
@@ -20,23 +21,27 @@ import pyzx
 from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.volumetric_zx_graph import LayerTransition, VolumetricZxGraph
 from qelebrimbor.core.zx.attributes import EdgeType, LayerId, NodeId, NodeType, QubitId
+from qelebrimbor.formats.preprocessing.abstract import Preprocessor
 
 console = logging.getLogger(__name__)
 
 
 class PYZX:
     @staticmethod
-    def into_file(graph: VolumetricZxGraph, filepath: str, planar_scale: int = 1):
+    def into_file(graph: VolumetricZxGraph, filepath: str, planar_scale: int = 1) -> None:
         with open(filepath, "w") as file:
             file.write(PYZX.into_pyzx_graph(graph, planar_scale).to_json())
 
     @staticmethod
-    def from_file(filepath: str) -> VolumetricZxGraph:
+    def from_file(filepath: str, preprocessor: Preprocessor | None = None) -> VolumetricZxGraph:
         with open(filepath, "r") as file:
-            return PYZX.from_pyzx_graph(pyzx.Graph().from_json(file.read()))
+            pyzx_input = pyzx.Graph().from_json(file.read())
+            if preprocessor is not None:
+                preprocessor.process(pyzx_input)
+            return PYZX.from_pyzx_graph(pyzx_input)
 
     @staticmethod
-    def into_pyzx_graph(graph: VolumetricZxGraph, planar_scale: int = 1):
+    def into_pyzx_graph(graph: VolumetricZxGraph, planar_scale: int = 1) -> pyzx.graph.base.BaseGraph:
         pyzx_graph = pyzx.Graph()
         layout: dict[BgCube, tuple[float, float]] = dict()
 
@@ -142,7 +147,7 @@ class PYZX:
         return pyzx_graph
 
     @staticmethod
-    def from_pyzx_graph(zx_graph: pyzx.graph.base.BaseGraph):
+    def from_pyzx_graph(zx_graph: pyzx.graph.base.BaseGraph) -> VolumetricZxGraph:
         converted_node_ids: dict[NodeId, NodeId] = dict()
         nodes: list[tuple[NodeId, NodeType]] = []
         for original_id in zx_graph.vertices():
