@@ -31,7 +31,6 @@ from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.spacetime.fabric import SpacetimeFabric
-from qelebrimbor.utilities.nmtfl_constraint import NoMoreThanFourLegsConstraint
 
 console = logging.getLogger(__name__)
 
@@ -109,10 +108,6 @@ class VolumetricZxGraph(nx.Graph):
                 zx_edge = ZxEdge(source=zx_source, target=zx_target, type=edge_type)
                 self.add_edge(zx_source.id, zx_target.id)
                 self.edges[zx_source.id, zx_target.id][VolumetricZxGraph.KEY_ZX_EDGE] = zx_edge
-
-        # TODO: split any spider with more than 4 edges (cfr. graph_manager.py; prep_3d_g)
-        # TODO: does the choice of how to split such spiders affect the minimal achievable volume ?
-        NoMoreThanFourLegsConstraint.enforce(self)
 
         self.__next_cube_id = self.number_of_nodes()
 

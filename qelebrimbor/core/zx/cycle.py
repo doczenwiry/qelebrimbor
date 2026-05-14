@@ -36,8 +36,18 @@ class ZxCycle:
         return len(self.__nodes)
 
     def append(self, node: ZxNode, edge: ZxEdge):
+        # TODO: validate the node/edge against self.
         self.__nodes.append(node)
         self.__edges.append(edge)
+
+    def is_alternating(self) -> bool:
+        for index in range(self.length):
+            same_colors = self.__nodes[index].type == self.__nodes[(index + 1) % self.length].type
+            is_hadamard = self.__edges[index].type == EdgeType.HADAMARD
+
+            if same_colors != is_hadamard:
+                return False
+        return True
 
     @staticmethod
     def make(node_types: list[NodeType], edge_types: list[EdgeType]) -> ZxCycle:

@@ -17,6 +17,8 @@ from qelebrimbor.core.components import ZxEdge, ZxNode
 from qelebrimbor.core.zx.attributes import NodeId
 
 
+# TODO: split any spider with more than 4 edges
+# TODO: does the choice of how to split such spiders affect the minimal achievable volume ?
 class NoMoreThanFourLegsConstraint:
     @staticmethod
     def enforce(graph: vzg.VolumetricZxGraph):
