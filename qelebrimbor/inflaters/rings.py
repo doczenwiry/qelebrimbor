@@ -27,7 +27,6 @@ console = logging.getLogger(__name__)
 class ZxGraphInflaterRings:
     def __init__(self, graph: VolumetricZxGraph, cycles: list[ZxCycle]):
         self.__graph = graph
-        self.__spacetime = graph.spacetime
         self.__connectivity: ConnectivityTracker = OpenPortsTracker(graph)
         self.__ringfinder = RingfinderDFS(self.__graph, branch_and_bound=True)
         self.__strandfinder = StrandfinderDFS(self.__graph, self.__connectivity)
@@ -78,9 +77,9 @@ class ZxGraphInflaterRings:
     @staticmethod
     def __identify_next_chain(*cycles: ZxCycle) -> ZxChain | None:
         all_chains: list[ZxChain] = CycleAnalyser.identify_chains(*cycles)
-        console.critical("All chains identified :")
+        console.debug("All chains identified :")
         for chain in all_chains:
-            console.critical(f"> Chain : {chain}")
+            console.debug(f"> Chain : {chain}")
         selected: ZxChain | None = None
         for chain in all_chains:
             if selected:
@@ -90,8 +89,6 @@ class ZxGraphInflaterRings:
                     selected = chain
             else:
                 selected = chain
-
-        console.debug(f"> Chain : {str(selected) if selected is not None else None}")
 
         return selected
 
@@ -116,11 +113,9 @@ class ZxGraphInflaterRings:
         for cube in cubes[len(zx_cycle) :]:
             self.__connectivity.occlude(cube.position)
 
-        return len(cubes) - len(zx_cycle)
+        return ring.volume() - zx_cycle.length
 
     def __attempt_chain_realisation(self, chain: ZxChain, maximal_excess: int = 0) -> int:
-        # start, nodes, edges, final = chain
-
         if not chain.source.is_realised() or not chain.source.is_realised():
             return -1
 
