@@ -22,7 +22,6 @@ from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.core.zx.attributes import EdgeType, NodeType
 from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
-from qelebrimbor.helpers.calculator import ManhattanCalculator
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.spacetime.connectivity.default import DefaultConnectivityTracker
 from qelebrimbor.spacetime.connectivity.open_ports import ConnectivityTracker
@@ -40,9 +39,9 @@ class RingfinderDFS:
         tracing: SpacetimeTracingReport | None = None,
     ):
         """
-        Create a PathfinderDFS to search for optimal paths between cubes in spacetime.
+        Create a RingfinderDFS to search for optimal rings realising cycles in spacetime.
         :param graph: The VolumetricZxGraph serving as the context for the search.
-        :param branch_and_bound: Controls whether a Branch-and-Bound is performed to improve the first path found.
+        :param branch_and_bound: Controls whether a Branch-and-Bound is performed to improve the first ring found.
         This will incur an additional computational cost that may or may not fall into super-exponential territory.
         Proof of the possibility would be nice. Refutation thereof would be better.
         :param tracing: Controls whether a tracing/reporting of all vertices explored is performed.
@@ -59,7 +58,7 @@ class RingfinderDFS:
         # TODO: is this heuristic admissible ?
         return max(
             len(node_restrictions),
-            ManhattanCalculator.minimal_manhattan_length(source, target),
+            source.position.get_manhattan_distance(target.position),
         )
 
     def find_optimum(self, goal: ZxCycle, maximal_excess: int | None = None) -> Ring | None:

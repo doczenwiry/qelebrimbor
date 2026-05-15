@@ -24,6 +24,7 @@ from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.analysis.vzx_analyser import VolumetricZxGraphAnalyser
 from qelebrimbor.core.zx import attributes as zx_attributes
 from qelebrimbor.core.zx.cycle import ZxCycle
+from qelebrimbor.formats.preprocessing.alternating_cycles import AlternatingCycles
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
 from qelebrimbor.formats.vzx import VZX
@@ -123,16 +124,21 @@ def main() -> int:
     if arguments.filepath is None:
         raise Exception("Filepath to a *.json file required.")
 
-    vzx = PYZX.from_file(arguments.filepath)
+    preprocessor = AlternatingCycles()
+    vzx = PYZX.from_file(arguments.filepath, preprocessor=preprocessor)
 
     if arguments.zx_coloring:
         zx_attributes.ZX_COLORING = True
 
     verbose: bool = not arguments.summary
 
+    if verbose:
+        print("PREPROCESSING STAGE.")
+        print(f"> Preprocessor used : {preprocessor.__class__.__name__}")
+
     # Preliminary analysis stage
     if verbose:
-        print("ANALYSIS STAGE.")
+        print("\nANALYSIS STAGE.")
 
     zx_cycles: list[ZxCycle]
     if verbose:
