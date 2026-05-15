@@ -14,10 +14,16 @@
 
 import pyzx.graph.base
 
+from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.formats.preprocessing.abstract import Preprocessor
+from qelebrimbor.formats.pyzx import PYZX
 
 
 class AlternatingCycles(Preprocessor):
     @staticmethod
     def process(input: pyzx.graph.base.BaseGraph) -> None:
-        pyzx.full_reduce(input)
+        graph = PYZX.from_pyzx_graph(input)
+
+        for cycle in CycleAnalyser.decompose(graph):
+            # Go over the cycle and identify chains of fusable spiders.
+            pass
