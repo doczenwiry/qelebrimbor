@@ -24,7 +24,9 @@ from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.analysis.vzx_analyser import VolumetricZxGraphAnalyser
 from qelebrimbor.core.zx import attributes as zx_attributes
 from qelebrimbor.core.zx.cycle import ZxCycle
+from qelebrimbor.formats.preprocessing.abstract import Preprocessor
 from qelebrimbor.formats.preprocessing.alternating_cycles import AlternatingCycles
+from qelebrimbor.formats.preprocessing.full_reduce import FullReduce
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
 from qelebrimbor.formats.vzx import VZX
@@ -79,6 +81,13 @@ parser.add_argument(
     help="save the Volumetric ZX-graph as a PyZX graph to a *.pyzx.json file.",
 )
 parser.add_argument(
+    "-r",
+    "--preprocessor",
+    action="store",
+    choices=["full-reduce", "alternating-cycles"],
+    help="choose which preprocessor to use on the input ZX-graph.",
+)
+parser.add_argument(
     "-s",
     "--summary",
     action="store_true",
@@ -124,7 +133,12 @@ def main() -> int:
     if arguments.filepath is None:
         raise Exception("Filepath to a *.json file required.")
 
-    preprocessor = AlternatingCycles()
+    preprocessor: Preprocessor | None = None
+    if arguments.preprocessor == "full-reduce":
+        preprocessor = FullReduce()
+    elif arguments.preprocessor == "alternating-cycles":
+        preprocessor = AlternatingCycles()
+
     vzx = PYZX.from_file(arguments.filepath, preprocessor=preprocessor)
 
     if arguments.zx_coloring:
