@@ -16,6 +16,7 @@ import logging
 
 from qelebrimbor.core.components import ZxNode
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.zx.tree import ZxTree
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 from qelebrimbor.spacetime.placefinders.breadth_first_search import PlacefinderBFS
 
@@ -36,6 +37,11 @@ class ZxGraphInflaterTrees:
                 if any(not node.is_realised() for node in self.__graph.get_zx_neighbors(node)):
                     roots.add(node)
         print(f">> Roots identified : {roots}")
+        for root in roots:
+            tree = ZxTree.extract(self.__graph, root)
+            print(f">>> [H={tree.height}] : {tree}")
+            for level in range(1, tree.height):
+                print(f">>>> Level {level} : {tree.get_level(depth=level)}")
 
     # def __find_root_cube(self, root_node: ZxNode) -> BgCube | None:
     #     start = SpacetimeHelper.ORIGIN
