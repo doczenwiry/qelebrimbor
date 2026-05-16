@@ -37,6 +37,9 @@ class ZxPalette:
         NodeType.Z: [255 * c for c in get_color(rgb="b3")],
     }
 
+    IDENTITY = [255 * c for c in get_color(rgb="k5")]
+    HADAMARD = [255 * c for c in get_color(rgb="yellow4")]
+
     @staticmethod
     def get_major(node_type: NodeType):
         return ZxPalette.MAJOR_COLORS[node_type]

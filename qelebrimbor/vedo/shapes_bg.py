@@ -174,10 +174,10 @@ class VdPipe(Assembly):
 
     def paint(self, painter: BlockGraphPainter):
         if self.pipe_type == EdgeType.IDENTITY:
-            self.__pipe.cellcolors = painter.get_pipe_colors(self.bg_source, self.bg_target)
+            self.__pipe.cellcolors = painter.get_pipe_colors(self.bg_source, self.bg_target, self.pipe_type)
         else:
-            self.__pipe_source.cellcolors = painter.get_pipe_colors(self.bg_source, self.bg_target)
-            self.__pipe_target.cellcolors = painter.get_pipe_colors(self.bg_target, self.bg_source)
+            self.__pipe_source.cellcolors = painter.get_pipe_colors(self.bg_source, self.bg_target, self.pipe_type)
+            self.__pipe_target.cellcolors = painter.get_pipe_colors(self.bg_target, self.bg_source, self.pipe_type)
 
     def __repr__(self):
         return str(self)

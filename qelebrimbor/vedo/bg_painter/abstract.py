@@ -15,6 +15,7 @@
 from abc import ABC, abstractmethod
 
 from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.zx.attributes import EdgeType
 
 
 class BlockGraphPainter(ABC):
@@ -25,5 +26,5 @@ class BlockGraphPainter(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_pipe_colors(source: BgCube, target: BgCube):
+    def get_pipe_colors(source: BgCube, target: BgCube, pipe: EdgeType):
         pass

@@ -15,7 +15,7 @@
 from numpy import array
 
 from qelebrimbor.core.components import BgCube
-from qelebrimbor.core.zx.attributes import NodeType
+from qelebrimbor.core.zx.attributes import EdgeType, NodeType
 from qelebrimbor.vedo.bg_painter.abstract import BlockGraphPainter
 from qelebrimbor.vedo.zx_palette import ZxPalette
 
@@ -32,17 +32,15 @@ class ShadedBlockGraphPainter(BlockGraphPainter):
         return array([ShadedBlockGraphPainter.__query_color(cube, f) for f in range(6)])
 
     @staticmethod
-    def get_pipe_colors(source: BgCube, target: BgCube):
+    def get_pipe_colors(source: BgCube, target: BgCube, pipe: EdgeType):
         # cellcolors are for faces (+X, -X, +Y, -Y, +Z, -Z)
         colors = []
         distances = target.position - source.position
         for c in range(3):
-            color = ZxPalette.LGRAY
-            if distances[c] == 0:
-                if source.kind == target.kind:
-                    color = ZxPalette.get_minor(source.kind.get_type())
-                else:
-                    color = ZxPalette.LGRAY
+            if distances[c] == 0 and source.kind == target.kind:
+                color = ZxPalette.get_minor(source.kind.get_type())
+            else:
+                color = ZxPalette.IDENTITY if pipe == EdgeType.IDENTITY else ZxPalette.HADAMARD
             colors.append(color)
             colors.append(color)
         return colors

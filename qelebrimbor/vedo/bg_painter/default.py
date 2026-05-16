@@ -16,7 +16,7 @@ from numpy import array
 
 from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.components import BgCube
-from qelebrimbor.core.zx.attributes import NodeType
+from qelebrimbor.core.zx.attributes import EdgeType, NodeType
 from qelebrimbor.vedo.bg_painter.abstract import BlockGraphPainter
 from qelebrimbor.vedo.zx_palette import ZxPalette
 
@@ -32,7 +32,7 @@ class DefaultBlockGraphPainter(BlockGraphPainter):
         return array([DefaultBlockGraphPainter.__query_color(cube, f) for f in range(6)])
 
     @staticmethod
-    def get_pipe_colors(source: BgCube, target: BgCube):
+    def get_pipe_colors(source: BgCube, target: BgCube, pipe: EdgeType):
         distances = target.position - source.position
         # cellcolors are for faces (+X, -X, +Y, -Y, +Z, -Z)
         colors = []
