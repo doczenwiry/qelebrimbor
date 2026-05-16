@@ -14,6 +14,8 @@
 
 import logging
 
+from termcolor import colored
+
 from qelebrimbor.analysis.cycles import CycleAnalyser, ZxChain, ZxCycle
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
@@ -72,6 +74,7 @@ class ZxGraphInflaterRings:
             candidate = ZxGraphInflaterRings.__identify_next_chain(*zx_cycles)
 
         console.info(f"Cycles processed : {index}/{len(zx_cycles)}.")
+        print(f">> Cycles realised : {index}/{len(zx_cycles)}")
 
     # TODO: handle case of disjoint rings (i.e. multiple connected components that contain cycles).
     @staticmethod
@@ -92,28 +95,37 @@ class ZxGraphInflaterRings:
 
         return selected
 
-    def __attempt_ring_realisation(self, zx_cycle: ZxCycle, maximal_excess: int = 0) -> int:
+    def __attempt_ring_realisation(self, cycle: ZxCycle, maximal_excess: int = 0) -> int:
         # TODO: the following call is the bottleneck of the overall inflation process ...
-        ring = self.__ringfinder.find_optimum(zx_cycle, maximal_excess=maximal_excess)
+        print(f">> Attempting realisation of cycle [L={cycle.length}] : {cycle}")
+        ring = self.__ringfinder.find_optimum(cycle, maximal_excess=maximal_excess)
 
         if ring is None:
+            print(f">>> {colored('FAILURE', 'red', attrs=['bold'], force_color=True)}")
             return -1
 
-        console.debug(f"Found a ring with volume {ring.volume()} to realise cycle : {zx_cycle}")
+        console.debug(f"Found a ring with volume {ring.volume()} to realise cycle : {cycle}")
         console.debug(f"> : {ring}")
 
-        self.__graph.realise_zx_cycle(zx_cycle, ring)
+        self.__graph.realise_zx_cycle(cycle, ring)
+
+        excess_volume = ring.volume() - cycle.length
+
+        colored_ev = colored(
+            "+" + str(excess_volume), "red" if excess_volume != 0 else "green", attrs=["bold"], force_color=True
+        )
+        print(f">>> Realised as ring [EV={colored_ev}] : {ring}")
 
         # Reserve the ports for all the nodes that were realised as part of this ring.
-        for node, _ in zx_cycle:
+        for node, _ in cycle:
             # Since each of these node is realised as part of a ring, it already has two of its edges realised.
             self.__connectivity.reserve(node.realising_cube, required=self.__graph.get_zx_degree(node.id) - 2)
 
         cubes = list(ring.cubes)
-        for cube in cubes[len(zx_cycle) :]:
+        for cube in cubes[len(cycle) :]:
             self.__connectivity.occlude(cube.position)
 
-        return ring.volume() - zx_cycle.length
+        return excess_volume
 
     def __attempt_chain_realisation(self, chain: ZxChain, maximal_excess: int = 0) -> int:
         if not chain.source.is_realised() or not chain.source.is_realised():

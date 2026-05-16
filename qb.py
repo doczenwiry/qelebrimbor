@@ -19,6 +19,7 @@ from os import path
 from time import time
 
 import pyzx
+from termcolor import colored
 
 from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.analysis.vzx_analyser import VolumetricZxGraphAnalyser
@@ -31,6 +32,7 @@ from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
 from qelebrimbor.formats.vzx import VZX
 from qelebrimbor.inflaters.rings import ZxGraphInflaterRings
+from qelebrimbor.inflaters.trees import ZxGraphInflaterTrees
 from qelebrimbor.utilities.qb_reporting import print_report
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
@@ -85,6 +87,7 @@ parser.add_argument(
     "--preprocessor",
     action="store",
     choices=["full-reduce", "alternating-cycles"],
+    default="full-reduce",
     help="choose which preprocessor to use on the input ZX-graph.",
 )
 parser.add_argument(
@@ -139,51 +142,68 @@ def main() -> int:
     elif arguments.preprocessor == "alternating-cycles":
         preprocessor = AlternatingCycles()
 
-    vzx = PYZX.from_file(arguments.filepath, preprocessor=preprocessor)
+    verbose: bool = not arguments.summary
+
+    vzx = PYZX.from_file(arguments.filepath)
 
     if arguments.zx_coloring:
         zx_attributes.ZX_COLORING = True
 
-    verbose: bool = not arguments.summary
-
-    if verbose:
-        print("PREPROCESSING STAGE.")
-        print(f"> Preprocessor used : {preprocessor.__class__.__name__}")
-
     # Preliminary analysis stage
     if verbose:
-        print("\nANALYSIS STAGE.")
+        print("ANALYSIS STAGE.")
+        print(f"> Input file : {arguments.filepath}")
 
-    zx_cycles: list[ZxCycle]
+    cycles: list[ZxCycle]
     if verbose:
         start = time()
-        zx_cycles = VolumetricZxGraphAnalyser.analyse(graph=vzx, minimal=True, plot=arguments.analysis_style == "plot")
+        cycles = VolumetricZxGraphAnalyser.analyse(graph=vzx, minimal=True, plot=arguments.analysis_style == "plot")
         runtime = round(time() - start, 2)
         print(f"> Completed in {'{:.2f}'.format(runtime)} seconds.")
-    else:
-        zx_cycles = CycleAnalyser.decompose(graph=vzx, minimal=True)
 
     if arguments.analysis:
         return 0
+
+    vzx = PYZX.from_file(arguments.filepath, preprocessor=preprocessor)
+    cycles = CycleAnalyser.decompose(graph=vzx, minimal=True)
+
+    if verbose:
+        print("\nPREPROCESSING STAGE.")
+        print(f"> Applying preprocessor : {preprocessor.__class__.__name__}")
 
     # Inflation stage
     if verbose:
         print("\nINFLATION STAGE.")
 
-    inflater = ZxGraphInflaterRings(graph=vzx, cycles=zx_cycles)
+    ring_inflater = ZxGraphInflaterRings(graph=vzx, cycles=cycles)
 
     if verbose:
-        print(f"> Strategy used : {inflater.__class__.__name__}")
+        print("> " + colored(f"Phase  I : {ring_inflater.__class__.__name__}", attrs=["underline"], force_color=True))
 
     sys.stdout.flush()
     sys.stderr.flush()
 
     start = time()
-    inflater.process(abort_on_index=arguments.index)
+    ring_inflater.process(abort_on_index=arguments.index)
     runtime = round(time() - start, 6)
 
     if verbose:
-        print(f"> Total runtime : {'{:.3f}'.format(runtime)}s")
+        print(f">> Total runtime : {'{:.3f}'.format(runtime)}s")
+
+    tree_inflater = ZxGraphInflaterTrees(graph=vzx)
+
+    if verbose:
+        print("> " + colored(f"Phase II : {tree_inflater.__class__.__name__}", attrs=["underline"], force_color=True))
+
+    sys.stdout.flush()
+    sys.stderr.flush()
+
+    start = time()
+    tree_inflater.process(abort_on_index=arguments.index)
+    runtime = round(time() - start, 6)
+
+    if verbose:
+        print(f">> Total runtime : {'{:.3f}'.format(runtime)}s")
 
     sys.stdout.flush()
     sys.stderr.flush()
@@ -193,7 +213,7 @@ def main() -> int:
         print("\nREPORTING STAGE.")
     else:
         print(f"RUN:{'{:.3f}'.format(runtime).rjust(6, ' ')}s, ", end=" ")
-    print_report(vzx, cycles=zx_cycles, detailed=verbose)
+    print_report(vzx, cycles=cycles, detailed=verbose)
 
     # Outputting stage
     if arguments.output_pyzx or arguments.output_tqec or arguments.output_vzx:
@@ -246,7 +266,7 @@ def main() -> int:
                 graph=vzx,
                 label=arguments.filepath,
                 size=window_size,
-                cycles_processed=zx_cycles,
+                cycles_processed=cycles,
             )
             viewer.display()
         elif verbose:

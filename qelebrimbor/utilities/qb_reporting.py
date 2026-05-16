@@ -132,8 +132,15 @@ def print_report(vzx: VolumetricZxGraph, cycles: list[ZxCycle], detailed: bool =
         increase=True,
     )
 
-    number_of_odd_cycles = sum(1 for cycle in cycles if len(cycle) % 2 == 1)
-    certain_inflation_rate = __format_percentage(number_of_odd_cycles / spider_count, increase=True)
+    # Every cycle of four nodes will require two extra cubes to be realised
+    excess_required = sum(2 for cycle in cycles if len(cycle) == 4)
+    # Every node with more than four legs will need to be split so that every cube has no more than four pipes
+    for node in vzx.get_zx_nodes():
+        degree = vzx.get_zx_degree(node.id)
+        if degree > 4:
+            extra_legs: int = degree - 4 + (1 if degree % 2 != 0 else 0)
+            excess_required += extra_legs // 2
+    certain_inflation_rate = __format_percentage(excess_required / spider_count, increase=True)
 
     cnrr = __format_percentage(value=CycleAnalyser.cycle_node_realisation_rate(graph=vzx), optimum=1.0)
     cerr = __format_percentage(value=CycleAnalyser.cycle_edge_realisation_rate(graph=vzx), optimum=1.0)
