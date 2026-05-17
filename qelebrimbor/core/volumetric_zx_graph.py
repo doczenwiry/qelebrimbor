@@ -272,6 +272,25 @@ class VolumetricZxGraph(nx.Graph):
 
         return cube_id
 
+    def extend_zx_node(self, node: ZxNode, cube: BgCube, extension: BgCube) -> CubeId:
+        if extension.kind not in CubeKind.suitable_kinds(node.type):
+            raise Exception(f"Proposed cube {cube} is not compatible with {node.type}")
+
+        if cube not in node.realising_cubes:
+            raise Exception(f"Cube {cube} is not realising node {node}: extension impossible.")
+
+        if not self.has_node(node.id):
+            raise Exception(f"Node {node} not found in the ZX-graph.")
+
+        cube_id = self.place_cube(extension)
+        # self.blockgraph.nodes[cube_id][VolumetricZxGraph.KEY_BG_CUBE].realised_node = node
+        self.nodes[node.id][VolumetricZxGraph.KEY_ZX_NODE].add_realising_cube(extension)
+        self.connect_pipe(cube, extension, EdgeType.IDENTITY)
+
+        console.debug(f"Extending node {node} as cube {cube}")
+
+        return cube_id
+
     def realise_zx_edge(self, source: NodeId, target: NodeId, proposal: Path):
         zx_source = self.get_zx_node(source)
         zx_target = self.get_zx_node(target)
@@ -475,12 +494,14 @@ class VolumetricZxGraph(nx.Graph):
         start = proposal.start
         final = proposal.final
 
-        if not (edge.source.id != start.realised_node.id or edge.target.id != start.realised_node.id):
+        # if not (edge.source.id != start.realised_node.id or edge.target.id != start.realised_node.id):
+        if start not in edge.source.realising_cubes and start not in edge.target.realising_cubes:
             raise Exception(
                 f"Start cube {start} is not realising either endpoint of edge {edge} [proposal={proposal}]."
             )
 
-        if not (edge.source.id != final.realised_node.id or edge.target.id != final.realised_node.id):
+        # if not (edge.source.id != final.realised_node.id or edge.target.id != final.realised_node.id):
+        if final not in edge.source.realising_cubes and final not in edge.target.realising_cubes:
             raise Exception(
                 f"Final cube {final} is not realising either endpoint of edge {edge} [proposal={proposal}]."
             )

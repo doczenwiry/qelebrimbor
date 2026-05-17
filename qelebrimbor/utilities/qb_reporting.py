@@ -60,6 +60,9 @@ def __get_unrealised_endpoints_rate(graph: VolumetricZxGraph, unrealised: int) -
 
     all_unrealised_edges = set(filter(lambda zxe: not zxe.is_realised(), graph.get_zx_edges()))
 
+    if len(all_unrealised_edges) == 0:
+        return 0.0
+
     unrealised_endpoints: int = 0
     for edge in all_unrealised_edges:
         if (0 if edge.source.is_realised() else 1) + (0 if edge.target.is_realised() else 1) == unrealised:
@@ -113,21 +116,19 @@ def print_report(vzx: VolumetricZxGraph, cycles: list[ZxCycle], detailed: bool =
     )
 
     total_volume = vzx.volume()
+    spider_count: int = sum(1 for zxn in vzx.get_zx_nodes() if zxn.type in {NodeType.X, NodeType.Z})
     spider_volume: int = sum(
         1
         for _ in filter(
-            lambda bgc: bgc.kind not in [CubeKind.OOO, CubeKind.YYY] and bgc.realised_node is not None,
+            lambda bgc: bgc.kind not in [CubeKind.OOO, CubeKind.YYY],
             vzx.get_bg_cubes(),
         )
     )
-    excess_volume: int = sum(
-        1 for cube in vzx.get_bg_cubes() if cube.kind not in [CubeKind.OOO, CubeKind.YYY] and cube.realised_node is None
-    )
+    excess_volume: int = spider_volume - spider_count
     inflation_rate: float | None = excess_volume / spider_volume if spider_volume > 0.0 else None
     partial_inflation_rate: str | None = __format_percentage(value=inflation_rate, optimum=0.0, increase=True)
-    spider_count: int = sum(1 for zxn in vzx.get_zx_nodes() if zxn.type in {NodeType.X, NodeType.Z})
     overall_inflation_rate: str | None = __format_percentage(
-        value=inflation_rate * spider_volume / spider_count if inflation_rate is not None else None,
+        value=excess_volume / spider_count if inflation_rate is not None else None,
         optimum=0.0,
         increase=True,
     )
@@ -202,11 +203,10 @@ def print_report(vzx: VolumetricZxGraph, cycles: list[ZxCycle], detailed: bool =
         print(
             f"> {colored('Total volume', attrs=['underline'], force_color=True)}   :  {str(total_volume).rjust(volume_digits, ' ')}"  # noqa: E501
         )
-        print(f">> Spider Volume :  {str(spider_volume).rjust(volume_digits, ' ')}")
+        # print(f">> Spider Volume :  {str(spider_volume).rjust(volume_digits, ' ')}")
         print(f">> Excess Volume : +{str(excess_volume).rjust(volume_digits, ' ')}")
 
         print(f"> Certain Inflation Rate : {certain_inflation_rate}")
-        print(f"> Partial Inflation Rate : {partial_inflation_rate}")
         print(
             f"> {colored('Overall Inflation Rate', attrs=['underline'], force_color=True)} : {overall_inflation_rate}"
         )
