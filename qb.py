@@ -185,7 +185,11 @@ def main() -> int:
     sys.stderr.flush()
 
     start = time()
-    ring_inflater.process(abort_on_index=arguments.index)
+    try:
+        ring_inflater.process(abort_on_index=arguments.index)
+    except Exception as e:
+        print(colored("FAILURE [Rings] :", color="red", attrs=["underline"], force_color=True) + f" {e}")
+        exit(-1)
     runtime = round(time() - start, 6)
 
     if verbose:
@@ -200,7 +204,11 @@ def main() -> int:
     sys.stderr.flush()
 
     start = time()
-    tree_inflater.process(abort_on_index=arguments.index)
+    try:
+        tree_inflater.process(abort_on_index=arguments.index)
+    except Exception as e:
+        print(colored("FAILURE [Trees] :", color="red", attrs=["underline"], force_color=True) + f" {e}")
+        exit(-1)
     runtime = round(time() - start, 6)
 
     if verbose:

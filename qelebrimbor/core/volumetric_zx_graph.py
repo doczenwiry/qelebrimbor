@@ -310,7 +310,7 @@ class VolumetricZxGraph(nx.Graph):
 
         # Reject path if it is invalid.
         if not self.is_path_valid(zx_edge, proposal):
-            raise Exception(f"Proposed path to realise edge {zx_edge} is invalid.")
+            raise Exception(f"Proposed path to realise edge {zx_edge} is invalid [proposal:{proposal}].")
 
         pipe_ids = self.connect_path(proposal)
 

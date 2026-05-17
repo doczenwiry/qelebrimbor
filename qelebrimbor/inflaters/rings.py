@@ -133,6 +133,9 @@ class ZxGraphInflaterRings:
         return excess_volume
 
     def __attempt_chain_realisation(self, chain: ZxChain, maximal_excess: int = 0) -> int:
+        if self.__verbose:
+            print(f">> Attempting realisation of chain [L={chain.length}] : {chain}")
+
         if not chain.source.is_realised() or not chain.source.is_realised():
             return -1
 
