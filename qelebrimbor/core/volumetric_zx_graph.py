@@ -266,7 +266,7 @@ class VolumetricZxGraph(nx.Graph):
 
         cube_id = self.place_cube(cube)
         self.blockgraph.nodes[cube_id][VolumetricZxGraph.KEY_BG_CUBE].realised_node = node
-        self.nodes[node.id][VolumetricZxGraph.KEY_ZX_NODE].realising_cube = cube
+        self.nodes[node.id][VolumetricZxGraph.KEY_ZX_NODE].add_realising_cube(cube)
 
         console.debug(f"Realising node {node} as cube {cube}")
 

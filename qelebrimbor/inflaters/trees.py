@@ -37,7 +37,7 @@ class ZxGraphInflaterTrees:
         roots: set[ZxNode] = set()
         for node in self.__graph.get_zx_nodes():
             if node.is_realised():
-                if any(not node.is_realised() for node in self.__graph.get_zx_neighbors(node)):
+                if any(not neighbor.is_realised() for neighbor in self.__graph.get_zx_neighbors(node)):
                     roots.add(node)
         console.debug(f">> Roots identified : {roots}")
         trees: list[ZxTree] = list(map(lambda rt: ZxTree.extract(self.__graph, rt), roots))
@@ -59,11 +59,11 @@ class ZxGraphInflaterTrees:
         for tree in trees:
             current: ZxNode
             for current in tree.level(level):
-                console.debug(f">> Current : {current}")
+                # console.debug(f">> Current : {current}")
                 if not current.is_realised():
                     # Realise node based on preceding node's color and edge type to infer its CubeKind.
                     preceding_node = tree.preceding(current)
-                    console.debug(f">>> Preceding : {preceding_node}")
+                    # console.debug(f">>> Preceding : {preceding_node}")
                     if not preceding_node.is_realised():
                         continue
 
@@ -90,9 +90,12 @@ class ZxGraphInflaterTrees:
                         raise Exception(f"Realising cube of {preceding_node} has no ports available [si].")
                     pass
 
-                if self.__graph.get_zx_degree(current.id) > 4:
+                current_degree = self.__graph.get_zx_degree(current.id)
+                if current_degree > 4:
                     # Unfuse the realising cube into enough cubes to accommodate all the legs of the node.
+                    excess_required = (current_degree - 4 + (current_degree % 2)) // 2
                     console.debug(f">>> Has degree {self.__graph.get_zx_degree(current.id)}")
+                    console.debug(f">>> Need to be unfused into {excess_required + 1} cube(s).")
                     pass
 
         return True
