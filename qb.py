@@ -24,6 +24,7 @@ from termcolor import colored
 from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.analysis.vzx_analyser import VolumetricZxGraphAnalyser
 from qelebrimbor.core.zx import attributes as zx_attributes
+from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.formats.preprocessing.abstract import Preprocessor
 from qelebrimbor.formats.preprocessing.alternating_cycles import AlternatingCycles
@@ -145,6 +146,7 @@ def main() -> int:
     verbose: bool = not arguments.summary
 
     vzx = PYZX.from_file(arguments.filepath)
+    input_spider_count: int = sum(1 for node in vzx.get_zx_nodes() if node.type in [NodeType.X, NodeType.Z])
 
     if arguments.zx_coloring:
         zx_attributes.ZX_COLORING = True
@@ -154,10 +156,9 @@ def main() -> int:
         print("ANALYSIS STAGE.")
         print(f"> Input file : {arguments.filepath}")
 
-    cycles: list[ZxCycle]
     if verbose:
         start = time()
-        cycles = VolumetricZxGraphAnalyser.analyse(graph=vzx, minimal=True, plot=arguments.analysis_style == "plot")
+        VolumetricZxGraphAnalyser.analyse(graph=vzx, minimal=True, plot=arguments.analysis_style == "plot")
         runtime = round(time() - start, 2)
         print(f"> Completed in {'{:.2f}'.format(runtime)} seconds.")
 
@@ -165,7 +166,7 @@ def main() -> int:
         return 0
 
     vzx = PYZX.from_file(arguments.filepath, preprocessor=preprocessor)
-    cycles = CycleAnalyser.decompose(graph=vzx, minimal=True)
+    cycles: list[ZxCycle] = CycleAnalyser.decompose(graph=vzx, minimal=True)
 
     if verbose:
         print("\nPREPROCESSING STAGE.")
@@ -175,7 +176,7 @@ def main() -> int:
     if verbose:
         print("\nINFLATION STAGE.")
 
-    ring_inflater = ZxGraphInflaterRings(graph=vzx, cycles=cycles)
+    ring_inflater = ZxGraphInflaterRings(graph=vzx, cycles=cycles, verbose=verbose)
 
     if verbose:
         print("> " + colored(f"Phase  I : {ring_inflater.__class__.__name__}", attrs=["underline"], force_color=True))
@@ -190,7 +191,7 @@ def main() -> int:
     if verbose:
         print(f">> Total runtime : {'{:.3f}'.format(runtime)}s")
 
-    tree_inflater = ZxGraphInflaterTrees(graph=vzx)
+    tree_inflater = ZxGraphInflaterTrees(graph=vzx, verbose=verbose)
 
     if verbose:
         print("> " + colored(f"Phase II : {tree_inflater.__class__.__name__}", attrs=["underline"], force_color=True))
@@ -213,7 +214,7 @@ def main() -> int:
         print("\nREPORTING STAGE.")
     else:
         print(f"RUN:{'{:.3f}'.format(runtime).rjust(6, ' ')}s, ", end=" ")
-    print_report(vzx, cycles=cycles, detailed=verbose)
+    print_report(vzx, input_spider_count=input_spider_count, cycles=cycles, detailed=verbose)
 
     # Outputting stage
     if arguments.output_pyzx or arguments.output_tqec or arguments.output_vzx:

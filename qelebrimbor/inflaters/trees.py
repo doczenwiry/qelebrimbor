@@ -28,11 +28,11 @@ console = logging.getLogger(__name__)
 
 
 class ZxGraphInflaterTrees:
-    def __init__(self, graph: VolumetricZxGraph, iterative: bool = False):
+    def __init__(self, graph: VolumetricZxGraph, verbose: bool = False):
         self.__graph = graph
         self.__connectivity = OpenPortsTracker(graph)
         self.__placefinder = PlacefinderBFS(graph, self.__connectivity)
-        self.__iterative_processing = iterative
+        self.__verbose = verbose
 
     def process(self, abort_on_failure: bool = False, abort_on_index: int = -1):
         roots: set[ZxNode] = set()
@@ -53,7 +53,8 @@ class ZxGraphInflaterTrees:
             if self.__attempt_levels_realisation(trees, level):
                 processed += 1
 
-        print(f">> Levels realised : {processed}/{maximal_height}")
+        if self.__verbose:
+            print(f">> Levels realised : {processed}/{maximal_height}")
 
     def __obtain_available_port(self, current: ZxNode) -> tuple[BgCube, Port] | None:
         for cube in current.realising_cubes:

@@ -71,7 +71,7 @@ def __get_unrealised_endpoints_rate(graph: VolumetricZxGraph, unrealised: int) -
     return unrealised_endpoints / len(all_unrealised_edges)
 
 
-def __format_percentage(value: float | None, optimum: float | None = None, increase: bool = False) -> str:
+def __format_percentage(value: float | None, optimum: float | None = None, inflation: bool = False) -> str:
     if value is None:
         output = "  n/a  "
     else:
@@ -82,21 +82,27 @@ def __format_percentage(value: float | None, optimum: float | None = None, incre
             printed = "99.99"
         else:
             printed = "{:.2f}".format(rounded)
-        output = f"{printed.rjust(6, ' ')}%"
+        if inflation and value is not None:
+            if value > 0.0:
+                printed = "+" + printed
+        output = f"{printed.rjust(7, ' ')}%"
 
-    if increase:
-        output = "+" + output
-
-    if optimum is not None:
-        if value == optimum:
-            output = colored(output, "green", attrs=["bold"], force_color=True)
+    if optimum is not None and value is not None:
+        if inflation:
+            if value <= optimum:
+                output = colored(output, "green", attrs=["bold"], force_color=True)
+            else:
+                output = colored(output, "red", attrs=["bold"], force_color=True)
         else:
-            output = colored(output, "red", attrs=["bold"], force_color=True)
+            if optimum <= value:
+                output = colored(output, "green", attrs=["bold"], force_color=True)
+            else:
+                output = colored(output, "red", attrs=["bold"], force_color=True)
 
     return output
 
 
-def print_report(vzx: VolumetricZxGraph, cycles: list[ZxCycle], detailed: bool = True):
+def print_report(vzx: VolumetricZxGraph, input_spider_count: int, cycles: list[ZxCycle], detailed: bool = True):
     realised_nodes: int = sum(1 for node in vzx.get_zx_nodes() if node.is_realised())
     realised_edges: int = sum(1 for edge in vzx.get_zx_edges() if edge.is_realised())
     node_realisation_rate: str = __format_percentage(realised_nodes / vzx.number_of_nodes(), optimum=1.0)
@@ -125,12 +131,13 @@ def print_report(vzx: VolumetricZxGraph, cycles: list[ZxCycle], detailed: bool =
         )
     )
     excess_volume: int = spider_volume - spider_count
-    inflation_rate: float | None = excess_volume / spider_volume if spider_volume > 0.0 else None
-    partial_inflation_rate: str | None = __format_percentage(value=inflation_rate, optimum=0.0, increase=True)
-    overall_inflation_rate: str | None = __format_percentage(
-        value=excess_volume / spider_count if inflation_rate is not None else None,
+    internal_inflation_rate: str | None = __format_percentage(
+        value=excess_volume / spider_count, optimum=0.0, inflation=True
+    )
+    achieved_inflation_rate: str | None = __format_percentage(
+        value=(total_volume - input_spider_count) / input_spider_count,
         optimum=0.0,
-        increase=True,
+        inflation=True,
     )
 
     # Every cycle of four nodes will require two extra cubes to be realised
@@ -140,7 +147,7 @@ def print_report(vzx: VolumetricZxGraph, cycles: list[ZxCycle], detailed: bool =
         degree = vzx.get_zx_degree(node.id)
         if degree > 4:
             excess_required += (degree - 4 + (degree % 2)) // 2
-    certain_inflation_rate = __format_percentage(excess_required / spider_count, increase=True)
+    required_inflation_rate = __format_percentage(excess_required / spider_count, inflation=True)
 
     cnrr = __format_percentage(value=CycleAnalyser.cycle_node_realisation_rate(graph=vzx), optimum=1.0)
     cerr = __format_percentage(value=CycleAnalyser.cycle_edge_realisation_rate(graph=vzx), optimum=1.0)
@@ -204,17 +211,18 @@ def print_report(vzx: VolumetricZxGraph, cycles: list[ZxCycle], detailed: bool =
             f"> {colored('Total volume', attrs=['underline'], force_color=True)}   :  {str(total_volume).rjust(volume_digits, ' ')}"  # noqa: E501
         )
         # print(f">> Spider Volume :  {str(spider_volume).rjust(volume_digits, ' ')}")
-        print(f">> Excess Volume : +{str(excess_volume).rjust(volume_digits, ' ')}")
+        # print(f">> Excess Volume : +{str(excess_volume).rjust(volume_digits, ' ')}")
 
-        print(f"> Certain Inflation Rate : {certain_inflation_rate}")
+        print(f"> Internal Inflation Rate : {internal_inflation_rate} [required:{required_inflation_rate}]")
         print(
-            f"> {colored('Overall Inflation Rate', attrs=['underline'], force_color=True)} : {overall_inflation_rate}"
+            f"> {colored('Achieved Inflation Rate', attrs=['underline'], force_color=True)} : {achieved_inflation_rate}"
         )
     else:
         summary = f"CNRR:{cnrr}, "
         summary += f"CERR:{cerr}, "
-        summary += f"OIR:{overall_inflation_rate}, "
-        summary += f"PIR:{partial_inflation_rate}, "
+        summary += f"AIR:{achieved_inflation_rate}, "
+        summary += f"IIR:{internal_inflation_rate}, "
+        summary += f"RIR:{required_inflation_rate}, "
         summary += f"NRR:{node_realisation_rate}, "
         summary += f"ERR:{edge_realisation_rate}, "
         summary += f"IPR:{insufficient_ports_rate}, "
