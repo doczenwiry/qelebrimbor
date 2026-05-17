@@ -401,7 +401,7 @@ class VolumetricZxGraph(nx.Graph):
     def place_cube(self, cube: BgCube) -> CubeId:
         if self.spacetime.occupied(cube.position):
             occupant = self.spacetime.occupant(cube.position)
-            raise Exception(f"Proposed position for {cube} is already occupied by {occupant}.")
+            raise Exception(f"Proposed position {cube.position} is already occupied by {occupant} [cube:{cube}].")
 
         cube.id = self.__next_cube_id
         self.__next_cube_id += 1

@@ -13,9 +13,11 @@
 #   limitations under the License.
 
 import logging
+from typing import Iterator
 
 from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.reach import Reach
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
 
 console = logging.getLogger(__name__)
@@ -31,8 +33,8 @@ class SpacetimeFabric:
     def occupied(self, position: Coordinates) -> bool:
         return position in self.__occupied_positions
 
-    def ports_offered(self, position: Coordinates, reach: Coordinates) -> int:
-        return sum(1 for pos in SpacetimeHelper.get_constellation(position, reach) if self.available(pos))
+    def available_ports(self, position: Coordinates, reach: Reach) -> Iterator[Coordinates]:
+        return iter(pos for pos in SpacetimeHelper.get_constellation(position, reach.value) if self.available(pos))
 
     def occupy(self, cube: BgCube, position: Coordinates) -> bool:
         if position not in self.__occupied_positions:

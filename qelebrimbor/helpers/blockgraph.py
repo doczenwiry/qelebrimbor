@@ -15,14 +15,32 @@
 from logging import getLogger
 
 from qelebrimbor.core.bg.attributes import CubeKind
+from qelebrimbor.core.common import Port
 from qelebrimbor.core.components import BgCube
+from qelebrimbor.core.reach import Reach
 from qelebrimbor.core.zx.attributes import EdgeType, NodeType
-from qelebrimbor.helpers.spacetime import SpacetimeHelper
+from qelebrimbor.helpers.spacetime import SpacetimeHelper, Step
 
 console = getLogger(__name__)
 
 
 class BlockGraphHelper:
+    @staticmethod
+    def infer_cube_kind(source: BgCube, port: Port, edge_type: EdgeType, target_type: NodeType) -> CubeKind:
+        step = Step(port - source.position)
+        if SpacetimeHelper.ORIGIN.get_manhattan_distance(step.value) != 1:
+            raise ValueError(f"Port is not adjacent to cube {source} [port: {port}]")
+
+        # Infer whether the reach for the target must flip w.r.t. that of the source
+        same_colors: bool = source.kind.get_type() == target_type
+        is_hadamard: bool = edge_type == EdgeType.HADAMARD
+
+        target_reach: Reach = source.kind.reach
+        if same_colors == is_hadamard:
+            target_reach = target_reach.flip(step)
+
+        return CubeKind.convert(target_type, target_reach.value)
+
     @staticmethod
     def infer_pipe_type(source: CubeKind, target: CubeKind) -> set[EdgeType]:
         source_type = source.get_type()

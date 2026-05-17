@@ -27,6 +27,12 @@ class Reach(Enum):
     def contains(self, step: Step) -> bool:
         return self.value.dot(step.value) == 0
 
+    def flip(self, step: Step) -> Reach:
+        if not self.contains(step):
+            raise ValueError(f"Cannot flip a Reach along a step not inscribed in it. [reach:{self}, step:{step}]")
+
+        return Reach(self.value.cross(step.value).abs())
+
     def get_constellation(self, position: Coordinates = Coordinates(0, 0, 0)) -> list[Coordinates]:
         constellation = []
         for step in Step:

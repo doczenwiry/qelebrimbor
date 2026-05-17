@@ -14,9 +14,12 @@
 
 import logging
 
-from qelebrimbor.core.components import ZxNode
+from qelebrimbor.core.bg.attributes import CubeId
+from qelebrimbor.core.bg.path import Path
+from qelebrimbor.core.components import BgCube, ZxNode
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.core.zx.tree import ZxTree
+from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 from qelebrimbor.spacetime.placefinders.breadth_first_search import PlacefinderBFS
 
@@ -47,19 +50,49 @@ class ZxGraphInflaterTrees:
         processed = 0
         for level in range(maximal_height):
             self.__attempt_levels_realisation(trees, level)
+            # break
 
         print(f">> Trees realised : {processed}/{len(trees)}")
 
     def __attempt_levels_realisation(self, trees: list[ZxTree], level: int) -> bool:
         print(f">> Attempting realisation of level [L={level}]")
         for tree in trees:
-            for node in tree.level(level):
-                if not node.is_realised():
+            current: ZxNode
+            for current in tree.level(level):
+                console.debug(f">> Current : {current}")
+                if not current.is_realised():
                     # Realise node based on preceding node's color and edge type to infer its CubeKind.
+                    preceding_node = tree.preceding(current)
+                    console.debug(f">>> Preceding : {preceding_node}")
+                    if not preceding_node.is_realised():
+                        continue
+
+                    if self.__graph.get_zx_degree(preceding_node.id) > 4:
+                        continue
+
+                    preceding_cube = preceding_node.realising_cube
+                    ports = self.__graph.spacetime.available_ports(preceding_cube.position, preceding_cube.kind.reach)
+                    edge = self.__graph.get_zx_edge(preceding_node.id, current.id)
+                    try:
+                        port = next(ports)
+                        cube = BgCube(
+                            kind=BlockGraphHelper.infer_cube_kind(preceding_cube, port, edge.type, current.type),
+                            position=port,
+                        )
+                        cube_id: CubeId = self.__graph.realise_zx_node(current, cube=cube)
+                        realising_cube = self.__graph.get_bg_cube(cube_id)
+                        self.__graph.realise_zx_edge(
+                            source=preceding_node.id,
+                            target=current.id,
+                            proposal=Path(start=preceding_cube).extend(cube=realising_cube, pipe_type=edge.type),
+                        )
+                    except StopIteration:
+                        raise Exception(f"Realising cube of {preceding_node} has no ports available [si].")
                     pass
 
-                if self.__graph.get_zx_degree(node.id) > 4:
+                if self.__graph.get_zx_degree(current.id) > 4:
                     # Unfuse the realising cube into enough cubes to accommodate all the legs of the node.
+                    console.debug(f">>> Has degree {self.__graph.get_zx_degree(current.id)}")
                     pass
 
         return True
