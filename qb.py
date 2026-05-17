@@ -162,11 +162,16 @@ def main() -> int:
         runtime = round(time() - start, 2)
         print(f"> Completed in {'{:.2f}'.format(runtime)} seconds.")
 
+    vzx = PYZX.from_file(arguments.filepath, preprocessor=preprocessor)
+    cycles: list[ZxCycle]
+
+    if verbose:
+        cycles = CycleAnalyser.analyse(graph=vzx, minimal=True, plot=arguments.analysis_style == "plot")
+    else:
+        cycles = CycleAnalyser.decompose(graph=vzx, minimal=True)
+
     if arguments.analysis:
         return 0
-
-    vzx = PYZX.from_file(arguments.filepath, preprocessor=preprocessor)
-    cycles: list[ZxCycle] = CycleAnalyser.decompose(graph=vzx, minimal=True)
 
     if verbose:
         print("\nPREPROCESSING STAGE.")
@@ -185,8 +190,9 @@ def main() -> int:
     sys.stderr.flush()
 
     start = time()
+    ring_inflater_realisations: int
     try:
-        ring_inflater.process(abort_on_index=arguments.index)
+        ring_inflater_realisations = ring_inflater.process(abort_on_index=arguments.index)
     except Exception as e:
         print(colored("FAILURE [Rings] :", color="red", attrs=["underline"], force_color=True) + f" {e}")
         exit(-1)
@@ -196,23 +202,26 @@ def main() -> int:
         print(f">> Total runtime : {'{:.3f}'.format(runtime)}s")
 
     tree_inflater = ZxGraphInflaterTrees(graph=vzx, verbose=verbose)
-
     if verbose:
         print("> " + colored(f"Phase II : {tree_inflater.__class__.__name__}", attrs=["underline"], force_color=True))
 
     sys.stdout.flush()
     sys.stderr.flush()
 
-    start = time()
-    try:
-        tree_inflater.process(abort_on_index=arguments.index)
-    except Exception as e:
-        print(colored("FAILURE [Trees] :", color="red", attrs=["underline"], force_color=True) + f" {e}")
-        exit(-1)
-    runtime = round(time() - start, 6)
+    if ring_inflater_realisations > 0:
+        start = time()
+        try:
+            tree_inflater.process(abort_on_index=arguments.index)
+        except Exception as e:
+            print(colored("FAILURE [Trees] :", color="red", attrs=["underline"], force_color=True) + f" {e}")
+            exit(-1)
+        runtime = round(time() - start, 6)
 
-    if verbose:
-        print(f">> Total runtime : {'{:.3f}'.format(runtime)}s")
+        if verbose:
+            print(f">> Total runtime : {'{:.3f}'.format(runtime)}s")
+    else:
+        if verbose:
+            print(">> Inflation aborted.")
 
     sys.stdout.flush()
     sys.stderr.flush()

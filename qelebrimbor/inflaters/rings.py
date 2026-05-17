@@ -36,10 +36,10 @@ class ZxGraphInflaterRings:
         self.__verbose = verbose
         self.__zx_cycles = cycles
 
-    def process(self, abort_on_failure: bool = False, abort_on_index: int = -1):
+    def process(self, abort_on_failure: bool = True, abort_on_index: int = -1) -> int:
         zx_cycles = self.__zx_cycles
 
-        index: int = 0
+        count: int = 0
         root_cycle: ZxCycle = zx_cycles[0]
 
         # Realise the root ring
@@ -49,34 +49,38 @@ class ZxGraphInflaterRings:
             console.info("> Failure [cause:unknown]")
 
         console.info(f"> Realisation successful with excess volume : +{excess_volume} cubes.")
-        index += 1
+        count += 1
 
         # Realise all subsequent chains
         candidate: ZxChain | None = self.__identify_next_chain(*zx_cycles)
 
-        while candidate is not None and index < len(zx_cycles):
-            console.info(f"Attempting realisation of chain [index={index}, md={candidate.distance}] : {candidate}")
+        while candidate is not None and count < len(zx_cycles):
+            console.info(f"Attempting realisation of chain [index={count}, md={candidate.distance}] : {candidate}")
 
-            if index == abort_on_index:
+            if count == abort_on_index:
                 console.info("> Premature abortion for inspection of specific example.")
                 # TODO: fix occlusion of ports by realisation of long path.
                 self.__connectivity.report(verbose=True)
-                break
+                return -2
 
-            excess_volume = self.__attempt_chain_realisation(candidate, maximal_excess=12)
+            excess_volume = self.__attempt_chain_realisation(candidate, maximal_excess=20)
             if excess_volume == -1:
                 console.info(f"> Failure to complete chain : {candidate}")
+                if self.__verbose:
+                    print(">>> Failure to find a strand for chain.")
                 if abort_on_failure:
-                    break
+                    return -1
 
             self.__connectivity.report()
-            index += 1
+            count += 1
 
             candidate = ZxGraphInflaterRings.__identify_next_chain(*zx_cycles)
 
-        console.info(f"Cycles processed : {index}/{len(zx_cycles)}.")
+        console.info(f"Cycles processed : {count}/{len(zx_cycles)}.")
         if self.__verbose:
-            print(f">> Cycles realised : {index}/{len(zx_cycles)}")
+            print(f">> Cycles realised : {count}/{len(zx_cycles)}")
+
+        return count
 
     # TODO: handle case of disjoint rings (i.e. multiple connected components that contain cycles).
     @staticmethod
@@ -152,6 +156,9 @@ class ZxGraphInflaterRings:
         console.info(f"Found a suitable strand for chain [EV:+{excess_volume}] : {strand}")
 
         self.__graph.realise_zx_chain(chain, strand)
+
+        if self.__verbose:
+            print(f">>> Realised as strand [EV:+{excess_volume}] : {strand}")
 
         # Reserve the ports for all the nodes that were realised as part of this ring.
         for node in chain.nodes:

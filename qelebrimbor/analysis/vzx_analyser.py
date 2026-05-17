@@ -13,15 +13,13 @@
 #   limitations under the License.
 
 from qelebrimbor.analysis.components import ConnectedComponentsAnalyser
-from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.core.zx.attributes import EdgeType, NodeType
-from qelebrimbor.core.zx.cycle import ZxCycle
 
 
 class VolumetricZxGraphAnalyser:
     @staticmethod
-    def analyse(graph: VolumetricZxGraph, minimal: bool = False, plot: bool = False) -> list[ZxCycle]:
+    def analyse(graph: VolumetricZxGraph, minimal: bool = False, plot: bool = False) -> None:
         node_counts: dict[NodeType, int] = {
             nodetype: len(list(graph.get_zx_nodes(node_type=nodetype)))
             for nodetype in NodeType
@@ -41,7 +39,4 @@ class VolumetricZxGraphAnalyser:
         print(f"> Number of qubits : {len(graph.get_zx_qubits())}")
         print(f"> Number of layers : {len(graph.get_zx_layers())}")
 
-        zx_cycles = CycleAnalyser.analyse(graph=graph, minimal=minimal, plot=plot)
         _, _ = ConnectedComponentsAnalyser.analyse(graph=graph, plot=plot)
-
-        return zx_cycles
