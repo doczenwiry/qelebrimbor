@@ -20,6 +20,7 @@ import benchmark
 import networkx as nx
 
 from qelebrimbor.analysis.cycles import CycleAnalyser
+from qelebrimbor.formats.preprocessing.full_reduce import FullReduce
 from qelebrimbor.formats.pyzx import PYZX
 
 logging.basicConfig(level=logging.INFO)
@@ -36,7 +37,7 @@ if __name__ == "__main__":
     longest_file_name = max(map(len, dataset_filenames))
 
     for input_path in dataset_filenames:
-        vzx = PYZX.from_file(benchmark.DATASET_DIRECTORY + "/" + input_path)
+        vzx = PYZX.from_file(benchmark.DATASET_DIRECTORY + "/" + input_path, preprocessor=FullReduce())
 
         number_of_connected_components = nx.number_connected_components(cast(nx.Graph, vzx))
         if CycleAnalyser.has_cycles(vzx) and number_of_connected_components == 1:
