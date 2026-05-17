@@ -36,115 +36,30 @@ class ZxGraphInflaterTrees:
             if node.is_realised():
                 if any(not node.is_realised() for node in self.__graph.get_zx_neighbors(node)):
                     roots.add(node)
-        print(f">> Roots identified : {roots}")
-        for root in roots:
-            tree = ZxTree.extract(self.__graph, root)
-            print(f">>> [H={tree.height}] : {tree}")
-            for level in range(1, tree.height):
-                print(f">>>> Level {level} : {tree.get_level(depth=level)}")
+        console.debug(f">> Roots identified : {roots}")
+        trees: list[ZxTree] = list(map(lambda rt: ZxTree.extract(self.__graph, rt), roots))
+        maximal_height: int = max(tree.height for tree in trees)
 
-    # def __find_root_cube(self, root_node: ZxNode) -> BgCube | None:
-    #     start = SpacetimeHelper.ORIGIN
-    #     required_ports = self.__graph.get_zx_degree(root_node.id)
-    #
-    #     queue: deque[Coordinates] = deque([start])
-    #     placement: tuple[Coordinates, Coordinates] | None = None
-    #
-    #     visited: set[Coordinates] = set()
-    #     while len(queue) > 0 and placement is None:
-    #         candidate: Coordinates = queue.popleft()
-    #
-    #         console.debug(f"Root position candidate for {root_node} : {candidate}
-    #         [avl:{self.__spacetime.available(candidate)},visited:{candidate in visited}]")
-    #
-    #         if candidate in visited:
-    #             continue
-    #         visited.add(candidate)
-    #
-    #         for neighbor in SpacetimeHelper.get_constellation(candidate):
-    #             queue.append(neighbor)
-    #
-    #         if not self.__graph.spacetime.available(candidate):
-    #             continue
-    #
-    #         # if candidate position offers a reach with enough open ports, assign it to placement
-    #         for reach in SpacetimeHelper.PLANES:
-    #             count_available_ports: int = sum(
-    #                 1 for pos in SpacetimeHelper.get_constellation(candidate, reach)
-    #                 if self.__graph.spacetime.available(pos)
-    #             )
-    #             if count_available_ports >= required_ports:
-    #                 placement = candidate, reach
-    #                 break
-    #
-    #
-    #     if placement:
-    #         root_position, root_reach = placement
-    #         return BgCube(kind = CubeKind.convert(root_node.type, root_reach), position = root_position)
-    #     else:
-    #         console.error(f"> Failed to find placement for root {root_node}")
-    #         return None
+        print(f">> Trees identified : {len(trees)}")
+        for tree in trees:
+            print(f">>> Tree [h={tree.height}] : {tree}")
 
-    # def __process_component(self, root_node: ZxNode) -> bool:
-    #     console.info(f"Starting inflation from root {root_node} [{root_node.realising_cube}]")
-    #
-    #     unrealised: list[tuple[int, ZxNode]] = [
-    #         (self.__connectivity.remaining(root_node.realising_cube), root_node)
-    #     ]
-    #
-    #     while len(unrealised) > 0:
-    #         heapq.heapify(unrealised)
-    #         remaining, source = heapq.heappop(unrealised)
-    #
-    #         if not source.is_realised():
-    #             console.info(f"> FAILURE to find placement from {source} to any target [cause:unrealised-source]")
-    #             return False
-    #
-    #         for target in self.__graph.get_zx_neighbors(source):
-    #             if target.is_realised():
-    #                 continue
-    #
-    #             cause = None
-    #             if self.__connectivity.reachable(source.realising_cube):
-    #                 if not self.__attempt_node_realisation(source, target):
-    #                     cause = "pathfinder-none"
-    #             else:
-    #                 cause = "insufficient-ports"
-    #
-    #             if cause is not None:
-    #                 console.info(f"> FAILURE to find placement from {source} to {target} [cause:{cause}]")
-    #                 return False
-    #
-    #             if self.__connectivity.required(target.realising_cube) > 0:
-    #                 unrealised.append((self.__connectivity.remaining(target.realising_cube), target))
-    #
-    #     return True
-    #
-    # def __attempt_node_realisation(self, realised: ZxNode, unrealised: ZxNode) -> bool:
-    #     # Place a cube of a kind suitable for the type of the unrealised endpoint node can be placed.
-    #     console.info(f"> Searching for node placement from {realised} for {unrealised}")
-    #     console.debug(f">> Source ports : {self.__connectivity.report(realised.realising_cube)}")
-    #
-    #     placement: Path | None = self.__placefinder.find_closest_realisation(realised.realising_cube, unrealised)
-    #     if placement is None:
-    #         return False
-    #     console.info(f">> Optimal placement found : {placement}")
-    #
-    #     # Realise the target cube and the path connecting it to the source cube
-    #     self.__graph.realise_zx_node(unrealised, placement.final)
-    #     self.__graph.realise_zx_edge(realised.id, unrealised.id, proposal = placement)
-    #
-    #     self.__connectivity.reserve_ports(placement.final)
-    #
-    #     # Remove the reserved positions of ports from those available ones
-    #     for position in placement.extra_cubes:
-    #         self.__connectivity.occlude_ports(position)
-    #     self.__connectivity.occlude_ports(placement.final.position)
-    #
-    #     self.__connectivity.connect_ports(
-    #         source = (realised.realising_cube, placement.start_port),
-    #         target = (placement.final, placement.final_port)
-    #     )
-    #     self.__connectivity.verify_ports()
-    #
-    #     return True
+        processed = 0
+        for level in range(maximal_height):
+            self.__attempt_levels_realisation(trees, level)
+
+        print(f">> Trees realised : {processed}/{len(trees)}")
+
+    def __attempt_levels_realisation(self, trees: list[ZxTree], level: int) -> bool:
+        print(f">> Attempting realisation of level [L={level}]")
+        for tree in trees:
+            for node in tree.level(level):
+                if not node.is_realised():
+                    # Realise node based on preceding node's color and edge type to infer its CubeKind.
+                    pass
+
+                if self.__graph.get_zx_degree(node.id) > 4:
+                    # Unfuse the realising cube into enough cubes to accommodate all the legs of the node.
+                    pass
+
+        return True

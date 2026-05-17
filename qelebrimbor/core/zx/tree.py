@@ -20,9 +20,12 @@ from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 class ZxTree:
     def __init__(self, root: ZxNode):
+        if not root.is_realised():
+            raise Exception(f"Attempting to create a tree from an unrealised root [{root}]")
+
         self.root = root
         self.__following: dict[ZxNode, list[ZxNode]] = defaultdict(list)
-        self.__contained: set[ZxNode] = {root}
+        self.__preceding: dict[ZxNode, ZxNode | None] = {root: None}
 
     @property
     def height(self) -> int:
@@ -41,30 +44,52 @@ class ZxTree:
         return h
 
     def append(self, preceding: ZxNode, following: ZxNode):
-        if preceding not in self.__contained:
-            raise Exception("Attempting to append from a node not in the tree.")
+        if preceding not in self.__preceding:
+            raise Exception(f"Attempting to append from a node not in the tree [{preceding}, {following}]")
 
-        if following in self.__contained:
-            raise Exception("Attempting to append a node already in the tree.")
+        if following in self.__preceding:
+            raise Exception(f"Attempting to append a node already in the tree [{preceding}, {following}]")
 
         self.__following[preceding].append(following)
-        self.__contained.add(following)
+        self.__preceding[following] = preceding
 
     def contains(self, node: ZxNode) -> bool:
-        return node in self.__contained
+        return node in self.__preceding
 
-    def get_level(self, depth: int = 1) -> set[ZxNode]:
-        level: set[ZxNode] = {self.root}
-        for h in range(depth):
-            next_level: set[ZxNode] = set()
-            for node in level:
-                next_level.update(self.__following[node])
-            level = next_level
+    def preceding(self, node: ZxNode) -> ZxNode:
+        preceding: ZxNode | None = self.__preceding[node]
+        if preceding is None:
+            raise Exception(f"The root of a tree has no preceding node [{node}].")
 
-        return level
+        return preceding
+
+    def level(self, level: int = 0) -> list[ZxNode]:
+        current: list[ZxNode] = [self.root]
+        for h in range(level):
+            next_level: list[ZxNode] = list()
+            for node in current:
+                next_level.extend(self.__following[node])
+            current = next_level
+
+        return current
 
     def __str__(self):
-        return str(self.__following)
+        string = ""
+        for level in range(self.height):
+            current = self.level(level)
+            entries: list[str] = []
+            for index, node in enumerate(current):
+                entry = f"{node}"
+                if len(self.__following[node]) > 0:
+                    entry += f" -> {{{','.join(map(str, self.__following[node]))}}}"
+                entries.append(entry)
+
+            if len(entries) > 0:
+                if level > 0:
+                    string += ": "
+                string += f"L{level}[[{'; '.join(entries)}]]"
+
+        return string
 
     @staticmethod
     def extract(graph: VolumetricZxGraph, root: ZxNode) -> ZxTree:
