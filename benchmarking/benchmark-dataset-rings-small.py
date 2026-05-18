@@ -37,7 +37,9 @@ if __name__ == "__main__":
     longest_file_name = max(map(len, dataset_filenames))
 
     for input_path in dataset_filenames:
-        vzx = PYZX.from_file(benchmark.DATASET_DIRECTORY + "/" + input_path, preprocessor=FullReduce())
+        pyzx_input = PYZX.from_file(benchmark.DATASET_DIRECTORY + "/" + input_path)
+        FullReduce().process(pyzx_input)
+        vzx = PYZX.from_pyzx_graph(pyzx_input)
 
         number_of_connected_components = nx.number_connected_components(cast(nx.Graph, vzx))
         if CycleAnalyser.has_cycles(vzx) and number_of_connected_components == 1:

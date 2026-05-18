@@ -73,7 +73,7 @@ class ZxTree:
 
         return current
 
-    def __str__(self):
+    def __str__(self) -> str:
         string = ""
         for level in range(self.height):
             current = self.level(level)
