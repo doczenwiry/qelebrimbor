@@ -21,7 +21,6 @@ import pyzx
 from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.volumetric_zx_graph import LayerTransition, VolumetricZxGraph
 from qelebrimbor.core.zx.attributes import EdgeType, LayerId, NodeId, NodeType, QubitId
-from qelebrimbor.formats.preprocessing.abstract import Preprocessor
 
 console = logging.getLogger(__name__)
 
@@ -33,12 +32,9 @@ class PYZX:
             file.write(PYZX.into_pyzx_graph(graph, planar_scale).to_json())
 
     @staticmethod
-    def from_file(filepath: str, preprocessor: Preprocessor | None = None) -> VolumetricZxGraph:
+    def from_file(filepath: str) -> pyzx.graph.base.BaseGraph:
         with open(filepath, "r") as file:
-            pyzx_input = pyzx.Graph().from_json(file.read())
-            if preprocessor is not None:
-                preprocessor.process(pyzx_input)
-            return PYZX.from_pyzx_graph(pyzx_input)
+            return pyzx.Graph().from_json(file.read())
 
     @staticmethod
     def into_pyzx_graph(graph: VolumetricZxGraph, planar_scale: int = 1) -> pyzx.graph.base.BaseGraph:

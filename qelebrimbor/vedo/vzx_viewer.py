@@ -51,7 +51,7 @@ class VolumetricZxGraphViewer(Plotter):
     def __init__(
         self,
         graph: VolumetricZxGraph,
-        cycles_processed: list[ZxCycle] | None = None,
+        cycles: list[ZxCycle] | None = None,
         scope: tuple[ZxNode, int] | None = None,
         label: str = "",
         layout: ZxLayout | None = None,
@@ -110,7 +110,7 @@ class VolumetricZxGraphViewer(Plotter):
 
         self.__hovered_object = None
 
-        self.__cycles_processed = cycles_processed if cycles_processed is not None else []
+        self.__cycles_processed = cycles if cycles is not None else []
         self.__highlighted_cycle = -1
 
         self.__highlighting_manhattan_excess = False
@@ -140,7 +140,8 @@ class VolumetricZxGraphViewer(Plotter):
             if highlighting:
                 console.info(f"ZxNode : {zx_node}")
             self.__zx_scene_manager.alter_node_highlighting(zx_node, highlight=highlighting)
-            self.__bg_scene_manager.alter_cube_highlighting(zx_node.realising_cube, highlight=highlighting)
+            if zx_node.is_realised():
+                self.__bg_scene_manager.alter_cube_highlighting(zx_node.realising_cube, highlight=highlighting)
         elif isinstance(selected, VdEdge):
             zx_edge = selected.zx_edge
             if highlighting:

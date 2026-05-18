@@ -18,13 +18,12 @@ from argparse import ArgumentParser
 from os import path
 from time import time
 
-import pyzx
+from pyzx import VertexType
 from termcolor import colored
 
 from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.analysis.vzx_analyser import VolumetricZxGraphAnalyser
 from qelebrimbor.core.zx import attributes as zx_attributes
-from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.formats.preprocessing.abstract import Preprocessor
 from qelebrimbor.formats.preprocessing.default import DefaultPreprocessor
@@ -145,8 +144,10 @@ def main() -> int:
 
     verbose: bool = not arguments.summary
 
-    vzx = PYZX.from_file(arguments.filepath)
-    input_spider_count: int = sum(1 for node in vzx.get_zx_nodes() if node.type in [NodeType.X, NodeType.Z])
+    pyzx_input = PYZX.from_file(arguments.filepath)
+    input_spider_count: int = sum(
+        1 for node in pyzx_input.vertices() if pyzx_input.type(node) in [VertexType.X, VertexType.Z]
+    )
 
     if arguments.zx_coloring:
         zx_attributes.ZX_COLORING = True
@@ -158,11 +159,15 @@ def main() -> int:
 
     if verbose:
         start = time()
+        vzx = PYZX.from_pyzx_graph(pyzx_input)
         VolumetricZxGraphAnalyser.analyse(graph=vzx, minimal=True, plot=arguments.analysis_style == "plot")
         runtime = round(time() - start, 2)
         print(f"> Completed in {'{:.2f}'.format(runtime)} seconds.")
 
-    vzx = PYZX.from_file(arguments.filepath, preprocessor=preprocessor)
+    if preprocessor is not None:
+        preprocessor.process(pyzx_input)
+
+    vzx = PYZX.from_pyzx_graph(pyzx_input)
     cycles: list[ZxCycle]
 
     if verbose:
@@ -258,7 +263,7 @@ def main() -> int:
     # Validation stage
     if arguments.check_equivalence:
         with open(arguments.filepath, "r") as file:
-            pyzx_input = pyzx.Graph().from_json(file.read())
+            pyzx_input = pyzx_input.Graph().from_json(file.read())
         pyzx_output = PYZX.into_pyzx_graph(vzx)
         # TODO: fix the labelling of BOUNDARIES in vzx.into_pyzx_graph(..) to match that of pyzx_input
         pyzx_input.auto_detect_io()
@@ -267,7 +272,7 @@ def main() -> int:
         try:
             composition = pyzx_input.copy()
             composition.compose(pyzx_output.adjoint())
-            pyzx.full_reduce(composition)
+            pyzx_input.full_reduce(composition)
             equivalent_graphs = "SUCCESS" if composition.is_id() else "FAILURE"
         except TypeError:
             equivalent_graphs = "FAILURE"
@@ -284,7 +289,7 @@ def main() -> int:
                 graph=vzx,
                 label=arguments.filepath,
                 size=window_size,
-                cycles_processed=cycles,
+                cycles=cycles,
             )
             viewer.display()
         elif verbose:
