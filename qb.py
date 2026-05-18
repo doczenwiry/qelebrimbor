@@ -87,7 +87,7 @@ parser.add_argument(
     "--preprocessor",
     action="store",
     choices=["none", "full-reduce", "default"],
-    default="full-reduce",
+    default="default",
     help="choose which preprocessor to use on the input ZX-graph.",
 )
 parser.add_argument(

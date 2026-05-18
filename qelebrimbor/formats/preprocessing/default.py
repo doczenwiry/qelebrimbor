@@ -34,16 +34,16 @@ class DefaultPreprocessor(Preprocessor):
 
         nodes_to_split: set[ZxNode] = set()
         for cycle in cycles:
-            print(f"Cycle [{cycle.length}] : {cycle}")
+            # print(f"Cycle [{cycle.length}] : {cycle}")
             for node in cycle.nodes:
                 node_degree = vzx.get_zx_degree(node.id)
                 if node_degree > 4:
                     nodes_to_split.add(node)
 
         for node in nodes_to_split:
-            node_degree = vzx.get_zx_degree(node.id)
-            excess = (node_degree + (node_degree % 2) - 4) // 2
-            print(f"> Node {node} has degree {node_degree} and needs unfusing into {excess + 1} nodes.")
+            # node_degree = vzx.get_zx_degree(node.id)
+            # excess = (node_degree + (node_degree % 2) - 4) // 2
+            # print(f"> Node {node} has degree {node_degree} and needs unfusing into {excess + 1} nodes.")
 
             all_cycle_edges: set[ZxEdge] = set()
             all_other_edges: set[ZxEdge] = set()
@@ -53,13 +53,14 @@ class DefaultPreprocessor(Preprocessor):
                         all_cycle_edges.add(edge)
                     else:
                         all_other_edges.add(edge)
-            print(f">> Cycle edges : {all_cycle_edges}")
-            print(f">> Other edges : {all_other_edges}")
+            # print(f">> Cycle edges : {all_cycle_edges}")
+            # print(f">> Other edges : {all_other_edges}")
             for index, edges in enumerate(batched(all_cycle_edges, 2)):
                 if index == 0:
-                    print(f">> Edges kept : {edges}")
+                    # print(f">> Edges kept : {edges}")
+                    pass
                 else:
-                    print(f">> Edges pass : {edges}")
+                    # print(f">> Edges pass : {edges}")
                     new = unfuse(input, node.id)
                     for edge in edges:
                         source = edge[0].id
