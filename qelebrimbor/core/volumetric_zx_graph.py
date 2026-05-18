@@ -234,9 +234,8 @@ class VolumetricZxGraph(nx.Graph):
     def get_bg_degree(self, cube_id: CubeId) -> int:
         return int(self.blockgraph.degree[cube_id])
 
-    def get_equivalent_bg_cubes(self, cube: BgCube) -> tuple[Iterable[BgCube], Iterable[BgPipe]]:
+    def get_equivalent_bg_cubes(self, cube: BgCube) -> Iterable[BgCube]:
         equivalent_cubes: set[BgCube] = {cube}
-        connecting_pipes: set[BgPipe] = set()
 
         queue: deque[BgCube] = deque([cube])
         while queue:
@@ -245,16 +244,11 @@ class VolumetricZxGraph(nx.Graph):
                 if neighbor.kind != cube.kind:
                     continue
 
-                source, target = current.id, neighbor.id
-                if source > target:
-                    source, target = target, source
-                connecting_pipes.add(self.get_bg_pipe(source, target))
-
                 if neighbor not in equivalent_cubes:
                     equivalent_cubes.add(neighbor)
                     queue.append(neighbor)
 
-        return equivalent_cubes, connecting_pipes
+        return equivalent_cubes
 
     def realise_zx_node(self, node: ZxNode, cube: BgCube) -> CubeId:
         """Realise the node as a cube of the given kind placed at the given coordinates."""
@@ -414,7 +408,7 @@ class VolumetricZxGraph(nx.Graph):
             path = path.extend(cube=extra_cube, pipe_type=proposal.pipes[matching_index])
             matching_index += 1
 
-        path = path.extend(cube=following.realising_cube, pipe_type=proposal.pipes[-1])
+        path = path.extend(cube=proposal.final, pipe_type=proposal.pipes[-1])
         self.realise_zx_edge(source=preceding_node.id, target=following.id, proposal=path)
 
     def place_cube(self, cube: BgCube) -> CubeId:
@@ -494,14 +488,15 @@ class VolumetricZxGraph(nx.Graph):
         start = proposal.start
         final = proposal.final
 
-        # if not (edge.source.id != start.realised_node.id or edge.target.id != start.realised_node.id):
-        if start not in edge.source.realising_cubes and start not in edge.target.realising_cubes:
+        source_realising_cubes = self.get_equivalent_bg_cubes(start)
+        target_realising_cubes = self.get_equivalent_bg_cubes(final)
+
+        if start not in source_realising_cubes and start not in target_realising_cubes:
             raise Exception(
                 f"Start cube {start} is not realising either endpoint of edge {edge} [proposal={proposal}]."
             )
 
-        # if not (edge.source.id != final.realised_node.id or edge.target.id != final.realised_node.id):
-        if final not in edge.source.realising_cubes and final not in edge.target.realising_cubes:
+        if final not in source_realising_cubes and final not in target_realising_cubes:
             raise Exception(
                 f"Final cube {final} is not realising either endpoint of edge {edge} [proposal={proposal}]."
             )

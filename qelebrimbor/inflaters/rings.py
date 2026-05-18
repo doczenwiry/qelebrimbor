@@ -21,7 +21,7 @@ from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
-from qelebrimbor.spacetime.strandfinders.depth_first_search import StrandfinderDFS
+from qelebrimbor.spacetime.strandfinders.colorblind_fusion_dfs import StrandfinderColorblindFusionDFS
 
 console = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class ZxGraphInflaterRings:
         self.__graph = graph
         self.__connectivity: ConnectivityTracker = OpenPortsTracker(graph)
         self.__ringfinder = RingfinderBFS(self.__graph)
-        self.__strandfinder = StrandfinderDFS(self.__graph, self.__connectivity, branch_and_bound=True)
+        self.__strandfinder = StrandfinderColorblindFusionDFS(self.__graph, self.__connectivity, branch_and_bound=True)
 
         self.__verbose = verbose
         self.__zx_cycles = cycles
