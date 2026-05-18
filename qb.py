@@ -27,7 +27,7 @@ from qelebrimbor.core.zx import attributes as zx_attributes
 from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.formats.preprocessing.abstract import Preprocessor
-from qelebrimbor.formats.preprocessing.alternating_cycles import AlternatingCycles
+from qelebrimbor.formats.preprocessing.default import DefaultPreprocessor
 from qelebrimbor.formats.preprocessing.full_reduce import FullReduce
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
@@ -87,7 +87,7 @@ parser.add_argument(
     "-r",
     "--preprocessor",
     action="store",
-    choices=["full-reduce", "alternating-cycles"],
+    choices=["none", "full-reduce", "default"],
     default="full-reduce",
     help="choose which preprocessor to use on the input ZX-graph.",
 )
@@ -140,8 +140,8 @@ def main() -> int:
     preprocessor: Preprocessor | None = None
     if arguments.preprocessor == "full-reduce":
         preprocessor = FullReduce()
-    elif arguments.preprocessor == "alternating-cycles":
-        preprocessor = AlternatingCycles()
+    elif arguments.preprocessor == "default":
+        preprocessor = DefaultPreprocessor()
 
     verbose: bool = not arguments.summary
 

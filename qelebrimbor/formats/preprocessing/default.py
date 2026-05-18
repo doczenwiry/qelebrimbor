@@ -19,7 +19,7 @@ from qelebrimbor.formats.preprocessing.abstract import Preprocessor
 from qelebrimbor.formats.pyzx import PYZX
 
 
-class AlternatingCycles(Preprocessor):
+class DefaultPreprocessor(Preprocessor):
     @staticmethod
     def process(input: pyzx.graph.base.BaseGraph) -> None:
         graph = PYZX.from_pyzx_graph(input)

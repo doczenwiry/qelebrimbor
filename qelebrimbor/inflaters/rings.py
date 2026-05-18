@@ -31,7 +31,7 @@ class ZxGraphInflaterRings:
         self.__graph = graph
         self.__connectivity: ConnectivityTracker = OpenPortsTracker(graph)
         self.__ringfinder = RingfinderBFS(self.__graph)
-        self.__strandfinder = StrandfinderDFS(self.__graph, self.__connectivity)
+        self.__strandfinder = StrandfinderDFS(self.__graph, self.__connectivity, branch_and_bound=True)
 
         self.__verbose = verbose
         self.__zx_cycles = cycles

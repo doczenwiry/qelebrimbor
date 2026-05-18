@@ -148,30 +148,26 @@ class PYZX:
 
     @staticmethod
     def from_pyzx_graph(zx_graph: pyzx.graph.base.BaseGraph) -> VolumetricZxGraph:
-        converted_node_ids: dict[NodeId, NodeId] = dict()
         nodes: list[tuple[NodeId, NodeType]] = []
-        for original_id in zx_graph.vertices():
-            node_id = len(converted_node_ids)
-            converted_node_ids[original_id] = node_id
-            nodes.append((node_id, NodeType.convert_from_pyzx(zx_graph.type(original_id))))
-
-        edges: list[tuple[NodeId, NodeId, EdgeType]] = []
-        for edge in zx_graph.edges():
-            source = converted_node_ids[min(edge)]
-            target = converted_node_ids[max(edge)]
-            edges.append((source, target, EdgeType.convert_from_pyzx(zx_graph.edge_type(edge))))
-
         qubits: dict[NodeId, QubitId] = dict()
         layers: dict[NodeId, LayerId] = dict()
-        # Add qubit and layer information
-        for original_id, node_id in converted_node_ids.items():
-            node_qubit = int(zx_graph.qubit(original_id))
-            node_layer = int(zx_graph.row(original_id))
-
+        for node_id in zx_graph.vertices():
+            node_qubit = int(zx_graph.qubit(node_id))
             if node_qubit != -1:
                 qubits[node_id] = node_qubit
 
+            node_layer = int(zx_graph.row(node_id))
             if node_layer != -1:
                 layers[node_id] = node_layer
+
+            nodes.append((node_id, NodeType.convert_from_pyzx(zx_graph.type(node_id))))
+
+        edges: list[tuple[NodeId, NodeId, EdgeType]] = []
+        for edge in zx_graph.edges():
+            source = edge[0]
+            target = edge[1]
+            if source > target:
+                source, target = target, source
+            edges.append((source, target, EdgeType.convert_from_pyzx(zx_graph.edge_type(edge))))
 
         return VolumetricZxGraph(nodes, edges, qubits, layers)

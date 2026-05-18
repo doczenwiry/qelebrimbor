@@ -638,7 +638,7 @@ class VolumetricZxGraph(nx.Graph):
 
     def print_summary(self):
         for node in self.get_zx_nodes():
-            extra = f", Cube#{node.realising_cube.id}" if node.realising_cube else ""
+            extra = f", Cube#{node.realising_cube.id}" if node.is_realised() else ""
             print(f"Node #{node.id} : {node.type} [Q{node.qubit}, L{node.layer}{extra}]")
 
         for edge in self.get_zx_edges():
