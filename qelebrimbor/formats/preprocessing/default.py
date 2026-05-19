@@ -12,6 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 from itertools import batched
 
 import pyzx.graph.base
@@ -21,6 +22,8 @@ from qelebrimbor.core.components import ZxNode
 from qelebrimbor.core.zx.attributes import NodeId
 from qelebrimbor.formats.preprocessing.abstract import Preprocessor
 from qelebrimbor.formats.pyzx import PYZX
+
+console = logging.getLogger(__name__)
 
 
 # TODO: guarantee determinism of process(..) method !
@@ -33,6 +36,8 @@ class DefaultPreprocessor(Preprocessor):
         next_node_id: int = max(node.id for node in vzx.get_zx_nodes()) + 1
 
         cycles = CycleAnalyser.decompose(vzx, minimal=True)
+        for cycle in cycles:
+            console.debug(f">> Cycle : {cycle}")
 
         nodes_to_split: list[tuple[ZxNode, set[NodeId], set[NodeId]]] = list()
         for node in vzx.get_zx_nodes():
@@ -48,9 +53,9 @@ class DefaultPreprocessor(Preprocessor):
                 nodes_to_split.append((node, cycle_neighbors, other_neighbors))
 
         for node, c_neighbors, o_neighbors in nodes_to_split:
-            # print(f">> Node {node} has cycle-degree {len(c_neighbors)} and other-degree {len(o_neighbors)}")
-            # print(f">>> Cycle neighbors : {c_neighbors}")
-            # print(f">>> Other neighbors : {o_neighbors}")
+            console.debug(f">> Node {node} has cycle-degree {len(c_neighbors)} and other-degree {len(o_neighbors)}")
+            console.debug(f">>> Cycle neighbors : {c_neighbors}")
+            console.debug(f">>> Other neighbors : {o_neighbors}")
             # node_degree = vzx.get_zx_degree(node.id)
             # excess = (node_degree + (node_degree % 2) - 4) // 2
             # print(f"> Node {node} has degree {node_degree} and needs unfusing into {excess + 1} nodes.")
