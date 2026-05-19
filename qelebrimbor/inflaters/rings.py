@@ -141,9 +141,11 @@ class ZxGraphInflaterRings:
             print(f">> Attempting realisation of chain [L={chain.length}] : {chain}")
 
         if not chain.source.is_realised() or not chain.source.is_realised():
+            console.debug("Endpoints are not realised.")
             return -1
 
-        if not self.__connectivity.available(chain.source.realising_cube, chain.source.realising_cube):
+        if not self.__connectivity.available(chain.source.realising_cube, chain.target.realising_cube):
+            console.debug("Insufficient connectivity.")
             return -1
 
         strand = self.__strandfinder.find_optimum(chain, maximal_excess=maximal_excess)

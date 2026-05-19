@@ -59,14 +59,30 @@ class OpenPortsTracker(ConnectivityTracker):
         holder = self.__ports_holders[position]
         return holder == start or holder == final or self.__reserved_ports[holder].remaining > 0
 
-    def available(self, start: BgCube, final: BgCube) -> bool:
+    def available(self, start: BgCube, final: BgCube, fusion: bool = True) -> bool:
         if start not in self.__reserved_ports:
             console.warning(f"Impossible to infer connectability due to unknown status of {start}")
 
         if final not in self.__reserved_ports:
             console.warning(f"Impossible to infer connectability due to unknown status of {final}")
 
-        return self.__reserved_ports[start].reachable and self.__reserved_ports[final].reachable
+        if self.__reserved_ports[start].reachable and self.__reserved_ports[final].reachable:
+            return True
+
+        if fusion:
+            eq_start_ports: set[Port] = set()
+            for eq_start in self.__graph.get_equivalent_bg_cubes(start):
+                eq_start_ports.update(self.__spacetime.available_ports(eq_start.position, eq_start.kind.reach))
+            start_sufficient = len(eq_start_ports) - self.__reserved_ports[start].required >= 0
+
+            eq_final_ports: set[Port] = set()
+            for eq_final in self.__graph.get_equivalent_bg_cubes(final):
+                eq_final_ports.update(self.__spacetime.available_ports(eq_final.position, eq_final.kind.reach))
+            final_sufficient = len(eq_final_ports) - self.__reserved_ports[final].required >= 0
+
+            return start_sufficient and final_sufficient
+        else:
+            return False
 
     def report(self, verbose: bool = False):
         prioritized = 0
