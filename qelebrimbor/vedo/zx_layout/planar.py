@@ -24,7 +24,7 @@ from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 class PlanarLayout(ZxLayout):
     def __init__(self, graph: VolumetricZxGraph, scale: float = 1.0):
         self.placements: dict[ZxNode, tuple[float, float]] = dict()
-        nx_layout = nx.spring_layout(cast(nx.Graph, graph), scale=scale)
+        nx_layout = nx.spring_layout(cast(nx.Graph, graph), k=0.5, iterations=200, scale=scale)
         for node_id, position in nx_layout.items():
             x, y = position
             self.placements[graph.get_zx_node(node_id)] = (y, x)

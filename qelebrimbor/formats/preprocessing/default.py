@@ -15,10 +15,10 @@
 from itertools import batched
 
 import pyzx.graph.base
-from pyzx.local_search.congruences import unfuse
 
 from qelebrimbor.analysis.cycles import CycleAnalyser
-from qelebrimbor.core.components import ZxEdge, ZxNode
+from qelebrimbor.core.components import ZxNode
+from qelebrimbor.core.zx.attributes import NodeId
 from qelebrimbor.formats.preprocessing.abstract import Preprocessor
 from qelebrimbor.formats.pyzx import PYZX
 
@@ -30,43 +30,55 @@ class DefaultPreprocessor(Preprocessor):
         pyzx.full_reduce(input)
 
         vzx = PYZX.from_pyzx_graph(input)
+        next_node_id: int = max(node.id for node in vzx.get_zx_nodes()) + 1
 
         cycles = CycleAnalyser.decompose(vzx, minimal=True)
 
-        nodes_to_split: set[ZxNode] = set()
-        for cycle in cycles:
-            # print(f"Cycle [{cycle.length}] : {cycle}")
-            for node in cycle.nodes:
-                node_degree = vzx.get_zx_degree(node.id)
-                if node_degree > 4:
-                    nodes_to_split.add(node)
+        nodes_to_split: list[tuple[ZxNode, set[NodeId], set[NodeId]]] = list()
+        for node in vzx.get_zx_nodes():
+            node_degree = vzx.get_zx_degree(node.id)
+            if node_degree > 4:
+                cycle_neighbors: set[NodeId] = set()
+                other_neighbors: set[NodeId] = set()
+                for neighbor in vzx.get_zx_neighbors(node):
+                    if any(cycle.contains(neighbor) for cycle in cycles):
+                        cycle_neighbors.add(neighbor.id)
+                    else:
+                        other_neighbors.add(neighbor.id)
+                nodes_to_split.append((node, cycle_neighbors, other_neighbors))
 
-        for node in nodes_to_split:
+        for node, c_neighbors, o_neighbors in nodes_to_split:
+            # print(f">> Node {node} has cycle-degree {len(c_neighbors)} and other-degree {len(o_neighbors)}")
+            # print(f">>> Cycle neighbors : {c_neighbors}")
+            # print(f">>> Other neighbors : {o_neighbors}")
             # node_degree = vzx.get_zx_degree(node.id)
             # excess = (node_degree + (node_degree % 2) - 4) // 2
             # print(f"> Node {node} has degree {node_degree} and needs unfusing into {excess + 1} nodes.")
 
-            all_cycle_edges: set[ZxEdge] = set()
-            all_other_edges: set[ZxEdge] = set()
-            for cycle in cycles:
-                for edge in cycle.edges:
-                    if edge.source == node or edge.target == node:
-                        all_cycle_edges.add(edge)
-                    else:
-                        all_other_edges.add(edge)
-            # print(f">> Cycle edges : {all_cycle_edges}")
-            # print(f">> Other edges : {all_other_edges}")
-            for index, edges in enumerate(batched(all_cycle_edges, 2)):
-                if index == 0:
-                    # print(f">> Edges kept : {edges}")
-                    pass
-                else:
-                    # print(f">> Edges pass : {edges}")
-                    new = unfuse(input, node.id)
-                    for edge in edges:
-                        source = edge[0].id
-                        target = edge[1].id
-                        other = target if source == node.id else source
-                        edge_type = input.edge_type((source, target))
-                        input.remove_edge((source, target))
-                        input.add_edge((new, other), edge_type)
+            # pyzx.draw(input, labels=True)
+
+            if len(c_neighbors) <= 3:
+                new = input.add_vertex(index=next_node_id, ty=input.type(node.id))
+                next_node_id += 1
+                input.add_edge((node.id, new), pyzx.EdgeType.SIMPLE)
+                for neighbor_id in o_neighbors:
+                    edge = min(node.id, neighbor_id), max(node.id, neighbor_id)
+                    edge_type = input.edge_type(edge)
+                    input.remove_edge(edge)
+                    input.add_edge((new, neighbor_id), edge_type)
+
+            else:  # len(c_neighbors) >= 4:
+                # Unfuse the node and distribute the cycle-neighbors among the resulting nodes.
+                for index, neighbors in enumerate(batched(c_neighbors, 2)):
+                    # Keep the first pair of neighbors to itself and pass on the remaining pairs
+                    if index > 0:
+                        # print(f">> Edges pass : {edges}")
+                        new = input.add_vertex(index=next_node_id, ty=input.type(node.id))
+                        next_node_id += 1
+                        input.add_edge((node.id, new), pyzx.EdgeType.SIMPLE)
+                        for neighbor_id in neighbors:
+                            source, target = min(node.id, neighbor_id), max(node.id, neighbor_id)
+                            edge = input.edge(source, target)
+                            edge_type = input.edge_type(edge)
+                            input.remove_edge(edge)
+                            input.add_edge((new, neighbor_id), edge_type)

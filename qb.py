@@ -35,6 +35,8 @@ from qelebrimbor.inflaters.rings import ZxGraphInflaterRings
 from qelebrimbor.inflaters.trees import ZxGraphInflaterTrees
 from qelebrimbor.utilities.qb_reporting import print_report
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
+from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
+from qelebrimbor.vedo.zx_layout.planar import PlanarLayout
 
 logging.basicConfig(level=logging.CRITICAL)
 
@@ -153,17 +155,20 @@ def main() -> int:
     if arguments.zx_coloring:
         zx_attributes.ZX_COLORING = True
 
-    # Preliminary analysis stage
+    # Preliminary analysis stage.
     if verbose:
         print("ANALYSIS STAGE.")
         print(f"> Input file : {arguments.filepath}")
-
-    if verbose:
         start = time()
         vzx = PYZX.from_pyzx_graph(pyzx_input)
         VolumetricZxGraphAnalyser.report(graph=vzx)
         runtime = round(time() - start, 2)
         print(f"> Completed in {'{:.2f}'.format(runtime)} seconds.")
+
+    # Preprocessing stage.
+    if verbose:
+        print("\nPREPROCESSING STAGE.")
+        print(f"> Applying preprocessor : {preprocessor.__class__.__name__}")
 
     start = time()
     if preprocessor is not None:
@@ -173,8 +178,6 @@ def main() -> int:
     cycles: list[ZxCycle]
 
     if verbose:
-        print("\nPREPROCESSING STAGE.")
-        print(f"> Applying preprocessor : {preprocessor.__class__.__name__}")
         VolumetricZxGraphAnalyser.report(graph=vzx)
         cycles = CycleAnalyser.analyse(graph=vzx, minimal=True, plot=arguments.analysis_style == "plot")
         runtime = round(time() - start, 2)
@@ -304,6 +307,7 @@ def main() -> int:
                 label=arguments.filepath,
                 size=window_size,
                 cycles=cycles,
+                layout=PlanarLayout(vzx, scale=3.0) if preprocessor is not None else CircuitLayout(vzx),
             )
             viewer.display()
         elif verbose:

@@ -35,6 +35,12 @@ class ZxCycle:
     def length(self) -> int:
         return len(self.__nodes)
 
+    def contains(self, node: ZxNode) -> bool:
+        return node in self.nodes
+
+    def involves(self, edge: ZxEdge) -> bool:
+        return edge in self.edges
+
     def append(self, node: ZxNode, edge: ZxEdge):
         # TODO: validate the node/edge against self.
         self.__nodes.append(node)
