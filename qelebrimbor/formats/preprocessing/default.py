@@ -23,6 +23,7 @@ from qelebrimbor.formats.preprocessing.abstract import Preprocessor
 from qelebrimbor.formats.pyzx import PYZX
 
 
+# TODO: guarantee determinism of process(..) method !
 class DefaultPreprocessor(Preprocessor):
     @staticmethod
     def process(input: pyzx.graph.base.BaseGraph) -> None:

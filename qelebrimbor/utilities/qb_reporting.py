@@ -125,7 +125,7 @@ def print_report(vzx: VolumetricZxGraph, input_spider_count: int, cycles: list[Z
     )
 
     if detailed:
-        print("> Realisation of input ZX-graph: ")
+        print("> Realisation of internal ZX-graph: ")
 
         realised_nodes_dict: dict[NodeType, int] = {
             nodetype: sum(1 for node in vzx.get_zx_nodes(node_type=nodetype) if node.is_realised())
@@ -178,12 +178,12 @@ def print_report(vzx: VolumetricZxGraph, input_spider_count: int, cycles: list[Z
 
         volume_digits = int(math.log10(total_volume)) + 1 if total_volume > 0 else 0
         print(
-            f"> {colored('Total volume', attrs=['underline'], force_color=True)}   :  {str(total_volume).rjust(volume_digits, ' ')}"  # noqa: E501
+            f">> {colored('Total volume', attrs=['underline'], force_color=True)}   :  {str(total_volume).rjust(volume_digits, ' ')}"  # noqa: E501
         )
         # print(f">> Spider Volume :  {str(spider_volume).rjust(volume_digits, ' ')}")
         # print(f">> Excess Volume : +{str(excess_volume).rjust(volume_digits, ' ')}")
 
-        print(f"> Internal Inflation Rate : {internal_inflation_rate} [required:{required_inflation_rate}]")
+        print(f">> Internal Inflation Rate : {internal_inflation_rate} [required:{required_inflation_rate}]")
         print(
             f"> {colored('Achieved Inflation Rate', attrs=['underline'], force_color=True)} : {achieved_inflation_rate}"
         )

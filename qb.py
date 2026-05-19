@@ -160,10 +160,11 @@ def main() -> int:
     if verbose:
         start = time()
         vzx = PYZX.from_pyzx_graph(pyzx_input)
-        VolumetricZxGraphAnalyser.analyse(graph=vzx, minimal=True, plot=arguments.analysis_style == "plot")
+        VolumetricZxGraphAnalyser.report(graph=vzx)
         runtime = round(time() - start, 2)
         print(f"> Completed in {'{:.2f}'.format(runtime)} seconds.")
 
+    start = time()
     if preprocessor is not None:
         preprocessor.process(pyzx_input)
 
@@ -171,16 +172,17 @@ def main() -> int:
     cycles: list[ZxCycle]
 
     if verbose:
+        print("\nPREPROCESSING STAGE.")
+        print(f"> Applying preprocessor : {preprocessor.__class__.__name__}")
+        VolumetricZxGraphAnalyser.report(graph=vzx)
         cycles = CycleAnalyser.analyse(graph=vzx, minimal=True, plot=arguments.analysis_style == "plot")
+        runtime = round(time() - start, 2)
+        print(f"> Completed in {'{:.2f}'.format(runtime)} seconds.")
     else:
         cycles = CycleAnalyser.decompose(graph=vzx, minimal=True)
 
     if arguments.analysis:
         return 0
-
-    if verbose:
-        print("\nPREPROCESSING STAGE.")
-        print(f"> Applying preprocessor : {preprocessor.__class__.__name__}")
 
     # Inflation stage
     if verbose:
