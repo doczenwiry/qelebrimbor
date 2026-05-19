@@ -18,7 +18,7 @@ from argparse import ArgumentParser
 from os import path
 from time import time
 
-from pyzx import VertexType
+import pyzx
 from termcolor import colored
 
 from qelebrimbor.analysis.cycles import CycleAnalyser
@@ -60,6 +60,7 @@ parser.add_argument(
     "-c",
     "--check-equivalence",
     action="store_true",
+    default=True,
     help="check equivalence of the final construct against the input ZX-graph.",
 )
 parser.add_argument(
@@ -146,7 +147,7 @@ def main() -> int:
 
     pyzx_input = PYZX.from_file(arguments.filepath)
     input_spider_count: int = sum(
-        1 for node in pyzx_input.vertices() if pyzx_input.type(node) in [VertexType.X, VertexType.Z]
+        1 for node in pyzx_input.vertices() if pyzx_input.type(node) in [pyzx.VertexType.X, pyzx.VertexType.Z]
     )
 
     if arguments.zx_coloring:
@@ -237,7 +238,7 @@ def main() -> int:
     if verbose:
         print("\nREPORTING STAGE.")
     else:
-        print(f"RUN:{'{:.3f}'.format(runtime).rjust(6, ' ')}s, ", end=" ")
+        print(f"RUN:{'{:.3f}'.format(runtime).rjust(6, ' ')}s,", end=" ")
     print_report(vzx, input_spider_count=input_spider_count, cycles=cycles, detailed=verbose)
 
     # Outputting stage
@@ -265,23 +266,34 @@ def main() -> int:
     # Validation stage
     if arguments.check_equivalence:
         with open(arguments.filepath, "r") as file:
-            pyzx_input = pyzx_input.Graph().from_json(file.read())
-        pyzx_output = PYZX.into_pyzx_graph(vzx)
-        # TODO: fix the labelling of BOUNDARIES in vzx.into_pyzx_graph(..) to match that of pyzx_input
-        pyzx_input.auto_detect_io()
-        pyzx_output.auto_detect_io()
+            pyzx_input = pyzx.Graph().from_json(file.read())
 
         try:
+            pyzx_output = PYZX.into_pyzx_graph(vzx)
+            # Reset the inputs/outputs identification that was lost in the construction process.
+            pyzx_output.set_inputs(pyzx_input.inputs())
+            pyzx_output.set_outputs(pyzx_input.outputs())
+
             composition = pyzx_input.copy()
             composition.compose(pyzx_output.adjoint())
-            pyzx_input.full_reduce(composition)
-            equivalent_graphs = "SUCCESS" if composition.is_id() else "FAILURE"
-        except TypeError:
-            equivalent_graphs = "FAILURE"
+            pyzx.full_reduce(composition)
+            validation_successful = composition.is_id()
+        except Exception:
+            validation_successful = None
+
+        if validation_successful is None:
+            status, color = ("EXCEPTION", "yellow")
+        elif validation_successful:
+            status, color = ("SUCCESS", "green")
+        else:
+            status, color = ("FAILURE", "red")
+        equivalent_graphs = colored(status, color, attrs=["bold"], force_color=True)
+
         if verbose:
-            print(
-                f"Equivalence between input and output ZX-graphs [composition-with-adjoint method] : {equivalent_graphs}"  # noqa: E501
-            )
+            print("\nEQUIVALENCE VALIDATION STAGE.")
+            print(f"> Is composition of input with adjoint of blockgraph the identity ? {equivalent_graphs}")
+        else:
+            print(f"EQUIVALENCE:{equivalent_graphs}")
 
     # Visualisation stage
     if arguments.visualization or arguments.force_visualization:

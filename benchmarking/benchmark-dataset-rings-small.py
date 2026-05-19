@@ -41,7 +41,8 @@ if __name__ == "__main__":
         try:
             DefaultPreprocessor().process(pyzx_input)
         except KeyError as ke:
-            print(f"> {input_path.ljust(longest_file_name, ' ')} : {ke}")
+            print(f"> {input_path.ljust(longest_file_name, ' ')}")
+            raise ke
         vzx = PYZX.from_pyzx_graph(pyzx_input)
 
         number_of_connected_components = nx.number_connected_components(cast(nx.Graph, vzx))
@@ -49,11 +50,14 @@ if __name__ == "__main__":
             print(f"> {input_path.ljust(longest_file_name, ' ')} :", end=" ")
 
             try:
-                subprocess.run(
-                    [f"python ../qb.py -s {benchmark.DATASET_DIRECTORY}/{input_path} 2> /dev/null"],
+                result = subprocess.run(
+                    [f"python ../qb.py -cs {benchmark.DATASET_DIRECTORY}/{input_path} 2> /dev/null"],
                     shell=True,
                     timeout=20,
+                    capture_output=True,
+                    text=True,
                 )
+                print(result.stdout, end="")
             except subprocess.TimeoutExpired:
                 print("ABORTED RUN [longer than 20 seconds].")
                 continue

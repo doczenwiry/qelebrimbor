@@ -172,28 +172,23 @@ def print_report(vzx: VolumetricZxGraph, input_spider_count: int, cycles: list[Z
         print(
             f">>> Insufficient ports : {insufficient_ports_count}/{vzx.number_of_nodes()} [{insufficient_ports_rate}]"
         )
-        # print(
-        #     f">>> Unrealised Endpoints Rate (0/1/2) : {unrealised_0_endpoints_rate}/{unrealised_1_endpoints_rate}/{unrealised_2_endpoints_rate}"  # noqa: E501
-        # )
 
         volume_digits = int(math.log10(total_volume)) + 1 if total_volume > 0 else 0
         print(
             f">> {colored('Total volume', attrs=['underline'], force_color=True)}   :  {str(total_volume).rjust(volume_digits, ' ')}"  # noqa: E501
         )
-        # print(f">> Spider Volume :  {str(spider_volume).rjust(volume_digits, ' ')}")
-        # print(f">> Excess Volume : +{str(excess_volume).rjust(volume_digits, ' ')}")
 
         print(f">> Internal Inflation Rate : {internal_inflation_rate} [required:{required_inflation_rate}]")
         print(
             f"> {colored('Achieved Inflation Rate', attrs=['underline'], force_color=True)} : {achieved_inflation_rate}"
         )
     else:
-        summary = f"NRR:{node_realisation_rate}, "
-        summary += f"ERR:{edge_realisation_rate}, "
-        summary += f"AIR:{achieved_inflation_rate}, "
+        summary = f"INRR:{node_realisation_rate}, "
+        summary += f"IERR:{edge_realisation_rate}, "
+        summary += f"IPR:{insufficient_ports_rate}, "
         summary += f"IIR:{internal_inflation_rate}, "
         summary += f"RIR:{required_inflation_rate}, "
-        summary += f"IPR:{insufficient_ports_rate}, "
+        summary += f"AIR:{achieved_inflation_rate}, "
         summary += f"SC:{str(input_spider_count).rjust(4, ' ')}, "
-        summary += f"TV:{str(total_volume).rjust(4, ' ')}, "
-        print(summary)
+        summary += f"TV:{str(total_volume).rjust(4, ' ')},"
+        print(summary, end=" ")

@@ -109,7 +109,7 @@ class VolumetricZxGraph(nx.Graph):
                 self.add_edge(zx_source.id, zx_target.id)
                 self.edges[zx_source.id, zx_target.id][VolumetricZxGraph.KEY_ZX_EDGE] = zx_edge
 
-        self.__next_cube_id = self.number_of_nodes()
+        self.__next_cube_id = max(self.nodes) + 1 if len(self.nodes) > 0 else 0
 
     def get_zx_nodes(
         self,
