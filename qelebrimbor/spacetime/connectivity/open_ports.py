@@ -46,11 +46,12 @@ class TrackingInformation(RecordClass):
 
 
 class OpenPortsTracker(ConnectivityTracker):
-    def __init__(self, graph: VolumetricZxGraph):
+    def __init__(self, graph: VolumetricZxGraph, equivalence_under_fusion: bool = True):
         self.__graph = graph
         self.__spacetime = graph.spacetime
         self.__reserved_ports: dict[BgCube, TrackingInformation] = dict()
         self.__ports_holders: dict[Port, BgCube] = dict()
+        self.__equivalence_under_fusion = equivalence_under_fusion
 
     def preserved(self, start: BgCube, final: BgCube, position: Coordinates) -> bool:
         if position not in self.__ports_holders:
@@ -59,7 +60,7 @@ class OpenPortsTracker(ConnectivityTracker):
         holder = self.__ports_holders[position]
         return holder == start or holder == final or self.__reserved_ports[holder].remaining > 0
 
-    def available(self, start: BgCube, final: BgCube, fusion: bool = True) -> bool:
+    def available(self, start: BgCube, final: BgCube) -> bool:
         if start not in self.__reserved_ports:
             console.warning(f"Impossible to infer connectability due to unknown status of {start}")
 
@@ -69,7 +70,7 @@ class OpenPortsTracker(ConnectivityTracker):
         if self.__reserved_ports[start].reachable and self.__reserved_ports[final].reachable:
             return True
 
-        if fusion:
+        if self.__equivalence_under_fusion:
             eq_start_ports: set[Port] = set()
             for eq_start in self.__graph.get_equivalent_bg_cubes(start):
                 eq_start_ports.update(self.__spacetime.available_ports(eq_start.position, eq_start.kind.reach))

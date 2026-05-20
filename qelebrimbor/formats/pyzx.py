@@ -27,9 +27,9 @@ console = logging.getLogger(__name__)
 
 class PYZX:
     @staticmethod
-    def into_file(graph: VolumetricZxGraph, filepath: str, planar_scale: int = 1) -> None:
+    def into_file(graph: pyzx.graph.base.BaseGraph, filepath: str) -> None:
         with open(filepath, "w") as file:
-            file.write(PYZX.into_pyzx_graph(graph, planar_scale).to_json())
+            file.write(graph.to_json())
 
     @staticmethod
     def from_file(filepath: str) -> pyzx.graph.base.BaseGraph:

@@ -171,10 +171,12 @@ def main() -> int:
         print(f"> Applying preprocessor : {preprocessor.__class__.__name__}")
 
     start = time()
-    if preprocessor is not None:
-        preprocessor.process(pyzx_input)
+    pyzx_internal: pyzx.graph.base.BaseGraph = PYZX.from_file(arguments.filepath)
 
-    vzx = PYZX.from_pyzx_graph(pyzx_input)
+    if preprocessor is not None:
+        preprocessor.process(pyzx_internal)
+
+    vzx = PYZX.from_pyzx_graph(pyzx_internal)
     cycles: list[ZxCycle]
 
     if verbose:
@@ -249,10 +251,24 @@ def main() -> int:
         if verbose:
             print("\nOUTPUTTING STAGE.")
         if arguments.output_pyzx:
+            output = path.splitext(arguments.filepath)[0] + str(".internal.json")
+            if verbose:
+                print(f"> Writing PyZX internal to {output}")
+
+            PYZX.into_file(pyzx_internal, output)
+
             output = path.splitext(arguments.filepath)[0] + str(".compiled.json")
             if verbose:
-                print(f"> Writing PyZX output to {output}")
-            PYZX.into_file(vzx, output)
+                print(f"> Writing PyZX compiled to {output}")
+
+            pyzx_output = PYZX.into_pyzx_graph(vzx)
+            # Reset the inputs/outputs identification that was lost in the construction process.
+            if all(node.is_realised() for node in vzx.get_zx_nodes()):
+                pyzx_output.set_inputs(pyzx_input.inputs())
+                pyzx_output.set_outputs(pyzx_input.outputs())
+                pyzx_output.normalize()
+
+            PYZX.into_file(pyzx_output, output)
 
         if arguments.output_tqec:
             output = path.splitext(arguments.filepath)[0] + str(".tqec")
@@ -268,35 +284,48 @@ def main() -> int:
 
     # Validation stage
     if arguments.check_equivalence:
-        with open(arguments.filepath, "r") as file:
-            pyzx_input = pyzx.Graph().from_json(file.read())
+        if verbose:
+            print("\nEQUIVALENCE VALIDATION STAGE.")
 
-        try:
+        if all(node.is_realised() for node in vzx.get_zx_nodes()):
             pyzx_output = PYZX.into_pyzx_graph(vzx)
             # Reset the inputs/outputs identification that was lost in the construction process.
             pyzx_output.set_inputs(pyzx_input.inputs())
             pyzx_output.set_outputs(pyzx_input.outputs())
+            pyzx_output.normalize()
 
-            composition = pyzx_input.copy()
-            composition.compose(pyzx_output.adjoint())
-            pyzx.full_reduce(composition)
-            validation_successful = composition.is_id()
-        except Exception:
-            validation_successful = None
+            method = "iCwAI"
+            try:
+                composition = pyzx_input.copy()
+                composition.compose(pyzx_output.adjoint())
+                pyzx.full_reduce(composition)
+                validation_successful = composition.is_id()
+            except Exception:
+                validation_successful = None
 
-        if validation_successful is None:
-            status, color = ("EXCEPTION", "yellow")
-        elif validation_successful:
-            status, color = ("SUCCESS", "green")
+            if validation_successful is False and pyzx_input.qubit_count() <= 8:
+                try:
+                    method = "CT"
+                    validation_successful = pyzx.compare_tensors(pyzx_input, pyzx_output)
+                except Exception:
+                    validation_successful = None
+
+            if validation_successful is None:
+                status, color = ("EXCEPTION", "yellow")
+            elif validation_successful:
+                status, color = ("SUCCESS", "green")
+            else:
+                status, color = ("FAILURE", "red")
         else:
             status, color = ("FAILURE", "red")
+            method = "completeness"
+
         equivalent_graphs = colored(status, color, attrs=["bold"], force_color=True)
 
         if verbose:
-            print("\nEQUIVALENCE VALIDATION STAGE.")
-            print(f"> Is composition of input with adjoint of blockgraph the identity ? {equivalent_graphs}")
+            print(f"> Is input equivalent to output [method:{method}] ? {equivalent_graphs}")
         else:
-            print(f"EQUIVALENCE:{equivalent_graphs}")
+            print(f"EQUIVALENCE-{method.upper()}:{equivalent_graphs}")
 
     # Visualisation stage
     if arguments.visualization or arguments.force_visualization:

@@ -121,7 +121,7 @@ if __name__ == "__main__":
     viewer = VolumetricZxGraphViewer(vzx, label="steane-code-7", layout=hexagon)
     viewer.display()
 
-    PYZX.into_file(
-        vzx,
-        filepath="../assets/pyzx/steane/steane-code-qubits7-spiders8-alt-blockgraph.json",
-    )
+    # PYZX.into_file(
+    #     vzx,
+    #     filepath="../assets/pyzx/steane/steane-code-qubits7-spiders8-alt-blockgraph.json",
+    # )
