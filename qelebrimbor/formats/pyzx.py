@@ -48,7 +48,8 @@ class PYZX:
             for edge in graph.get_zx_edges()
         )
 
-        if layer_qubit_information_missing or non_circuit_pyzx_graph:
+        planar_blockgraph, _ = nx.check_planarity(graph.blockgraph)
+        if (layer_qubit_information_missing or non_circuit_pyzx_graph) and planar_blockgraph:
             for cube_id, coordinates in nx.planar_layout(graph.blockgraph, scale=planar_scale).items():
                 layout[graph.get_bg_cube(cube_id)] = tuple(coordinates)
         else:

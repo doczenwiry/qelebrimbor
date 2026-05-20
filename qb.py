@@ -287,7 +287,9 @@ def main() -> int:
         if verbose:
             print("\nEQUIVALENCE VALIDATION STAGE.")
 
-        if all(node.is_realised() for node in vzx.get_zx_nodes()):
+        if all(node.is_realised() for node in vzx.get_zx_nodes()) and all(
+            edge.is_realised() for edge in vzx.get_zx_edges()
+        ):
             pyzx_output = PYZX.into_pyzx_graph(vzx)
             # Reset the inputs/outputs identification that was lost in the construction process.
             pyzx_output.set_inputs(pyzx_input.inputs())
@@ -318,7 +320,7 @@ def main() -> int:
                 status, color = ("FAILURE", "red")
         else:
             status, color = ("FAILURE", "red")
-            method = "completeness"
+            method = "COMPL"
 
         equivalent_graphs = colored(status, color, attrs=["bold"], force_color=True)
 
