@@ -92,7 +92,7 @@ class ZxGraphInflaterRings:
         selected: ZxChain | None = None
         for chain in all_chains:
             if selected:
-                if chain.length < selected.length or (
+                if chain.length > selected.length or (
                     chain.length == selected.length and chain.distance > selected.distance
                 ):
                     selected = chain
