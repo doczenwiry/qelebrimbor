@@ -53,11 +53,6 @@ class CycleUntangler(Preprocessor):
         new_spider_id: int = max(node.id for node in vzx.get_zx_nodes()) + 1
         cycles = CycleAnalyser.decompose(vzx, minimal=True)
 
-        if any(cycle.length % 2 != 0 for cycle in cycles):
-            for cycle in cycles:
-                console.debug(f"> Cycle [{cycle.length}] : {cycle}")
-            raise Exception("Odd cycle present ...")
-
         completed: bool = False
         while not completed:
             spider_to_split: tuple[ZxNode, ZxNode, ZxNode] | None = None
@@ -102,7 +97,7 @@ class CycleUntangler(Preprocessor):
             vzx = PYZX.from_pyzx_graph(input)
             cycles = CycleAnalyser.decompose(vzx, minimal=True)
 
-            if any(cycle.length % 2 != 0 for cycle in cycles):
-                for cycle in cycles:
-                    console.debug(f"> Cycle [{cycle.length}] : {cycle}")
-                raise Exception("Odd cycle introduced ...")
+            # if any(cycle.length % 2 != 0 for cycle in cycles):
+            #     for cycle in cycles:
+            #         console.debug(f"> Cycle [{cycle.length}] : {cycle}")
+            #     raise Exception("Odd cycle present ...")
