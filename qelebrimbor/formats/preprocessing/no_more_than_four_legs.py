@@ -26,11 +26,9 @@ console = logging.getLogger(__name__)
 
 
 # TODO: guarantee determinism of process(..) method !!
-class DefaultPreprocessor(Preprocessor):
+class NoMoreThanFourLegs(Preprocessor):
     @staticmethod
     def process(input: pyzx.graph.base.BaseGraph) -> None:
-        pyzx.full_reduce(input)
-
         vzx = PYZX.from_pyzx_graph(input)
         next_node_id: int = max(node.id for node in vzx.get_zx_nodes()) + 1
 
@@ -50,6 +48,7 @@ class DefaultPreprocessor(Preprocessor):
                     else:
                         other_neighbors.add(neighbor)
                 nodes_to_split.append((node, cycle_neighbors, other_neighbors))
+                print(f">> Node : {node} [cd:{len(cycle_neighbors)}, od:{len(other_neighbors)}]")
 
         for node, c_neighbors, o_neighbors in nodes_to_split:
             console.debug(f">> Node {node} has cycle-degree {len(c_neighbors)} and other-degree {len(o_neighbors)}")
@@ -88,4 +87,6 @@ class DefaultPreprocessor(Preprocessor):
                             edge = input.edge(source, target)
                             edge_type = input.edge_type(edge)
                             input.remove_edge(edge)
-                            input.add_edge((new, neighbor.id), edge_type)
+
+                            source, target = min(new, neighbor.id), max(new, neighbor.id)
+                            input.add_edge((source, target), edge_type)

@@ -35,6 +35,18 @@ class ZxCycle:
     def length(self) -> int:
         return len(self.__nodes)
 
+    def preceding(self, node: ZxNode) -> ZxNode:
+        for index, current in enumerate(self.__nodes):
+            if current.id == node.id:
+                return self.__nodes[(index - 1) % self.length]
+        raise Exception(f"Node {node} not found in cycle {self}.")
+
+    def following(self, node: ZxNode) -> ZxNode:
+        for index, current in enumerate(self.__nodes):
+            if current.id == node.id:
+                return self.__nodes[(index + 1) % self.length]
+        raise Exception(f"Node {node} not found in cycle {self}.")
+
     def contains(self, node: ZxNode) -> bool:
         return node in self.nodes
 

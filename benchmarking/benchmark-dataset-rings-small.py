@@ -20,7 +20,7 @@ import benchmark
 import networkx as nx
 
 from qelebrimbor.analysis.cycles import CycleAnalyser
-from qelebrimbor.formats.preprocessing.default import DefaultPreprocessor
+from qelebrimbor.formats.preprocessing.no_more_than_four_legs import NoMoreThanFourLegs
 from qelebrimbor.formats.pyzx import PYZX
 
 logging.basicConfig(level=logging.INFO)
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     for input_path in dataset_filenames:
         pyzx_input = PYZX.from_file(benchmark.DATASET_DIRECTORY + "/" + input_path)
         try:
-            DefaultPreprocessor().process(pyzx_input)
+            NoMoreThanFourLegs().process(pyzx_input)
         except KeyError as ke:
             print(f"> {input_path.ljust(longest_file_name, ' ')}")
             raise ke

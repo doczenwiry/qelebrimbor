@@ -25,8 +25,7 @@ from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.analysis.vzx_analyser import VolumetricZxGraphAnalyser
 from qelebrimbor.core.zx import attributes as zx_attributes
 from qelebrimbor.core.zx.cycle import ZxCycle
-from qelebrimbor.formats.preprocessing.abstract import Preprocessor
-from qelebrimbor.formats.preprocessing.default import DefaultPreprocessor
+from qelebrimbor.formats.preprocessing.cycle_untangler import CycleUntangler
 from qelebrimbor.formats.preprocessing.full_reduce import FullReduce
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
@@ -39,6 +38,7 @@ from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 from qelebrimbor.vedo.zx_layout.planar import PlanarLayout
 
 logging.basicConfig(level=logging.CRITICAL)
+logging.getLogger("qelebrimbor.formats.preprocessing").setLevel(logging.DEBUG)
 
 parser = ArgumentParser(
     prog="qb",
@@ -139,12 +139,6 @@ def main() -> int:
     if arguments.filepath is None:
         raise Exception("Filepath to a *.json file required.")
 
-    preprocessor: Preprocessor | None = None
-    if arguments.preprocessor == "full-reduce":
-        preprocessor = FullReduce()
-    elif arguments.preprocessor == "default":
-        preprocessor = DefaultPreprocessor()
-
     verbose: bool = not arguments.summary
 
     pyzx_input = PYZX.from_file(arguments.filepath)
@@ -166,15 +160,21 @@ def main() -> int:
         print(f"> Completed in {'{:.2f}'.format(runtime)} seconds.")
 
     # Preprocessing stage.
+    pyzx_internal: pyzx.graph.base.BaseGraph = PYZX.from_file(arguments.filepath)
     if verbose:
         print("\nPREPROCESSING STAGE.")
-        print(f"> Applying preprocessor : {preprocessor.__class__.__name__}")
 
     start = time()
-    pyzx_internal: pyzx.graph.base.BaseGraph = PYZX.from_file(arguments.filepath)
 
-    if preprocessor is not None:
-        preprocessor.process(pyzx_internal)
+    if arguments.preprocessor != "none":
+        if verbose:
+            print(f"> Applying preprocessor : {FullReduce.__name__}")
+        FullReduce.process(pyzx_internal)
+
+        if arguments.preprocessor == "default":
+            if verbose:
+                print(f"> Applying preprocessor : {CycleUntangler.__name__}")
+            CycleUntangler.process(pyzx_internal)
 
     vzx = PYZX.from_pyzx_graph(pyzx_internal)
     cycles: list[ZxCycle]
@@ -186,6 +186,13 @@ def main() -> int:
         print(f"> Completed in {'{:.2f}'.format(runtime)} seconds.")
     else:
         cycles = CycleAnalyser.decompose(graph=vzx, minimal=True)
+
+    if arguments.output_pyzx:
+        output = path.splitext(arguments.filepath)[0] + str(".internal.json")
+        if verbose:
+            print(f"> Writing PyZX internal to {output}")
+
+        PYZX.into_file(pyzx_internal, output)
 
     if arguments.analysis:
         return 0
@@ -251,12 +258,6 @@ def main() -> int:
         if verbose:
             print("\nOUTPUTTING STAGE.")
         if arguments.output_pyzx:
-            output = path.splitext(arguments.filepath)[0] + str(".internal.json")
-            if verbose:
-                print(f"> Writing PyZX internal to {output}")
-
-            PYZX.into_file(pyzx_internal, output)
-
             output = path.splitext(arguments.filepath)[0] + str(".compiled.json")
             if verbose:
                 print(f"> Writing PyZX compiled to {output}")
@@ -338,7 +339,7 @@ def main() -> int:
                 label=arguments.filepath,
                 size=window_size,
                 cycles=cycles,
-                layout=PlanarLayout(vzx, scale=3.0) if preprocessor is not None else CircuitLayout(vzx),
+                layout=PlanarLayout(vzx, scale=3.0) if arguments.preprocessor != "none" else CircuitLayout(vzx),
             )
             viewer.display()
         elif verbose:
