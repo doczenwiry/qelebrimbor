@@ -42,7 +42,7 @@ class CycleAnalyser:
             return False
 
     @staticmethod
-    def analyse(graph: VolumetricZxGraph, plot: bool = False, minimal: bool = False) -> list[ZxCycle]:
+    def analyse(graph: VolumetricZxGraph, plot: bool = False, minimal: bool = True) -> list[ZxCycle]:
         start = time()
         zx_cycles = CycleAnalyser.decompose(graph, minimal)
         runtime = round(time() - start, 2)
@@ -75,7 +75,7 @@ class CycleAnalyser:
         return zx_cycles
 
     @staticmethod
-    def decompose(graph: VolumetricZxGraph, minimal: bool = False) -> list[ZxCycle]:
+    def decompose(graph: VolumetricZxGraph, minimal: bool = True) -> list[ZxCycle]:
         zx_cycles: list[ZxCycle] = []
 
         nxg = cast(nx.Graph, graph)
