@@ -14,6 +14,7 @@
 
 
 import logging
+from typing import Iterable
 
 from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.bg.strand import Strand
@@ -30,17 +31,19 @@ console = logging.getLogger(__name__)
 
 class PainterZxChainFusion:
     @staticmethod
-    def paintable(colorless: ColorlessPath, chain: ZxChain, final: BgCube) -> bool:
-        return PainterZxChainFusion.paint(colorless, chain, final) is not None
+    def paintable(colorless: ColorlessPath, chain: ZxChain, starts: Iterable[BgCube], finals: Iterable[BgCube]) -> bool:
+        return PainterZxChainFusion.paint(colorless, chain, starts, finals) is not None
 
     @staticmethod
-    def paint(colorless: ColorlessPath, chain: ZxChain, final: BgCube) -> Strand | None:
-        start: BgCube = chain.source.realising_cube
-        # final: BgCube = chain.target.realising_cube
+    def paint(
+        colorless: ColorlessPath, chain: ZxChain, starts: Iterable[BgCube], finals: Iterable[BgCube]
+    ) -> Strand | None:
+        console.debug(f"Attempting to paint {colorless} using {chain} with {starts}/{finals}")
 
-        console.debug(f"Attempting to paint {colorless} using {chain} with final:{final}")
+        start = next((s for s in starts if s.position == colorless.start), None)
+        final = next((f for f in finals if f.position == colorless.final), None)
 
-        if colorless.start != start.position or colorless.final != final.position:
+        if start is None or final is None:
             return None
 
         # The ColorlessPath is not compatible if its first step doesn't lie in the reach of start.

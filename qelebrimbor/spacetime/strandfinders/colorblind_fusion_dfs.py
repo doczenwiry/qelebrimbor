@@ -13,6 +13,7 @@
 #   limitations under the License.
 
 import heapq
+import itertools
 import logging
 from typing import Iterable
 
@@ -73,8 +74,12 @@ class StrandfinderColorblindFusionDFS:
         :return: A Path or None if no path was found.
         """
         # Prepare the parameters for the search
-        start = goal.source.realising_cube
+        # start = goal.source.realising_cube
+        starts: Iterable[BgCube] = self.__graph.get_equivalent_bg_cubes(goal.source.realising_cube)
         finals: Iterable[BgCube] = self.__graph.get_equivalent_bg_cubes(goal.target.realising_cube)
+
+        console.debug(f"Starts: {starts}")
+        console.debug(f"Finals: {finals}")
 
         nodes = list(goal.nodes)
         edges = list(goal.edges)
@@ -91,9 +96,12 @@ class StrandfinderColorblindFusionDFS:
         node_type_nr = len(node_types)
 
         # Maximal length of acceptable strands
-        closest_cube = min(finals, key=lambda fnl: start.position.get_manhattan_distance(fnl.position))
+        closest_start, closest_final = min(
+            itertools.product(starts, finals),
+            key=lambda pair: pair[0].position.get_manhattan_distance(pair[1].position),
+        )
         maximal_length = (
-            max(goal.length, start.position.get_manhattan_distance(closest_cube.position)) + maximal_excess
+            max(goal.length, closest_start.position.get_manhattan_distance(closest_final.position)) + maximal_excess
             if maximal_excess is not None
             else None
         )
@@ -104,22 +112,24 @@ class StrandfinderColorblindFusionDFS:
             SpacetimeTracer(pruning=self.__branch_and_bound, reporting=self.__reporting) if self.__reporting else None
         )
         if tracer:
-            tracer.add_node(start.position, label=str(start.position))
+            for start in starts:
+                tracer.add_node(start.position, label=str(start.position))
 
         # Main variables of the DFS
         optimum: Strand | None = None
         unrelaxed: list[tuple[int, ColorlessPath]] = []
 
-        initial = ColorlessPath(start=start.position)
-        heapq.heappush(
-            unrelaxed,
-            (
-                StrandfinderColorblindFusionDFS.heuristic(start.position, closest_cube.position, node_types),
-                initial,
-            ),
-        )
+        for start in starts:
+            initial = ColorlessPath(start=start.position)
+            hvalue = StrandfinderColorblindFusionDFS.heuristic(start.position, closest_final.position, node_types)
+            closest_final = min(finals, key=lambda final: start.position.get_manhattan_distance(final.position))
+            console.info(f"Initial : {initial} [{hvalue}]")
+            heapq.heappush(
+                unrelaxed,
+                (hvalue, initial),
+            )
 
-        console.info(f"Searching for strand for {start} -> {nodes} -> {closest_cube} {extra}")
+        console.info(f"Searching for strand for {starts} -> {nodes} -> {finals} {extra}")
 
         while len(unrelaxed) > 0 and (self.__branch_and_bound or optimum is None):
             # Restore the heap invariant
@@ -160,7 +170,7 @@ class StrandfinderColorblindFusionDFS:
                     candidate: ColorlessPath = current.extend(final.position, ignore_occupied=True)
                     console.debug(f"Candidate ColorlessStrand [final:{final}] : {candidate}")
 
-                    strand = PainterZxChainFusion.paint(candidate, goal, final)
+                    strand = PainterZxChainFusion.paint(candidate, goal, starts, finals)
                     console.debug(f"> Paint result : {strand}")
 
                     if strand is not None:
@@ -178,7 +188,7 @@ class StrandfinderColorblindFusionDFS:
             # Restrict the outgoing paths to lie in the reach of the CubeKind of the start.
             constellation = SpacetimeHelper.get_constellation(
                 position=terminal,
-                restriction=start.kind.get_reach() if current.length == 0 else None,
+                # restriction=start.kind.get_reach() if current.length == 0 else None,
             )
 
             console.debug(f"{'>' * (current.length + 2)} {terminal} has constellation : {constellation}")
