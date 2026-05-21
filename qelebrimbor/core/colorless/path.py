@@ -76,22 +76,22 @@ class ColorlessPath:
     def visits(self, position: Coordinates):
         return position in self.__occupied
 
-    def append(self, position: Coordinates):
+    def append(self, position: Coordinates, ignore_occupied: bool = False):
         if self.final.get_manhattan_distance(position) != 1:
             raise Exception(f"Attempting to extend Path {self} with non-adjacent position {position}.")
 
-        if position in self.__occupied:
+        if not ignore_occupied and position in self.__occupied:
             raise Exception(f"Attempting to extend Path {self} with occupied position {position}.")
 
         self.__positions.append(position)
         self.__occupied.add(position)
 
-    def extend(self, position: Coordinates):
+    def extend(self, position: Coordinates, ignore_occupied: bool = False):
         cp = ColorlessPath(self.start)
         cp.__positions.extend(self.__positions[1:])
         cp.__occupied.update(self.__occupied)
 
-        cp.append(position)
+        cp.append(position, ignore_occupied=ignore_occupied)
 
         return cp
 

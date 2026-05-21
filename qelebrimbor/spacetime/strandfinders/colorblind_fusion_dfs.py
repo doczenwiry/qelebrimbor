@@ -157,8 +157,8 @@ class StrandfinderColorblindFusionDFS:
                     if not SpacetimeHelper.contains(final.kind.get_reach(), final.position - terminal):
                         continue
 
-                    candidate: ColorlessPath = current.extend(final.position)
-                    console.info(f"Candidate ColorlessStrand [final:{final}] : {candidate}")
+                    candidate: ColorlessPath = current.extend(final.position, ignore_occupied=True)
+                    console.debug(f"Candidate ColorlessStrand [final:{final}] : {candidate}")
 
                     strand = PainterZxChainFusion.paint(candidate, goal, final)
                     console.debug(f"> Paint result : {strand}")

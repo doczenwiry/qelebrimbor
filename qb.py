@@ -38,7 +38,6 @@ from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 from qelebrimbor.vedo.zx_layout.planar import PlanarLayout
 
 logging.basicConfig(level=logging.CRITICAL)
-logging.getLogger("qelebrimbor.formats.preprocessing").setLevel(logging.DEBUG)
 
 parser = ArgumentParser(
     prog="qb",

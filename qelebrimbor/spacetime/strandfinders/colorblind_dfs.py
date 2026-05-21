@@ -149,7 +149,7 @@ class StrandfinderColorblindDFS:
                     continue
 
                 candidate: ColorlessPath = current.extend(final.position)
-                console.info(f"Candidate ColorlessStrand : {candidate}")
+                console.debug(f"Candidate ColorlessStrand : {candidate}")
 
                 strand = PainterZxChain.paint(candidate, goal)
 

@@ -95,6 +95,55 @@ class CycleAnalyser:
         return list(sorted(zx_cycles, key=len, reverse=True))
 
     @staticmethod
+    def extract(cycle: ZxCycle) -> ZxChain | None:
+        if len(cycle) < 2:
+            raise Exception("Cannot breakdown cycle with less than 2 edges.")
+
+        nodes = list(cycle.nodes)
+        edges = list(cycle.edges)
+
+        chain_nodes: list[ZxNode] = []
+        chain_edges: list[ZxEdge] = []
+
+        console.debug(f"> Breaking down cycle {cycle}")
+
+        # Identify the start of the chain where the preceding node is realised but its following edge is not
+        preceding_node: ZxNode = nodes[0]
+        following_edge: ZxEdge = edges[0]
+        index = 0
+        count = 0
+        while not (preceding_node.is_realised() and not following_edge.is_realised()) and count < len(cycle):
+            index = (index + 1) % len(cycle)
+            preceding_node = nodes[index]
+            following_edge = edges[index]
+            count += 1
+
+        if count == cycle.length:
+            console.debug(f"> Cycle {cycle} has no unrealised chain.")
+            return None
+
+        chain = ZxChain(source=preceding_node)
+        index = (index + 1) % cycle.length
+        following_node: ZxNode = nodes[index]
+        console.debug(f"Found start of chain : {chain.source}")
+
+        # Construct the chain from index up to and including the last edge that is realised
+        count = 0
+        while not following_node.is_realised() and count < len(cycle):
+            chain.append(following_node, following_edge)
+            following_edge = edges[index]
+            index = (index + 1) % cycle.length
+            following_node = nodes[index]
+            count += 1
+
+        chain.append(following_node, following_edge)
+
+        console.debug(f"Found final of chain : {chain.target}")
+        console.debug(f"Chain identified : {chain_nodes} , {chain_edges}")
+
+        return chain
+
+    @staticmethod
     def breakdown(cycle: ZxCycle) -> ZxChain | None:
         if len(cycle) < 2:
             raise Exception("Cannot breakdown cycle with less than 2 edges.")
@@ -149,7 +198,7 @@ class CycleAnalyser:
 
             if any(node.is_realised() for node in nodes):
                 console.debug(f"> Cycle {cycle} intersects current construct.")
-                chain: ZxChain | None = CycleAnalyser.breakdown(cycle)
+                chain: ZxChain | None = CycleAnalyser.extract(cycle)
                 if chain is not None:
                     console.debug(f"> Chain found : {chain}")
                     chains.append(chain)
