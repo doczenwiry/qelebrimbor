@@ -37,6 +37,9 @@ class ZxGraphInflaterRings:
         self.__zx_cycles = cycles
 
     def process(self, abort_on_failure: bool = True, abort_on_index: int = -1) -> int:
+        if self.__verbose:
+            print(f">> Ringfinder   : {self.__ringfinder.__class__.__name__}")
+            print(f">> Strandfinder : {self.__strandfinder.__class__.__name__}")
         zx_cycles = self.__zx_cycles
 
         count: int = 0
