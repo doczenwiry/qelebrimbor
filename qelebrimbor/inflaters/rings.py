@@ -155,12 +155,15 @@ class ZxGraphInflaterRings:
             return -1
 
         excess_volume = strand.length - chain.length
+        colored_ev = colored(
+            "+" + str(excess_volume), "red" if excess_volume != 0 else "green", attrs=["bold"], force_color=True
+        )
         console.info(f"Found a suitable strand for chain [EV:+{excess_volume}] : {strand}")
 
         self.__graph.realise_zx_chain(chain, strand)
 
         if self.__verbose:
-            print(f">>> Realised as strand [EV:+{excess_volume}] : {strand}")
+            print(f">>> Realised as strand [EV:{colored_ev}] : {strand}")
 
         # Reserve the ports for all the nodes that were realised as part of this ring.
         for node in chain.nodes:

@@ -21,6 +21,7 @@ from qelebrimbor.core.bg.strand import Strand
 from qelebrimbor.core.colorless.path import ColorlessPath
 from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.coordinates import Coordinates
+from qelebrimbor.core.reach import Reach
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.core.zx.chain import ZxChain
@@ -76,6 +77,7 @@ class StrandfinderColorblindFusionDFS:
         # Prepare the parameters for the search
         # start = goal.source.realising_cube
         starts: Iterable[BgCube] = self.__graph.get_equivalent_bg_cubes(goal.source.realising_cube)
+        start_reach: Reach = next(iter(starts)).reach
         finals: Iterable[BgCube] = self.__graph.get_equivalent_bg_cubes(goal.target.realising_cube)
 
         console.debug(f"Starts: {starts}")
@@ -188,7 +190,7 @@ class StrandfinderColorblindFusionDFS:
             # Restrict the outgoing paths to lie in the reach of the CubeKind of the start.
             constellation = SpacetimeHelper.get_constellation(
                 position=terminal,
-                # restriction=start.kind.get_reach() if current.length == 0 else None,
+                restriction=start_reach.value if current.length == 0 else None,
             )
 
             console.debug(f"{'>' * (current.length + 2)} {terminal} has constellation : {constellation}")

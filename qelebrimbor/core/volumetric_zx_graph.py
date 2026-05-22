@@ -380,11 +380,10 @@ class VolumetricZxGraph(nx.Graph):
     def realise_zx_chain(self, chain: ZxChain, proposal: Strand):
         # Realise the successive nodes of the chain
         preceding_node: ZxNode = chain.source
+        path = Path(start=proposal.start)
         matching_index: int = 0  # The index of the extra cube corresponding to the preceding_node
         extra_cubes = list(proposal.extras)
         for following_node in chain.nodes:
-            path = Path(start=preceding_node.realising_cube)
-
             extra_cube = extra_cubes[matching_index]
             while extra_cube.realised_node != following_node and matching_index < len(extra_cubes) - 1:
                 path = path.extend(cube=extra_cube, pipe_type=proposal.pipes[matching_index])
@@ -398,10 +397,10 @@ class VolumetricZxGraph(nx.Graph):
             cube_id = self.realise_zx_node(following_node, extra_cube)  # noqa: F841
             self.realise_zx_edge(source=preceding_node.id, target=following_node.id, proposal=path)
             preceding_node = following_node
+            path = Path(start=preceding_node.realising_cube)
 
         # Realise the final edge to close the ring
         following: ZxNode = chain.target
-        path = Path(start=preceding_node.realising_cube)
 
         while matching_index < len(extra_cubes):
             extra_cube = extra_cubes[matching_index]
