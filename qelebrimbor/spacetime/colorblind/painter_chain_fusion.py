@@ -80,7 +80,11 @@ class PainterZxChainFusion:
                 if kind.reach not in reaches:
                     continue
 
+                # Prefer a kind that is compatible with the type of the current node.
                 if selected is None or (current_node is not None and kind.get_type() == current_node.type):
+                    selected = kind
+                # Fallback on the last cube kind otherwise
+                elif kind == last_cube.kind:
                     selected = kind
 
             # Handle internal error of logic.
