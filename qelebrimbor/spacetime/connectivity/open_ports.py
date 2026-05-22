@@ -74,12 +74,12 @@ class OpenPortsTracker(ConnectivityTracker):
             eq_start_ports: set[Port] = set()
             for eq_start in self.__graph.get_equivalent_bg_cubes(start):
                 eq_start_ports.update(self.__spacetime.available_ports(eq_start.position, eq_start.kind.reach))
-            start_sufficient = len(eq_start_ports) - self.__reserved_ports[start].required >= 0
+            start_sufficient = len(eq_start_ports) > 0  # - self.__reserved_ports[start].required >= 0
 
             eq_final_ports: set[Port] = set()
             for eq_final in self.__graph.get_equivalent_bg_cubes(final):
                 eq_final_ports.update(self.__spacetime.available_ports(eq_final.position, eq_final.kind.reach))
-            final_sufficient = len(eq_final_ports) - self.__reserved_ports[final].required >= 0
+            final_sufficient = len(eq_final_ports) > 0  # - self.__reserved_ports[final].required >= 0
 
             return start_sufficient and final_sufficient
         else:
