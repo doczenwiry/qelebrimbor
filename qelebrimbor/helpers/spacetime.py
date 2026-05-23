@@ -39,6 +39,12 @@ class Step(Enum):
     ZP = Coordinates(0, 0, +1)
     ZM = Coordinates(0, 0, -1)
 
+    def __str__(self) -> str:
+        return f"Step.{self.name}"
+
+    def __repr__(self) -> str:
+        return f"Step.{self.name}"
+
 
 class SpacetimeHelper:
     ORIGIN = Coordinates(0, 0, 0)
