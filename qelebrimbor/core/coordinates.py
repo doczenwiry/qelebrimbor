@@ -27,6 +27,9 @@ class Coordinates(NamedTuple):
     def __sub__(self, other):
         return Coordinates(self.x - other.x, self.y - other.y, self.z - other.z)
 
+    def __neg__(self):
+        return Coordinates(-self.x, -self.y, -self.z)
+
     def scale(self, scalar):
         if isinstance(scalar, (int, float)):
             return Coordinates(self.x * scalar, self.y * scalar, self.z * scalar)
