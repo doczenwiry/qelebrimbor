@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 import logging
-from typing import Iterator, cast
+from typing import cast
 
 from recordclass import RecordClass  # type: ignore[import-untyped]
 
@@ -28,30 +28,28 @@ console = logging.getLogger(__name__)
 class ZxNode(RecordClass):
     id: NodeId
     type: NodeType
-    __realising_cubes: set[object]
     qubit: QubitId = -1
     layer: LayerId = -1
+    __realising_cube: object | None = None
 
     def __init__(self, id: int, type: NodeType, qubit: QubitId = -1, layer: LayerId = -1):
         self.id = id
         self.type = type
         self.qubit = qubit
         self.layer = layer
-        self.__realising_cubes: set[BgCube] = set()
 
     def is_realised(self) -> bool:
-        return len(self.__realising_cubes) > 0
+        return self.realising_cube is not None
 
     @property
     def realising_cube(self) -> BgCube:
-        return next(iter(self.realising_cubes))
+        return cast(BgCube, self.__realising_cube)
 
-    @property
-    def realising_cubes(self) -> Iterator[BgCube]:
-        return iter(cast(BgCube, cube) for cube in self.__realising_cubes)
-
-    def add_realising_cube(self, value: BgCube):
-        self.__realising_cubes.add(value)
+    @realising_cube.setter
+    def realising_cube(self, value: BgCube):
+        if self.__realising_cube is not None:
+            raise Exception("Realising cube for a given ZxNode can only be set once.")
+        self.__realising_cube = value
 
     def __str__(self):
         content = f"{self.type}:N{str(self.id).ljust(1, ' ')}"

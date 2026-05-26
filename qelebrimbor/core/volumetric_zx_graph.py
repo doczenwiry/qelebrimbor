@@ -260,7 +260,7 @@ class VolumetricZxGraph(nx.Graph):
 
         cube_id = self.place_cube(cube)
         self.blockgraph.nodes[cube_id][VolumetricZxGraph.KEY_BG_CUBE].realised_node = node
-        self.nodes[node.id][VolumetricZxGraph.KEY_ZX_NODE].add_realising_cube(cube)
+        self.nodes[node.id][VolumetricZxGraph.KEY_ZX_NODE].realising_cube = cube
 
         console.debug(f"Realising node {node} as cube {cube}")
 
@@ -277,8 +277,6 @@ class VolumetricZxGraph(nx.Graph):
             raise Exception(f"Node {node} not found in the ZX-graph.")
 
         cube_id = self.place_cube(extension)
-        # self.blockgraph.nodes[cube_id][VolumetricZxGraph.KEY_BG_CUBE].realised_node = node
-        self.nodes[node.id][VolumetricZxGraph.KEY_ZX_NODE].add_realising_cube(extension)
         self.connect_pipe(cube, extension, EdgeType.IDENTITY)
 
         console.debug(f"Extending node {node} as cube {cube}")

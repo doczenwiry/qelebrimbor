@@ -57,10 +57,10 @@ class ZxGraphInflaterTrees:
             print(f">> Levels realised : {processed}/{maximal_height}")
 
     def __obtain_available_port(self, current: ZxNode) -> tuple[BgCube, Port] | None:
-        for cube in current.realising_cubes:
-            for equivalent in self.__graph.get_equivalent_bg_cubes(cube):
-                for port in self.__graph.spacetime.available_ports(equivalent.position, equivalent.kind.reach):
-                    return equivalent, port
+        cube = current.realising_cube
+        for equivalent in self.__graph.get_equivalent_bg_cubes(cube):
+            for port in self.__graph.spacetime.available_ports(equivalent.position, equivalent.kind.reach):
+                return equivalent, port
         return None
 
     def __attempt_levels_realisation(self, trees: list[ZxTree], level: int) -> bool:

@@ -195,7 +195,7 @@ class VZX:
                 zx_node = vzx.get_zx_node(node)
                 bg_cube = vzx.get_bg_cube(cube)
                 bg_cube.realised_node = zx_node
-                zx_node.add_realising_cube(bg_cube)
+                zx_node.realising_cube = bg_cube
 
             for edge, pipe_ids in realisations.items():
                 zx_edge = vzx.get_zx_edge(*edge)

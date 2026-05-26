@@ -47,8 +47,8 @@ if __name__ == "__main__":
     ]
     edges = [ZxEdge(nodes[index], nodes[index + 1], EdgeType.IDENTITY) for index in range(len(nodes) - 1)]
 
-    nodes[0].add_realising_cube(BgCube(id=4, kind=CubeKind.XZZ, position=Coordinates(0, 0, 0)))
-    nodes[-1].add_realising_cube(BgCube(id=5, kind=CubeKind.XXZ, position=Coordinates(0, 4, 0)))
+    nodes[0].realising_cube = BgCube(id=4, kind=CubeKind.XZZ, position=Coordinates(0, 0, 0))
+    nodes[-1].realising_cube = BgCube(id=5, kind=CubeKind.XXZ, position=Coordinates(0, 4, 0))
 
     chain = ZxChain(source=nodes[0])
     for node, edge in zip(nodes[1:], edges):
