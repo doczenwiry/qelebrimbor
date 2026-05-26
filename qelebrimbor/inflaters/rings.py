@@ -105,9 +105,16 @@ class ZxGraphInflaterRings:
         return selected
 
     def __attempt_ring_realisation(self, cycle: ZxCycle, maximal_excess: int = 0) -> int:
-        # TODO: the following call is the bottleneck of the overall inflation process ...
         if self.__verbose:
             print(f">> Attempting realisation of cycle [L={cycle.length}] : {cycle}")
+
+        # TODO: perform splitting of nodes that have a degree > 4
+        for node in cycle.nodes:
+            node_degree = self.__graph.get_zx_degree(node.id)
+            if node_degree > 4:
+                print(f">> Node {node} has {node_degree} neighbors and requires splitting.")
+
+        # TODO: the following call is the bottleneck of the overall inflation process ...
         ring = self.__ringfinder.find_optimum(cycle, maximal_excess=maximal_excess)
 
         if ring is None:
@@ -150,6 +157,12 @@ class ZxGraphInflaterRings:
         if not self.__connectivity.available(chain.source.realising_cube, chain.target.realising_cube):
             console.debug("Insufficient connectivity.")
             return -1
+
+        # TODO: perform splitting of nodes that have a degree > 4
+        for node in chain.nodes:
+            node_degree = self.__graph.get_zx_degree(node.id)
+            if node_degree > 4:
+                print(f">> Node {node} has {node_degree} neighbors and requires splitting.")
 
         strand = self.__strandfinder.find_optimum(chain, maximal_excess=maximal_excess)
 
