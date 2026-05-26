@@ -270,7 +270,7 @@ class VolumetricZxGraph(nx.Graph):
         if extension.kind not in CubeKind.suitable_kinds(node.type):
             raise Exception(f"Proposed cube {cube} is not compatible with {node.type}")
 
-        if cube not in node.realising_cubes:
+        if cube not in self.get_equivalent_bg_cubes(node.realising_cube):
             raise Exception(f"Cube {cube} is not realising node {node}: extension impossible.")
 
         if not self.has_node(node.id):
