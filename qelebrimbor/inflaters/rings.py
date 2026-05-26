@@ -111,7 +111,7 @@ class ZxGraphInflaterRings:
         # TODO: perform splitting of nodes that have a degree > 4
         for node in cycle.nodes:
             node_degree = self.__graph.get_zx_degree(node.id)
-            if node_degree > 4:
+            if node_degree > 4 and self.__verbose:
                 print(f">> Node {node} has {node_degree} neighbors and requires splitting.")
 
         # TODO: the following call is the bottleneck of the overall inflation process ...
@@ -161,7 +161,7 @@ class ZxGraphInflaterRings:
         # TODO: perform splitting of nodes that have a degree > 4
         for node in chain.nodes:
             node_degree = self.__graph.get_zx_degree(node.id)
-            if node_degree > 4:
+            if node_degree > 4 and self.__verbose:
                 print(f">> Node {node} has {node_degree} neighbors and requires splitting.")
 
         strand = self.__strandfinder.find_optimum(chain, maximal_excess=maximal_excess)
