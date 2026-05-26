@@ -66,6 +66,7 @@ class ZxGraphInflaterTrees:
     def __attempt_levels_realisation(self, trees: list[ZxTree], level: int) -> bool:
         console.debug(f">> Attempting realisation of level [L={level}]")
         cube_id: CubeId
+        available_port: tuple[BgCube, Port] | None
         for tree in trees:
             current: ZxNode
             for current in tree.level(level):
@@ -78,7 +79,7 @@ class ZxGraphInflaterTrees:
                         continue
 
                     edge = self.__graph.get_zx_edge(preceding_node.id, current.id)
-                    available_port: tuple[BgCube, Port] | None = self.__obtain_available_port(preceding_node)
+                    available_port = self.__obtain_available_port(preceding_node)
                     if available_port is not None:
                         preceding_cube, port = available_port
                         cube = BgCube(
@@ -93,26 +94,24 @@ class ZxGraphInflaterTrees:
                             proposal=Path(start=preceding_cube).extend(cube=realising_cube, pipe_type=edge.type),
                         )
                     else:
-                        raise Exception(f"Realising cube of {preceding_node} has no ports available [si].")
+                        raise Exception(f"Realising cube of {preceding_node} has no ports available [src:si].")
 
                 current_degree = self.__graph.get_zx_degree(current.id)
                 if current_degree > 4:
                     # Unfuse the realising cube into enough cubes to accommodate all the legs of the node.
                     excess_required = (current_degree - 4 + (current_degree % 2)) // 2
-                    current_cube = current.realising_cube
-                    ports = self.__graph.spacetime.available_ports(current_cube.position, current_cube.kind.reach)
+                    available_port = self.__obtain_available_port(current)
                     console.debug(f">>> Node {current} has degree {self.__graph.get_zx_degree(current.id)}")
                     console.debug(f">>> Need to be unfused into {excess_required + 1} cube(s).")
-                    try:
-                        step = next(ports) - current_cube.position
+                    if available_port is not None:
+                        current_cube, port = available_port
+                        step = port - current_cube.position
                         position = current_cube.position + step
                         for _ in range(excess_required):
                             cube = BgCube(kind=current_cube.kind, position=position)
                             cube_id = self.__graph.extend_zx_node(current, cube=current_cube, extension=cube)
                             position += step
-
-                    except StopIteration:
-                        raise Exception(f"Realising cube of {current_cube} has no ports available [si].")
-                    pass
+                    else:
+                        raise Exception(f"Realising cube of {current} has no ports available [ext:si].")
 
         return True
