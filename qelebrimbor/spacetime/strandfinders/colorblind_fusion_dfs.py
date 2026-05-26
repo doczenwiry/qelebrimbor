@@ -83,7 +83,7 @@ class StrandfinderColorblindFusionDFS:
         console.debug(f"Starts: {starts}")
         console.debug(f"Finals: {finals}")
 
-        nodes = list(goal.nodes)
+        nodes = list(goal.unrealised)
         edges = list(goal.edges)
 
         node_types = list(map(lambda node: node.type, nodes))

@@ -13,6 +13,7 @@
 #   limitations under the License.
 
 import logging
+from typing import Iterable
 
 from termcolor import colored
 
@@ -64,13 +65,10 @@ class ZxGraphInflaterRings:
             )
         )
 
-        for cycle in zx_cycles:
-            print(f"New cycle : {cycle}")
-
         # Realise all subsequent chains
         candidate: ZxChain | None = self.__identify_next_chain(*zx_cycles)
 
-        while candidate is not None and count < len(zx_cycles):
+        while candidate is not None and 0 < len(zx_cycles):
             console.info(f"Attempting realisation of chain [index={count}, md={candidate.distance}] : {candidate}")
 
             if count == abort_on_index:
@@ -89,6 +87,14 @@ class ZxGraphInflaterRings:
 
             self.__connectivity.report()
             count += 1
+
+            # Recompute the cycles to take into account the splitting that was performed
+            zx_cycles = list(
+                filter(
+                    lambda cc: any(not node.is_realised() for node in cc.nodes),
+                    CycleAnalyser.decompose(graph=self.__graph, minimal=True),
+                )
+            )
 
             candidate = ZxGraphInflaterRings.__identify_next_chain(*zx_cycles)
 
@@ -117,13 +123,12 @@ class ZxGraphInflaterRings:
 
         return selected
 
-    def __perform_required_splitting_cycles(self, cycle: ZxCycle, split: bool = False):
-        nodes_of_interest: set[ZxNode] = set(cycle.nodes)
+    def __perform_required_splitting(self, nodes: Iterable[ZxNode], split: bool = False):
+        nodes_of_interest: set[ZxNode] = set(nodes)
         new_spider_id: NodeId = max(node.id for node in self.__graph.get_zx_nodes()) + 1
         edge_splits: dict[ZxEdge, tuple[ZxEdge, ZxEdge]] = dict()
         # TODO: perform splitting of nodes that have a degree > 4
         for node in nodes_of_interest:
-            print(f"CHECKING: {node}")
             neighborhood = list(self.__graph.get_zx_neighbors(node))
             if len(neighborhood) > 4 and self.__verbose:
                 console.debug(f">> Node {node} has {len(neighborhood)} neighbors and requires splitting.")
@@ -157,7 +162,7 @@ class ZxGraphInflaterRings:
         if self.__verbose:
             print(f">> Attempting realisation of cycle [L={cycle.length}] : {cycle}")
 
-        self.__perform_required_splitting_cycles(cycle, split=True)
+        self.__perform_required_splitting(cycle.nodes, split=True)
 
         # TODO: the following call is the bottleneck of the overall inflation process ...
         ring = self.__ringfinder.find_optimum(cycle, maximal_excess=maximal_excess)
@@ -199,15 +204,11 @@ class ZxGraphInflaterRings:
             console.debug("Endpoints are not realised.")
             return -1
 
+        self.__perform_required_splitting(chain.nodes, split=True)
+
         if not self.__connectivity.available(chain.source.realising_cube, chain.target.realising_cube):
             console.debug("Insufficient connectivity.")
             return -1
-
-        # TODO: perform splitting of nodes that have a degree > 4
-        for node in chain.nodes:
-            node_degree = self.__graph.get_zx_degree(node.id)
-            if node_degree > 4 and self.__verbose:
-                print(f">> Node {node} has {node_degree} neighbors and requires splitting.")
 
         strand = self.__strandfinder.find_optimum(chain, maximal_excess=maximal_excess)
 
@@ -227,7 +228,7 @@ class ZxGraphInflaterRings:
             print(f">>> Realised as strand [EV:{colored_ev}] : {strand}")
 
         # Reserve the ports for all the nodes that were realised as part of this ring.
-        for node in chain.nodes:
+        for node in chain.unrealised:
             # Since each of these node is part of a ring, it already has two of its edges realised.
             self.__connectivity.reserve(node.realising_cube, required=self.__graph.get_zx_degree(node.id) - 2)
 

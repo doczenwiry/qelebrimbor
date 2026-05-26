@@ -32,8 +32,12 @@ class ZxChain:
         return self.__nodes[-1]
 
     @property
-    def nodes(self) -> Iterator[ZxNode]:
+    def unrealised(self) -> Iterator[ZxNode]:
         return itertools.islice(self.__nodes, 1, len(self.__nodes) - 1)
+
+    @property
+    def nodes(self) -> Iterator[ZxNode]:
+        return iter(self.__nodes)
 
     @property
     def edges(self) -> Iterator[ZxEdge]:

@@ -57,7 +57,7 @@ class PainterZxChainFusion:
         strand = Strand(start=start)
 
         remaining_edges = chain.edges
-        remaining_nodes = chain.nodes
+        remaining_nodes = chain.unrealised
 
         current_node: ZxNode | None = next(remaining_nodes, None)
         preceding_pipe: EdgeType = next(remaining_edges).type

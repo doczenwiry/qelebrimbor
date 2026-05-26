@@ -74,7 +74,7 @@ class StrandfinderColorblindDFS:
         start = goal.source.realising_cube
         final = goal.target.realising_cube
 
-        nodes = list(goal.nodes)
+        nodes = list(goal.unrealised)
         edges = list(goal.edges)
 
         node_types = list(map(lambda node: node.type, nodes))
