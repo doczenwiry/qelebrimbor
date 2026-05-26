@@ -14,10 +14,13 @@
 
 import logging
 import math
+from collections import defaultdict
 
 from termcolor import colored
 
 from qelebrimbor.core.bg.attributes import CubeKind
+from qelebrimbor.core.common import Port
+from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.core.zx.attributes import EdgeType, NodeType
 from qelebrimbor.core.zx.cycle import ZxCycle
@@ -26,31 +29,32 @@ from qelebrimbor.helpers.spacetime import SpacetimeHelper
 console = logging.getLogger(__name__)
 
 
-def __get_insufficient_ports_rate(graph: VolumetricZxGraph) -> tuple[int, float]:
+def __compute_portless_nodes_rate(graph: VolumetricZxGraph) -> tuple[int, float]:
     all_realised_spiders = set(
         filter(
             lambda zxn: zxn.is_realised() and zxn.type in {NodeType.X, NodeType.Z},
             graph.get_zx_nodes(),
         )
     )
+
     if len(all_realised_spiders) == 0:
         return 0, 0.0
 
-    cubes_with_insufficient_ports: int = 0
+    portless_nodes_count: int = 0
     for node in all_realised_spiders:
-        unrealised_edges = sum(
-            1 for neighbor in graph.get_zx_neighbors(node) if not graph.get_zx_edge(node.id, neighbor.id).is_realised()
-        )
+        if all(graph.get_zx_edge(node.id, neighbor.id).is_realised() for neighbor in graph.get_zx_neighbors(node)):
+            continue
+
         cube = node.realising_cube
-        open_ports = sum(
-            1
-            for position in SpacetimeHelper.get_constellation(cube.position, cube.kind.get_reach())
-            if not graph.spacetime.occupied(position)
-        )
-        if open_ports < unrealised_edges:
-            console.debug(f"Node {node} has insufficient ports [ue:{unrealised_edges}, op:{open_ports}]")
-            cubes_with_insufficient_ports += 1
-    return cubes_with_insufficient_ports, cubes_with_insufficient_ports / len(all_realised_spiders)
+        open_ports: dict[BgCube, set[Port]] = defaultdict(set)
+        for equivalent in graph.get_equivalent_bg_cubes(cube):
+            for position in SpacetimeHelper.get_constellation(equivalent.position, equivalent.kind.get_reach()):
+                if not graph.spacetime.occupied(position):
+                    open_ports[equivalent].add(position)
+
+        if len(open_ports) == 0:
+            portless_nodes_count += 1
+    return portless_nodes_count, portless_nodes_count / len(all_realised_spiders)
 
 
 def __format_percentage(
@@ -91,8 +95,8 @@ def print_report(vzx: VolumetricZxGraph, input_spider_count: int, cycles: list[Z
         realised_edges / vzx.number_of_edges(), optimum=1.0, lower_better=False
     )
 
-    insufficient_ports_count, rate = __get_insufficient_ports_rate(graph=vzx)
-    insufficient_ports_rate = __format_percentage(value=rate, optimum=0.0, lower_better=True)
+    portless_nodes_count, rate = __compute_portless_nodes_rate(graph=vzx)
+    portless_nodes_rate = __format_percentage(value=rate, optimum=0.0, lower_better=True)
 
     total_volume = vzx.volume()
     spider_count: int = sum(1 for zxn in vzx.get_zx_nodes() if zxn.type in {NodeType.X, NodeType.Z})
@@ -148,6 +152,8 @@ def print_report(vzx: VolumetricZxGraph, input_spider_count: int, cycles: list[Z
             f">> Nodes realised : {sum(realised_nodes_dict.values())}/{vzx.number_of_nodes()} [{node_realisation_rate}]; {breakdown}"  # noqa: E501
         )
 
+        print(f">>> Portless nodes : {portless_nodes_count}/{vzx.number_of_nodes()} [{portless_nodes_rate}]")
+
         realised_edges_dict: dict[EdgeType, int] = {
             edgetype: sum(1 for node in vzx.get_zx_edges(edge_type=edgetype) if node.is_realised())
             for edgetype in EdgeType
@@ -169,10 +175,6 @@ def print_report(vzx: VolumetricZxGraph, input_spider_count: int, cycles: list[Z
             f">> Edges realised : {sum(realised_edges_dict.values())}/{vzx.number_of_edges()} [{edge_realisation_rate}]; {breakdown}"  # noqa: E501
         )
 
-        print(
-            f">>> Insufficient ports : {insufficient_ports_count}/{vzx.number_of_nodes()} [{insufficient_ports_rate}]"
-        )
-
         volume_digits = int(math.log10(total_volume)) + 1 if total_volume > 0 else 0
         print(
             f">> {colored('Total volume', attrs=['underline'], force_color=True)}   :  {str(total_volume).rjust(volume_digits, ' ')}"  # noqa: E501
@@ -185,7 +187,7 @@ def print_report(vzx: VolumetricZxGraph, input_spider_count: int, cycles: list[Z
     else:
         summary = f"INRR:{node_realisation_rate}, "
         summary += f"IERR:{edge_realisation_rate}, "
-        summary += f"IPR:{insufficient_ports_rate}, "
+        summary += f"PNR:{portless_nodes_rate}, "
         summary += f"IIR:{internal_inflation_rate}, "
         summary += f"RIR:{required_inflation_rate}, "
         summary += f"AIR:{achieved_inflation_rate}, "
