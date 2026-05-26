@@ -25,7 +25,6 @@ from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.analysis.vzx_analyser import VolumetricZxGraphAnalyser
 from qelebrimbor.core.zx import attributes as zx_attributes
 from qelebrimbor.core.zx.cycle import ZxCycle
-from qelebrimbor.formats.preprocessing.cycle_untangler import CycleUntangler
 from qelebrimbor.formats.preprocessing.full_reduce import FullReduce
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
@@ -88,8 +87,8 @@ parser.add_argument(
     "-r",
     "--preprocessor",
     action="store",
-    choices=["none", "full-reduce", "default"],
-    default="default",
+    choices=["none", "full-reduce"],
+    default="full-reduce",
     help="choose which preprocessor to use on the input ZX-graph.",
 )
 parser.add_argument(
@@ -165,15 +164,10 @@ def main() -> int:
 
     start = time()
 
-    if arguments.preprocessor != "none":
+    if arguments.preprocessor == "full-reduce":
         if verbose:
             print(f"> Applying preprocessor : {FullReduce.__name__}")
         FullReduce.process(pyzx_internal)
-
-        if arguments.preprocessor == "default":
-            if verbose:
-                print(f"> Applying preprocessor : {CycleUntangler.__name__}")
-            CycleUntangler.process(pyzx_internal)
 
     vzx = PYZX.from_pyzx_graph(pyzx_internal)
     cycles: list[ZxCycle]
