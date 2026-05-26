@@ -60,7 +60,7 @@ class ZxGraphInflaterRings:
         # Recompute the cycles to take into account the splitting that was performed
         zx_cycles = list(
             filter(
-                lambda cc: any(not node.is_realised() for node in cc.nodes),
+                lambda cc: any(not edge.is_realised() for edge in cc.edges),
                 CycleAnalyser.decompose(graph=self.__graph, minimal=True),
             )
         )
@@ -91,7 +91,7 @@ class ZxGraphInflaterRings:
             # Recompute the cycles to take into account the splitting that was performed
             zx_cycles = list(
                 filter(
-                    lambda cc: any(not node.is_realised() for node in cc.nodes),
+                    lambda cc: any(not edge.is_realised() for edge in cc.edges),
                     CycleAnalyser.decompose(graph=self.__graph, minimal=True),
                 )
             )
