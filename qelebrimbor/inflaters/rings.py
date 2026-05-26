@@ -17,7 +17,9 @@ import logging
 from termcolor import colored
 
 from qelebrimbor.analysis.cycles import CycleAnalyser, ZxChain, ZxCycle
+from qelebrimbor.core.components import ZxEdge, ZxNode
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.zx.attributes import EdgeType, NodeId
 from qelebrimbor.spacetime.connectivity.abstract import ConnectivityTracker
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
@@ -54,6 +56,17 @@ class ZxGraphInflaterRings:
         console.info(f"> Realisation successful with excess volume : +{excess_volume} cubes.")
         count += 1
 
+        # Recompute the cycles to take into account the splitting that was performed
+        zx_cycles = list(
+            filter(
+                lambda cc: any(not node.is_realised() for node in cc.nodes),
+                CycleAnalyser.decompose(graph=self.__graph, minimal=True),
+            )
+        )
+
+        for cycle in zx_cycles:
+            print(f"New cycle : {cycle}")
+
         # Realise all subsequent chains
         candidate: ZxChain | None = self.__identify_next_chain(*zx_cycles)
 
@@ -61,7 +74,7 @@ class ZxGraphInflaterRings:
             console.info(f"Attempting realisation of chain [index={count}, md={candidate.distance}] : {candidate}")
 
             if count == abort_on_index:
-                console.info("> Premature abortion for inspection of specific example.")
+                console.info("> Premature abort for inspection.")
                 # TODO: fix occlusion of ports by realisation of long path.
                 self.__connectivity.report(verbose=True)
                 return -2
@@ -104,15 +117,47 @@ class ZxGraphInflaterRings:
 
         return selected
 
+    def __perform_required_splitting_cycles(self, cycle: ZxCycle, split: bool = False):
+        nodes_of_interest: set[ZxNode] = set(cycle.nodes)
+        new_spider_id: NodeId = max(node.id for node in self.__graph.get_zx_nodes()) + 1
+        edge_splits: dict[ZxEdge, tuple[ZxEdge, ZxEdge]] = dict()
+        # TODO: perform splitting of nodes that have a degree > 4
+        for node in nodes_of_interest:
+            print(f"CHECKING: {node}")
+            neighborhood = list(self.__graph.get_zx_neighbors(node))
+            if len(neighborhood) > 4 and self.__verbose:
+                console.debug(f">> Node {node} has {len(neighborhood)} neighbors and requires splitting.")
+                extracted_nodes = list(
+                    filter(
+                        lambda node: not node.is_realised() and node not in nodes_of_interest,
+                        self.__graph.get_zx_neighbors(node),
+                    )
+                )
+                if not split:
+                    console.debug(f">>> Need to move nodes {extracted_nodes} outside the cycle.")
+                else:
+                    split_node = ZxNode(new_spider_id, node.type, node.qubit, node.layer)
+                    split_edge = ZxEdge(node, split_node, EdgeType.IDENTITY)
+                    self.__graph.add_node(new_spider_id)
+                    self.__graph.nodes[new_spider_id][VolumetricZxGraph.KEY_ZX_NODE] = split_node
+                    self.__graph.add_edge(node.id, split_node.id, **{VolumetricZxGraph.KEY_ZX_EDGE: split_edge})
+                    console.debug(f">>> Added split node : {split_node}")
+                    console.debug(f">>> Added split edge : {split_edge}")
+                    for neighbor in filter(lambda nb: nb not in nodes_of_interest, neighborhood):
+                        old_edge = self.__graph.get_zx_edge(node.id, neighbor.id)
+                        self.__graph.remove_edge(node.id, neighbor.id)
+                        passed_edge = ZxEdge(split_node, neighbor, old_edge.type)
+                        self.__graph.add_edge(split_node.id, neighbor.id)
+                        self.__graph.edges[split_node.id, neighbor.id][VolumetricZxGraph.KEY_ZX_EDGE] = passed_edge
+                        console.debug(f">>>> Transferring {neighbor} to {split_node} [edge:{passed_edge}]")
+                        edge_splits[old_edge] = (split_edge, passed_edge)
+                    new_spider_id += 1
+
     def __attempt_ring_realisation(self, cycle: ZxCycle, maximal_excess: int = 0) -> int:
         if self.__verbose:
             print(f">> Attempting realisation of cycle [L={cycle.length}] : {cycle}")
 
-        # TODO: perform splitting of nodes that have a degree > 4
-        for node in cycle.nodes:
-            node_degree = self.__graph.get_zx_degree(node.id)
-            if node_degree > 4 and self.__verbose:
-                print(f">> Node {node} has {node_degree} neighbors and requires splitting.")
+        self.__perform_required_splitting_cycles(cycle, split=True)
 
         # TODO: the following call is the bottleneck of the overall inflation process ...
         ring = self.__ringfinder.find_optimum(cycle, maximal_excess=maximal_excess)
