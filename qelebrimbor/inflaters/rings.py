@@ -130,7 +130,7 @@ class ZxGraphInflaterRings:
         # TODO: perform splitting of nodes that have a degree > 4
         for node in nodes_of_interest:
             neighborhood = list(self.__graph.get_zx_neighbors(node))
-            if len(neighborhood) > 4 and self.__verbose:
+            if len(neighborhood) > 4:
                 console.debug(f">> Node {node} has {len(neighborhood)} neighbors and requires splitting.")
                 extracted_nodes = list(
                     filter(
