@@ -14,7 +14,7 @@
 
 import logging
 import sys
-from argparse import ArgumentParser
+from argparse import Action, ArgumentParser
 from os import path
 from time import time
 
@@ -37,6 +37,12 @@ from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
 from qelebrimbor.vedo.zx_layout.planar import PlanarLayout
 
 logging.basicConfig(level=logging.CRITICAL)
+
+
+class SplitArgs(Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values.split(","))
+
 
 parser = ArgumentParser(
     prog="qb",
@@ -71,11 +77,18 @@ parser.add_argument(
 )
 parser.add_argument(
     "-i",
+    "--inflation",
+    action="store",
+    default=["rings", "trees"],
+    help="choose which inflation stages to perform on the input ZX-graph.",
+)
+parser.add_argument(
+    "-I",
     "--index",
     action="store",
     type=int,
     default=-1,
-    help="index of the step at which to stop the inflation process.",
+    help="index of the step at which to stop the ring inflation process.",
 )
 parser.add_argument(
     "-p",
@@ -202,20 +215,23 @@ def main() -> int:
     sys.stdout.flush()
     sys.stderr.flush()
 
-    start = time()
-    ring_inflater_realisations: int
-    try:
-        ring_inflater_realisations = ring_inflater.process(abort_on_index=arguments.index)
-    except Exception as e:
-        print(colored("FAILURE [Rings] :", color="red", attrs=["underline"], force_color=True) + f" {e}")
-        if verbose:
-            raise e
-        else:
-            exit(-1)
-    runtime = round(time() - start, 6)
+    if "rings" in arguments.inflation:
+        start = time()
+        try:
+            ring_inflater.process(abort_on_index=arguments.index)
+        except Exception as e:
+            print(colored("FAILURE [Rings] :", color="red", attrs=["underline"], force_color=True) + f" {e}")
+            if verbose:
+                raise e
+            else:
+                exit(-1)
+        runtime = round(time() - start, 6)
 
-    if verbose:
-        print(f">> Total runtime : {'{:.3f}'.format(runtime)}s")
+        if verbose:
+            print(f">> Total runtime : {'{:.3f}'.format(runtime)}s")
+    else:
+        if verbose:
+            print(">> Skipped per argument --inflation.")
 
     tree_inflater = ZxGraphInflaterTrees(graph=vzx, verbose=verbose)
     if verbose:
@@ -224,7 +240,7 @@ def main() -> int:
     sys.stdout.flush()
     sys.stderr.flush()
 
-    if ring_inflater_realisations > 0:
+    if "trees" in arguments.inflation:
         start = time()
         try:
             tree_inflater.process(abort_on_index=arguments.index)
@@ -240,7 +256,7 @@ def main() -> int:
             print(f">> Total runtime : {'{:.3f}'.format(runtime)}s")
     else:
         if verbose:
-            print(">> Inflation aborted.")
+            print(">> Skipped per argument --inflation.")
 
     sys.stdout.flush()
     sys.stderr.flush()
