@@ -16,6 +16,7 @@ from typing import Iterator
 
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.core.reach import Reach
+from qelebrimbor.helpers.spacetime import Step
 
 console = logging.getLogger(__name__)
 
@@ -44,6 +45,15 @@ class ColorlessRing:
     @property
     def distance(self) -> int:
         return self.anchor.get_manhattan_distance(self.terminal)
+
+    @property
+    def steps(self) -> list[Step]:
+        steps = list()
+        for index in range(1, self.volume):
+            steps.append(Step(self.__positions[index] - self.__positions[index - 1]))
+        if self.closed():
+            steps.append(Step(self.__positions[0] - self.__positions[-1]))
+        return steps
 
     def occupies(self, position: Coordinates) -> bool:
         return position in self.__occupied
