@@ -12,7 +12,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import itertools
 import logging
 from time import time
 
@@ -20,7 +19,7 @@ import qelebrimbor.core.zx
 from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.core.zx.attributes import EdgeType, NodeType
-from qelebrimbor.spacetime.ringfinders.breadth_first_search import RingfinderBFS
+from qelebrimbor.spacetime.ringfinders.colorblind_bfs import RingfinderColorblindBFS
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.cycle import CycleLayout
@@ -29,21 +28,23 @@ logging.basicConfig(level=logging.INFO)
 
 qelebrimbor.core.zx.attributes.ZX_COLORING = True
 
+COUNT = 6
 if __name__ == "__main__":
-    nodes = list(zip(itertools.count(0, 1), [NodeType.X, NodeType.Z, NodeType.X, NodeType.Z]))
-    edges = [(index, (index + 1) % len(nodes), EdgeType.IDENTITY) for index in range(len(nodes))]
+    nodes = [(node_id, NodeType.Z) for node_id in range(COUNT)]
+    edges = [(node_id, (node_id + 1) % COUNT, EdgeType.HADAMARD) for node_id in range(COUNT)]
 
     vzx = VolumetricZxGraph(nodes, edges)
 
     cycle0 = CycleAnalyser.decompose(vzx, minimal=True)[0]
     print(f"Cycle : {str(cycle0)}")
 
-    ringfinder = RingfinderBFS(graph=vzx, reporting=SpacetimeTracingReport.FINAL)
+    # ringfinder = RingfinderBFS(graph=vzx, reporting=SpacetimeTracingReport.FINAL)
+    ringfinder = RingfinderColorblindBFS(graph=vzx, reporting=SpacetimeTracingReport.FINAL)
     # ringfinder = RingfinderDFS(graph = vzx, tracing = SpacetimeTracingReport.FINAL)
     # ringfinder = RingfinderColorblindDFS(graph = vzx, reporting = SpacetimeTracingReport.FINAL)
 
     start = time()
-    ring = ringfinder.find_optimum(cycle0, maximal_excess=6)
+    ring = ringfinder.find_optimum(cycle0, maximal_excess=0)
     final = time()
     runtime = round(final - start, 2)
 
