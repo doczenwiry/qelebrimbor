@@ -92,7 +92,10 @@ class CycleAnalyser:
 
             zx_cycles.append(zx_cycle)
 
-        return list(sorted(zx_cycles, key=len, reverse=True))
+        csg, _ = CycleSharingGraph.cycle_sharing_graph(zx_cycles)
+        indices = sorted(csg.nodes, key=lambda vt: csg.degree[vt], reverse=True)
+
+        return list(zx_cycles[index] for index in indices)
 
     @staticmethod
     def extract(cycle: ZxCycle) -> ZxChain | None:

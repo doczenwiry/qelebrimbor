@@ -34,7 +34,6 @@ class CycleSharingGraph:
 
         # Draw the nodes and their labels.
         node_sizes = [sharing.nodes[n]["size"] for n in sharing.nodes]
-        node_labels = nx.get_node_attributes(sharing, "size")
         nodes = nx.draw_networkx_nodes(
             G=sharing,
             pos=layout,
@@ -42,7 +41,7 @@ class CycleSharingGraph:
             node_color=node_sizes,
             cmap=plt.get_cmap("Spectral_r"),
         )
-        nx.draw_networkx_labels(G=sharing, pos=layout, ax=ax, labels=node_labels)
+        nx.draw_networkx_labels(G=sharing, pos=layout, ax=ax)
 
         # Draw the edges and their labels.
         edge_weights = nx.get_edge_attributes(sharing, "weight")
