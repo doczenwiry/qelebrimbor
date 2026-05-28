@@ -23,6 +23,8 @@ from qelebrimbor.spacetime.ringfinders.colorblind_exhaustive_bfs import Ringfind
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 
 logging.basicConfig(level=logging.INFO)
+# logging.getLogger("qelebrimbor.spacetime.colorblind.painter_cycle").setLevel(logging.DEBUG)
+# logging.getLogger("qelebrimbor.spacetime.ringfinders.colorblind_exhaustive_bfs").setLevel(logging.DEBUG)
 
 qelebrimbor.core.zx.attributes.ZX_COLORING = True
 
@@ -39,25 +41,26 @@ if __name__ == "__main__":
     ringfinder = RingfinderColorblindExhaustiveBFS(graph=vzx, reporting=SpacetimeTracingReport.FINAL)
 
     start = time()
-    ring = ringfinder.find_optimum(cycle0, maximal_excess=2)
+    rings = ringfinder.find_optimum(cycle0, maximal_excess=2)
     final = time()
     runtime = round(final - start, 2)
 
-    print(f"> Ring : {str(ring)}")
+    print(f"Found {len(rings)} rings.")
+    for ring in rings:
+        print(f"> Ring : {str(ring)}")
 
-    # label = f"{ringfinder.__class__.__name__} : time = {runtime}s"
-    # if len(rings) > 0:
-    #     for ring in rings:
-    #         print(f"Found a ring with volume : {ring.volume()}")
-    #         print(f"> {ring}")
-    #
-    #         vzx = VolumetricZxGraph(nodes, edges)
-    #         vzx.realise_zx_cycle(cycle0, ring)
-    #
-    #         volume = ring.volume()
-    #         excess = volume - cycle0.length
-    #         label += f", volume = {ring.volume()}, excess = +{ring.volume() - cycle0.length}"
-    #         viewer = VolumetricZxGraphViewer(graph=vzx, label=label, layout=CycleLayout(vzx))
-    #         viewer.display()
-    # else:
-    #     print("> Failed to find any optimal ring.")
+    label = f"{ringfinder.__class__.__name__} : time = {runtime}s"
+    if len(rings) > 0:
+        for ring in rings:
+            # print(f"Found a ring with volume : {ring.volume()}")
+            # print(f"> {ring}")
+
+            vzx = VolumetricZxGraph(nodes, edges)
+            vzx.realise_zx_cycle(cycle0, ring)
+
+            volume = ring.volume()
+            excess = volume - cycle0.length
+            label += f", volume = {ring.volume()}, excess = +{ring.volume() - cycle0.length}"
+            # VolumetricZxGraphViewer(graph=vzx, label=label, layout=CycleLayout(vzx)).display()
+    else:
+        print("> Failed to find any optimal ring.")

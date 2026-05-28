@@ -39,7 +39,8 @@ class TestPainterZxCycle(TestCase):
             colorless.append(Coordinates(*position))
         print(f"ColorlessRing: {colorless}")
 
-        expected = "N0:XZZ@( 0, 0, 0) --I-- N1:XZZ@( 0, 1, 0) --I-- N2:XZZ@( 0, 1, 1) --I-- N3:XZZ@( 0, 0, 1)"
+        expected = "N0:XZZ@( 0, 0, 0) --I-- N1:XZZ@( 0, 1, 0) --I-- N2:XZZ@( 0, 1, 1)"
+        expected += " --I-- N3:XZZ@( 0, 0, 1) --I-- N0:XZZ@( 0, 0, 0)"
         print(f"Expected Ring : {expected}")
         computed = str(PainterZxCycle.paint(colorless, cycle))
         print(f"Computed Ring : {computed}")
@@ -58,8 +59,8 @@ class TestPainterZxCycle(TestCase):
             colorless.append(Coordinates(*position))
         print(f"ColorlessRing: {colorless}")
 
-        expected = "N0:ZZX@( 0, 0, 0) --I-- N1:ZXX@( 0, 1, 0) --I-- N2:ZXZ@( 0, 1, 1)"
-        expected += " --I-- N3:XXZ@( 1, 1, 1) --I-- N4:XZZ@( 1, 0, 1) --I-- N5:XZX@( 1, 0, 0)"
+        expected = "N0:ZZX@( 0, 0, 0) --I-- N1:ZXX@( 0, 1, 0) --I-- N2:ZXZ@( 0, 1, 1) --I-- N3:XXZ@( 1, 1, 1)"
+        expected += " --I-- N4:XZZ@( 1, 0, 1) --I-- N5:XZX@( 1, 0, 0) --I-- N0:ZZX@( 0, 0, 0)"
         print(f"Expected Ring : {expected}")
         computed = str(PainterZxCycle.paint(colorless, cycle))
         print(f"Computed Ring : {computed}")
@@ -80,11 +81,12 @@ class TestPainterZxCycle(TestCase):
 
         rings = PainterZxCycle.all_painted(colorless, cycle)
 
-        ring = rings[0]
+        stringed = sorted(list(map(str, rings)))
 
-        # for ring in rings:
-        #     print(f"> Painted Ring : {ring}")
+        for ring in stringed:
+            print(f"> Painted Ring : {ring}")
 
+        ring = rings[-1]
         expected = "N0:XXZ@( 0, 0, 0) --H-- N1:ZXX@( 0, 1, 0) --H-- N2:XZX@( 0, 1, 1) --H-- N3:XXZ@( 1, 1, 1)"
         expected += " --H-- N4:ZXX@( 1, 0, 1) --H-- N5:XZX@( 1, 0, 0) --H-- N0:XXZ@( 0, 0, 0)"
         print(f"Expected Ring : {expected}")

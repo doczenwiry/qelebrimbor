@@ -23,7 +23,7 @@ from qelebrimbor.core.colorless.ring import ColorlessRing
 from qelebrimbor.core.components import BgCube, ZxEdge, ZxNode
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.core.reach import Reach
-from qelebrimbor.core.zx.attributes import EdgeType, NodeType
+from qelebrimbor.core.zx.attributes import EdgeType
 from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.helpers.spacetime import Step
 
@@ -84,33 +84,30 @@ class PainterZxCycle:
             console.debug(f"Current [N:{node_count},V:{partial.volume()}] : {partial}")
 
             if partial.volume() == colorless.volume:
-                console.debug(f"Candidate for closure : {partial}")
+                console.debug(f"Candidate for closure [{node_count}/{len(node_restrictions)}] : {partial}")
+                if node_count < len(node_restrictions):
+                    continue
+
                 # The ColorlessPath is not compatible if the last cube cannot be connected to the final
                 pipe_type = edge_restrictions[-1].type
                 step = Step(partial.anchor.position - partial.terminal.position)
                 if CubeKind.compatible(partial.terminal.kind, partial.anchor.kind, step, pipe_type):
                     rings.append(partial.close(pipe_type))
+
                 continue
 
             position, reaches = colorless_cubes[partial.volume()]
             step = colorless_steps[partial.volume() - 1]
 
-            if current_node is not None:
-                node_types = {current_node.type}
-                pipe_type = edge_restrictions[node_count - 1].type
-            else:
-                node_types = {NodeType.X, NodeType.Z}
-                pipe_type = EdgeType.IDENTITY
-
             selected: CubeKind | None = None
             for kind in CubeKind:
-                if not CubeKind.compatible(partial.terminal.kind, kind, step, pipe_type):
+                if not CubeKind.compatible(partial.terminal.kind, kind, step, EdgeType.IDENTITY):
                     continue
 
                 if kind.reach not in reaches:
                     continue
 
-                if selected is None or kind.get_type() in node_types:
+                if selected is None:
                     selected = kind
 
             # Handle internal error of logic.
@@ -120,14 +117,39 @@ class PainterZxCycle:
 
             # Construct a colored cube and assign it to the current node if the kind is suitable for the type.
             cube = BgCube(kind=selected, position=position)
-            if current_node is not None and selected.get_type() == current_node.type:
-                cube.realised_node = current_node
-                node_count += 1
 
             console.debug(f"> painted_cube : {cube}")
-            extended = partial.extend(cube, pipe_type)
-
+            extended = partial.extend(cube, EdgeType.IDENTITY)
             heapq.heappush(unrelaxed, (extended, node_count))
+
+            if current_node is not None:
+                pipe_type = edge_restrictions[node_count - 1].type
+
+                selected = None
+                for kind in CubeKind:
+                    if not CubeKind.compatible(partial.terminal.kind, kind, step, pipe_type):
+                        continue
+
+                    if kind.reach not in reaches:
+                        continue
+
+                    if selected is None or kind.get_type() == current_node.type:
+                        selected = kind
+
+                # Handle internal error of logic.
+                if selected is None:
+                    console.error(f"> Failure to paint cube at {position} w/ {reaches}")
+                    raise Exception("No suitable kind found for next colorless cube when painting ColorlessPath.")
+
+                # Construct a colored cube and assign it to the current node if the kind is suitable for the type.
+                cube = BgCube(kind=selected, position=position)
+                if current_node is not None and selected.get_type() == current_node.type:
+                    cube.realised_node = current_node
+                    node_count += 1
+
+                    console.debug(f"> painted_cube : {cube}")
+                    extended = partial.extend(cube, pipe_type)
+                    heapq.heappush(unrelaxed, (extended, node_count))
 
         return rings
 
@@ -159,6 +181,7 @@ class PainterZxCycle:
         position, reaches = current_cube
         console.debug(f"current_node : {current_node} ? {current_cube}")
         # TODO: deal with both cases when multiple reaches are available.
+        # TODO: the next(iter(reaches)) is a source of non-determinism. RESOLVE !
         ring = Ring(
             anchor=BgCube(kind=CubeKind.convert(current_node.type, next(iter(reaches)).value), position=position)
         )

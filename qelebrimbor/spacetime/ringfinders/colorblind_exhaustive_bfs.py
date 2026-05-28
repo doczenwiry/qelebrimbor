@@ -47,16 +47,22 @@ class RingfinderColorblindExhaustiveBFS:
         self.__connectivity: ConnectivityTracker = connectivity or DefaultConnectivityTracker()
         self.__reporting = reporting
 
-    def find_optimum(self, goal: ZxCycle, maximal_excess: int | None = None) -> Ring | None:
+    def find_optimum(self, goal: ZxCycle, maximal_excess: int | None = None) -> list[Ring]:
+        rings = list()
+
         colorless_rings = self.__find_essentially_different_colorless_rings(goal, maximal_excess)
 
-        if len(colorless_rings) == 0:
-            return None
+        console.info(f"Essentially different colorless rings found : {len(colorless_rings)}")
+        for colorless in colorless_rings:
+            console.info(f"> Ring : {colorless}")
 
-        return PainterZxCycle.paint(colorless_rings[0], goal)
+        for colorless in colorless_rings:
+            rings.extend(PainterZxCycle.all_painted(colorless, goal))
 
-    # TODO: prune when a partial colorless ring won't be able be paintable when it is closed.
-    # TODO: identify essentially different colorless rings.
+        return rings
+
+    # TODO: prune when a partial colorless ring won't be paintable when it is closed.
+    # TODO: identify essentially different colorless rings (missing symmetry: rotation about (+1,+1,+1) axis).
     def __find_essentially_different_colorless_rings(
         self, goal: ZxCycle, maximal_excess: int | None = None
     ) -> list[ColorlessRing]:
@@ -113,12 +119,13 @@ class RingfinderColorblindExhaustiveBFS:
             if maximal_volume and maximal_volume < partial.volume:
                 continue
 
-            console.debug(f"> Current [V:{partial.volume}] : {partial}")
+            console.info(f"> Current [V:{partial.volume}] : {partial}")
 
             # Check whether the goal has been accomplished
             if partial.closed() and partial.volume >= node_type_nr:
                 # Ignore the incoming path if it doesn't line up with a port of the final cube.
                 console.debug(f"Candidate ColorlessStrand [{partial.volume}] : {partial}")
+                console.debug(f"> Paintable {partial} by {goal} ? {PainterZxCycle.paintable(partial, goal)}")
 
                 if PainterZxCycle.paintable(partial, goal):
                     # Tracing exploration
@@ -127,6 +134,7 @@ class RingfinderColorblindExhaustiveBFS:
 
                     console.debug(f"Optimum found : {partial}")
                     optima.append(partial)
+                    continue
 
             # Restrict the outgoing paths to lie in the reach of the CubeKind of the start.
             if partial.volume >= 3:
@@ -134,7 +142,7 @@ class RingfinderColorblindExhaustiveBFS:
             else:
                 constellation = [SpacetimeHelper.XP]
 
-            console.debug(f"> {partial.terminal} has constellation : {constellation}")
+            console.info(f"> {partial.terminal} has constellation : {constellation}")
 
             for adjacent in constellation:
                 # Ignore adjacent with a step in the negative direction with no prior step in the positive direction.
@@ -145,10 +153,12 @@ class RingfinderColorblindExhaustiveBFS:
 
                 # Ignore neighbor if it introduces a loop
                 if partial.occupies(adjacent):
+                    console.debug(f">> partial occupies {adjacent}")
                     continue
 
                 # Ignore neighbor if its position is already occupied in spacetime
                 if self.__graph.spacetime.occupied(adjacent):
+                    console.debug(f">> spacetime occupied at {adjacent}")
                     continue
 
                 # Ignore neighbor if occluding the position breaks connectivity
@@ -161,13 +171,14 @@ class RingfinderColorblindExhaustiveBFS:
                     tracer.add_edge(partial.terminal, adjacent)
 
                 extended = partial.extend(adjacent)
+                console.debug(f">> Extended : {extended}")
 
                 # Add the extended colorless ring to the list of unrelaxed
-                unrelaxed.append(extended)
+                heapq.heappush(unrelaxed, extended)
 
         console.info("Optima found :")
         for optimum in optima:
-            console.info(f"> {optimum}")
+            console.info(f"> {optimum.steps}")
 
         # Tracing exploration
         if tracer:
