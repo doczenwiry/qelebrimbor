@@ -22,6 +22,9 @@ from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.spacetime.colorblind.painter_cycle import PainterZxCycle
 
 logging.basicConfig(level=logging.INFO)
+# logging.getLogger("qelebrimbor.spacetime.colorblind.painter_cycle").setLevel(logging.DEBUG)
+
+# qelebrimbor.core.zx.attributes.ZX_COLORING = True
 
 
 class TestPainterZxCycle(TestCase):
@@ -59,6 +62,33 @@ class TestPainterZxCycle(TestCase):
         expected += " --I-- N3:XXZ@( 1, 1, 1) --I-- N4:XZZ@( 1, 0, 1) --I-- N5:XZX@( 1, 0, 0)"
         print(f"Expected Ring : {expected}")
         computed = str(PainterZxCycle.paint(colorless, cycle))
+        print(f"Computed Ring : {computed}")
+
+        self.assertEqual(computed, expected)
+
+    def test_painter_three(self):
+        cycle = ZxCycle.make(
+            node_types=[NodeType.Z for node_id in range(6)],
+            edge_types=[EdgeType.HADAMARD for _ in range(6)],
+        )
+        print(f"ZxCycle: {cycle}")
+
+        colorless = ColorlessRing()
+        for position in [(0, 0, 0), (0, 1, 0), (0, 1, 1), (1, 1, 1), (1, 0, 1), (1, 0, 0)]:
+            colorless.append(Coordinates(*position))
+        print(f"ColorlessRing: {colorless.steps}")
+
+        rings = PainterZxCycle.all_painted(colorless, cycle)
+
+        ring = rings[0]
+
+        # for ring in rings:
+        #     print(f"> Painted Ring : {ring}")
+
+        expected = "N0:XXZ@( 0, 0, 0) --H-- N1:ZXX@( 0, 1, 0) --H-- N2:XZX@( 0, 1, 1) --H-- N3:XXZ@( 1, 1, 1)"
+        expected += " --H-- N4:ZXX@( 1, 0, 1) --H-- N5:XZX@( 1, 0, 0) --H-- N0:XXZ@( 0, 0, 0)"
+        print(f"Expected Ring : {expected}")
+        computed = str(ring)
         print(f"Computed Ring : {computed}")
 
         self.assertEqual(computed, expected)

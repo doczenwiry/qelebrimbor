@@ -55,6 +55,13 @@ class ColorlessRing:
             steps.append(Step(self.__positions[0] - self.__positions[-1]))
         return steps
 
+    def rotated(self, shift: int) -> ColorlessRing:
+        ring = ColorlessRing()
+        for index in range(self.volume):
+            location = (index + shift) % self.volume
+            ring.append(self.__positions[location])
+        return ring
+
     def occupies(self, position: Coordinates) -> bool:
         return position in self.__occupied
 
