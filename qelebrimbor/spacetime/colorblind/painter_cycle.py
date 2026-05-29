@@ -15,7 +15,6 @@
 
 import heapq
 import logging
-from typing import Iterator
 
 from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.bg.ring import Ring
@@ -164,18 +163,30 @@ class PainterZxCycle:
         :return:
         """
 
-        # The ColorlessRing is not paintable if it doesn't provide at least one BgCube per ZxNode
-        if colorless.volume < cycle.length:
+        # The ColorlessRing must have at least 4 positions.
+        if colorless.volume < 4:
+            console.debug("A ColorlessRing must have 4 positions.")
             return None
 
-        remaining_nodes: Iterator[ZxNode] = cycle.nodes
-        remaining_edges: Iterator[ZxEdge] = cycle.edges
-        colorless_cubes = zip(colorless.positions, colorless.as_reaches())
+        # The ColorlessRing is not paintable if it doesn't provide at least one BgCube per ZxNode
+        if colorless.volume < cycle.length:
+            console.debug("A ColorlessRing must offer at least as many positions as there are nodes in the cycle.")
+            return None
 
-        current_node: ZxNode | None = next(remaining_nodes, None)
-        current_cube: tuple[Coordinates, set[Reach]] | None = next(colorless_cubes, None)
+        node_restrictions: list[ZxNode] = list(cycle.nodes)
+        edge_restrictions: list[ZxEdge] = list(cycle.edges)
+        colorless_cubes = list(zip(colorless.positions, colorless.as_reaches()))
 
-        if current_node is None or current_cube is None:
+        node_count: int = 0
+        current_node: ZxNode | None = node_restrictions[node_count] if node_count < len(node_restrictions) else None
+
+        if current_node is None:
+            return None
+
+        node_count += 1
+        current_cube: tuple[Coordinates, set[Reach]] | None = colorless_cubes[0]
+
+        if current_cube is None:
             return None
 
         position, reaches = current_cube
@@ -188,19 +199,18 @@ class PainterZxCycle:
         ring.anchor.realised_node = current_node
         console.debug(f"> painted_cube : {ring.anchor}")
 
-        preceding_pipe: EdgeType = next(remaining_edges).type
-
-        last_cube: BgCube = ring.anchor
-        current_node = next(remaining_nodes, None)
-        current_cube = next(colorless_cubes, None)
-        while current_cube is not None:
-            console.debug(f"current_node : {current_node} ? {current_cube} [{preceding_pipe}]")
+        current_node = node_restrictions[node_count] if node_count < len(node_restrictions) else None
+        preceding_edge = edge_restrictions[node_count - 1].type
+        while ring.volume() < colorless.volume:
+            current_cube = colorless_cubes[ring.volume()]
+            console.debug(f"current_node : {current_node} ? {current_cube} [{preceding_edge}]")
+            console.debug(f"> ring.terminal : {ring.terminal}")
             position, reaches = current_cube
-            step = Step(position - last_cube.position)
+            step = Step(position - ring.terminal.position)
 
             selected: CubeKind | None = None
             for kind in CubeKind:
-                if not CubeKind.compatible(last_cube.kind, kind, step, preceding_pipe):
+                if not CubeKind.compatible(ring.terminal.kind, kind, step, preceding_edge):
                     continue
 
                 if kind.reach not in reaches:
@@ -218,28 +228,26 @@ class PainterZxCycle:
             cube = BgCube(kind=selected, position=position)
             if current_node is not None and selected.get_type() == current_node.type:
                 cube.realised_node = current_node
+                node_count += 1
 
             console.debug(f"> painted_cube : {cube}")
-            ring.append(cube, preceding_pipe)
+            ring.append(cube, preceding_edge)
 
             if current_node is not None and selected.get_type() == current_node.type:
-                current_node = next(remaining_nodes, None)
-                preceding_pipe = next(remaining_edges).type
+                current_node = node_restrictions[node_count] if node_count < len(node_restrictions) else None
+                preceding_edge = edge_restrictions[node_count - 1].type
             else:
-                preceding_pipe = EdgeType.IDENTITY
-
-            current_cube = next(colorless_cubes, None)
-            last_cube = cube
+                preceding_edge = EdgeType.IDENTITY
 
         # The ColorlessPath is not compatible if it doesn't provide enough colorless cubes to be painted with the nodes.
         if current_node is not None:
             return None
 
         # The ColorlessPath is not compatible if the last cube cannot be connected to the final
-        step = Step(ring.anchor.position - last_cube.position)
-        if not CubeKind.compatible(last_cube.kind, ring.anchor.kind, step, preceding_pipe):
+        step = Step(ring.anchor.position - ring.terminal.position)
+        if not CubeKind.compatible(ring.terminal.kind, ring.anchor.kind, step, preceding_edge):
             return None
 
-        ring = ring.close(preceding_pipe)
+        ring = ring.close(preceding_edge)
 
         return ring
