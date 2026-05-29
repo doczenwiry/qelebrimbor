@@ -191,63 +191,80 @@ class PainterZxCycle:
 
         position, reaches = current_cube
         console.debug(f"current_node : {current_node} ? {current_cube}")
-        # TODO: deal with both cases when multiple reaches are available.
-        # TODO: the next(iter(reaches)) is a source of non-determinism. RESOLVE !
-        ring = Ring(
-            anchor=BgCube(kind=CubeKind.convert(current_node.type, next(iter(reaches)).value), position=position)
-        )
-        ring.anchor.realised_node = current_node
-        console.debug(f"> painted_cube : {ring.anchor}")
+
+        rings: list[tuple[Ring, int]] = list()
+        for reach in reaches:
+            ring = Ring(anchor=BgCube(kind=CubeKind.convert(current_node.type, reach.value), position=position))
+            ring.anchor.realised_node = current_node
+            console.debug(f"> painted_cube : {ring.anchor}")
+            rings.append((ring, 1))
+
+        rings_volume: int = 1
 
         current_node = node_restrictions[node_count] if node_count < len(node_restrictions) else None
         preceding_edge = edge_restrictions[node_count - 1].type
-        while ring.volume() < colorless.volume:
-            current_cube = colorless_cubes[ring.volume()]
-            console.debug(f"current_node : {current_node} ? {current_cube} [{preceding_edge}]")
-            console.debug(f"> ring.terminal : {ring.terminal}")
+        while rings_volume < colorless.volume:
+            current_cube = colorless_cubes[rings_volume]
             position, reaches = current_cube
-            step = Step(position - ring.terminal.position)
+            console.debug(f"current_node : {current_node} ? {current_cube} [{preceding_edge}]")
 
-            selected: CubeKind | None = None
-            for kind in CubeKind:
-                if not CubeKind.compatible(ring.terminal.kind, kind, step, preceding_edge):
-                    continue
+            updated: list[tuple[Ring, int]] = list()
+            for ring, node_count in rings:
+                if node_count < len(node_restrictions):
+                    current_node = node_restrictions[node_count]
+                    preceding_edge = edge_restrictions[node_count - 1].type
+                else:
+                    current_node = None
+                    preceding_edge = EdgeType.IDENTITY
 
-                if kind.reach not in reaches:
-                    continue
+                console.debug(f"> ring.terminal : {ring.terminal}")
+                step = Step(position - ring.terminal.position)
 
-                if selected is None or (current_node is not None and kind.get_type() == current_node.type):
-                    selected = kind
+                selected: CubeKind | None = None
+                for kind in CubeKind:
+                    if not CubeKind.compatible(ring.terminal.kind, kind, step, preceding_edge):
+                        continue
 
-            # Handle internal error of logic.
-            if selected is None:
-                console.error(f"> Failure to paint cube at {position} w/ {reaches}")
-                raise Exception("No suitable kind found for next colorless cube when painting ColorlessPath.")
+                    if kind.reach not in reaches:
+                        continue
 
-            # Construct a colored cube and assign it to the current node if the kind is suitable for the type.
-            cube = BgCube(kind=selected, position=position)
-            if current_node is not None and selected.get_type() == current_node.type:
-                cube.realised_node = current_node
-                node_count += 1
+                    if selected is None or (current_node is not None and kind.get_type() == current_node.type):
+                        selected = kind
 
-            console.debug(f"> painted_cube : {cube}")
-            ring.append(cube, preceding_edge)
+                # Handle internal error of logic.
+                if selected is None:
+                    console.error(f"> Failure to paint cube at {position} w/ {reaches}")
+                    raise Exception("No suitable kind found for next colorless cube when painting ColorlessPath.")
 
-            if current_node is not None and selected.get_type() == current_node.type:
-                current_node = node_restrictions[node_count] if node_count < len(node_restrictions) else None
-                preceding_edge = edge_restrictions[node_count - 1].type
-            else:
-                preceding_edge = EdgeType.IDENTITY
+                # Construct a colored cube and assign it to the current node if the kind is suitable for the type.
+                cube = BgCube(kind=selected, position=position)
+                console.debug(f"> painted_cube : {cube}")
+                ring.append(cube, preceding_edge)
 
-        # The ColorlessPath is not compatible if it doesn't provide enough colorless cubes to be painted with the nodes.
-        if current_node is not None:
-            return None
+                if current_node is not None and selected.get_type() == current_node.type:
+                    cube.realised_node = current_node
+                    updated.append((ring, node_count + 1))
+                else:
+                    updated.append((ring, node_count))
 
-        # The ColorlessPath is not compatible if the last cube cannot be connected to the final
-        step = Step(ring.anchor.position - ring.terminal.position)
-        if not CubeKind.compatible(ring.terminal.kind, ring.anchor.kind, step, preceding_edge):
-            return None
+            rings.clear()
+            rings.extend(updated)
+            rings_volume += 1
 
-        ring = ring.close(preceding_edge)
+        for ring, node_count in rings:
+            # The ColorlessPath is not compatible if it doesn't provide enough colorless cubes to be painted.
+            if node_count < len(node_restrictions):
+                continue
 
-        return ring
+            preceding_edge = edge_restrictions[-1].type
+            step = Step(ring.anchor.position - ring.terminal.position)
+
+            # The ColorlessPath is not compatible if the last cube cannot be connected to the final
+            if not CubeKind.compatible(ring.terminal.kind, ring.anchor.kind, step, preceding_edge):
+                continue
+
+            ring = ring.close(preceding_edge)
+
+            return ring
+
+        return None
