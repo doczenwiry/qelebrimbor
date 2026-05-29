@@ -119,15 +119,15 @@ class RingfinderColorblindExhaustiveBFS:
             if maximal_volume and maximal_volume < partial.volume:
                 continue
 
-            console.info(f"> Current [V:{partial.volume}] : {partial}")
+            console.debug(f"> Current [V:{partial.volume}] : {partial}")
 
             # Check whether the goal has been accomplished
             if partial.closed() and partial.volume >= node_type_nr:
                 # Ignore the incoming path if it doesn't line up with a port of the final cube.
-                console.debug(f"Candidate ColorlessStrand [{partial.volume}] : {partial}")
-                console.debug(f"> Paintable {partial} by {goal} ? {PainterZxCycle.paintable(partial, goal)}")
+                console.debug(f"Candidate [{partial.volume}] : {partial}")
+                console.debug(f"> Paintable by {goal} ? {PainterZxCycle.paintable(partial, goal)}")
 
-                if PainterZxCycle.paintable(partial, goal):
+                if PainterZxCycle.all_paintable(partial, goal):
                     # Tracing exploration
                     if tracer:
                         tracer.add_edge(partial.terminal, partial.anchor)
@@ -142,7 +142,7 @@ class RingfinderColorblindExhaustiveBFS:
             else:
                 constellation = [SpacetimeHelper.XP]
 
-            console.info(f"> {partial.terminal} has constellation : {constellation}")
+            console.debug(f"> {partial.terminal} has constellation : {constellation}")
 
             for adjacent in constellation:
                 # Ignore adjacent with a step in the negative direction with no prior step in the positive direction.

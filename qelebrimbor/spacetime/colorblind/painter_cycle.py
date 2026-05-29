@@ -35,12 +35,15 @@ class PainterZxCycle:
         return PainterZxCycle.paint(colorless, cycle) is not None
 
     @staticmethod
+    def all_paintable(colorless: ColorlessRing, cycle: ZxCycle) -> bool:
+        return len(PainterZxCycle.all_painted(colorless, cycle)) > 0
+
+    @staticmethod
     def all_painted(colorless: ColorlessRing, cycle: ZxCycle) -> list[Ring]:
         painted: list[Ring] = list()
         # TODO: not all shifts are needed (e.g. YP, XP, YM, YM, XM, YP has only three essentially different ones)
-        # for shift in range(colorless.volume):
-        #     painted.extend(PainterZxCycle.__all_painted(colorless.rotated(shift), cycle))
-        painted.extend(PainterZxCycle.__all_painted(colorless, cycle))
+        for shift in range(colorless.volume):
+            painted.extend(PainterZxCycle.__all_painted(colorless.rotated(shift), cycle))
         return painted
 
     @staticmethod
