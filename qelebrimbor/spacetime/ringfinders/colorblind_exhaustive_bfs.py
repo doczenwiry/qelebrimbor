@@ -54,9 +54,7 @@ class RingfinderColorblindExhaustiveBFS:
 
         console.info(f"Essentially different colorless rings found : {len(colorless_rings)}")
         for colorless in colorless_rings:
-            console.info(f"> Ring : {colorless}")
-
-        for colorless in colorless_rings:
+            console.debug(f"> Ring : {colorless}")
             rings.extend(PainterZxCycle.all_painted(colorless, goal))
 
         return rings

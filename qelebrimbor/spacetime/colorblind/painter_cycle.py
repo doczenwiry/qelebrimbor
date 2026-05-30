@@ -67,11 +67,10 @@ class PainterZxCycle:
 
         position, reaches = current_cube
         console.debug(f"current_node : {current_node} ? {current_cube}")
-        initial = Ring(
-            anchor=BgCube(kind=CubeKind.convert(current_node.type, next(iter(reaches)).value), position=position)
-        )
-        initial.anchor.realised_node = current_node
-        heapq.heappush(unrelaxed, (initial, node_count))
+        for reach in reaches:
+            initial = Ring(anchor=BgCube(kind=CubeKind.convert(current_node.type, reach.value), position=position))
+            initial.anchor.realised_node = current_node
+            heapq.heappush(unrelaxed, (initial, node_count))
 
         # TODO: go over all ways to match the nodes of the cycle to the cubes of the colorless ring.
         # At every stage, decide whether to EITHER match the current node/edge with the current cube/pipe
