@@ -111,6 +111,14 @@ class VolumetricZxGraph(nx.Graph):
 
         self.__next_cube_id = max(self.nodes) + 1 if len(self.nodes) > 0 else 0
 
+    def make_alternative(self) -> VolumetricZxGraph:
+        return VolumetricZxGraph(
+            nodes=list((node.id, node.type) for node in self.get_zx_nodes()),
+            edges=list((edge.source.id, edge.target.id, edge.type) for edge in self.get_zx_edges()),
+            qubits={node.id: node.qubit for node in self.get_zx_nodes()},
+            layers={node.id: node.layer for node in self.get_zx_nodes()},
+        )
+
     def get_zx_nodes(
         self,
         node_type: NodeType | None = None,

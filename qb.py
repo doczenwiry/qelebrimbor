@@ -29,7 +29,7 @@ from qelebrimbor.formats.preprocessing.full_reduce import FullReduce
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
 from qelebrimbor.formats.vzx import VZX
-from qelebrimbor.inflaters.rings import ZxGraphInflaterRings
+from qelebrimbor.inflaters.equivolumetric_rings import ZxGraphInflaterEquivolumetricRings
 from qelebrimbor.inflaters.trees import ZxGraphInflaterTrees
 from qelebrimbor.utilities.qb_reporting import print_report
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
@@ -207,7 +207,7 @@ def main() -> int:
     if verbose:
         print("\nINFLATION STAGE.")
 
-    ring_inflater = ZxGraphInflaterRings(graph=vzx, cycles=cycles, verbose=verbose)
+    ring_inflater = ZxGraphInflaterEquivolumetricRings(graph=vzx, cycles=cycles, verbose=verbose)
 
     if verbose:
         print("> " + colored(f"Phase  I : {ring_inflater.__class__.__name__}", attrs=["underline"], force_color=True))
