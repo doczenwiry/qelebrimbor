@@ -71,7 +71,7 @@ class ZxGraphInflaterEquivolumetricRings:
         while len(incomplete_constructions) > 0:
             if epoch == abort_on_index:
                 console.info("> Premature abort for inspection.")
-                return completed_constructions
+                return incomplete_constructions
 
             remaining_constructions: list[Construction] = []
             for construction in incomplete_constructions:
@@ -120,8 +120,6 @@ class ZxGraphInflaterEquivolumetricRings:
         console.info(f"Total number of epochs  : {epoch}.")
         if self.__verbose:
             print(f">> Number of minimal constructions : {len(minimal_constructions)}")
-            for graph, _, _ in minimal_constructions:
-                print(f">> Construction with volume : {graph.volume()}")
 
         return minimal_constructions
 
