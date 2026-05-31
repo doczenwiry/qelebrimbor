@@ -63,6 +63,9 @@ class ZxTree:
 
         return preceding
 
+    def following(self, node: ZxNode) -> list[ZxNode]:
+        return self.__following[node]
+
     def level(self, level: int = 0) -> list[ZxNode]:
         current: list[ZxNode] = [self.root]
         for h in range(level):
