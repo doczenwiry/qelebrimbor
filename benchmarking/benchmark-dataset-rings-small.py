@@ -25,6 +25,7 @@ from qelebrimbor.formats.pyzx import PYZX
 
 logging.basicConfig(level=logging.INFO)
 
+TIMEOUT = 5
 if __name__ == "__main__":
     print(f"Benchmarking dataset {benchmark.DATASET}")
 
@@ -53,11 +54,11 @@ if __name__ == "__main__":
                 result = subprocess.run(
                     [f"python ../qb.py -cs {benchmark.DATASET_DIRECTORY}/{input_path} 2> /dev/null"],
                     shell=True,
-                    timeout=20,
+                    timeout=TIMEOUT,
                     capture_output=True,
                     text=True,
                 )
                 print(result.stdout, end="")
             except subprocess.TimeoutExpired:
-                print("ABORTED RUN [longer than 20 seconds].")
+                print(f"ABORTED RUN [longer than {TIMEOUT} seconds].")
                 continue
