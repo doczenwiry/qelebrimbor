@@ -341,7 +341,8 @@ class VolumetricZxGraph(nx.Graph):
         if current_node.id != current_cube.realised_node.id:
             raise Exception("Ring must be anchored at a cube realising the first node of the cycle.")
 
-        anchor_id: CubeId = self.realise_zx_node(current_cube.realised_node, current_cube)  # noqa: F841
+        realised_node = self.get_zx_node(current_cube.realised_node.id)
+        anchor_id: CubeId = self.realise_zx_node(realised_node, current_cube)  # noqa: F841
 
         last_cube: BgCube = self.get_bg_cube(anchor_id)
         path: Path = Path(start=last_cube)
@@ -359,7 +360,8 @@ class VolumetricZxGraph(nx.Graph):
                 if current_cube.realised_node.id != current_node.id:
                     raise Exception("Ring is not respecting the order of the nodes of the cycle.")
 
-                cube_id = self.realise_zx_node(current_node, current_cube)
+                realised_node = self.get_zx_node(current_node.id)
+                cube_id = self.realise_zx_node(realised_node, current_cube)
                 last_cube = self.get_bg_cube(cube_id)
                 path.append(last_cube, pipe=current_pipe)
                 self.realise_zx_edge(previous_node.id, current_node.id, path)
