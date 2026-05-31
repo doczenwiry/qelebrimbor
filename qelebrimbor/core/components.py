@@ -77,6 +77,10 @@ class ZxEdge(RecordClass):
         return len(self.__realisation) > 0
 
     @property
+    def id(self):
+        return self.source.id, self.target.id
+
+    @property
     def is_intra_layer(self):
         return self.source.layer == self.target.layer
 

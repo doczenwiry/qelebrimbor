@@ -29,8 +29,8 @@ from qelebrimbor.formats.preprocessing.full_reduce import FullReduce
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.formats.tqec import TQEC
 from qelebrimbor.formats.vzx import VZX
-from qelebrimbor.inflaters.equivolumetric_rings import ZxGraphInflaterEquivolumetricRings
-from qelebrimbor.inflaters.trees import ZxGraphInflaterTrees
+from qelebrimbor.inflaters.equivolumetric_rings import Construction, ZxGraphInflaterEquivolumetricRings
+from qelebrimbor.inflaters.equivolumetric_trees import ZxGraphInflaterEquivolumetricTrees
 from qelebrimbor.utilities.qb_reporting import print_report
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
@@ -160,6 +160,8 @@ def main() -> int:
     if arguments.zx_coloring:
         zx_attributes.ZX_COLORING = True
 
+    total_runtime: float = 0.0
+
     # Preliminary analysis stage.
     if verbose:
         print("ANALYSIS STAGE.")
@@ -168,6 +170,7 @@ def main() -> int:
         vzx = PYZX.from_pyzx_graph(pyzx_input)
         VolumetricZxGraphAnalyser.report(graph=vzx)
         runtime = round(time() - start, 2)
+        total_runtime += runtime
         print(f"> Completed in {'{:.2f}'.format(runtime)} seconds.")
 
     # Preprocessing stage.
@@ -192,6 +195,8 @@ def main() -> int:
         print(f"> Completed in {'{:.2f}'.format(runtime)} seconds.")
     else:
         cycles = CycleAnalyser.decompose(graph=vzx, minimal=True)
+        runtime = round(time() - start, 2)
+    total_runtime += runtime
 
     if arguments.output_pyzx:
         output = path.splitext(arguments.filepath)[0] + str(".internal.json")
@@ -215,10 +220,11 @@ def main() -> int:
     sys.stdout.flush()
     sys.stderr.flush()
 
+    constructions: list[Construction] = []
     if "rings" in arguments.inflation:
         start = time()
         try:
-            ring_inflater.process(abort_on_index=arguments.index)
+            constructions.extend(ring_inflater.process(abort_on_index=arguments.index))
         except Exception as e:
             print(colored("FAILURE [Rings] :", color="red", attrs=["underline"], force_color=True) + f" {e}")
             if verbose:
@@ -226,14 +232,16 @@ def main() -> int:
             else:
                 exit(-1)
         runtime = round(time() - start, 6)
+        total_runtime += runtime
 
         if verbose:
-            print(f">> Total runtime : {'{:.3f}'.format(runtime)}s")
+            print(f">> Runtime : {'{:.3f}'.format(runtime)}s")
     else:
         if verbose:
             print(">> Skipped per argument --inflation.")
 
-    tree_inflater = ZxGraphInflaterTrees(graph=vzx, verbose=verbose)
+    tree_inflater = ZxGraphInflaterEquivolumetricTrees(graph=vzx, verbose=verbose)
+
     if verbose:
         print("> " + colored(f"Phase II : {tree_inflater.__class__.__name__}", attrs=["underline"], force_color=True))
 
@@ -243,7 +251,7 @@ def main() -> int:
     if "trees" in arguments.inflation:
         start = time()
         try:
-            tree_inflater.process(abort_on_index=arguments.index)
+            constructions = tree_inflater.process(constructions)
         except Exception as e:
             print(colored("FAILURE [Trees] :", color="red", attrs=["underline"], force_color=True) + f" {e}")
             if verbose:
@@ -251,9 +259,10 @@ def main() -> int:
             else:
                 exit(-1)
         runtime = round(time() - start, 6)
+        total_runtime += runtime
 
         if verbose:
-            print(f">> Total runtime : {'{:.3f}'.format(runtime)}s")
+            print(f">> Runtime : {'{:.3f}'.format(runtime)}s")
     else:
         if verbose:
             print(">> Skipped per argument --inflation.")
@@ -261,12 +270,20 @@ def main() -> int:
     sys.stdout.flush()
     sys.stderr.flush()
 
+    # for graph, _, _ in constructions:
+    #     print_report(graph, input_spider_count=input_spider_count, cycles=cycles, detailed=verbose)
+    #     VolumetricZxGraphViewer(
+    #         graph=graph, label=arguments.filepath, cycles=cycles,
+    #         layout=PlanarLayout(graph, scale=3.0) if arguments.preprocessor != "none" else CircuitLayout(graph),
+    #     ).display()
+    final_construct, _, _ = constructions[0]
+
     # Reporting stage
     if verbose:
         print("\nREPORTING STAGE.")
     else:
-        print(f"RUN:{'{:.3f}'.format(runtime).rjust(6, ' ')}s,", end=" ")
-    print_report(vzx, input_spider_count=input_spider_count, cycles=cycles, detailed=verbose)
+        print(f"RUN:{'{:.3f}'.format(total_runtime).rjust(6, ' ')}s,", end=" ")
+    print_report(final_construct, input_spider_count=input_spider_count, cycles=cycles, detailed=verbose)
 
     # Outputting stage
     if arguments.output_pyzx or arguments.output_tqec or arguments.output_vzx:
@@ -277,9 +294,9 @@ def main() -> int:
             if verbose:
                 print(f"> Writing PyZX compiled to {output}")
 
-            pyzx_output = PYZX.into_pyzx_graph(vzx)
+            pyzx_output = PYZX.into_pyzx_graph(final_construct)
             # Reset the inputs/outputs identification that was lost in the construction process.
-            if all(node.is_realised() for node in vzx.get_zx_nodes()):
+            if all(node.is_realised() for node in final_construct.get_zx_nodes()):
                 pyzx_output.set_inputs(pyzx_input.inputs())
                 pyzx_output.set_outputs(pyzx_input.outputs())
                 pyzx_output.normalize()
@@ -290,23 +307,23 @@ def main() -> int:
             output = path.splitext(arguments.filepath)[0] + str(".tqec")
             if verbose:
                 print(f"> Writing TQEC output to {output}.")
-            TQEC.into_tqec_file(vzx, output)
+            TQEC.into_tqec_file(final_construct, output)
 
         if arguments.output_vzx:
             output = path.splitext(arguments.filepath)[0] + str(".vzx")
             if verbose:
                 print(f"> Writing VZX output to {output}.")
-            VZX.into_file(vzx, output)
+            VZX.into_file(final_construct, output)
 
     # Validation stage
     if arguments.check_equivalence:
         if verbose:
             print("\nEQUIVALENCE VALIDATION STAGE.")
 
-        if all(node.is_realised() for node in vzx.get_zx_nodes()) and all(
-            edge.is_realised() for edge in vzx.get_zx_edges()
+        if all(node.is_realised() for node in final_construct.get_zx_nodes()) and all(
+            edge.is_realised() for edge in final_construct.get_zx_edges()
         ):
-            pyzx_output = PYZX.into_pyzx_graph(vzx)
+            pyzx_output = PYZX.into_pyzx_graph(final_construct)
             # Reset the inputs/outputs identification that was lost in the construction process.
             pyzx_output.set_inputs(pyzx_input.inputs())
             pyzx_output.set_outputs(pyzx_input.outputs())
@@ -347,14 +364,16 @@ def main() -> int:
 
     # Visualisation stage
     if arguments.visualization or arguments.force_visualization:
-        if arguments.force_visualization or vzx.volume() <= 100:
+        if arguments.force_visualization or final_construct.volume() <= 100:
             window_size = "full" if arguments.fullscreen else "auto"
             viewer = VolumetricZxGraphViewer(
-                graph=vzx,
+                graph=final_construct,
                 label=arguments.filepath,
                 size=window_size,
-                cycles=cycles,
-                layout=PlanarLayout(vzx, scale=3.0) if arguments.preprocessor != "none" else CircuitLayout(vzx),
+                cycles=CycleAnalyser.decompose(final_construct),
+                layout=PlanarLayout(final_construct, scale=3.0)
+                if arguments.preprocessor != "none"
+                else CircuitLayout(final_construct),
             )
             viewer.display()
         elif verbose:
