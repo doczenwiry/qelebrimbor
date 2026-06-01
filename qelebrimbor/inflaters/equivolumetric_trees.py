@@ -27,7 +27,6 @@ from qelebrimbor.inflaters.equivolumetric_rings import Construction
 from qelebrimbor.spacetime.connectivity.open_ports import OpenPortsTracker
 from qelebrimbor.spacetime.placefinders.breadth_first_search import PlacefinderBFS
 from qelebrimbor.utilities.statistics import VolumetricZxGraphStatistics
-from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
 console = logging.getLogger(__name__)
 
@@ -156,7 +155,6 @@ class ZxGraphInflaterEquivolumetricTrees:
                         proposal=Path(start=preceding_cube).extend(cube=realising_cube, pipe_type=edge.type),
                     )
                 else:
-                    VolumetricZxGraphViewer(graph=graph, label=f"portless {preceding_node} [src:si]").display()
                     raise Exception(f"Realising cube of {preceding_node} has no ports available [src:si].")
 
             # Extend if the number of required ports is above the number of available ports.

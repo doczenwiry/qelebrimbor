@@ -51,6 +51,7 @@ class ZxGraphInflaterEquivolumetricRings:
 
         # Realise the primary cycle
         console.info(f"> Primary cycle identified : {primary_cycle}")
+        # TODO: determine maximal_excess considering cycles with less than 4 spiders.
         incomplete_constructions: list[Construction] = self.__attempt_ring_realisation(
             cycle=primary_cycle, maximal_excess=2 if primary_cycle.length == 4 else 0
         )
