@@ -13,6 +13,7 @@
 #   limitations under the License.
 
 from enum import Enum
+from typing import Iterator
 
 from qelebrimbor.core.coordinates import Coordinates
 
@@ -38,6 +39,24 @@ class Step(Enum):
     YM = Coordinates(0, -1, 0)
     ZP = Coordinates(0, 0, +1)
     ZM = Coordinates(0, 0, -1)
+
+    def dot(self, other: Step) -> int:
+        return int(self.value.dot(other.value))
+
+    def cross(self, other: Step) -> Step:
+        return Step(self.value.cross(other.value))
+
+    def __mul__(self, other) -> Step:
+        return Step(self.value * other)
+
+    def __rmul__(self, other) -> Step:
+        return self * other
+
+    def __neg__(self) -> Step:
+        return Step(-self.value)
+
+    def orthogonals(self) -> Iterator[Step]:
+        return (step for step in Step if self.dot(step) == 0)
 
     def __str__(self) -> str:
         return f"Step.{self.name}"
