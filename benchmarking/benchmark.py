@@ -20,7 +20,7 @@ import pyzx
 
 random.seed(42)
 
-DATASET_PARAMETERS = {"small": {"QUBITS": [4, 8, 16, 32], "DEPTHS": [4, 8, 16, 32]}}
+DATASET_PARAMETERS = {"small": {"QUBITS": [4], "DEPTHS": [4, 8, 16, 32, 64, 128, 256, 512]}}
 DATASET = "small"
 DATASET_DIRECTORY = f"../benchmarking/datasets/{DATASET}"
 

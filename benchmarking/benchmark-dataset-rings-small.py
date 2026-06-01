@@ -25,7 +25,7 @@ from qelebrimbor.formats.pyzx import PYZX
 
 logging.basicConfig(level=logging.INFO)
 
-TIMEOUT = 5
+TIMEOUT = 10
 if __name__ == "__main__":
     print(f"Benchmarking dataset {benchmark.DATASET}")
 
