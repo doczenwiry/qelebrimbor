@@ -12,22 +12,25 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 from unittest import TestCase
 
 from qelebrimbor.core.colorless.ring import ColorlessRing
 from qelebrimbor.core.coordinates import Coordinates
-from qelebrimbor.helpers.spacetime import SpacetimeHelper
+from qelebrimbor.helpers.spacetime import SpacetimeHelper, Step
+
+logging.getLogger("qelebrimbor.core.colorless.ring").setLevel(logging.DEBUG)
 
 
 class TestColorlessRing(TestCase):
     def test_ring(self):
-        colorless = ColorlessRing(anchor=Coordinates(0, 0, 0))
+        colorless = ColorlessRing().extend(Coordinates(0, 0, 0))
         print(f"Ring : {colorless}")
         self.assertEqual(str(colorless), "( 0, 0, 0) -- [OPEN]")
 
     def test_append(self):
         current = Coordinates(0, 0, 0)
-        colorless = ColorlessRing(anchor=current)
+        colorless = ColorlessRing().extend(current)
         for step in [SpacetimeHelper.YP, SpacetimeHelper.ZP, SpacetimeHelper.YM]:
             current += step
             colorless.append(current)
@@ -39,8 +42,17 @@ class TestColorlessRing(TestCase):
 
     def test_extend(self):
         current = Coordinates(0, 0, 0)
-        colorless = ColorlessRing(anchor=current)
+        colorless = ColorlessRing().extend(current)
         extended = colorless.extend(SpacetimeHelper.YP)
 
         self.assertEqual(str(colorless), "( 0, 0, 0) -- [OPEN]")
         self.assertEqual(str(extended), "( 0, 0, 0) -- ( 0, 1, 0) -- [OPEN]")
+
+    def test_moves(self):
+        current = Coordinates(0, 0, 0)
+        colorless = ColorlessRing().extend(current)
+        for step in [Step.YP, Step.XP, Step.YM, Step.YM, Step.XM]:
+            current += step.value
+            colorless.append(current)
+        print(f"Ring : {colorless}")
+        print(f"Moves: {colorless.moves}")

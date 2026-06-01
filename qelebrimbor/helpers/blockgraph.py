@@ -12,6 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from enum import Enum
 from logging import getLogger
 
 from qelebrimbor.core.bg.attributes import CubeKind
@@ -22,6 +23,20 @@ from qelebrimbor.core.zx.attributes import EdgeType, NodeType
 from qelebrimbor.helpers.spacetime import SpacetimeHelper, Step
 
 console = getLogger(__name__)
+
+
+class Move(Enum):
+    FORWARD = 0
+    LEFT = 1
+    RIGHT = 2
+    UP = 3
+    DOWN = 4
+
+    def __str__(self):
+        return str(self.name[0])
+
+    def __repr__(self):
+        return str(self)
 
 
 class BlockGraphHelper:
