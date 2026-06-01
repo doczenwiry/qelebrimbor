@@ -85,7 +85,13 @@ def __format_percentage(
     return output
 
 
-def print_report(vzx: VolumetricZxGraph, input_spider_count: int, cycles: list[ZxCycle], detailed: bool = True):
+def print_report(
+    vzx: VolumetricZxGraph,
+    internal_spider_count: int,
+    input_spider_count: int,
+    cycles: list[ZxCycle],
+    detailed: bool = True,
+):
     realised_nodes: int = sum(1 for node in vzx.get_zx_nodes() if node.is_realised())
     realised_edges: int = sum(1 for edge in vzx.get_zx_edges() if edge.is_realised())
     node_realisation_rate: str = __format_percentage(
@@ -192,5 +198,6 @@ def print_report(vzx: VolumetricZxGraph, input_spider_count: int, cycles: list[Z
         summary += f"RIR:{required_inflation_rate}, "
         summary += f"AIR:{achieved_inflation_rate}, "
         summary += f"SC:{str(input_spider_count).rjust(4, ' ')}, "
-        summary += f"TV:{str(total_volume).rjust(4, ' ')},"
-        print(summary, end=" ")
+        summary += f"ISC:{str(internal_spider_count).rjust(4, ' ')}, "
+        summary += f"TV:{str(total_volume).rjust(4, ' ')}, "
+        print(summary, end="")

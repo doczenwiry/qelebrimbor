@@ -24,6 +24,7 @@ from termcolor import colored
 from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.analysis.vzx_analyser import VolumetricZxGraphAnalyser
 from qelebrimbor.core.zx import attributes as zx_attributes
+from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.formats.preprocessing.full_reduce import FullReduce
 from qelebrimbor.formats.pyzx import PYZX
@@ -186,6 +187,7 @@ def main() -> int:
         FullReduce.process(pyzx_internal)
 
     vzx = PYZX.from_pyzx_graph(pyzx_internal)
+    internal_spider_count: int = sum(1 for node in vzx.get_zx_nodes() if node.type in {NodeType.X, NodeType.Z})
     cycles: list[ZxCycle]
 
     if verbose:
@@ -283,7 +285,13 @@ def main() -> int:
         print("\nREPORTING STAGE.")
     else:
         print(f"RUN:{'{:.3f}'.format(total_runtime).rjust(6, ' ')}s,", end=" ")
-    print_report(final_construct, input_spider_count=input_spider_count, cycles=cycles, detailed=verbose)
+    print_report(
+        final_construct,
+        internal_spider_count=internal_spider_count,
+        input_spider_count=input_spider_count,
+        cycles=cycles,
+        detailed=verbose,
+    )
 
     # Outputting stage
     if arguments.output_pyzx or arguments.output_tqec or arguments.output_vzx:
@@ -323,27 +331,24 @@ def main() -> int:
         if all(node.is_realised() for node in final_construct.get_zx_nodes()) and all(
             edge.is_realised() for edge in final_construct.get_zx_edges()
         ):
-            pyzx_output = PYZX.into_pyzx_graph(final_construct)
-            # Reset the inputs/outputs identification that was lost in the construction process.
-            pyzx_output.set_inputs(pyzx_input.inputs())
-            pyzx_output.set_outputs(pyzx_input.outputs())
-            pyzx_output.normalize()
-
             method = "iCwAI"
             try:
+                pyzx_output = PYZX.into_pyzx_graph(final_construct)
+                # Reset the inputs/outputs identification that was lost in the construction process.
+                pyzx_output.set_inputs(pyzx_input.inputs())
+                pyzx_output.set_outputs(pyzx_input.outputs())
+                pyzx_output.normalize()
+
                 composition = pyzx_input.copy()
                 composition.compose(pyzx_output.adjoint())
                 pyzx.full_reduce(composition)
                 validation_successful = composition.is_id()
-            except Exception:
-                validation_successful = None
 
-            if validation_successful is False and pyzx_input.qubit_count() <= 8:
-                try:
+                if validation_successful is False and pyzx_input.qubit_count() <= 8:
                     method = "CT"
                     validation_successful = pyzx.compare_tensors(pyzx_input, pyzx_output)
-                except Exception:
-                    validation_successful = None
+            except Exception:
+                validation_successful = None
 
             if validation_successful is None:
                 status, color = ("EXCEPTION", "yellow")
