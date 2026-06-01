@@ -15,44 +15,65 @@
 import itertools
 import os
 import random
+from enum import Enum
 
 import pyzx
 
 random.seed(42)
-
-DATASET_PARAMETERS = {"small": {"QUBITS": [4], "DEPTHS": [4, 8, 16, 32, 64, 128, 256, 512]}}
-DATASET = "small"
-DATASET_DIRECTORY = f"../benchmarking/datasets/{DATASET}"
-
 SEED_COUNT = 10
 SEEDS = [int(random.random() * 4242424242) for _ in range(SEED_COUNT)]
-QUBITS = DATASET_PARAMETERS[DATASET]["QUBITS"]
-DEPTHS = DATASET_PARAMETERS[DATASET]["DEPTHS"]
 
 
-def get_dataset_filenames(prefix: str | None = None) -> list[str]:
+class Dataset(Enum):
+    SMALL = 0
+    MEDIO = 1
+    LARGE = 2
+
+
+DATASET_PARAMETERS: dict[str, dict[str, list[int]]] = {
+    Dataset.SMALL.name: {"QUBITS": [4], "DEPTHS": [4, 8, 16, 32, 64, 128, 256, 512]}
+}
+
+
+def get_dataset_parameters(dataset: Dataset):
+    return itertools.product(
+        DATASET_PARAMETERS[dataset.name]["QUBITS"], DATASET_PARAMETERS[dataset.name]["DEPTHS"], SEEDS
+    )
+
+
+def get_dataset_directory(dataset: Dataset, hadamards: bool = False) -> str:
+    return f"../benchmarking/datasets/{dataset.name.lower()}/" + ("hadamard" if hadamards else "identity")
+
+
+def get_dataset_filenames(dataset: Dataset) -> list[str]:
     return list(
         map(
             lambda parameters: (
-                f"{(prefix + '/') if prefix else ''}random-cnots-q{parameters[0]}-d{parameters[1]}-s{parameters[2]}.pyzx.json"  # noqa: E501
+                f"random-cnots-q{parameters[0]}-d{parameters[1]}-s{parameters[2]}.pyzx.json"  # noqa: E501
             ),
-            itertools.product(QUBITS, DEPTHS, SEEDS),
+            get_dataset_parameters(dataset),
         )
     )
 
 
-def dataset_detected():
-    present_inputs = set(filter(lambda name: name.endswith(".pyzx.json"), os.listdir(DATASET_DIRECTORY)))
-    dataset_inputs = set(get_dataset_filenames())
+def dataset_detected(dataset: Dataset, hadamards: bool = False):
+    directory = get_dataset_directory(dataset, hadamards)
+    present_inputs = set(filter(lambda name: name.endswith(".pyzx.json"), os.listdir(directory)))
+    dataset_inputs = set(get_dataset_filenames(dataset))
 
     return dataset_inputs.issubset(present_inputs)
 
 
-def generate_dataset():
-    for seed, qubits, depth in itertools.product(SEEDS, QUBITS, DEPTHS):
+def generate_dataset(dataset: Dataset, hadamards: bool = False):
+    directory = get_dataset_directory(dataset, hadamards)
+    for qubits, depth, seed in get_dataset_parameters(dataset):
         random.seed(seed)
-        circuit = f"random-cnots-q{qubits}-d{depth}-s{seed}"
-        zx = pyzx.generate.cnots(qubits=qubits, depth=depth)
+        filename = f"random-cnots-q{qubits}-d{depth}-s{seed}"
+        if hadamards:
+            circuit = pyzx.generate.CNOT_HAD_PHASE_circuit(qubits=qubits, depth=depth, p_had=0.2, p_t=0.0, seed=seed)
+            zx = circuit.to_graph()
+        else:
+            zx = pyzx.generate.cnots(qubits=qubits, depth=depth)
 
-        with open(f"{DATASET_DIRECTORY}/{circuit}.pyzx.json", "w") as file:
+        with open(f"{directory}/{filename}.pyzx.json", "w") as file:
             file.write(zx.to_json())

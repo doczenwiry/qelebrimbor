@@ -19,6 +19,7 @@ from typing import cast
 import benchmark
 import networkx as nx
 
+from benchmarking.benchmark import Dataset, get_dataset_directory
 from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.formats.preprocessing.full_reduce import FullReduce
 from qelebrimbor.formats.pyzx import PYZX
@@ -27,18 +28,22 @@ logging.basicConfig(level=logging.INFO)
 
 TIMEOUT = 10
 if __name__ == "__main__":
-    print(f"Benchmarking dataset {benchmark.DATASET}")
+    dataset = Dataset.SMALL
+    hadamards = False
+    print(f"Benchmarking dataset {dataset}")
 
-    if not benchmark.dataset_detected():
-        benchmark.generate_dataset()
+    dataset_directory = get_dataset_directory(dataset, hadamards)
+    if not benchmark.dataset_detected(dataset, hadamards):
+        print(f"Generating dataset {dataset} in {dataset_directory}")
+        benchmark.generate_dataset(dataset, hadamards)
     else:
-        print(f"Existing dataset found in {benchmark.DATASET_DIRECTORY}.")
+        print(f"Existing dataset found in {dataset_directory}")
 
-    dataset_filenames = benchmark.get_dataset_filenames()
+    dataset_filenames = benchmark.get_dataset_filenames(dataset)
     longest_file_name = max(map(len, dataset_filenames))
 
     for input_path in dataset_filenames:
-        pyzx_input = PYZX.from_file(benchmark.DATASET_DIRECTORY + "/" + input_path)
+        pyzx_input = PYZX.from_file(dataset_directory + "/" + input_path)
         try:
             FullReduce().process(pyzx_input)
         except KeyError as ke:
@@ -52,7 +57,7 @@ if __name__ == "__main__":
 
             try:
                 result = subprocess.run(
-                    [f"python ../qb.py -cs {benchmark.DATASET_DIRECTORY}/{input_path} 2> /dev/null"],
+                    [f"python ../qb.py -cs {dataset_directory}/{input_path} 2> /dev/null"],
                     shell=True,
                     timeout=TIMEOUT,
                     capture_output=True,
