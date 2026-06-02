@@ -20,6 +20,7 @@ dependencies = [
     "seaborn>=0.13.2",
     "pandas>=3.0.2",
     "pre-commit>=4.6.0",
+    "zxlive>=1.0.0",
 ]
 
 [dependency-groups]
