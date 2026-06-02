@@ -7,7 +7,7 @@ __pycache__/
 # Dataset
 benchmarking/datasets/small/*
 benchmarking/datasets/large/*
+*.pyzx.compiled.json
+*.pyzx.internal.json
 # Texifier
 .texpadtmp/
-# egg-info
-*.egg-info
