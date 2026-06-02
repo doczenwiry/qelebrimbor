@@ -307,7 +307,6 @@ def main() -> int:
             if all(node.is_realised() for node in final_construct.get_zx_nodes()):
                 pyzx_output.set_inputs(pyzx_input.inputs())
                 pyzx_output.set_outputs(pyzx_input.outputs())
-                pyzx_output.normalize()
 
             PYZX.into_file(pyzx_output, output)
 
@@ -337,7 +336,6 @@ def main() -> int:
                 # Reset the inputs/outputs identification that was lost in the construction process.
                 pyzx_output.set_inputs(pyzx_input.inputs())
                 pyzx_output.set_outputs(pyzx_input.outputs())
-                pyzx_output.normalize()
 
                 composition = pyzx_input.copy()
                 composition.compose(pyzx_output.adjoint())

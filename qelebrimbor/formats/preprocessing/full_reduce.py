@@ -21,3 +21,4 @@ class FullReduce(Preprocessor):
     @staticmethod
     def process(input: pyzx.graph.base.BaseGraph) -> None:
         pyzx.full_reduce(input)
+        input.normalize()
