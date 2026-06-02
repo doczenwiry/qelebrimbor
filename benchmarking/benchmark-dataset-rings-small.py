@@ -16,10 +16,9 @@ import logging
 import subprocess
 from typing import cast
 
-import benchmark
 import networkx as nx
 
-from benchmarking.benchmark import Dataset, get_dataset_directory
+import benchmarking.benchmark as benchmark
 from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.formats.preprocessing.full_reduce import FullReduce
 from qelebrimbor.formats.pyzx import PYZX
@@ -28,11 +27,11 @@ logging.basicConfig(level=logging.INFO)
 
 TIMEOUT = 10
 if __name__ == "__main__":
-    dataset = Dataset.SMALL
+    dataset = benchmark.Dataset.SMALL
     hadamards = False
     print(f"Benchmarking dataset {dataset}")
 
-    dataset_directory = get_dataset_directory(dataset, hadamards)
+    dataset_directory = benchmark.get_dataset_directory(dataset, hadamards)
     if not benchmark.dataset_detected(dataset, hadamards):
         print(f"Generating dataset {dataset} in {dataset_directory}")
         benchmark.generate_dataset(dataset, hadamards)
