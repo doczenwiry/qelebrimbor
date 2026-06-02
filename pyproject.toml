@@ -7,20 +7,20 @@ version = "0.1.0"
 description = "A toolbox for studying the relationships between ZX-graphs and Lattice Surgery."
 requires-python = ">=3.14"
 dependencies = [
-    "mypy>=1.11",
-    "networkx==3.6.1",
-    "types-networkx==3.6.1.20260408",
-    "numpy==2.4.3",
-    "pyzx==0.10.2",
-    "vedo==2026.6.1",
-    "recordclass==0.24",
-    "scipy>=1.17.1",
-    "matplotlib>=3.10.8",
-    "termcolor>=3.3.0",
-    "seaborn>=0.13.2",
-    "pandas>=3.0.2",
-    "pre-commit>=4.6.0",
-    "zxlive>=1.0.0",
+    "mypy~=2.1",
+    "networkx~=3.6",
+    "types-networkx~=3.6",
+    "numpy~=2.4",
+    "pyzx~=0.10",
+    "vedo~=2026.6",
+    "recordclass~=0.24",
+    "scipy>=1.17",
+    "matplotlib~=3.10",
+    "termcolor~=3.3",
+    "seaborn~=0.13",
+    "pandas~=3.0",
+    "pre-commit~=4.6",
+    "zxlive~=1.0",
 ]
 
 [build-system]
