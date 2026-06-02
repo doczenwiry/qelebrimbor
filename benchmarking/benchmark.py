@@ -14,6 +14,7 @@
 
 import itertools
 import os
+import pathlib
 import random
 from enum import Enum
 
@@ -23,6 +24,7 @@ random.seed(42)
 SEED_COUNT = 10
 SEEDS = [int(random.random() * 4242424242) for _ in range(SEED_COUNT)]
 
+BENCHMARK_DIRECTORY = pathlib.Path(__file__).resolve().parent
 
 class Dataset(Enum):
     SMALL = 0
@@ -42,7 +44,7 @@ def get_dataset_parameters(dataset: Dataset):
 
 
 def get_dataset_directory(dataset: Dataset, hadamards: bool = False) -> str:
-    return f"../benchmarking/datasets/{dataset.name.lower()}/" + ("hadamard" if hadamards else "identity")
+    return f"{BENCHMARK_DIRECTORY}/datasets/{dataset.name.lower()}/" + ("hadamard" if hadamards else "identity")
 
 
 def get_dataset_filenames(dataset: Dataset) -> list[str]:

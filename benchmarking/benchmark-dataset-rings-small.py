@@ -14,11 +14,12 @@
 
 import logging
 import subprocess
+import sys
 from typing import cast
 
+import benchmark
 import networkx as nx
 
-import benchmarking.benchmark as benchmark
 from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.formats.preprocessing.full_reduce import FullReduce
 from qelebrimbor.formats.pyzx import PYZX
@@ -52,17 +53,19 @@ if __name__ == "__main__":
 
         number_of_connected_components = nx.number_connected_components(cast(nx.Graph, vzx))
         if CycleAnalyser.has_cycles(vzx) and number_of_connected_components == 1:
-            print(f"> {input_path.ljust(longest_file_name, ' ')} :", end=" ")
+            print(f"> {input_path.ljust(longest_file_name, ' ')} :", end=" ", flush=True)
 
             try:
                 result = subprocess.run(
-                    [f"python ../qb.py -cs {dataset_directory}/{input_path} 2> /dev/null"],
-                    shell=True,
+                    [sys.executable, "-m", "qb", "-cs", f"{dataset_directory}/{input_path}"],
                     timeout=TIMEOUT,
-                    capture_output=True,
                     text=True,
                 )
-                print(result.stdout, end="")
+
+            except subprocess.CalledProcessError as e:
+                # This catches the crash and prevents the main script from stopping
+                print(f"FAILED (Exit Code {e.returncode})")
+
             except subprocess.TimeoutExpired:
                 print(f"ABORTED RUN [longer than {TIMEOUT} seconds].")
                 continue

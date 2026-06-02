@@ -9,3 +9,5 @@ benchmarking/datasets/small/*
 benchmarking/datasets/large/*
 # Texifier
 .texpadtmp/
+# egg-info
+*.egg-info

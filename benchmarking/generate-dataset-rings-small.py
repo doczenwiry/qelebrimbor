@@ -14,7 +14,7 @@
 
 import logging
 
-import benchmarking.benchmark as benchmark
+import benchmark
 
 logging.basicConfig(level=logging.INFO)
 

@@ -27,6 +27,12 @@ dev = [
     "ruff>=0.15.12",
 ]
 
+[tool.uv]
+package = true
+
+[tool.setuptools]
+packages = [ "qelebrimbor" ]
+
 [tool.ruff]
 # Target version of your Python runtime
 target-version = "py314"
