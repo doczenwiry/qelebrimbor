@@ -18,7 +18,6 @@ from collections import defaultdict
 
 from termcolor import colored
 
-from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.common import Port
 from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
@@ -105,15 +104,7 @@ def print_report(
     portless_nodes_rate = __format_percentage(value=rate, optimum=0.0, lower_better=True)
 
     total_volume = vzx.volume()
-    spider_count: int = sum(1 for zxn in vzx.get_zx_nodes() if zxn.type in {NodeType.X, NodeType.Z})
-    spider_volume: int = sum(
-        1
-        for _ in filter(
-            lambda bgc: bgc.kind not in [CubeKind.OOO, CubeKind.YYY],
-            vzx.get_bg_cubes(),
-        )
-    )
-    excess_volume: int = spider_volume - spider_count
+    excess_volume: int = vzx.volume() - internal_spider_count
     achieved_inflation_rate: str | None = __format_percentage(
         value=(total_volume - input_spider_count) / input_spider_count,
         optimum=0.0,
@@ -128,10 +119,15 @@ def print_report(
         degree = vzx.get_zx_degree(node.id)
         if degree > 4:
             excess_required += (degree - 4 + (degree % 2)) // 2
-    required_inflation_rate = __format_percentage(excess_required / spider_count, lower_better=True, inflation=True)
+    required_inflation_rate = __format_percentage(
+        excess_required / internal_spider_count, lower_better=True, inflation=True
+    )
 
     internal_inflation_rate: str | None = __format_percentage(
-        value=excess_volume / spider_count, optimum=(excess_required / spider_count), lower_better=True, inflation=True
+        value=excess_volume / internal_spider_count,
+        optimum=(excess_required / internal_spider_count),
+        lower_better=True,
+        inflation=True,
     )
 
     if detailed:
