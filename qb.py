@@ -12,30 +12,43 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import logging
 import sys
-from argparse import Action, ArgumentParser
-from os import path
-from time import time
 
-import pyzx
-from termcolor import colored
 
-from qelebrimbor.analysis.cycles import CycleAnalyser
-from qelebrimbor.analysis.vzx_analyser import VolumetricZxGraphAnalyser
-from qelebrimbor.core.zx import attributes as zx_attributes
-from qelebrimbor.core.zx.attributes import NodeType
-from qelebrimbor.core.zx.cycle import ZxCycle
-from qelebrimbor.formats.preprocessing.full_reduce import FullReduce
-from qelebrimbor.formats.pyzx import PYZX
-from qelebrimbor.formats.tqec import TQEC
-from qelebrimbor.formats.vzx import VZX
-from qelebrimbor.inflaters.equivolumetric_rings import Construction, ZxGraphInflaterEquivolumetricRings
-from qelebrimbor.inflaters.equivolumetric_trees import ZxGraphInflaterEquivolumetricTrees
-from qelebrimbor.utilities.qb_reporting import print_report
-from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
-from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout
-from qelebrimbor.vedo.zx_layout.planar import PlanarLayout
+# Prevent the verbose KeyboardInterrupt no matter when it occurs. Thanks, Gemini.
+def silent_excepthook(exc_type, exc_value, traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        print("Interrupted by user. Terminating gracefully.")
+        sys.exit(130)
+    sys.__excepthook__(exc_type, exc_value, traceback)
+
+
+sys.excepthook = silent_excepthook
+
+
+import logging  # noqa: E402
+from argparse import Action, ArgumentParser  # noqa: E402
+from os import path  # noqa: E402
+from time import time  # noqa: E402
+
+import pyzx  # noqa: E402
+from termcolor import colored  # noqa: E402
+
+from qelebrimbor.analysis.cycles import CycleAnalyser  # noqa: E402
+from qelebrimbor.analysis.vzx_analyser import VolumetricZxGraphAnalyser  # noqa: E402
+from qelebrimbor.core.zx import attributes as zx_attributes  # noqa: E402
+from qelebrimbor.core.zx.attributes import NodeType  # noqa: E402
+from qelebrimbor.core.zx.cycle import ZxCycle  # noqa: E402
+from qelebrimbor.formats.preprocessing.full_reduce import FullReduce  # noqa: E402
+from qelebrimbor.formats.pyzx import PYZX  # noqa: E402
+from qelebrimbor.formats.tqec import TQEC  # noqa: E402
+from qelebrimbor.formats.vzx import VZX  # noqa: E402
+from qelebrimbor.inflaters.equivolumetric_rings import Construction, ZxGraphInflaterEquivolumetricRings  # noqa: E402
+from qelebrimbor.inflaters.equivolumetric_trees import ZxGraphInflaterEquivolumetricTrees  # noqa: E402
+from qelebrimbor.utilities.qb_reporting import print_report  # noqa: E402
+from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer  # noqa: E402
+from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout  # noqa: E402
+from qelebrimbor.vedo.zx_layout.planar import PlanarLayout  # noqa: E402
 
 logging.basicConfig(level=logging.CRITICAL)
 

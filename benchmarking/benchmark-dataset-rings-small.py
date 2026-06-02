@@ -62,9 +62,13 @@ if __name__ == "__main__":
                     text=True,
                 )
 
+            except KeyboardInterrupt:
+                print("Benchmarking interrupted by user.")
+                break
+
             except subprocess.CalledProcessError as e:
                 # This catches the crash and prevents the main script from stopping
-                print(f"FAILED (Exit Code {e.returncode})")
+                print(f"FAILURE (exit:{e.returncode})")
 
             except subprocess.TimeoutExpired:
                 print(f"ABORTED RUN [longer than {TIMEOUT} seconds].")
