@@ -43,7 +43,9 @@ class PainterZxCycle:
         painted: list[Ring] = list()
         # TODO: not all shifts are needed (e.g. YP, XP, YM, YM, XM, YP has only three essentially different ones)
         for shift in range(colorless.volume):
-            painted.extend(PainterZxCycle.__all_painted(colorless.rotated(shift), cycle))
+            for ring in PainterZxCycle.__all_painted(colorless.rotated(shift), cycle):
+                if ring.number_of_unfusable_nodes() == cycle.length:
+                    painted.append(ring)
         return painted
 
     @staticmethod

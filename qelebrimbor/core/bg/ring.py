@@ -58,6 +58,15 @@ class Ring:
     def pipes(self) -> Iterator[EdgeType]:
         return iter(self.__pipes)
 
+    def number_of_unfusable_nodes(self) -> int:
+        count: int = 0
+        for index, pipe in enumerate(self.pipes):
+            source = self.__cubes[index]
+            target = self.__cubes[(index + 1) % len(self.__cubes)]
+            if pipe == EdgeType.HADAMARD or source.color != target.color:
+                count += 1
+        return count
+
     def manhattan_distance_anchor(self) -> int:
         return self.__cubes[0].position.get_manhattan_distance(self.__cubes[-1].position)
 
