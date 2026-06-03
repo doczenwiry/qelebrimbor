@@ -403,7 +403,10 @@ class VolumetricZxGraph(nx.Graph):
             matching_index += 1
 
             cube_id = self.realise_zx_node(following_node, extra_cube)  # noqa: F841
-            self.realise_zx_edge(source=preceding_node.id, target=following_node.id, proposal=path)
+            source, target = (preceding_node.id, following_node.id)
+            if source > target:
+                source, target = target, source
+            self.realise_zx_edge(source, target, proposal=path)
             preceding_node = following_node
             path = Path(start=preceding_node.realising_cube)
 
