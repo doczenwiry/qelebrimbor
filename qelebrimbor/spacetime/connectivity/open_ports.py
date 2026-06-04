@@ -112,6 +112,18 @@ class OpenPortsTracker(ConnectivityTracker):
     def reachable(self, cube: BgCube):
         raise NotImplementedError("Method reachable(..) has been deprecated. Use available(..) instead.")
 
+    def ports_required(self, cube: BgCube) -> int:
+        return self.__reserved_ports[cube].required
+
+    def ports_available(self, cube: BgCube) -> int:
+        return len(self.__reserved_ports[cube].available)
+
+    def is_reserved(self, position: Coordinates):
+        return position in self.__ports_holders
+
+    def holder(self, position: Coordinates) -> BgCube | None:
+        return self.__ports_holders[position] if self.is_reserved(position) else None
+
     def reserve(self, cube: BgCube, required: int):
         vertex = TrackingInformation(required=required, available=set())
 

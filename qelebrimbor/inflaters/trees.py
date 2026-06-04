@@ -19,6 +19,7 @@ from qelebrimbor.core.bg.path import Path
 from qelebrimbor.core.common import Port
 from qelebrimbor.core.components import BgCube, ZxNode
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.zx.attributes import NodeType
 from qelebrimbor.core.zx.tree import ZxTree
 from qelebrimbor.helpers.blockgraph import BlockGraphHelper
 from qelebrimbor.helpers.spacetime import SpacetimeHelper
@@ -57,6 +58,16 @@ class ZxGraphInflaterTrees:
         if self.__verbose:
             print(f">> Levels realised : {processed}/{maximal_height}")
 
+    def __count_cluster_required_ports(self, cube: BgCube) -> int:
+        return sum(
+            self.__connectivity.ports_required(equivalent) for equivalent in self.__graph.get_equivalent_bg_cubes(cube)
+        )
+
+    def __count_cluster_available_ports(self, cube: BgCube) -> int:
+        return sum(
+            self.__connectivity.ports_available(equivalent) for equivalent in self.__graph.get_equivalent_bg_cubes(cube)
+        )
+
     def __count_required_ports(self, node: ZxNode) -> int:
         return sum(
             1
@@ -81,10 +92,20 @@ class ZxGraphInflaterTrees:
             for port in SpacetimeHelper.get_constellation(equivalent.position, equivalent.kind.get_reach()):
                 console.debug(f">>> Port {port} ? [{self.__graph.spacetime.occupied(port)}]")
                 if not self.__graph.spacetime.occupied(port):
-                    console.debug(f">>> Port found : {equivalent}-{port}.")
-                    return equivalent, port
-                else:
+                    if not self.__connectivity.is_reserved(port) or self.__connectivity.holder(port) == equivalent:
+                        console.debug(f">>> Port found : {equivalent}-{port}.")
+                        return equivalent, port
+                    else:
+                        holder = self.__connectivity.holder(port)
+                        if holder is not None:
+                            ports_available = self.__count_cluster_available_ports(holder)
+                            ports_required = self.__count_cluster_required_ports(holder)
+                            if ports_available > ports_required:
+                                return equivalent, port
+                elif self.__graph.spacetime.occupied(port):
                     console.debug(f">>> Occupant : {self.__graph.spacetime.occupant(port)}.")
+                elif self.__connectivity.is_reserved(port):
+                    console.debug(f">>> Holder : {self.__connectivity.holder(port)}.")
         console.debug(">>> No port found.")
         return None
 
@@ -92,48 +113,62 @@ class ZxGraphInflaterTrees:
         console.debug(f">> Attempting realisation of level [L={level}]")
         cube_id: CubeId
         available_port: tuple[BgCube, Port] | None
+        # TODO: remove non-determinism by specifying the order of realisation in each level
+        # - Spiders before boundaries ?
+        # - Pure BFS or Mixed DFS ?
+        level_nodes: list[tuple[ZxNode, ZxTree]] = list()
         for tree in trees:
-            current: ZxNode
             for current in tree.level(level):
-                console.debug(f">> Current [L:{level}] : {current}")
-                if not current.is_realised():
-                    # Realise node based on preceding node's color and edge type to infer its CubeKind.
-                    preceding_node = tree.preceding(current)
-                    console.debug(f">> Current : {current} [preceding:{preceding_node}]")
-                    if not preceding_node.is_realised():
-                        continue
+                level_nodes.append((current, tree))
+        level_nodes.sort(key=lambda entry: entry[0].type in {NodeType.X, NodeType.Z}, reverse=True)
 
-                    edge = self.__graph.get_zx_edge(preceding_node.id, current.id)
-                    available_port = self.__obtain_available_port(preceding_node)
-                    if available_port is not None:
-                        preceding_cube, port = available_port
-                        cube = BgCube(
-                            kind=BlockGraphHelper.infer_cube_kind(preceding_cube, port, edge.type, current.type),
-                            position=port,
-                        )
-                        cube_id = self.__graph.realise_zx_node(current, cube=cube)
-                        realising_cube = self.__graph.get_bg_cube(cube_id)
-                        self.__graph.realise_zx_edge(
-                            source=preceding_node.id,
-                            target=current.id,
-                            proposal=Path(start=preceding_cube).extend(cube=realising_cube, pipe_type=edge.type),
-                        )
-                    else:
-                        raise Exception(f"Realising cube of {preceding_node} has no ports available [src:si].")
+        console.info(f">> Current [L:{level}] : {level_nodes}")
+        if self.__verbose:
+            only_nodes: list[ZxNode] = list(map(lambda entry: entry[0], level_nodes))
+            print(f">> Attempting realisation of level {level} : {only_nodes}")
 
-                # Extend if the number of required ports is above the number of available ports.
-                # TODO: check that a single cube suffices at this stage of the construction.
-                required = self.__count_required_ports(current)
-                available = self.__count_available_ports(current)
-                console.debug(f">> Checking node {current} : {required} / {available} ")
-                if required > available:
-                    available_port = self.__obtain_available_port(current)
-                    console.debug(f">>> Node {current} has degree {self.__graph.get_zx_degree(current.id)}")
-                    if available_port is not None:
-                        current_cube, port = available_port
-                        cube = BgCube(kind=current_cube.kind, position=port)
-                        cube_id = self.__graph.extend_zx_node(current, cube=current_cube, extension=cube)
-                    else:
-                        raise Exception(f"Realising cube of {current} has no ports available [ext:si].")
+        for current, tree in level_nodes:
+            if not current.is_realised():
+                # Realise node based on preceding node's color and edge type to infer its CubeKind.
+                preceding_node = tree.preceding(current)
+                console.debug(f">> Current : {current} [preceding={preceding_node}]")
+                if not preceding_node.is_realised():
+                    continue
+
+                edge = self.__graph.get_zx_edge(preceding_node.id, current.id)
+                available_port = self.__obtain_available_port(preceding_node)
+                console.debug(f">>> Available port : {available_port}")
+                if available_port is not None:
+                    preceding_cube, port = available_port
+                    cube = BgCube(
+                        kind=BlockGraphHelper.infer_cube_kind(preceding_cube, port, edge.type, current.type),
+                        position=port,
+                    )
+                    cube_id = self.__graph.realise_zx_node(current, cube=cube)
+                    realising_cube = self.__graph.get_bg_cube(cube_id)
+                    self.__graph.realise_zx_edge(
+                        source=preceding_node.id,
+                        target=current.id,
+                        proposal=Path(start=preceding_cube).extend(cube=realising_cube, pipe_type=edge.type),
+                    )
+                    if current.type in {NodeType.X, NodeType.Z}:
+                        self.__connectivity.reserve(cube, self.__count_required_ports(current))
+                else:
+                    raise Exception(f"Realising cube of {preceding_node} has no ports available [src:si].")
+
+            # Extend if the number of required ports is above the number of available ports.
+            # TODO: check that a single cube suffices at this stage of the construction.
+            required = self.__count_required_ports(current)
+            available = self.__count_available_ports(current)
+            console.debug(f">> Checking node {current} : {required} / {available} ")
+            if required > available:
+                available_port = self.__obtain_available_port(current)
+                console.debug(f">>> Node {current} has degree {self.__graph.get_zx_degree(current.id)}")
+                if available_port is not None:
+                    current_cube, port = available_port
+                    cube = BgCube(kind=current_cube.kind, position=port)
+                    cube_id = self.__graph.extend_zx_node(current, cube=current_cube, extension=cube)
+                else:
+                    raise Exception(f"Realising cube of {current} has no ports available [ext:si].")
 
         return True
