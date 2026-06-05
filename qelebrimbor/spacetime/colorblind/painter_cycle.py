@@ -44,6 +44,7 @@ class PainterZxCycle:
         # TODO: not all shifts are needed (e.g. YP, XP, YM, YM, XM, YP has only three essentially different ones)
         for shift in range(colorless.volume):
             for ring in PainterZxCycle.__all_painted(colorless.rotated(shift), cycle):
+                # TODO: deal with minimal number of unfusable nodes across all paintings is > cycle.length
                 if ring.number_of_unfusable_nodes() == cycle.length:
                     painted.append(ring)
         return painted

@@ -98,9 +98,9 @@ class ZxGraphInflaterRings:
 
             candidate = ZxGraphInflaterRings.__identify_next_chain(*zx_cycles)
 
-        console.info(f"Cycles processed : {count}/{len(zx_cycles)}.")
+        console.info(f"Cycles processed : {count}/{len(self.__zx_cycles)}.")
         if self.__verbose:
-            print(f">> Cycles realised : {count}/{len(zx_cycles)}")
+            print(f">> Cycles realised : {count}/{len(self.__zx_cycles)}")
 
         return count
 
@@ -162,6 +162,7 @@ class ZxGraphInflaterRings:
         if self.__verbose:
             print(f">> Attempting realisation of cycle [L={cycle.length}] : {cycle}")
 
+        # TODO: carefully relocate when the splitting is performed.
         self.__perform_required_splitting(cycle.nodes, split=True)
 
         # TODO: the following call is the bottleneck of the overall inflation process ...
@@ -204,6 +205,7 @@ class ZxGraphInflaterRings:
             console.debug("Endpoints are not realised.")
             return -1
 
+        # TODO: carefully relocate when the splitting is performed.
         self.__perform_required_splitting(chain.nodes, split=True)
 
         if not self.__connectivity.available(chain.source.realising_cube, chain.target.realising_cube):
