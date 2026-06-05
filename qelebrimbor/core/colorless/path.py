@@ -53,6 +53,10 @@ class ColorlessPath:
         return len(self.__positions) - 1
 
     @property
+    def extras_count(self) -> int:
+        return len(self.__positions) - 2
+
+    @property
     def distance(self) -> int:
         return self.start.get_manhattan_distance(self.final)
 

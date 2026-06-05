@@ -51,6 +51,9 @@ if __name__ == "__main__":
         # strandfinder = StrandfinderBFS(vzx,tracing = SpacetimeTracingReport.FINAL)
         # strandfinder = StrandfinderDFS(vzx, branch_and_bound = True, tracing = SpacetimeTracingReport.FINAL)
         strandfinder = StrandfinderColorblindDFS(vzx, branch_and_bound=False, tracing=SpacetimeTracingReport.FINAL)
+        # strandfinder = StrandfinderColorblindFusionDFS(
+        #     graph=vzx, branch_and_bound=False, reporting=SpacetimeTracingReport.FINAL
+        # )
 
         if strandfinder.__class__ == StrandfinderBFS and md > 5:
             print(f"StrandfinderBFS is too slow with md > 5. Not even trying {md}.")
