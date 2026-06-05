@@ -106,14 +106,15 @@ class RingfinderColorblindBFS:
                 # Ignore the incoming path if it doesn't line up with a port of the final cube.
                 console.info(f"Candidate ColorlessStrand [{current.volume}] : {current}")
 
-                if PainterZxCycle.paintable(current, goal):
+                painted = PainterZxCycle.paint_optimal(self.__graph, current, goal)
+                if painted is not None:
                     # Tracing exploration
                     if tracer:
                         tracer.add_edge(current.terminal, current.anchor)
 
                     # Update the optimum only if it improves our current knowledge
                     if optimum is None or current.volume < optimum.volume():
-                        optimum = PainterZxCycle.paint(current, goal)
+                        optimum = painted
 
             # Restrict the outgoing paths to lie in the reach of the CubeKind of the start.
             constellation = SpacetimeHelper.get_constellation(position=terminal)

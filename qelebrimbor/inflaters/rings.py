@@ -163,7 +163,7 @@ class ZxGraphInflaterRings:
             print(f">> Attempting realisation of cycle [L={cycle.length}] : {cycle}")
 
         # TODO: carefully relocate when the splitting is performed.
-        self.__perform_required_splitting(cycle.nodes, split=True)
+        # self.__perform_required_splitting(cycle.nodes, split=True)
 
         # TODO: the following call is the bottleneck of the overall inflation process ...
         ring = self.__ringfinder.find_optimum(cycle, maximal_excess=maximal_excess)
@@ -206,7 +206,7 @@ class ZxGraphInflaterRings:
             return -1
 
         # TODO: carefully relocate when the splitting is performed.
-        self.__perform_required_splitting(chain.nodes, split=True)
+        # self.__perform_required_splitting(chain.nodes, split=True)
 
         if not self.__connectivity.available(chain.source.realising_cube, chain.target.realising_cube):
             console.debug("Insufficient connectivity.")

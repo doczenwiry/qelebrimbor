@@ -15,6 +15,7 @@
 
 import heapq
 import logging
+from collections import defaultdict
 
 from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.bg.ring import Ring
@@ -22,6 +23,7 @@ from qelebrimbor.core.colorless.ring import ColorlessRing
 from qelebrimbor.core.components import BgCube, ZxEdge, ZxNode
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.core.reach import Reach
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.core.zx.attributes import EdgeType
 from qelebrimbor.core.zx.cycle import ZxCycle
 from qelebrimbor.helpers.spacetime import Step
@@ -156,6 +158,41 @@ class PainterZxCycle:
                     heapq.heappush(unrelaxed, (extended, node_count))
 
         return rings
+
+    @staticmethod
+    def __realising_cubes(painted: Ring) -> dict[ZxNode, list[BgCube]]:
+        realising_cubes: dict[ZxNode, list[BgCube]] = defaultdict(list)
+
+        for cube in painted.cubes:
+            pass
+
+        return realising_cubes
+
+    @staticmethod
+    def __offers_enough_ports(graph: VolumetricZxGraph, painted: Ring, cycle: ZxCycle) -> bool:
+        painted_cubes = list(painted.cubes)
+        for node in cycle.nodes:
+            location, cube = next(filter(lambda entry: entry[1].realised_node == node, enumerate(painted_cubes)))
+            equivalents: set[BgCube] = set()
+            for index in range(1, len(painted_cubes)):
+                following_cube: BgCube = painted_cubes[(location + index) % painted.volume()]
+                if following_cube.kind == cube.kind:
+                    equivalents.add(following_cube)
+                preceding_cube: BgCube = painted_cubes[(location - index) % painted.volume()]
+                if preceding_cube.kind == cube.kind:
+                    equivalents.add(preceding_cube)
+            offered_ports: int = 2 * (len(equivalents) + 1)
+            if offered_ports < graph.get_zx_degree(node.id):
+                return False
+        return True
+
+    @staticmethod
+    def paint_optimal(graph: VolumetricZxGraph, colorless: ColorlessRing, cycle: ZxCycle) -> Ring | None:
+        all_painted = filter(
+            lambda painted: PainterZxCycle.__offers_enough_ports(graph, painted, cycle),
+            PainterZxCycle.all_painted(colorless, cycle),
+        )
+        return next(all_painted, None)
 
     @staticmethod
     # TODO: correct the determination of whether a ColorlessRing is paintable using a given ZxCycle.
