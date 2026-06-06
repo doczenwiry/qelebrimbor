@@ -34,13 +34,16 @@ console = logging.getLogger(__name__)
 ZX_VIEWPORT = 0
 BG_VIEWPORT = 1
 BG_CUBEFACE = 2
+ZX_INPUT_VP = 3
 
 ZXVP = 0.25
+INVP = 0.25
 
 VIEWPORTS = [
-    dict(bottomleft=(0.00, 0.00), topright=(ZXVP, 1.00), bg="k8"),  # ZX Viewport
-    dict(bottomleft=(ZXVP, 0.00), topright=(1.00, 1.00), bg="k6"),  # BG Viewport
+    dict(bottomleft=(0.00, INVP), topright=(ZXVP, 1.00), bg="k8"),  # ZX Viewport
+    dict(bottomleft=(ZXVP, INVP), topright=(1.00, 1.00), bg="k6"),  # BG Viewport
     dict(bottomleft=(0.95, 0.90), topright=(1.00, 1.00), bg="k7"),  # BG Cube Face
+    dict(bottomleft=(0.00, 0.00), topright=(1.00, INVP), bg="k8"),  # ZX Input Viewport
 ]
 
 settings.enable_default_mouse_callbacks = False
@@ -50,6 +53,7 @@ settings.enable_default_keyboard_callbacks = False
 class VolumetricZxGraphViewer(Plotter):
     def __init__(
         self,
+        input: VolumetricZxGraph,
         graph: VolumetricZxGraph,
         cycles: list[ZxCycle] | None = None,
         scope: tuple[ZxNode, int] | None = None,
@@ -95,6 +99,12 @@ class VolumetricZxGraphViewer(Plotter):
             layout=selected_layout,
         )
         self.at(ZX_VIEWPORT).camera.SetParallelProjection(True)
+
+        self.__input_scene_manager = ZxSceneManager(
+            graph=input,
+            plotter=self.at(ZX_INPUT_VP),
+            layout=CircuitLayout(vzx=input, vertical=False),
+        )
 
         # Prepare the scene manager for the BG-graph
         self.__bg_scene_manager = BgSceneManager(
@@ -213,6 +223,7 @@ class VolumetricZxGraphViewer(Plotter):
             self.__highlighted_cycle != -1
             or self.__highlighting_unrealised_subgraph
             or self.__highlighting_insufficient_ports
+            or event.at == ZX_INPUT_VP
         ):
             return
 

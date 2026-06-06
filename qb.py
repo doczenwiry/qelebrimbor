@@ -14,9 +14,6 @@
 
 import sys
 
-from qelebrimbor.inflaters.rings import ZxGraphInflaterRings
-from qelebrimbor.inflaters.trees import ZxGraphInflaterTrees
-
 
 # Prevent the verbose KeyboardInterrupt no matter when it occurs. Thanks, Gemini.
 def silent_excepthook(exc_type, exc_value, traceback):
@@ -46,6 +43,8 @@ from qelebrimbor.formats.preprocessing.full_reduce import FullReduce  # noqa: E4
 from qelebrimbor.formats.pyzx import PYZX  # noqa: E402
 from qelebrimbor.formats.tqec import TQEC  # noqa: E402
 from qelebrimbor.formats.vzx import VZX  # noqa: E402
+from qelebrimbor.inflaters.rings import ZxGraphInflaterRings  # noqa: E402
+from qelebrimbor.inflaters.trees import ZxGraphInflaterTrees  # noqa: E402
 from qelebrimbor.utilities.qb_reporting import print_report  # noqa: E402
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer  # noqa: E402
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout  # noqa: E402
@@ -375,6 +374,7 @@ def main() -> int:
         if arguments.force_visualization or vzx.volume() <= 100:
             window_size = "full" if arguments.fullscreen else "auto"
             viewer = VolumetricZxGraphViewer(
+                input=PYZX.from_pyzx_graph(pyzx_input),
                 graph=vzx,
                 label=arguments.filepath,
                 size=window_size,
