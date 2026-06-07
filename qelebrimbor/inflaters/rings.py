@@ -77,7 +77,7 @@ class ZxGraphInflaterRings:
                 self.__connectivity.report(verbose=True)
                 return -2
 
-            excess_volume = self.__attempt_chain_realisation(candidate, maximal_excess=20)
+            excess_volume = self.__attempt_chain_realisation(candidate, maximal_excess=6)
             if excess_volume == -1:
                 console.info(f"> Failure to complete chain : {candidate}")
                 if self.__verbose:
@@ -227,7 +227,8 @@ class ZxGraphInflaterRings:
         self.__graph.realise_zx_chain(chain, strand)
 
         if self.__verbose:
-            print(f">>> Realised as strand [EV:{colored_ev}] : {strand}")
+            nun = strand.number_of_unfusable_nodes()
+            print(f">>> Realised as strand [EV:{colored_ev}/US:{nun}/LC:{chain.length + 1}] : {strand}")
 
         # Reserve the ports for all the nodes that were realised as part of this ring.
         for node in chain.unrealised:

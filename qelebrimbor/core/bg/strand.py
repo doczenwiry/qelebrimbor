@@ -67,6 +67,15 @@ class Strand:
     def distance(self) -> int:
         return self.start.position.get_manhattan_distance(self.final.position)
 
+    def number_of_unfusable_nodes(self) -> int:
+        count: int = 1
+        for index, pipe in enumerate(self.pipes):
+            source = self.cubes[index]
+            target = self.cubes[(index + 1) % len(self.cubes)]
+            if pipe == EdgeType.HADAMARD or source.color != target.color:
+                count += 1
+        return count
+
     def occupies(self, position: Coordinates):
         return position in self.occupied
 
