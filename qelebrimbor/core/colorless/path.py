@@ -64,18 +64,17 @@ class ColorlessPath:
         return self.__positions[index]
 
     @property
-    def extras(self) -> Iterator[Coordinates]:
-        return itertools.islice(self.__positions, 1, len(self.__positions) - 1)
+    def extra_cubes(self) -> Iterator[tuple[Coordinates, set[Reach]]]:
+        positions = itertools.islice(self.__positions, 1, len(self.__positions) - 1)
+        reaches = iter(
+            Reach.from_moves(self.__positions[index - 1], self.__positions[index], self.__positions[index + 1])
+            for index in range(1, len(self.__positions) - 1)
+        )
+        return zip(positions, reaches)
 
     @property
     def steps(self) -> Iterator[Coordinates]:
         return iter(self.__positions[index] - self.__positions[index - 1] for index in range(1, len(self.__positions)))
-
-    def as_reaches(self) -> Iterator[set[Reach]]:
-        return iter(
-            Reach.from_moves(self.__positions[index - 1], self.__positions[index], self.__positions[index + 1])
-            for index in range(1, len(self.__positions) - 1)
-        )
 
     def visits(self, position: Coordinates):
         return position in self.__occupied

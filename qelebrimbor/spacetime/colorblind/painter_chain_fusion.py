@@ -43,6 +43,10 @@ class PainterZxChainFusion:
         # TODO: produce all painted Strand to be able to choose preferred ones; where the number of unfusable nodes
         #       - is equal to the length of the chain ?
 
+        # TODO: this should be matching edges to pipes instead of nodes to cubes !!
+        # TODO: for every pipe, decide whether to paint it with the current edge (and cube with target) or an identity.
+        # TODO: if current edge is an identity, single case.
+
         # Identify the start and final cube corresponding to the endpoints of the chain.
         start = next((s for s in starts if s.position == colorless.start), None)
         final = next((f for f in finals if f.position == colorless.final), None)
@@ -62,8 +66,8 @@ class PainterZxChainFusion:
             return strands
 
         node_restrictions: list[ZxNode] = list(chain.unrealised)
-        edges: list[ZxEdge] = list(chain.edges)
-        colorless_cubes = list(zip(colorless.extras, colorless.as_reaches()))
+        edge_restrictions: list[ZxEdge] = list(chain.edges)
+        colorless_cubes = list(colorless.extra_cubes)
         colorless_steps: list[Coordinates] = list(colorless.steps)
 
         current_cube: tuple[Coordinates, set[Reach]]
@@ -81,7 +85,9 @@ class PainterZxChainFusion:
         while len(unrelaxed) > 0:
             heapq.heapify(unrelaxed)
             partial, node_count = heapq.heappop(unrelaxed)
-            preceding_pipe = edges[node_count].type if node_count < len(edges) else EdgeType.IDENTITY
+            preceding_pipe = (
+                edge_restrictions[node_count].type if node_count < len(edge_restrictions) else EdgeType.IDENTITY
+            )
             current_step = Step(colorless_steps[partial.length])
 
             console.debug(f"Current strand [N:{node_count},L:{partial.length},C:{colorless.length}] : {partial}")
@@ -93,7 +99,10 @@ class PainterZxChainFusion:
 
                 # Add completed Strand if it matches the chain
                 if CubeKind.compatible(partial.final.kind, final.kind, current_step, preceding_pipe):
-                    strands.append(partial.extend(final, preceding_pipe))
+                    completed = partial.extend(final, preceding_pipe)
+
+                    if completed.number_of_unfusable_nodes() == chain.length + 1:
+                        strands.append(completed)
                 continue
 
             current_cube = colorless_cubes[partial.length]
@@ -126,7 +135,7 @@ class PainterZxChainFusion:
             # Attempt extending by cube matching current_node, if any are unrealised.
             current_node = node_restrictions[node_count] if node_count < len(node_restrictions) else None
             if current_node is not None:
-                pipe_type = edges[node_count - 1].type  # TODO: off by one ?
+                pipe_type = edge_restrictions[node_count - 1].type  # TODO: off by one ?
 
                 selected = None
                 for kind in CubeKind:
@@ -160,6 +169,9 @@ class PainterZxChainFusion:
     def paint(
         colorless: ColorlessPath, chain: ZxChain, starts: Iterable[BgCube], finals: Iterable[BgCube]
     ) -> Strand | None:
+        # all_painted = PainterZxChainFusion.all_painted(colorless, chain, starts, finals)
+        # return all_painted[0] if len(all_painted) > 0 else None
+
         console.debug(f"Attempting to paint {colorless} using {chain} with {starts}/{finals}")
 
         # Identify the start and final cube corresponding to the endpoints of the chain.
@@ -186,7 +198,7 @@ class PainterZxChainFusion:
         preceding_pipe: EdgeType = next(remaining_edges).type
 
         last_cube: BgCube = start
-        colorless_cubes = zip(colorless.extras, colorless.as_reaches())
+        colorless_cubes = colorless.extra_cubes
         current_cube: tuple[Coordinates, set[Reach]] | None = next(colorless_cubes, None)
 
         while current_cube is not None:

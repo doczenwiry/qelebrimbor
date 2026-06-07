@@ -58,7 +58,7 @@ class PainterZxChain:
         preceding_pipe: EdgeType = next(remaining_edges).type
 
         last_cube: BgCube = start
-        colorless_cubes = zip(colorless.extras, colorless.as_reaches())
+        colorless_cubes = colorless.extra_cubes
         current_cube: tuple[Coordinates, set[Reach]] | None = next(colorless_cubes, None)
 
         while current_cube is not None:

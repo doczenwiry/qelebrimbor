@@ -74,7 +74,7 @@ class PainterZxEdge:
         path = Path(start)
         last_cube: BgCube = start
         current_pipe_type: EdgeType = edge.type
-        for position, reaches in zip(colorless.extras, colorless.as_reaches()):
+        for position, reaches in colorless.extra_cubes:
             step = Step(position - last_cube.position)
             compatible_kinds = filter(
                 lambda kind: (
