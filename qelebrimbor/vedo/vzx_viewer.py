@@ -40,6 +40,12 @@ ZXVP = 0.25
 INVP = 0.25
 
 VIEWPORTS = [
+    dict(bottomleft=(0.00, 0.00), topright=(ZXVP, 1.00), bg="k8"),  # ZX Viewport
+    dict(bottomleft=(ZXVP, 0.00), topright=(1.00, 1.00), bg="k6"),  # BG Viewport
+    dict(bottomleft=(0.95, 0.90), topright=(1.00, 1.00), bg="k7"),  # BG Cube Face
+]
+
+VIEWPORTS_WITH_INPUT = [
     dict(bottomleft=(0.00, INVP), topright=(ZXVP, 1.00), bg="k8"),  # ZX Viewport
     dict(bottomleft=(ZXVP, INVP), topright=(1.00, 1.00), bg="k6"),  # BG Viewport
     dict(bottomleft=(0.95, 0.90), topright=(1.00, 1.00), bg="k7"),  # BG Cube Face
@@ -53,15 +59,15 @@ settings.enable_default_keyboard_callbacks = False
 class VolumetricZxGraphViewer(Plotter):
     def __init__(
         self,
-        input: VolumetricZxGraph,
         graph: VolumetricZxGraph,
+        input: VolumetricZxGraph | None = None,
         cycles: list[ZxCycle] | None = None,
         scope: tuple[ZxNode, int] | None = None,
         label: str = "",
         layout: ZxLayout | None = None,
         size: str = "auto",
     ):
-        super().__init__(size=size, shape=VIEWPORTS, sharecam=False, title=f"qelebrimbor [{label}]")
+        super().__init__(size=size, shape=VIEWPORTS_WITH_INPUT, sharecam=False, title=f"qelebrimbor [{label}]")
 
         # Store the original AugmentedNxGraph
         self.__vzx_graph = graph
@@ -100,11 +106,12 @@ class VolumetricZxGraphViewer(Plotter):
         )
         self.at(ZX_VIEWPORT).camera.SetParallelProjection(True)
 
-        self.__input_scene_manager = ZxSceneManager(
-            graph=input,
-            plotter=self.at(ZX_INPUT_VP),
-            layout=CircuitLayout(vzx=input, vertical=False),
-        )
+        if input is not None:
+            self.__input_scene_manager = ZxSceneManager(
+                graph=input,
+                plotter=self.at(ZX_INPUT_VP),
+                layout=CircuitLayout(vzx=input, vertical=False),
+            )
 
         # Prepare the scene manager for the BG-graph
         self.__bg_scene_manager = BgSceneManager(
