@@ -19,6 +19,7 @@ dependencies = [
     "termcolor~=3.3",
     "seaborn~=0.13",
     "pandas~=3.0",
+    "pandas-stubs~=3.0",
     "pre-commit~=4.6",
     "zxlive~=1.0",
 ]

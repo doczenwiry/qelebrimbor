@@ -5,8 +5,8 @@
 # Cache
 __pycache__/
 # Dataset
-benchmarking/datasets/small/*
-benchmarking/datasets/large/*
+benchmarking/datasets/*
+benchmarking/results/*
 *.pyzx.compiled.json
 *.pyzx.internal.json
 # Texifier
