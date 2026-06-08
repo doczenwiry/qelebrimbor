@@ -26,6 +26,7 @@ SEEDS = [int(random.random() * 4242424242) for _ in range(SEED_COUNT)]
 
 BENCHMARK_DIRECTORY = pathlib.Path(__file__).resolve().parent
 
+
 class Dataset(Enum):
     SMALL = 0
     MEDIO = 1
@@ -33,7 +34,7 @@ class Dataset(Enum):
 
 
 DATASET_PARAMETERS: dict[str, dict[str, list[int]]] = {
-    Dataset.SMALL.name: {"QUBITS": [4], "DEPTHS": [4, 8, 16, 32, 64, 128, 256, 512]}
+    Dataset.SMALL.name: {"QUBITS": [4], "DEPTHS": [4, 8, 16, 32, 64, 128, 256, 512, 1024]}
 }
 
 
