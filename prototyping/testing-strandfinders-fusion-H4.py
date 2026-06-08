@@ -25,40 +25,41 @@ from qelebrimbor.helpers.spacetime import SpacetimeHelper
 from qelebrimbor.spacetime.strandfinders.colorblind_fusion_dfs import StrandfinderColorblindFusionDFS
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
 
-logging.basicConfig(level=logging.DEBUG)
-logging.getLogger("qelebrimbor.spacetime.strandfinders.colorblind_fusion_dfs").setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
+logging.getLogger("qelebrimbor.spacetime.strandfinders.colorblind_fusion_dfs").setLevel(logging.INFO)
 
 zx.attributes.ZX_COLORING = True
 
 if __name__ == "__main__":
     vzx = VolumetricZxGraph(
         nodes=[(node_id, NodeType.Z) for node_id in range(4)],
-        edges=[(0, 1, EdgeType.IDENTITY), (0, 3, EdgeType.IDENTITY), (2, 3, EdgeType.IDENTITY)],
-        qubits={0: 0, 1: 1, 2: 1, 3: 0},
-        layers={node_id: node_id for node_id in range(4)},
+        edges=[(node_id, (node_id + 1) % 4, EdgeType.HADAMARD) for node_id in range(4)],
     )
 
-    for node_id in range(4):
-        vzx.realise_zx_node(vzx.get_zx_node(node_id), cube=BgCube(CubeKind.XXZ, node_id * SpacetimeHelper.YP))
+    vzx.realise_zx_node(vzx.get_zx_node(0), BgCube(CubeKind.ZXX, SpacetimeHelper.ZP))
+    vzx.realise_zx_node(vzx.get_zx_node(1), BgCube(CubeKind.XZX, SpacetimeHelper.ORIGIN))
+    vzx.realise_zx_edge(
+        source=0,
+        target=1,
+        proposal=Path(vzx.get_zx_node(0).realising_cube).extend(vzx.get_zx_node(1).realising_cube, EdgeType.HADAMARD),
+    )
 
-    for node_id in [0, 2]:
-        vzx.realise_zx_edge(
-            node_id,
-            (node_id + 1) % 4,
-            proposal=Path(vzx.get_zx_node(node_id).realising_cube).extend(
-                vzx.get_zx_node((node_id + 1) % 4).realising_cube, EdgeType.IDENTITY
-            ),
-        )
-
-    chain = ZxChain(source=vzx.get_zx_node(0)).extend(vzx.get_zx_node(3), vzx.get_zx_edge(0, 3))
-    strandfinder = StrandfinderColorblindFusionDFS(graph=vzx)
-    # TODO: identify the cause of the failure in the following call
-    strand = strandfinder.find_optimum(chain, maximal_excess=0)
-
+    chain = (
+        ZxChain(source=vzx.get_zx_node(0))
+        .extend(node=vzx.get_zx_node(3), edge=vzx.get_zx_edge(0, 3))
+        .extend(node=vzx.get_zx_node(2), edge=vzx.get_zx_edge(2, 3))
+        .extend(node=vzx.get_zx_node(1), edge=vzx.get_zx_edge(1, 2))
+    )
     print(f"Chain : {chain}")
 
+    strandfinder = StrandfinderColorblindFusionDFS(graph=vzx)
+    strand = strandfinder.find_optimum(chain, maximal_excess=2)
+
+    # Strand :
+    # #4:N0:ZXX@( 0, 0, 1) --H-- XZZ@( 0,-1, 1) --I-- N3:XZX@( 0,-1, 0) --H-- N2:XXZ@(-1,-1, 0)
+    # --H-- ZZX@(-1, 0, 0) --I-- #5:N1:XZX@( 0, 0, 0)
     if strand is not None:
         print(f"Strand : {strand}")
         vzx.realise_zx_chain(chain, strand)
 
-    VolumetricZxGraphViewer(vzx, label="fusion-finders").display()
+    VolumetricZxGraphViewer(graph=vzx, label="fusion-finders").display()

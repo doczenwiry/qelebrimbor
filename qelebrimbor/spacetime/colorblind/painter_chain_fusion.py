@@ -70,46 +70,44 @@ class PainterZxChainFusion:
         colorless_cubes = list(colorless.extra_cubes)
         colorless_steps: list[Coordinates] = list(colorless.steps)
 
-        current_cube: tuple[Coordinates, set[Reach]]
+        unrelaxed: list[tuple[Strand, int, int]] = list()
 
-        unrelaxed: list[tuple[Strand, int]] = list()
-
-        strand = Strand(start=start)
-        heapq.heappush(unrelaxed, (strand, 0))
+        heapq.heappush(unrelaxed, (Strand(start=start), 0, 0))
 
         partial: Strand
         node_count: int
+        edge_count: int
         current_step: Step
-        preceding_pipe: EdgeType
         current_node: ZxNode | None
         while len(unrelaxed) > 0:
             heapq.heapify(unrelaxed)
-            partial, node_count = heapq.heappop(unrelaxed)
-            preceding_pipe = (
-                edge_restrictions[node_count].type if node_count < len(edge_restrictions) else EdgeType.IDENTITY
-            )
+            partial, node_count, edge_count = heapq.heappop(unrelaxed)
             current_step = Step(colorless_steps[partial.length])
+            console.debug(f"Current strand [E:{edge_count},L:{partial.length},C:{colorless.length}] : {partial}")
 
-            console.debug(f"Current strand [N:{node_count},L:{partial.length},C:{colorless.length}] : {partial}")
-
-            if partial.length == colorless.extras_count:
-                console.debug(f"Candidate for closure [{node_count}/{len(node_restrictions)}] : {partial}")
-                if node_count < len(node_restrictions):
+            # TODO: check completion of Strand
+            if partial.length == colorless.length - 1:
+                if node_count < len(node_restrictions) or edge_count < len(edge_restrictions) - 1:
                     continue
 
-                # Add completed Strand if it matches the chain
-                if CubeKind.compatible(partial.final.kind, final.kind, current_step, preceding_pipe):
-                    completed = partial.extend(final, preceding_pipe)
+                console.debug(f"Candidate for closure [{partial.length}] : {partial}")
 
+                if edge_count < len(edge_restrictions):
+                    current_pipe = edge_restrictions[edge_count].type
+                else:
+                    current_pipe = EdgeType.IDENTITY
+
+                # Add completed Strand if it is acceptable
+                if CubeKind.compatible(partial.final.kind, final.kind, current_step, current_pipe):
+                    completed = partial.extend(final, current_pipe)
                     if completed.number_of_unfusable_nodes() == chain.length + 1:
                         strands.append(completed)
                 continue
 
-            current_cube = colorless_cubes[partial.length]
-            position, reaches = current_cube
+            position, reaches = colorless_cubes[partial.length]
+            current_step = Step(colorless_steps[partial.length])
 
-            # TODO: add all possible extensions
-            selected: CubeKind | None = None
+            # TODO: derive the kinds rather than filter them.
             for kind in CubeKind:
                 if not CubeKind.compatible(partial.final.kind, kind, current_step, EdgeType.IDENTITY):
                     continue
@@ -117,51 +115,59 @@ class PainterZxChainFusion:
                 if kind.reach not in reaches:
                     continue
 
-                if selected is None:
-                    selected = kind
+                # Construct a colored cube and assign it to the current node if the kind is suitable for the type.
+                cube = BgCube(kind=kind, position=position)
 
-            # Handle internal error of logic.
-            if selected is None:
-                console.error(f"> Failure to paint cube at {position} w/ {reaches}")
-                raise Exception("No suitable kind found for next colorless cube when painting ColorlessPath.")
-
-            # Construct a colored cube and assign it to the current node if the kind is suitable for the type.
-            cube = BgCube(kind=selected, position=position)
-
-            console.debug(f"> painted_cube : {cube}")
-            extended = partial.extend(cube, EdgeType.IDENTITY)
-            heapq.heappush(unrelaxed, (extended, node_count))
+                console.debug(f"> painted_cube : {cube}")
+                extended = partial.extend(cube, EdgeType.IDENTITY)
+                heapq.heappush(unrelaxed, (extended, node_count, edge_count))
 
             # Attempt extending by cube matching current_node, if any are unrealised.
-            current_node = node_restrictions[node_count] if node_count < len(node_restrictions) else None
-            if current_node is not None:
-                pipe_type = edge_restrictions[node_count - 1].type  # TODO: off by one ?
 
-                selected = None
+            if edge_count < len(edge_restrictions):
+                current_pipe = edge_restrictions[edge_count].type
+            else:
+                current_pipe = EdgeType.IDENTITY
+            if current_pipe is not None:
+                current_node = node_restrictions[node_count] if node_count < len(node_restrictions) else None
+
+                console.debug(f"> colorless cube : {position} / {reaches}")
                 for kind in CubeKind:
-                    if not CubeKind.compatible(partial.final.kind, kind, current_step, pipe_type):
+                    if not CubeKind.compatible(partial.final.kind, kind, current_step, current_pipe):
                         continue
 
                     if kind.reach not in reaches:
                         continue
 
-                    if selected is None or kind.get_type() == current_node.type:
-                        selected = kind
+                    if current_node is not None and kind.get_type() != current_node.type:
+                        continue
 
-                # Handle internal error of logic.
-                if selected is None:
-                    console.error(f"> Failure to paint cube at {position} w/ {reaches}")
-                    raise Exception("No suitable kind found for next colorless cube when painting ColorlessPath.")
-
-                # Construct a colored cube and assign it to the current node if the kind is suitable for the type.
-                cube = BgCube(kind=selected, position=position)
-                if current_node is not None and selected.get_type() == current_node.type:
-                    cube.realised_node = current_node
-                    node_count += 1
+                    cube = BgCube(kind=kind, position=position)
+                    if current_node is not None:
+                        cube.realised_node = current_node
 
                     console.debug(f"> painted_cube : {cube}")
-                    extended = partial.extend(cube, pipe_type)
-                    heapq.heappush(unrelaxed, (extended, node_count))
+                    extended = partial.extend(cube, current_pipe)
+
+                    if current_node is not None:
+                        heapq.heappush(unrelaxed, (extended, node_count + 1, edge_count + 1))
+                    else:
+                        heapq.heappush(unrelaxed, (extended, node_count, edge_count + 1))
+
+                # Handle internal error of logic.
+                # if selected is None:
+                #     console.error(f"> Failure to paint cube at {position} w/ {reaches}")
+                #     raise Exception("No suitable kind found for next colorless cube when painting ColorlessPath.")
+
+                # Construct a colored cube and assign it to the current node if the kind is suitable for the type.
+                # cube = BgCube(kind=selected, position=position)
+                # if current_node is not None and selected.get_type() == current_node.type:
+                #     cube.realised_node = current_node
+                #     edge_count += 1
+                #
+                #     console.debug(f"> painted_cube : {cube}")
+                #     extended = strand.extend(cube, pipe_type)
+                #     heapq.heappush(unrelaxed, (extended, edge_count))
 
         return strands
 
@@ -169,8 +175,8 @@ class PainterZxChainFusion:
     def paint(
         colorless: ColorlessPath, chain: ZxChain, starts: Iterable[BgCube], finals: Iterable[BgCube]
     ) -> Strand | None:
-        # all_painted = PainterZxChainFusion.all_painted(colorless, chain, starts, finals)
-        # return all_painted[0] if len(all_painted) > 0 else None
+        all_painted = PainterZxChainFusion.all_painted(colorless, chain, starts, finals)
+        return all_painted[0] if len(all_painted) > 0 else None
 
         console.debug(f"Attempting to paint {colorless} using {chain} with {starts}/{finals}")
 

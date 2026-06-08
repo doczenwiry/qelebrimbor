@@ -183,7 +183,7 @@ class StrandfinderColorblindFusionDFS:
 
                         # Update the optimum only if it improves our current knowledge
                         if optimum is None or strand.length < optimum.length:
-                            console.debug(f">> Replaced optimum [{strand.length}] ! {strand}")
+                            console.debug(f">> Replaced optimum [{strand.length}] : {strand}")
                             optimum = strand
                 console.debug(f">> Turned into optimum ? {optimum}")
 
