@@ -90,19 +90,18 @@ parser.add_argument(
     help="display the visualisation in a fullscreen window.",
 )
 parser.add_argument(
-    "-i",
-    "--inflation",
-    action="store",
-    default=["rings", "trees"],
-    help="choose which inflation stages to perform on the input ZX-graph.",
-)
-parser.add_argument(
-    "-I",
-    "--index",
+    "--rings",
     action="store",
     type=int,
     default=-1,
-    help="index of the step at which to stop the ring inflation process.",
+    help="specify the number of cycles to realise at the rings inflation stage.",
+)
+parser.add_argument(
+    "--trees",
+    action="store",
+    type=int,
+    default=-1,
+    help="specify the number of levels to realise at the trees inflation stage.",
 )
 parser.add_argument(
     "-p",
@@ -235,24 +234,20 @@ def main() -> int:
     sys.stdout.flush()
     sys.stderr.flush()
 
-    if "rings" in arguments.inflation:
-        start = time()
-        try:
-            ring_inflater.process(abort_on_index=arguments.index)
-        except Exception as e:
-            print(colored("FAILURE [Rings] :", color="red", attrs=["underline"], force_color=True) + f" {e}")
-            if verbose:
-                raise e
-            else:
-                exit(-1)
-        runtime = round(time() - start, 6)
-        total_runtime += runtime
+    start = time()
+    try:
+        ring_inflater.process(abort_on_index=arguments.rings)
+    except Exception as e:
+        print(colored("FAILURE [Rings] :", color="red", attrs=["underline"], force_color=True) + f" {e}")
+        if verbose:
+            raise e
+        else:
+            exit(-1)
+    runtime = round(time() - start, 6)
+    total_runtime += runtime
 
-        if verbose:
-            print(f">> Runtime : {'{:.3f}'.format(runtime)}s")
-    else:
-        if verbose:
-            print(">> Skipped per argument --inflation.")
+    if verbose:
+        print(f">> Runtime : {'{:.3f}'.format(runtime)}s")
 
     tree_inflater = ZxGraphInflaterTrees(graph=vzx, verbose=verbose)
 
@@ -262,10 +257,10 @@ def main() -> int:
     sys.stdout.flush()
     sys.stderr.flush()
 
-    if "trees" in arguments.inflation:
+    if arguments.rings == -1:
         start = time()
         try:
-            tree_inflater.process()
+            tree_inflater.process(abort_on_index=arguments.trees)
         except Exception as e:
             print(colored("FAILURE [Trees] :", color="red", attrs=["underline"], force_color=True) + f" {e}")
             if verbose:
@@ -279,7 +274,7 @@ def main() -> int:
             print(f">> Runtime : {'{:.3f}'.format(runtime)}s")
     else:
         if verbose:
-            print(">> Skipped per argument --inflation.")
+            print(">> Skipped per argument --rings.")
 
     sys.stdout.flush()
     sys.stderr.flush()

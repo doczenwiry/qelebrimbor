@@ -36,7 +36,7 @@ class ZxGraphInflaterTrees:
         self.__placefinder = PlacefinderBFS(graph, self.__connectivity)
         self.__verbose = verbose
 
-    def process(self, abort_on_failure: bool = False, abort_on_index: int = -1):
+    def process(self, abort_on_index: int = -1):
         roots: set[ZxNode] = set()
         for node in self.__graph.get_zx_nodes():
             if node.is_realised():
@@ -52,8 +52,13 @@ class ZxGraphInflaterTrees:
 
         processed = 0
         for level in range(maximal_height):
-            if self.__attempt_levels_realisation(trees, level):
-                processed += 1
+            if level == abort_on_index:
+                break
+
+            if not self.__attempt_levels_realisation(trees, level):
+                break
+
+            processed += 1
 
         if self.__verbose:
             print(f">> Levels realised : {processed}/{maximal_height}")

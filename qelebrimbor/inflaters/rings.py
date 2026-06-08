@@ -39,7 +39,7 @@ class ZxGraphInflaterRings:
         self.__verbose = verbose
         self.__zx_cycles = cycles
 
-    def process(self, abort_on_failure: bool = True, abort_on_index: int = -1) -> int:
+    def process(self, abort_on_index: int = -1) -> int:
         if self.__verbose:
             print(f">> Ringfinder   : {self.__ringfinder.__class__.__name__}")
             print(f">> Strandfinder : {self.__strandfinder.__class__.__name__}")
@@ -82,8 +82,7 @@ class ZxGraphInflaterRings:
                 console.info(f"> Failure to complete chain : {candidate}")
                 if self.__verbose:
                     print(">>> Failure to find a strand for chain.")
-                if abort_on_failure:
-                    return -1
+                return -1
 
             self.__connectivity.report()
             count += 1
