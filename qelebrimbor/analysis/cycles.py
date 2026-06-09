@@ -75,6 +75,14 @@ class CycleAnalyser:
         return zx_cycles
 
     @staticmethod
+    def __cycle_weight(csg, node) -> int:
+        weight: int = 0
+        for neighbor in csg.neighbors(node):
+            edge = csg.edges[node, neighbor]
+            weight += edge["weight"]
+        return weight
+
+    @staticmethod
     def decompose(graph: VolumetricZxGraph, minimal: bool = True) -> list[ZxCycle]:
         zx_cycles: list[ZxCycle] = []
 
@@ -93,7 +101,7 @@ class CycleAnalyser:
             zx_cycles.append(zx_cycle)
 
         csg, _ = CycleSharingGraph.cycle_sharing_graph(zx_cycles)
-        indices = sorted(csg.nodes, key=lambda vt: csg.degree[vt], reverse=True)
+        indices = sorted(csg.nodes, key=lambda nd: CycleAnalyser.__cycle_weight(csg, nd), reverse=True)
 
         return list(zx_cycles[index] for index in indices)
 
