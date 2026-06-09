@@ -12,7 +12,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import datetime
 import logging
 import re
 import subprocess
@@ -20,6 +19,7 @@ import sys
 from typing import Any, cast
 
 import benchmark
+import git
 import networkx as nx
 import pandas
 
@@ -122,7 +122,7 @@ if __name__ == "__main__":
                 )
                 continue
 
-    timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    commit = git.Repo().head.commit.hexsha
 
     if benchmark.SEED_COUNT == 10:
         sample_count = "quick"
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     else:
         raise ValueError("Unknown seed count.")
 
-    result_filename = f"benchmarking/results/benchmark-results-{dataset.name.lower()}-{sample_count}-{timestamp}.csv"
+    result_filename = f"benchmarking/results/benchmark-results-{dataset.name.lower()}-{sample_count}-{commit}.csv"
     with open(result_filename, "w") as file:
         data = pandas.DataFrame(results)
         data.index.name = "id"
