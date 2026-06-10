@@ -210,7 +210,7 @@ class ZxGraphInflaterEquivolumetricRings:
             for node, _ in cycle:
                 # Since each of these node is realised as part of a ring, it already has two of its edges realised.
                 realising_cube = construction.get_zx_node(node.id).realising_cube
-                connectivity.reserve(realising_cube, required=construction.get_zx_degree(node.id) - 2)
+                connectivity.reserve(realising_cube, required=node.degree - 2)
 
             cubes = list(ring.cubes)
             for cube in cubes[len(cycle) :]:
@@ -254,7 +254,7 @@ class ZxGraphInflaterEquivolumetricRings:
         # Reserve the ports for all the nodes that were realised as part of this ring.
         for node in chain.unrealised:
             # Since each of these node is part of a ring, it already has two of its edges realised.
-            connectivity.reserve(node.realising_cube, required=graph.get_zx_degree(node.id) - 2)
+            connectivity.reserve(node.realising_cube, required=node.degree - 2)
 
         extra_cubes = list(strand.extras)
         for cube in extra_cubes[chain.length - 1 :]:

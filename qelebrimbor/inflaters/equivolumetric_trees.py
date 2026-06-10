@@ -164,7 +164,7 @@ class ZxGraphInflaterEquivolumetricTrees:
             console.debug(f">> Checking node {current_node} : {required} / {available} ")
             if required > available:
                 available_port = self.__obtain_available_port(graph, current_node)
-                console.debug(f">>> Node {current_node} has degree {graph.get_zx_degree(current_node.id)}")
+                console.debug(f">>> Node {current_node} has degree {current_node.degree}")
                 if available_port is not None:
                     current_cube, port = available_port
                     cube = BgCube(kind=current_cube.kind, position=port)

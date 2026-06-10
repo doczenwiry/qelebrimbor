@@ -54,8 +54,7 @@ class PlacefinderBFS:
         unrelaxed.append(initial)
         minimal_paths[(source.kind, source.position)] = initial
 
-        number_of_ports_required = self.__graph.get_zx_degree(target.id)
-        console.info(f"Searching for placement from {source} to {target} [ports required:{number_of_ports_required}]")
+        console.info(f"Searching for placement from {source} to {target} [ports required:{target.degree}]")
 
         target_suitable_kinds: list[CubeKind] = CubeKind.suitable_kinds(target.type)
 
@@ -106,8 +105,8 @@ class PlacefinderBFS:
                     )
                     number_of_open_ports = len(open_ports)
                     # If the position offers enough open ports, consider it as the optimum
-                    console.debug(f"> Open ports found for {neighbor} : {open_ports} [req.{number_of_ports_required}]")
-                    if number_of_ports_required - 1 <= number_of_open_ports:
+                    console.debug(f"> Open ports found for {neighbor} : {open_ports} [req.{target.degree}]")
+                    if target.degree - 1 <= number_of_open_ports:
                         optimum = extended_path
                         continue
 

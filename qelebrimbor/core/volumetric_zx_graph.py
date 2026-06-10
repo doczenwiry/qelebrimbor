@@ -109,6 +109,9 @@ class VolumetricZxGraph(nx.Graph):
                 self.add_edge(zx_source.id, zx_target.id)
                 self.edges[zx_source.id, zx_target.id][VolumetricZxGraph.KEY_ZX_EDGE] = zx_edge
 
+        for node in self.get_zx_nodes():
+            node.degree = self.degree[node.id]
+
         self.__next_cube_id = max(self.nodes) + 1 if len(self.nodes) > 0 else 0
 
     def make_alternative(self) -> VolumetricZxGraph:
@@ -175,9 +178,6 @@ class VolumetricZxGraph(nx.Graph):
             ),
             map(self.get_zx_node, self.neighbors(node.id)),
         )
-
-    def get_zx_degree(self, node_id: NodeId) -> int:
-        return int(self.degree[node_id])
 
     def get_zx_node(self, node_id: NodeId) -> ZxNode:
         return self.nodes[node_id][VolumetricZxGraph.KEY_ZX_NODE]

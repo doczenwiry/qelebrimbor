@@ -38,8 +38,7 @@ class NoMoreThanFourLegs(Preprocessor):
 
         nodes_to_split: list[tuple[ZxNode, set[ZxNode], set[ZxNode]]] = list()
         for node in vzx.get_zx_nodes():
-            node_degree = vzx.get_zx_degree(node.id)
-            if node_degree > 4:
+            if node.degree > 4:
                 cycle_neighbors: set[ZxNode] = set()
                 other_neighbors: set[ZxNode] = set()
                 for neighbor in vzx.get_zx_neighbors(node):

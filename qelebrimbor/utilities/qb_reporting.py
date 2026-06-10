@@ -116,9 +116,8 @@ def print_report(
     excess_required = sum(2 for cycle in cycles if len(cycle) == 4)
     # Every node with more than four legs will need to be unfused so that every cube has no more than four pipes
     for node in vzx.get_zx_nodes():
-        degree = vzx.get_zx_degree(node.id)
-        if degree > 4:
-            excess_required += (degree - 4 + (degree % 2)) // 2
+        if node.degree > 4:
+            excess_required += (node.degree - 4 + (node.degree % 2)) // 2
     required_inflation_rate = __format_percentage(
         excess_required / internal_spider_count, lower_better=True, inflation=True
     )

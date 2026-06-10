@@ -182,7 +182,7 @@ class PainterZxCycle:
                 if preceding_cube.kind == cube.kind:
                     equivalents.add(preceding_cube)
             offered_ports: int = 2 * (len(equivalents) + 1)
-            if offered_ports < graph.get_zx_degree(node.id):
+            if offered_ports < node.degree:
                 return False
         return True
 

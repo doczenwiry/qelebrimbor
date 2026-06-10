@@ -49,14 +49,14 @@ class ZxGraphInflaterBFS:
         else:
             root_node = max(
                 self.__graph.get_zx_nodes(),
-                key=lambda zxn: self.__graph.get_zx_degree(zxn.id),
+                key=lambda zxn: zxn.degree,
             )
             root_kind = CubeKind.suitable_kinds(root_node.type)[0]
 
         # Realise the root of the construction.
         root_cube = BgCube(kind=root_kind, position=SpacetimeHelper.ORIGIN)
         self.__graph.realise_zx_node(root_node, root_cube)
-        self.__connectivity.reserve(root_cube, required=self.__graph.get_zx_degree(root_node.id))
+        self.__connectivity.reserve(root_cube, required=root_node.degree)
 
         # Form the backbone with the bfs_edges
         # > Reserve needed positions based on remaining missing neighbors
@@ -133,7 +133,7 @@ class ZxGraphInflaterBFS:
         # TODO: use Path.to_specification(..)
         self.__graph.realise_zx_edge(source.id, target.id, proposal=path)
 
-        self.__connectivity.reserve(path.final, required=self.__graph.get_zx_degree(path.final.realised_node))
+        self.__connectivity.reserve(path.final, required=path.final.realised_node.degree)
 
         # Remove the reserved positions of ports from those available ones
         extra_cubes = list(path.extras)

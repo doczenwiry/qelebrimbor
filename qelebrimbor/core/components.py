@@ -28,6 +28,7 @@ console = logging.getLogger(__name__)
 class ZxNode(RecordClass):
     id: NodeId
     type: NodeType
+    degree: int = 0
     qubit: QubitId = -1
     layer: LayerId = -1
     __realising_cube: object | None = None
