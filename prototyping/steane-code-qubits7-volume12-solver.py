@@ -31,7 +31,7 @@ logging.getLogger("qelebrimbor.spacetime").setLevel(logging.INFO)
 
 zx_attributes.ZX_COLORING = True
 if __name__ == "__main__":
-    vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders8.json")
+    vzx = PYZX.from_pyzx_graph(PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders8.json"))
 
     ringfinder = RingfinderBFS(graph=vzx)
     strandfinder = StrandfinderDFS(graph=vzx, branch_and_bound=True)
@@ -76,7 +76,7 @@ if __name__ == "__main__":
             12: (0.7, 3.5 / 6.0),
         },
     )
-    viewer = VolumetricZxGraphViewer(graph=vzx, label="steane-code-7", layout=hexagon)
+    viewer = VolumetricZxGraphViewer(graph=vzx, cycles=cycles, label="steane-code-7", layout=hexagon)
     viewer.display()
 
     # PYZX.into_file(

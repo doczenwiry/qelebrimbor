@@ -33,7 +33,7 @@ logging.getLogger("qelebrimbor.vedo").setLevel(logging.CRITICAL)
 
 zx_attributes.ZX_COLORING = True
 if __name__ == "__main__":
-    vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders7.json")
+    vzx = PYZX.from_pyzx_graph(PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders7.json"))
 
     ports_tracker = OpenPortsTracker(vzx)
     ringfinder = RingfinderBFS(graph=vzx, connectivity=ports_tracker)
@@ -56,7 +56,7 @@ if __name__ == "__main__":
         # Reserve the ports for all the nodes that were realised as part of this ring.
         for node, _ in cycle:
             # Since each of these node is part of a ring, it already has two of its edges realised.
-            ports_tracker.reserve(node.realising_cube, required=vzx.get_zx_degree(node.id) - 2)
+            ports_tracker.reserve(node.realising_cube, required=node.degree - 2)
 
         cubes = list(ring.cubes)
         for cube in cubes[len(cycle) :]:

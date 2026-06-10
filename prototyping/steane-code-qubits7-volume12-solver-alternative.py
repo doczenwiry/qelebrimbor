@@ -30,7 +30,7 @@ logging.basicConfig(level=logging.INFO)
 logging.getLogger("qelebrimbor.volumetric_zx_graph").setLevel(logging.INFO)
 
 if __name__ == "__main__":
-    vzx = PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders8.json")
+    vzx = PYZX.from_pyzx_graph(PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders8.json"))
 
     BlockGraphConstructor.realise_nodes(
         graph=vzx,
