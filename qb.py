@@ -90,6 +90,11 @@ parser.add_argument(
     help="display the visualisation in a fullscreen window.",
 )
 parser.add_argument(
+    "--internal-hadamards",
+    action="store_true",
+    help="do not limit the number of Hadamards edges present in the internal ZX-graph.",
+)
+parser.add_argument(
     "--rings",
     action="store",
     type=int,
@@ -196,7 +201,7 @@ def main() -> int:
     if arguments.preprocessor == "full-reduce":
         if verbose:
             print(f"> Applying preprocessor : {FullReduce.__name__}")
-        FullReduce.process(pyzx_internal)
+        FullReduce.process(pyzx_internal, arguments.internal_hadamards)
 
     vzx = PYZX.from_pyzx_graph(pyzx_internal)
     internal_spider_count: int = sum(1 for node in vzx.get_zx_nodes() if node.type in {NodeType.X, NodeType.Z})

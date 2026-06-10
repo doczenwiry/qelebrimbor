@@ -19,6 +19,8 @@ from qelebrimbor.formats.preprocessing.abstract import Preprocessor
 
 class FullReduce(Preprocessor):
     @staticmethod
-    def process(input: pyzx.graph.base.BaseGraph) -> None:
+    def process(input: pyzx.graph.base.BaseGraph, internal_hadamards: bool = False) -> None:
         pyzx.full_reduce(input)
+        if not internal_hadamards:
+            pyzx.to_rg(input)
         input.normalize()
