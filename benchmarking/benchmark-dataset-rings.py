@@ -64,7 +64,7 @@ if __name__ == "__main__":
     sample_size: str = "robust" if arguments.robust else "quick"
 
     dataset = Dataset.SMALL
-    benchmark = Benchmark(dataset)
+    benchmark = Benchmark(dataset, robust=arguments.robust)
     print(f"Benchmarking dataset {dataset} [{'100' if arguments.robust else '10'} seeds per parameters]")
 
     if not benchmark.dataset_detected():
