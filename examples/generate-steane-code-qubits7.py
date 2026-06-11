@@ -50,7 +50,7 @@ def add_steane_chunk(graph: pyzx.graph.base.BaseGraph, layer: int, target_qubits
 
 
 if __name__ == "__main__":
-    circuit = "steane-code-qubits7-spiders7"
+    circuit = "steane-code-qubits7"
     spiders7 = pyzx.Graph()
 
     layer = 0
@@ -69,6 +69,9 @@ if __name__ == "__main__":
         boundary = spiders7.add_vertex(ty=pyzx.VertexType.BOUNDARY, row=layer, qubit=q)
         spiders7.add_edge((terminal, boundary), pyzx.EdgeType.SIMPLE)
 
+    with open(f"../assets/pyzx/steane/{circuit}.json", "w") as file:
+        file.write(spiders7.to_json())
+
     # Hadamard color-changes
     for vt in [7, 16, 17, 26, 27, 36]:
         pyzx.color_change(spiders7, vt)
@@ -82,7 +85,7 @@ if __name__ == "__main__":
     # Re-number vertices
     spiders7 = spiders7.copy()
 
-    with open(f"../assets/pyzx/{circuit}.json", "w") as file:
+    with open(f"../assets/pyzx/steane/{circuit}-spiders7.json", "w") as file:
         file.write(spiders7.to_json())
 
     circuit = "steane-code-qubits7-spiders8"
@@ -118,5 +121,5 @@ if __name__ == "__main__":
     ]:
         spiders8.add_edge(edge, pyzx.EdgeType.SIMPLE)
 
-    with open(f"../assets/pyzx/{circuit}.json", "w") as file:
+    with open(f"../assets/pyzx/steane/{circuit}.json", "w") as file:
         file.write(spiders8.to_json())
