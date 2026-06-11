@@ -67,7 +67,12 @@ class VolumetricZxGraphViewer(Plotter):
         layout: ZxLayout | None = None,
         size: str = "auto",
     ):
-        super().__init__(size=size, shape=VIEWPORTS_WITH_INPUT, sharecam=False, title=f"qelebrimbor [{label}]")
+        super().__init__(
+            size=size,
+            shape=VIEWPORTS_WITH_INPUT if input else VIEWPORTS,
+            sharecam=False,
+            title=f"qelebrimbor [{label}]",
+        )
 
         # Store the original AugmentedNxGraph
         self.__vzx_graph = graph

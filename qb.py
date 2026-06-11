@@ -371,10 +371,10 @@ def main() -> int:
 
     # Visualisation stage
     if arguments.visualization or arguments.force_visualization:
-        if arguments.force_visualization or vzx.volume() <= 100:
+        if arguments.force_visualization or vzx.volume() <= 128:
             window_size = "full" if arguments.fullscreen else "auto"
             viewer = VolumetricZxGraphViewer(
-                input=PYZX.from_pyzx_graph(pyzx_input),
+                input=PYZX.from_pyzx_graph(pyzx_input) if pyzx_input.num_vertices() <= 256 else None,
                 graph=vzx,
                 label=arguments.filepath,
                 size=window_size,
