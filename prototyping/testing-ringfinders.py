@@ -18,22 +18,29 @@ from time import time
 import qelebrimbor.core.zx
 from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.core.zx.attributes import EdgeType, NodeType
+from qelebrimbor.formats.preprocessing.full_reduce import FullReduce
+from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.spacetime.ringfinders.colorblind_bfs import RingfinderColorblindBFS
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
-from qelebrimbor.vedo.zx_layout.cycle import CycleLayout
+from qelebrimbor.vedo.zx_layout.planar import PlanarLayout
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("qelebrimbor.spacetime.colorblind.painter_cycle").setLevel(logging.INFO)
 
 qelebrimbor.core.zx.attributes.ZX_COLORING = True
 
 COUNT = 6
 if __name__ == "__main__":
-    nodes = [(node_id, NodeType.Z) for node_id in range(COUNT)]
-    edges = [(node_id, (node_id + 1) % COUNT, EdgeType.HADAMARD) for node_id in range(COUNT)]
+    vzx: VolumetricZxGraph
 
-    vzx = VolumetricZxGraph(nodes, edges)
+    # nodes = [(node_id, NodeType.Z) for node_id in range(COUNT)]
+    # edges = [(node_id, (node_id + 1) % COUNT, EdgeType.HADAMARD) for node_id in range(COUNT)]
+    # vzx = VolumetricZxGraph(nodes, edges)
+
+    pyzx_input = PYZX.from_file("../benchmarking/datasets/small/identity/random-cnots-q4-d4-s2712719750.pyzx.json")
+    FullReduce.process(pyzx_input)
+    vzx = PYZX.from_pyzx_graph(pyzx_input)
 
     cycle0 = CycleAnalyser.decompose(vzx, minimal=True)[0]
     print(f"Cycle : {str(cycle0)}")
@@ -44,7 +51,7 @@ if __name__ == "__main__":
     # ringfinder = RingfinderColorblindDFS(graph = vzx, reporting = SpacetimeTracingReport.FINAL)
 
     start = time()
-    ring = ringfinder.find_optimum(cycle0, maximal_excess=0)
+    ring = ringfinder.find_optimum(cycle0, maximal_excess=2)
     final = time()
     runtime = round(final - start, 2)
 
@@ -62,5 +69,5 @@ if __name__ == "__main__":
         label += ", volume =n/a, excess = +n/a"
         print("> Failed to find optimal ring.")
 
-    viewer = VolumetricZxGraphViewer(graph=vzx, label=label, layout=CycleLayout(vzx))
+    viewer = VolumetricZxGraphViewer(graph=vzx, label="label", layout=PlanarLayout(vzx, scale=3.0))
     viewer.display()

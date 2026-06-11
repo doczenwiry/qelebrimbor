@@ -15,7 +15,6 @@
 
 import heapq
 import logging
-from collections import defaultdict
 
 from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.bg.ring import Ring
@@ -47,6 +46,7 @@ class PainterZxCycle:
         for shift in range(colorless.volume):
             for ring in PainterZxCycle.__all_painted(colorless.rotated(shift), cycle):
                 # TODO: deal with minimal number of unfusable nodes across all paintings is > cycle.length
+                console.info(f"PAINTED [{cycle.length}=?{ring.number_of_unfusable_nodes()}] : {ring}")
                 if ring.number_of_unfusable_nodes() == cycle.length:
                     painted.append(ring)
         return painted
@@ -105,6 +105,7 @@ class PainterZxCycle:
             position, reaches = colorless_cubes[partial.volume()]
             step = colorless_steps[partial.volume() - 1]
 
+            # TODO: only do the identity extension if there are more cubes remaining than nodes unmatched
             selected: CubeKind | None = None
             for kind in CubeKind:
                 if not CubeKind.compatible(partial.terminal.kind, kind, step, EdgeType.IDENTITY):
@@ -160,27 +161,23 @@ class PainterZxCycle:
         return rings
 
     @staticmethod
-    def __realising_cubes(painted: Ring) -> dict[ZxNode, list[BgCube]]:
-        realising_cubes: dict[ZxNode, list[BgCube]] = defaultdict(list)
-
-        for cube in painted.cubes:
-            pass
-
-        return realising_cubes
-
-    @staticmethod
     def __offers_enough_ports(graph: VolumetricZxGraph, painted: Ring, cycle: ZxCycle) -> bool:
         painted_cubes = list(painted.cubes)
         for node in cycle.nodes:
             location, cube = next(filter(lambda entry: entry[1].realised_node == node, enumerate(painted_cubes)))
-            equivalents: set[BgCube] = set()
+            equivalents: set[BgCube] = {cube}
             for index in range(1, len(painted_cubes)):
                 following_cube: BgCube = painted_cubes[(location + index) % painted.volume()]
                 if following_cube.kind == cube.kind:
                     equivalents.add(following_cube)
+                else:
+                    break
+            for index in range(1, len(painted_cubes)):
                 preceding_cube: BgCube = painted_cubes[(location - index) % painted.volume()]
                 if preceding_cube.kind == cube.kind:
                     equivalents.add(preceding_cube)
+                else:
+                    break
             offered_ports: int = 2 * (len(equivalents) + 1)
             if offered_ports < node.degree:
                 return False
