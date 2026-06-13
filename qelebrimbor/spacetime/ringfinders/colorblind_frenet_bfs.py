@@ -13,10 +13,10 @@
 #   limitations under the License.
 
 import heapq
+import itertools
 import logging
 
-from qelebrimbor.core.bg.ring import Ring
-from qelebrimbor.core.colorless.frenet import FrenetRing
+from qelebrimbor.core.colorless.frenet import FrenetRing, FrenetTwisting
 from qelebrimbor.core.components import ZxNode
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.core.zx.attributes import EdgeType
@@ -26,7 +26,7 @@ from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 console = logging.getLogger(__name__)
 
 
-class RingfinderColorblindFrenetDFS:
+class RingfinderColorblindFrenetBFS:
     def __init__(self, graph: VolumetricZxGraph | None = None, reporting: SpacetimeTracingReport | None = None):
         """
         Instantiate a RingfinderColorblindFrenetDFS to search for a Ring of minimal volume suitable for a ZxCycle.
@@ -39,50 +39,35 @@ class RingfinderColorblindFrenetDFS:
         self.__reporting = reporting
 
     @staticmethod
-    def __make_specification(goal: ZxCycle) -> tuple[list[ZxNode], list[EdgeType], list[bool]]:
+    def __make_specification(goal: ZxCycle) -> list[tuple[ZxNode, EdgeType, int]]:
         """
         Construct a specification of plane flips that will be needed along the Ring in accordance with the ZxCycle.
         :param goal: The ZxCycle specifying (partially) a Ring to be searched for.
         :return:
         """
         # Split every node along the cycle into as many nodes of the same type connected by identity as needed.
-        # > Turn node of degree d into (d // 2) + (d % 2) nodes.
-        nodes: list[ZxNode] = []
-        edges: list[EdgeType] = []
+        # > Turn node with degree d into (d + d%2) nodes.
+        specification: list[tuple[ZxNode, EdgeType, int]] = list()
         for node, edge in zip(goal.nodes, goal.edges):
-            outer_legs: int = node.degree - 2
-            nodes.append(node)
+            # Calculate the number of extra cubes required to accommodate all the legs for the current node.
+            cubes_required: int = 1 if node.degree <= 4 else ((node.degree + node.degree % 2) // 2) - 1
+            extras: int = cubes_required - 1
+            specification.append((node, edge, extras))
 
-            # Calculate the number of extra nodes required to accommodate all the legs of the current node.
-            extras: int = (outer_legs // 2) + (outer_legs % 2) - 1
-            for _ in range(extras):
-                nodes.append(ZxNode(id=-1, type=node.type))
-                edges.append(EdgeType.IDENTITY)
+        # TODO: deal with padding all the cases with less than 6 cubes.
+        cubes_required = sum(extras + 1 for _, _, extras in specification)
+        if cubes_required == 4:
+            for index in [0, 2]:
+                node, edge_type, extras = specification[index]
+                specification[index] = (node, edge_type, extras + 1)
 
-            edges.append(edge.type)
+        console.info(f"> Expanded goal into : {specification}")
 
-        if len(nodes) == 4:
-            for index in [0, 3]:
-                nodes.insert(index, ZxNode(id=-1, type=nodes[0].type))
-                edges.insert(index, EdgeType.IDENTITY)
-
-        twists: list[bool] = list()
-        expanded_length = len(nodes)
-        specification: str = ""
-        for index in range(expanded_length):
-            is_hadamard = edges[index] == EdgeType.HADAMARD
-            same_colors = nodes[index] == nodes[(index + 1) % expanded_length]
-            twist = is_hadamard == same_colors
-            twists.append(twist)
-            specification += "T" if twist else "S"
-
-        console.info(f"> Expanded goal into : {nodes} {edges} [specification:{specification}]")
-
-        return nodes, edges, twists
+        return specification
 
     # TODO: prune when a partial colorless ring won't be paintable when it is closed.
     # TODO: identify essentially different colorless rings (missing symmetry: rotation about (+1,+1,+1) axis).
-    def find_optimum(self, goal: ZxCycle, maximal_excess: int | None = None) -> Ring | None:
+    def find_optimum(self, goal: ZxCycle, maximal_excess: int | None = None) -> FrenetRing | None:
         """
         Search for a Ring whose intermediate cubes can be used to realise the nodes of a ZxCycle.
         WARNING: if there exists no ColorlessRing in spacetime ; infinite loop.
@@ -92,25 +77,52 @@ class RingfinderColorblindFrenetDFS:
         :return: A Ring or None if no ring was found within maximal_excess.
         """
         console.info(f"Searching Ring for {goal}")
-        nodes, edges, twists = RingfinderColorblindFrenetDFS.__make_specification(goal)
+        specification = RingfinderColorblindFrenetBFS.__make_specification(goal)
 
         # Initialize a tracer if tracing has been requested
         # tracer: SpacetimeTracer | None = SpacetimeTracer(reporting=self.__reporting) if self.__reporting else None
 
-        optimum: Ring | None = None
-        unrelaxed: list[FrenetRing] = list()
+        optimum: FrenetRing | None = None
+        unrelaxed: list[tuple[int, FrenetRing]] = list()
 
-        heapq.heappush(unrelaxed, FrenetRing())
+        heapq.heappush(unrelaxed, (0, FrenetRing()))
 
-        while len(unrelaxed) > 0:
+        while len(unrelaxed) > 0 and optimum is None:
             heapq.heapify(unrelaxed)
-            current = heapq.heappop(unrelaxed)
+            sections, current = heapq.heappop(unrelaxed)
 
-            if twists[current.length]:
-                # Introduce a twist
-                pass
-            else:
-                # Introduce a straight
-                pass
+            console.debug(f"Current : {current}")
+
+            if sections == len(specification):
+                if current.closed():
+                    optimum = current
+                continue
+
+            following_node, following_edge, following_extras = specification[sections]
+
+            # TODO: design a work-around for this exponential growth ...
+            if following_extras > 4:
+                console.critical(f"Exponential growth of number of flat layouts: {3**following_extras}")
+
+            flats = itertools.product(
+                [FrenetTwisting.NONE, FrenetTwisting.ZERO, FrenetTwisting.FULL], repeat=following_extras
+            )
+            for layout in flats:
+                try:
+                    extended = current.extend(*layout)
+                    heapq.heappush(unrelaxed, (sections + 1, extended.extend(FrenetTwisting.QT_M)))
+                    heapq.heappush(unrelaxed, (sections + 1, extended.extend(FrenetTwisting.QT_P)))
+                except ValueError:
+                    # extension intersects with occupied positions
+                    continue
+
+            # TODO: reduce the unrelaxed rings by mirroring
+            reduced: list[tuple[int, FrenetRing]] = []
+            for sections, ring in unrelaxed:
+                if any(other.mirrors(ring) for _, other in reduced):
+                    continue
+                reduced.append((sections, ring))
+            unrelaxed.clear()
+            unrelaxed.extend(reduced)
 
         return optimum

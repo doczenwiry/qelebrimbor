@@ -17,34 +17,40 @@ from time import time
 
 import qelebrimbor.core.zx.attributes
 from qelebrimbor.analysis.cycles import CycleAnalyser
-from qelebrimbor.core.bg.ring import Ring
+from qelebrimbor.core.colorless.frenet import FrenetRing
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.formats.pyzx import PYZX
-from qelebrimbor.spacetime.ringfinders.colorblind_frenet_dfs import RingfinderColorblindFrenetDFS
+from qelebrimbor.core.zx.attributes import EdgeType, NodeType
+from qelebrimbor.spacetime.ringfinders.colorblind_frenet_bfs import RingfinderColorblindFrenetBFS
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("qelebrimbor.spacetime.ringfinders.colorblind_frenet_dfs").setLevel(logging.DEBUG)
 
 qelebrimbor.core.zx.attributes.ZX_COLORING = True
 
+COUNT = 8
 if __name__ == "__main__":
     vzx: VolumetricZxGraph
-    vzx = PYZX.from_pyzx_graph(PYZX.from_file("../assets/pyzx/random-cnots-q4-d32-s2712719750.pyzx.internal.json"))
-
-    # vzx = VolumetricZxGraph(
-    #     nodes = [ (node_id, NodeType.Z) for node_id in range(4) ],
-    #     edges = [ (node_id, (node_id+1) % 4, EdgeType.HADAMARD) for node_id in range(4) ],
-    # )
+    # vzx = PYZX.from_pyzx_graph(PYZX.from_file("../assets/pyzx/random-cnots-q4-d32-s2712719750.pyzx.internal.json"))
+    vzx = VolumetricZxGraph(
+        nodes=[(node_id, NodeType.Z) for node_id in range(COUNT)],
+        edges=[(node_id, (node_id + 1) % COUNT, EdgeType.HADAMARD) for node_id in range(COUNT)],
+    )
 
     cycles = CycleAnalyser.decompose(vzx, minimal=True)
     cycle0 = cycles[0]
 
-    ringfinder = RingfinderColorblindFrenetDFS(graph=vzx, reporting=SpacetimeTracingReport.FINAL)
+    for node in cycle0.nodes:
+        print(f"Node {node} : {node.degree}")
+
+    ringfinder = RingfinderColorblindFrenetBFS(graph=vzx, reporting=SpacetimeTracingReport.FINAL)
 
     start = time()
-    ring: Ring | None = ringfinder.find_optimum(cycle0, maximal_excess=2)
+    ring: FrenetRing | None = ringfinder.find_optimum(cycle0, maximal_excess=2)
     final = time()
     runtime = round(final - start, 2)
+
+    print(f"Frenet ring : {ring}")
 
     label = f"{ringfinder.__class__.__name__} : time = {runtime}s"
     # if ring is not None:
