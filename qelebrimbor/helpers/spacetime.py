@@ -58,11 +58,13 @@ class Step(Enum):
     def orthogonals(self) -> Iterator[Step]:
         return (step for step in Step if self.dot(step) == 0)
 
+    __STEPS_LABELS = {XP: "+X", XM: "-X", YP: "+Y", YM: "-Y", ZP: "+Z", ZM: "-Z"}
+
     def __str__(self) -> str:
-        return f"Step.{self.name}"
+        return Step.__STEPS_LABELS[self.value]  # f"Step.{self.name}"
 
     def __repr__(self) -> str:
-        return f"Step.{self.name}"
+        return Step.__STEPS_LABELS[self.value]
 
 
 class SpacetimeHelper:
