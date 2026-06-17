@@ -20,15 +20,18 @@ from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.core.colorless.frenet import FrenetRing
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.core.zx.attributes import EdgeType, NodeType
+from qelebrimbor.spacetime.colorblind.painter_cycle import PainterZxCycle
 from qelebrimbor.spacetime.ringfinders.colorblind_frenet_bfs import RingfinderColorblindFrenetBFS
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
+from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer
+from qelebrimbor.vedo.zx_layout.planar import PlanarLayout
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("qelebrimbor.spacetime.ringfinders.colorblind_frenet_dfs").setLevel(logging.DEBUG)
 
 qelebrimbor.core.zx.attributes.ZX_COLORING = True
 
-COUNT = 8
+COUNT = 6
 if __name__ == "__main__":
     vzx: VolumetricZxGraph
     # vzx = PYZX.from_pyzx_graph(PYZX.from_file("../assets/pyzx/random-cnots-q4-d32-s2712719750.pyzx.internal.json"))
@@ -46,24 +49,31 @@ if __name__ == "__main__":
     ringfinder = RingfinderColorblindFrenetBFS(graph=vzx, reporting=SpacetimeTracingReport.FINAL)
 
     start = time()
-    ring: FrenetRing | None = ringfinder.find_optimum(cycle0, maximal_excess=2)
+    frenet: FrenetRing | None = ringfinder.find_optimum(cycle0, maximal_excess=2)
     final = time()
     runtime = round(final - start, 2)
 
-    print(f"Frenet ring : {ring}")
+    print(f"Frenet ring : {frenet}")
 
     label = f"{ringfinder.__class__.__name__} : time = {runtime}s"
-    # if ring is not None:
-    #     print(f"Found a ring with volume : {ring.volume()}")
-    #     print(f"> {ring}")
-    #
-    #     vzx.realise_zx_cycle(cycle0, ring)
-    #
-    #     volume = ring.volume()
-    #     excess = volume - cycle0.length
-    #     label += f", volume = {ring.volume()}, excess = +{ring.volume() - cycle0.length}"
-    # else:
-    #     label += ", volume =n/a, excess = +n/a"
-    #     print("> Failed to find optimal ring.")
+    if frenet is not None:
+        print(f"> Frenet steps : {frenet.steps}")
+        colorless = frenet.colorless_ring()
+        print(f"> Colorless ring : {colorless}")
+        ring = PainterZxCycle.paint(colorless, cycle0)
 
-    # VolumetricZxGraphViewer(graph=vzx, cycles=cycles, label=label, layout=PlanarLayout(vzx, scale=5.0)).display()
+        if ring is not None:
+            print(f"> Painted ring : {ring}")
+            print(f"Found a ring with volume : {ring.volume()}")
+            print(f"> {ring}")
+
+            vzx.realise_zx_cycle(cycle0, ring)
+
+            volume = ring.volume()
+            excess = volume - cycle0.length
+            label += f", volume = {ring.volume()}, excess = +{ring.volume() - cycle0.length}"
+    else:
+        label += ", volume =n/a, excess = +n/a"
+        print("> Failed to find optimal ring.")
+
+    VolumetricZxGraphViewer(graph=vzx, cycles=cycles, label=label, layout=PlanarLayout(vzx, scale=2.0)).display()

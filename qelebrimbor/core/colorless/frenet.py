@@ -14,6 +14,7 @@
 
 from enum import Enum
 
+from qelebrimbor.core.colorless.ring import ColorlessRing
 from qelebrimbor.core.coordinates import Coordinates
 from qelebrimbor.core.reach import Reach
 from qelebrimbor.helpers.spacetime import Step
@@ -45,12 +46,27 @@ class FrenetRing:
 
     def __init__(self):
         self.__terminal: tuple[Coordinates, Coordinates, Step] = FrenetRing.__INITIAL
-        self.__positions: set[Coordinates] = set()
+        self.__positions: list[Coordinates] = list()
+        self.__steps: list[Step] = list()
         self.__twists: list[FrenetTwisting] = list()
 
     @property
     def length(self) -> int:
         return len(self.__twists)
+
+    @property
+    def positions(self) -> list[Coordinates]:
+        return self.__positions
+
+    def colorless_ring(self) -> ColorlessRing:
+        ring = ColorlessRing()
+        for index in range(self.length):
+            ring.append(self.__positions[(index - 1) % self.length])
+        return ring
+
+    @property
+    def steps(self) -> list[Step]:
+        return self.__steps
 
     def closed(self) -> bool:
         return self.__terminal == FrenetRing.__INITIAL
@@ -76,14 +92,16 @@ class FrenetRing:
         if following_position in self.__positions:
             raise ValueError(f"Position {following_position} already occupied by ColorlessRing.")
 
-        self.__positions.add(following_position)
+        self.__positions.append(following_position)
         self.__twists.append(twist)
+        self.__steps.append(Step(following_step))
         self.__terminal = following_position, following_reach, Step(following_step)
 
     def extend(self, *twists: FrenetTwisting) -> FrenetRing:
         extended = FrenetRing()
         extended.__terminal = self.__terminal
-        extended.__positions.update(self.__positions)
+        extended.__positions.extend(self.__positions)
+        extended.__steps.extend(self.__steps)
         extended.__twists.extend(self.__twists)
         for twist in twists:
             extended.append(twist)
