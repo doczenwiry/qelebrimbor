@@ -6,7 +6,9 @@
 
 A toolbox for studying the relationships between ZX-graphs and Lattice Surgery. A utility to help convert the former into the latter.
 
-This project started originally around the VolumetricZxGraph class to conceal the ZX-graph and the Blockgraph behind a single concept as a contribution to topologiq (https://github.com/tqec/topologiq).
+This project started originally around the VolumetricZxGraph class to conceal a ZX-graph and its associated Blockgraph behind a single concept as a contribution to topologiq (https://github.com/tqec/topologiq).
+
+**Acknowledgements:** the author of this project is grateful to Jose A. Bolanos for the lengthy discussions on the implementation of topologiq that helped him shape his understanding of the problem that it solves. The discussions with other members of the TQEC community; Austin Fowler, Adrien Suau and Tianyi Hao, have provided invaluable insights into the nuances and requirements of the surface code and lattice surgery. 
 
 ## Installation
 ```bash
