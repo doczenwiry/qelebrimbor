@@ -8,7 +8,7 @@ A toolbox for studying the relationships between ZX-graphs and Lattice Surgery. 
 
 This project started originally around the VolumetricZxGraph class to conceal a ZX-graph and its associated Blockgraph behind a single concept as a contribution to topologiq (https://github.com/tqec/topologiq).
 
-**Acknowledgements:** the author of this project is grateful to Jose A. Bolanos for the lengthy discussions on the implementation of topologiq that helped him shape his understanding of the problem that it solves. The discussions with other members of the TQEC community; Austin Fowler, Adrien Suau and Tianyi Hao, have provided invaluable insights into the nuances and requirements of the surface code and lattice surgery. 
+**Acknowledgements:** the author of this project is grateful to Jose A. Bolanos for the lengthy discussions on the implementation of topologiq that helped him shape his understanding of the problem that it solves. This has greatly influenced the initial shape of this tool and the direction in which it is headed. The discussions with other members of the TQEC community; Austin Fowler, Adrien Suau and Tianyi Hao, have provided invaluable insights into the nuances and requirements of the surface code and lattice surgery. 
 
 ## Installation
 ```bash
@@ -73,6 +73,21 @@ The arguments accepted by the benchmarking tool can be obtained by running
 ```bash
 $ uv run benchmarking/benchmark-dataset-rings-small.py -h
 ```
+
+#### Plotting results
+
+A script is available to plot the results of one or more benchmark result files. It can be invoked in the following way
+
+```bash
+$ uv run benchmarking/plot-results-dataset-rings.py benchmark-results-small-robust-a9645276f320d3edb71f1c2cef6849e7a43a9162.csv benchmark-results-small-quick-b0ba145242194a12453eeb3963ffc65558f4b705.csv
+```
+
+**Note: it is important to keep the names that the benchmark-dataset-rings.py script produces as they are, since the plotting script assume the specific name format used.**
+
+The summary of the Internal Inflation Rate and Runtime will be presented in the form of boxplots.
+
+![Internal Inflation Rate](documentation/benchmark-result-iir.png)
+![Runtime](documentation/benchmark-result-run.png)
 
 ## Main script
 

@@ -25,24 +25,34 @@ logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
 parser = ArgumentParser(
     prog="qb",
-    description="A tool to construct a Volumetric ZX-graph (a.k.a. BlockGraph) from an input ZX-graph. Currently accepted files are *.json containing a PyZX graph in JSON format.",  # noqa: E501
+    description="A tool to plot the results of benchmark runs.",  # noqa: E501
 )
-parser.add_argument("filepath", help="path to the file containing the results of a benchmark run to display.")
+parser.add_argument("filepaths", nargs="+", help="path to the file containing results of a benchmark run to display.")
 
 if __name__ == "__main__":
     arguments = parser.parse_args()
 
-    data = pandas.read_csv(arguments.filepath)
-    data.info()
+    dataframes: list[pandas.DataFrame] = list()
+    for filepath in arguments.filepaths:
+        _, _, _, size, commit = filepath.split(".")[0].split("-")
+        df = pandas.read_csv(filepath)
+        df["source"] = size + "-" + commit[:8]
+        df.info()
+        dataframes.append(df)
 
+    data = pandas.concat(dataframes, ignore_index=True)
     available = data[data["status"] == "COMPLETE"]
 
-    seaborn.boxplot(data=available, x=available["layers"].astype(str), y="iir")
+    seaborn.set_theme(rc={"figure.constrained_layout.use": True})
+
+    plot1 = seaborn.boxplot(data=available, x=available["layers"].astype(str), y="iir", hue="source")
+    seaborn.move_legend(plot1, "upper left", bbox_to_anchor=(1, 1))
     plt.title("Internal Inflation Rate [4 qubits]")
     plt.ylabel("Inflation (+%)")
     plt.show()
 
-    seaborn.boxplot(data=available, x=available["layers"].astype(str), y="run")
+    plot2 = seaborn.boxplot(data=available, x=available["layers"].astype(str), y="run", hue="source")
+    seaborn.move_legend(plot2, "upper left", bbox_to_anchor=(1, 1))
     plt.title("Runtime [4 qubits]")
     plt.ylabel("Time (s)")
     plt.show()
