@@ -34,9 +34,11 @@ if __name__ == "__main__":
 
     dataframes: list[pandas.DataFrame] = list()
     for filepath in arguments.filepaths:
-        _, _, _, size, commit = filepath.split(".")[0].split("-")
+        components = filepath.split(".")[0].split("-")
+        size, commit = components[3], components[4]
+        comment = "-" + components[5] if len(components) == 6 else ""
         df = pandas.read_csv(filepath)
-        df["source"] = size + "-" + commit[:8]
+        df["source"] = size + "-" + commit[:8] + comment
         df.info()
         dataframes.append(df)
 

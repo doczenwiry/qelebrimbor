@@ -23,4 +23,3 @@ class FullReduce(Preprocessor):
         pyzx.full_reduce(input)
         if not internal_hadamards:
             pyzx.to_rg(input)
-        input.normalize()

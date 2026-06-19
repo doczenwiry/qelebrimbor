@@ -17,10 +17,9 @@ import re
 import subprocess
 import sys
 from argparse import ArgumentParser
-from typing import Any, cast
+from typing import Any
 
 import git
-import networkx as nx
 import pandas
 from benchmark import Benchmark, Dataset
 
@@ -40,6 +39,7 @@ parser = ArgumentParser(
     prog="qb",
     description="A tool to construct a Volumetric ZX-graph (a.k.a. BlockGraph) from an input ZX-graph. Currently accepted files are *.json containing a PyZX graph in JSON format.",  # noqa: E501
 )
+parser.add_argument("-c", "--comment", action="store", help="specify a comment to be appended to the filename")
 parser.add_argument(
     "-g",
     "--generate",
@@ -90,7 +90,6 @@ if __name__ == "__main__":
             raise ke
         vzx = PYZX.from_pyzx_graph(pyzx_input)
 
-        number_of_connected_components = nx.number_connected_components(cast(nx.Graph, vzx))
         cc_count = ConnectedComponentsAnalyser.count(vzx)
         bcc_count = BiconnectedComponentsAnalyser.count(vzx)
         if CycleAnalyser.has_cycles(vzx) and cc_count == 1 and bcc_count == 1:
@@ -157,7 +156,10 @@ if __name__ == "__main__":
 
     commit = git.Repo().head.commit.hexsha
 
-    result_filename = f"benchmarking/results/benchmark-results-{dataset.name.lower()}-{sample_size}-{commit}.csv"
+    result_filename = f"benchmarking/results/benchmark-results-{dataset.name.lower()}-{sample_size}-{commit}"
+    if arguments.comment:
+        result_filename += f"-{arguments.comment}"
+    result_filename += ".csv"
     with open(result_filename, "w") as file:
         data = pandas.DataFrame(results)
         data.index.name = "id"

@@ -204,9 +204,7 @@ def main() -> int:
     if arguments.preprocessor == "full-reduce":
         if verbose:
             print(f"> Applying preprocessor : {FullReduce.__name__}")
-        pyzx.full_reduce(pyzx_internal)
-        if not arguments.internal_hadamards:
-            pyzx.to_rg(pyzx_internal)
+        FullReduce.process(pyzx_internal)
 
     vzx = PYZX.from_pyzx_graph(pyzx_internal)
     internal_spider_count: int = sum(1 for node in vzx.get_zx_nodes() if node.type in {NodeType.X, NodeType.Z})
