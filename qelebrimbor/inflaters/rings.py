@@ -66,7 +66,7 @@ class ZxGraphInflaterRings:
         )
 
         # Realise all subsequent chains
-        candidate: ZxChain | None = self.__identify_next_chain(*zx_cycles)
+        candidate: ZxChain | None = self.__select_next_chain(*zx_cycles)
 
         while candidate is not None and 0 < len(zx_cycles):
             console.info(f"Attempting realisation of chain [index={count}, md={candidate.distance}] : {candidate}")
@@ -95,7 +95,7 @@ class ZxGraphInflaterRings:
                 )
             )
 
-            candidate = ZxGraphInflaterRings.__identify_next_chain(*zx_cycles)
+            candidate = ZxGraphInflaterRings.__select_next_chain(*zx_cycles)
 
         console.info(f"Cycles processed : {count}/{len(self.__zx_cycles)}.")
         if self.__verbose:
@@ -103,8 +103,28 @@ class ZxGraphInflaterRings:
 
         return count
 
+    @staticmethod
+    def __select_next_chain(*cycles: ZxCycle) -> ZxChain | None:
+        for cycle in cycles:
+            console.info(f"Identifying chains in cycle : {cycle}")
+            nodes, edges = zip(*cycle)
+
+            if all(edge.is_realised() for edge in edges):
+                console.debug(f"> Cycle {cycle} is already complete. Skipping.")
+                continue
+
+            if any(node.is_realised() for node in nodes):
+                console.debug(f"> Cycle {cycle} intersects current construct.")
+                chain: ZxChain | None = CycleAnalyser.extract(cycle)
+                if chain is not None:
+                    console.debug(f"> Chain found : {chain}")
+                    return chain
+
+        return None
+
     # TODO: handle case of disjoint rings (i.e. multiple connected components that contain cycles).
     @staticmethod
+    # TODO: respect the order of the cycles to identify the next chain to be realised !!!
     def __identify_next_chain(*cycles: ZxCycle) -> ZxChain | None:
         all_chains: list[ZxChain] = CycleAnalyser.identify_chains(*cycles)
         console.debug("All chains identified :")
