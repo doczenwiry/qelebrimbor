@@ -52,10 +52,6 @@ class RingfinderColorblindDFS:
         self.__branch_and_bound = branch_and_bound
         self.__reporting = reporting
 
-    @staticmethod
-    def heuristic(current: ColorlessRing, node_types: list[NodeType]) -> int:
-        return max(len(node_types), current.distance)
-
     def find_optimum(self, goal: ZxCycle, maximal_excess: int | None = None) -> Ring | None:
         """
         Search for a Ring whose intermediate cubes can be used to realise the nodes of a ZxCycle.
@@ -89,7 +85,7 @@ class RingfinderColorblindDFS:
         unrelaxed: list[tuple[int, ColorlessRing]] = []
 
         initial = ColorlessRing().extend(Coordinates(0, 0, 0))
-        heapq.heappush(unrelaxed, (RingfinderColorblindDFS.heuristic(initial, node_types), initial))
+        heapq.heappush(unrelaxed, (len(node_types), initial))
 
         if tracer:
             tracer.add_node(initial.anchor, label=str(initial.anchor))
@@ -99,9 +95,8 @@ class RingfinderColorblindDFS:
         while len(unrelaxed) > 0 and (self.__branch_and_bound or optimum is None):
             # Restore the heap invariant
             heapq.heapify(unrelaxed)
-            remaining_distance: int
-            current: ColorlessRing
-            remaining_distance, current = heapq.heappop(unrelaxed)
+            nodes_remaining, current = heapq.heappop(unrelaxed)
+            remaining_distance: int = current.distance
 
             terminal = current.terminal
 
@@ -112,8 +107,7 @@ class RingfinderColorblindDFS:
             # Branch-and-bound
             if self.__branch_and_bound and optimum is not None:
                 # Compute the project length based on the heuristic
-                projected_volume = current.volume + remaining_distance
-                if optimum.volume() <= projected_volume:
+                if optimum.volume() <= current.volume + remaining_distance:
                     if tracer:
                         tracer.prune_node(terminal)
                     continue
@@ -159,16 +153,8 @@ class RingfinderColorblindDFS:
 
                 extended = current.extend(adjacent)
 
-                # Filtering out the neighbor from unrelaxed
-                unrelaxed = [vertex for vertex in unrelaxed if vertex[1].terminal != adjacent]
-
                 # Compute the minimal manhattan length required to connect neighbor to target (HEURISTIC).
-                unrelaxed.append(
-                    (
-                        RingfinderColorblindDFS.heuristic(extended, node_types[extended.volume :]),
-                        extended,
-                    )
-                )
+                unrelaxed.append((len(node_types[extended.volume :]), extended))
 
         console.info(f"Optimum found : {optimum}")
 

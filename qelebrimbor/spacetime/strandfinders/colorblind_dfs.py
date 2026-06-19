@@ -36,7 +36,7 @@ class StrandfinderColorblindDFS:
         graph: VolumetricZxGraph | None = None,
         connectivity: ConnectivityTracker | None = None,
         branch_and_bound: bool = False,
-        tracing: SpacetimeTracingReport | None = None,
+        reporting: SpacetimeTracingReport | None = None,
     ):
         """
         Instantiate a PathfinderDFS to search for shortest valid paths between cubes in spacetime.
@@ -44,22 +44,21 @@ class StrandfinderColorblindDFS:
         :param branch_and_bound: Controls whether a Branch-and-Bound is performed to improve the first path found.
         This will incur an additional computational cost that may or may not fall into super-exponential territory.
         Proof of the possibility would be nice. Refutation thereof would be better.
-        :param tracing: Controls whether the PathfinderDFS performs tracing of its searches and outputs its plot.
+        :param reporting: Controls whether the PathfinderDFS performs tracing of its searches and outputs its plot.
         """
         self.__graph = graph or VolumetricZxGraph()
         self.__connectivity: ConnectivityTracker = connectivity or DefaultConnectivityTracker()
 
         self.__branch_and_bound = branch_and_bound
-        self.__tracing = tracing
+        self.__reporting = reporting
 
     @staticmethod
     def initial(chain: ZxChain) -> ColorlessPath:
         return ColorlessPath(start=chain.source.realising_cube.position)
 
     @staticmethod
-    def heuristic(source: Coordinates, target: Coordinates, node_types: list[NodeType]) -> int:
-        # return source.get_manhattan_distance(target)
-        return max(len(node_types), source.get_manhattan_distance(target))
+    def heuristic(source: Coordinates, target: Coordinates, node_types: list[NodeType]) -> tuple[int, int]:
+        return len(node_types), source.get_manhattan_distance(target)
 
     def find_optimum(self, goal: ZxChain, maximal_excess: int | None = None) -> Strand | None:
         """
@@ -98,23 +97,17 @@ class StrandfinderColorblindDFS:
 
         # Initialize a tracer if tracing has been requested
         tracer: SpacetimeTracer | None = (
-            SpacetimeTracer(pruning=self.__branch_and_bound, reporting=self.__tracing) if self.__tracing else None
+            SpacetimeTracer(pruning=self.__branch_and_bound, reporting=self.__reporting) if self.__reporting else None
         )
         if tracer:
             tracer.add_node(start.position, label=str(start.position))
 
         # Main variables of the DFS
         optimum: Strand | None = None
-        unrelaxed: list[tuple[int, ColorlessPath]] = []
+        unrelaxed: list[tuple[int, int, ColorlessPath]] = []
 
         initial = ColorlessPath(start=start.position)
-        heapq.heappush(
-            unrelaxed,
-            (
-                StrandfinderColorblindDFS.heuristic(start.position, final.position, node_types),
-                initial,
-            ),
-        )
+        heapq.heappush(unrelaxed, (len(node_types), start.position.get_manhattan_distance(final.position), initial))
 
         console.info(f"Searching for strand for {start} -> {nodes} -> {final} {extra}")
 
@@ -123,7 +116,7 @@ class StrandfinderColorblindDFS:
             heapq.heapify(unrelaxed)
             remaining_distance: int
             current: ColorlessPath
-            remaining_distance, current = heapq.heappop(unrelaxed)
+            nodes_remaining, remaining_distance, current = heapq.heappop(unrelaxed)
 
             terminal = current.final
 
@@ -192,14 +185,12 @@ class StrandfinderColorblindDFS:
                 extended = current.extend(adjacent)
 
                 # Filtering out the neighbor from unrelaxed
-                unrelaxed = [vertex for vertex in unrelaxed if vertex[1].final != adjacent]
+                unrelaxed = [vertex for vertex in unrelaxed if vertex[2].final != adjacent]
 
                 # Compute the minimal manhattan length required to connect neighbor to target (HEURISTIC).
-                unrelaxed.append(
-                    (
-                        StrandfinderColorblindDFS.heuristic(adjacent, final.position, node_types[extended.length :]),
-                        extended,
-                    )
+                heapq.heappush(
+                    unrelaxed,
+                    (len(node_types[extended.length :]), adjacent.get_manhattan_distance(final.position), extended),
                 )
 
         console.info(f"Optimum found : {optimum}")
