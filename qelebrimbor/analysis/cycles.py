@@ -71,11 +71,20 @@ class CycleAnalyser:
                 print(
                     f"> Cycle basis ({'minimal' if minimal else 'non-minimal'}, computed in {runtime}s) has largest cycle of size {size} [count={histogram[size]}]"  # noqa: E501
                 )
+                for cycle in zx_cycles:
+                    print(f">> Cycle [{CycleAnalyser.__cycle_weight(cycle, zx_cycles)}] : {cycle}")
 
         return zx_cycles
 
     @staticmethod
-    def __cycle_weight(csg, node) -> int:
+    def __cycle_weight(cycle: ZxCycle, cycles: list[ZxCycle]) -> int:
+        weight: int = 0
+        for edge in cycle.edges:
+            weight += sum(1 for other in cycles if other.involves(edge))
+        return weight
+
+    @staticmethod
+    def __cycle_sharing_weight(csg, node) -> int:
         weight: int = 0
         for neighbor in csg.neighbors(node):
             edge = csg.edges[node, neighbor]
@@ -101,7 +110,7 @@ class CycleAnalyser:
             zx_cycles.append(zx_cycle)
 
         csg, _ = CycleSharingGraph.cycle_sharing_graph(zx_cycles)
-        indices = sorted(csg.nodes, key=lambda nd: CycleAnalyser.__cycle_weight(csg, nd), reverse=True)
+        indices = sorted(csg.nodes, key=lambda nd: CycleAnalyser.__cycle_sharing_weight(csg, nd), reverse=True)
 
         return list(zx_cycles[index] for index in indices)
 

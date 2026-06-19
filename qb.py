@@ -14,6 +14,9 @@
 
 import sys
 
+from qelebrimbor.analysis.biconnected_components import BiconnectedComponentsAnalyser
+from qelebrimbor.analysis.connected_components import ConnectedComponentsAnalyser
+
 
 # Prevent the verbose KeyboardInterrupt no matter when it occurs. Thanks, Gemini.
 def silent_excepthook(exc_type, exc_value, traceback):
@@ -218,6 +221,24 @@ def main() -> int:
         cycles = CycleAnalyser.decompose(graph=vzx, minimal=True)
         runtime = round(time() - start, 2)
     total_runtime += runtime
+
+    cc_count: int = ConnectedComponentsAnalyser.count(vzx)
+    if cc_count != 1:
+        report = f"count:{cc_count}"
+        if verbose:
+            print(f"> ABORTED: Internal ZX-graph must contain exactly one connected component [{report}].")
+        else:
+            print(colored("ABORTED [CC] :", color="red", attrs=["underline"], force_color=True) + " " + report)
+        exit(-1)
+
+    bcc_count: int = BiconnectedComponentsAnalyser.count(vzx)
+    if bcc_count != 1:
+        report = f"count:{bcc_count}"
+        if verbose:
+            print(f"> ABORTED: Internal ZX-graph must contain exactly one 2-connected component [{report}].")
+        else:
+            print(colored("ABORTED [2CC] :", color="red", attrs=["underline"], force_color=True) + " " + report)
+        exit(-1)
 
     if arguments.output_pyzx:
         output = path.splitext(arguments.filepath)[0] + str(".internal.json")

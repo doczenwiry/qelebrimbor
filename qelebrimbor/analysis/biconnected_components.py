@@ -25,27 +25,34 @@ from matplotlib.ticker import MaxNLocator
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 
 
-class ConnectedComponentsAnalyser:
+class BiconnectedComponentsAnalyser:
     @staticmethod
-    def analyse(graph: VolumetricZxGraph, plot: bool = False) -> tuple[int, set]:
+    def count(graph: VolumetricZxGraph, include_bridges: bool = False) -> int:
+        return sum(
+            1 for bcc in nx.biconnected_component_edges(cast(nx.Graph, graph)) if include_bridges or len(bcc) > 1
+        )
+
+    @staticmethod
+    def analyse(graph: VolumetricZxGraph, include_bridges: bool = False, plot: bool = False) -> list:
         start = time()
-        components = list(nx.connected_components(cast(nx.Graph, graph)))
+        biconnected = [
+            bcc for bcc in nx.biconnected_component_edges(cast(nx.Graph, graph)) if include_bridges or len(bcc) > 1
+        ]
         runtime = round(time() - start, 2)
 
         if plot:
-            ax = seaborn.histplot(data=pandas.Series(map(len, components), dtype=int))
+            ax = seaborn.histplot(data=pandas.Series(map(len, biconnected), dtype=int))
             ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-            plt.title(f"Connected components [computed in {str(runtime).rjust(2, ' ')}]")
+            plt.title(f"Biconnected components [computed in {str(runtime).rjust(2, ' ')}]")
             plt.xlabel("Number of nodes")
             plt.ylabel("Number of components")
             plt.show()
         else:
             histogram: dict[int, int] = defaultdict(int)
-            for index in range(len(components)):
-                component = components[index]
-                histogram[len(component)] += 1
+            for bcc in biconnected:
+                histogram[len(bcc)] += 1
             size = sorted(histogram.keys(), reverse=True)[0]
-            print(f"> Total number of connected components : {len(components)}")
+            print(f"> Total number of connected components : {len(biconnected)}")
             print(f"> Largest connected component has size {size} [count={histogram[size]}]")
 
-        return len(components), components[0]
+        return biconnected

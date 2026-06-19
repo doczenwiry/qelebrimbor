@@ -24,6 +24,8 @@ import networkx as nx
 import pandas
 from benchmark import Benchmark, Dataset
 
+from qelebrimbor.analysis.biconnected_components import BiconnectedComponentsAnalyser
+from qelebrimbor.analysis.connected_components import ConnectedComponentsAnalyser
 from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.formats.preprocessing.full_reduce import FullReduce
 from qelebrimbor.formats.pyzx import PYZX
@@ -89,7 +91,9 @@ if __name__ == "__main__":
         vzx = PYZX.from_pyzx_graph(pyzx_input)
 
         number_of_connected_components = nx.number_connected_components(cast(nx.Graph, vzx))
-        if CycleAnalyser.has_cycles(vzx) and number_of_connected_components == 1:
+        cc_count = ConnectedComponentsAnalyser.count(vzx)
+        bcc_count = BiconnectedComponentsAnalyser.count(vzx)
+        if CycleAnalyser.has_cycles(vzx) and cc_count == 1 and bcc_count == 1:
             print(f"> {input_path.ljust(longest_file_name, ' ')} :", end=" ", flush=True)
 
             basename, _, _ = input_path.split(".")
