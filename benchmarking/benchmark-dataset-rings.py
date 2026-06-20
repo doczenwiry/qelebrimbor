@@ -82,13 +82,11 @@ if __name__ == "__main__":
 
     results: list[dict[str, Any]] = list()
     for input_path in benchmark.filenames:
-        pyzx_input = PYZX.from_file(benchmark.directory + "/" + input_path)
         try:
-            FullReduce().process(pyzx_input)
+            vzx = PYZX.from_pyzx_graph(FullReduce().process(PYZX.from_file(benchmark.directory + "/" + input_path)))
         except KeyError as ke:
             print(f"> {input_path.ljust(longest_file_name, ' ')}")
             raise ke
-        vzx = PYZX.from_pyzx_graph(pyzx_input)
 
         cc_count = ConnectedComponentsAnalyser.count(vzx)
         bcc_count = BiconnectedComponentsAnalyser.count(vzx)
@@ -118,7 +116,7 @@ if __name__ == "__main__":
                             "status": "FAILURE",
                         }
                     )
-                else:
+                elif not output.startswith("ABORTED"):
                     parts = output.split(",")
                     results.append(
                         {

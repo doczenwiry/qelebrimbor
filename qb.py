@@ -195,7 +195,7 @@ def main() -> int:
         print(f"> Completed in {'{:.2f}'.format(runtime)} seconds.")
 
     # Preprocessing stage.
-    pyzx_internal: pyzx.graph.base.BaseGraph = PYZX.from_file(arguments.filepath)
+    pyzx_internal: pyzx.graph.base.BaseGraph
     if verbose:
         print("\nPREPROCESSING STAGE.")
 
@@ -204,7 +204,9 @@ def main() -> int:
     if arguments.preprocessor == "full-reduce":
         if verbose:
             print(f"> Applying preprocessor : {FullReduce.__name__}")
-        FullReduce.process(pyzx_internal)
+        pyzx_internal = FullReduce.process(pyzx_input)
+    else:
+        pyzx_internal = pyzx_input
 
     vzx = PYZX.from_pyzx_graph(pyzx_internal)
     internal_spider_count: int = sum(1 for node in vzx.get_zx_nodes() if node.type in {NodeType.X, NodeType.Z})
