@@ -12,6 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import itertools
 import logging
 from collections import defaultdict
 from time import time
@@ -72,16 +73,13 @@ class CycleAnalyser:
                     f"> Cycle basis ({'minimal' if minimal else 'non-minimal'}, computed in {runtime}s) has largest cycle of size {size} [count={histogram[size]}]"  # noqa: E501
                 )
                 for cycle in zx_cycles:
-                    print(f">> Cycle [{CycleAnalyser.__cycle_weight(cycle, zx_cycles)}] : {cycle}")
+                    print(f">> Cycle [{CycleAnalyser.weight(cycle, zx_cycles)}] : {cycle}")
 
         return zx_cycles
 
     @staticmethod
-    def __cycle_weight(cycle: ZxCycle, cycles: list[ZxCycle]) -> int:
-        weight: int = 0
-        for edge in cycle.edges:
-            weight += sum(1 for other in cycles if other.involves(edge))
-        return weight
+    def weight(cycle: ZxCycle, cycles: list[ZxCycle]) -> int:
+        return sum(1 for other, edge in itertools.product(cycles, cycle.edges) if other.involves(edge))
 
     @staticmethod
     def __cycle_sharing_weight(csg, node) -> int:
@@ -92,13 +90,10 @@ class CycleAnalyser:
         return weight
 
     @staticmethod
-    def decompose(graph: VolumetricZxGraph, minimal: bool = True) -> list[ZxCycle]:
+    def convert(graph: VolumetricZxGraph, basis) -> list[ZxCycle]:
         zx_cycles: list[ZxCycle] = []
 
-        nxg = cast(nx.Graph, graph)
-        cycle_basis = nx.minimum_cycle_basis(nxg) if minimal else nx.cycle_basis(nxg)
-
-        for cycle in cycle_basis:
+        for cycle in basis:
             zx_cycle = ZxCycle()
 
             for index in range(len(cycle)):
@@ -108,6 +103,15 @@ class CycleAnalyser:
                 )
 
             zx_cycles.append(zx_cycle)
+
+        return zx_cycles
+
+    @staticmethod
+    def decompose(graph: VolumetricZxGraph, minimal: bool = True) -> list[ZxCycle]:
+        nxg = cast(nx.Graph, graph)
+        zx_cycles: list[ZxCycle] = CycleAnalyser.convert(
+            graph, nx.minimum_cycle_basis(nxg) if minimal else nx.cycle_basis(nxg)
+        )
 
         csg, _ = CycleSharingGraph.cycle_sharing_graph(zx_cycles)
         indices = sorted(csg.nodes, key=lambda nd: CycleAnalyser.__cycle_sharing_weight(csg, nd), reverse=True)
