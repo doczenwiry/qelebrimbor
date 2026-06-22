@@ -66,7 +66,7 @@ class ZxGraphInflaterRings:
         )
 
         # Realise all subsequent chains
-        candidate: ZxChain | None = self.__select_next_chain(*zx_cycles)
+        candidate: ZxChain | None = ZxGraphInflaterRings.__select_next_chain(*zx_cycles)
 
         while candidate is not None and 0 < len(zx_cycles):
             console.info(f"Attempting realisation of chain [index={count}, md={candidate.distance}] : {candidate}")
