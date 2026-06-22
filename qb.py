@@ -42,7 +42,7 @@ from qelebrimbor.analysis.vzx_analyser import VolumetricZxGraphAnalyser  # noqa:
 from qelebrimbor.core.zx import attributes as zx_attributes  # noqa: E402
 from qelebrimbor.core.zx.attributes import NodeType  # noqa: E402
 from qelebrimbor.core.zx.cycle import ZxCycle  # noqa: E402
-from qelebrimbor.formats.preprocessing.full_reduce import FullReduce  # noqa: E402
+from qelebrimbor.formats.preprocessing.full_reduction import FullReduction  # noqa: E402
 from qelebrimbor.formats.pyzx import PYZX  # noqa: E402
 from qelebrimbor.formats.tqec import TQEC  # noqa: E402
 from qelebrimbor.formats.vzx import VZX  # noqa: E402
@@ -203,8 +203,8 @@ def main() -> int:
 
     if arguments.preprocessor == "full-reduce":
         if verbose:
-            print(f"> Applying preprocessor : {FullReduce.__name__}")
-        pyzx_internal = FullReduce.process(pyzx_input)
+            print(f"> Applying preprocessor : {FullReduction.__name__}")
+        pyzx_internal = FullReduction.process(pyzx_input)
     else:
         pyzx_internal = pyzx_input
 

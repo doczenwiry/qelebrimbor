@@ -27,7 +27,7 @@ from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.core.components import ZxEdge, ZxNode
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.core.zx.attributes import EdgeType, NodeType
-from qelebrimbor.formats.preprocessing.full_reduce import FullReduce
+from qelebrimbor.formats.preprocessing.full_reduction import FullReduction
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.vedo.zx_palette import ZxPalette
 
@@ -114,7 +114,7 @@ qelebrimbor.core.zx.attributes.ZX_COLORING = True
 if __name__ == "__main__":
     pyzx_input = PYZX.from_file("../benchmarking/datasets/small/random-cnots-q8-d16-s106106234.pyzx.json")
     # pyzx_input = PYZX.from_file("../assets/pyzx/random-s42-q4-d10.json")
-    FullReduce.process(pyzx_input)
+    FullReduction.process(pyzx_input)
 
     PYZX.into_file(pyzx_input, filepath="../assets/pyzx/random-cnots-q8-d16-s106106234-reduced.pyzx.json")
     vzx = PYZX.from_pyzx_graph(pyzx_input)

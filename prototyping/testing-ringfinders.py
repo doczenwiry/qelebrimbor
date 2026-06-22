@@ -18,7 +18,7 @@ from time import time
 import qelebrimbor.core.zx
 from qelebrimbor.analysis.cycles import CycleAnalyser
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
-from qelebrimbor.formats.preprocessing.full_reduce import FullReduce
+from qelebrimbor.formats.preprocessing.full_reduction import FullReduction
 from qelebrimbor.formats.pyzx import PYZX
 from qelebrimbor.spacetime.ringfinders.colorblind_bfs import RingfinderColorblindBFS
 from qelebrimbor.spacetime.tracer import SpacetimeTracingReport
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     # vzx = VolumetricZxGraph(nodes, edges)
 
     pyzx_input = PYZX.from_file("../benchmarking/datasets/small/identity/random-cnots-q4-d4-s2712719750.pyzx.json")
-    FullReduce.process(pyzx_input)
+    FullReduction.process(pyzx_input)
     vzx = PYZX.from_pyzx_graph(pyzx_input)
 
     cycle0 = CycleAnalyser.decompose(vzx, minimal=True)[0]

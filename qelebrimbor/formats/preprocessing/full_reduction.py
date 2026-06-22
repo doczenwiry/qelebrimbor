@@ -17,10 +17,10 @@ import pyzx.graph.base
 from qelebrimbor.formats.preprocessing.abstract import Preprocessor
 
 
-class FullReduce(Preprocessor):
+class FullReduction(Preprocessor):
     @staticmethod
     def process(graph: pyzx.graph.base.BaseGraph, internal_hadamards: bool = False) -> pyzx.graph.base.BaseGraph:
-        reduced = graph.copy()
+        reduced = graph.clone()
         pyzx.full_reduce(reduced)
         if not internal_hadamards:
             pyzx.to_rg(reduced)
