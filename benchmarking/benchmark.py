@@ -23,6 +23,7 @@ import pyzx
 from qelebrimbor.analysis.biconnected_components import BiconnectedComponentsAnalyser
 from qelebrimbor.analysis.connected_components import ConnectedComponentsAnalyser
 from qelebrimbor.analysis.cycles import CycleAnalyser
+from qelebrimbor.formats.preprocessing.bialgebra_reduction import BialgebraReduction
 from qelebrimbor.formats.preprocessing.full_reduction import FullReduction
 from qelebrimbor.formats.pyzx import PYZX
 
@@ -100,6 +101,7 @@ class Benchmark:
                     zx = pyzx.generate.cnots(qubits=qubits, depth=depth)
 
                 internal_zx = FullReduction.process(zx)
+                internal_zx = BialgebraReduction.process(internal_zx)
                 vzx = PYZX.from_pyzx_graph(internal_zx)
                 cc_count = ConnectedComponentsAnalyser.count(vzx)
                 bcc_count = BiconnectedComponentsAnalyser.count(vzx)
