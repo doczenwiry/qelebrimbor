@@ -26,6 +26,7 @@ from benchmark import Benchmark, Dataset
 from qelebrimbor.analysis.biconnected_components import BiconnectedComponentsAnalyser
 from qelebrimbor.analysis.connected_components import ConnectedComponentsAnalyser
 from qelebrimbor.analysis.cycles import CycleAnalyser
+from qelebrimbor.formats.preprocessing.bialgebra_reduction import BialgebraReduction
 from qelebrimbor.formats.preprocessing.full_reduction import FullReduction
 from qelebrimbor.formats.pyzx import PYZX
 
@@ -84,6 +85,7 @@ if __name__ == "__main__":
     for input_path in benchmark.filenames:
         try:
             pyzx_internal = FullReduction.process(PYZX.from_file(benchmark.directory + "/" + input_path))
+            pyzx_internal = BialgebraReduction.process(pyzx_internal)
             vzx = PYZX.from_pyzx_graph(pyzx_internal)
         except KeyError as ke:
             print(f"> {input_path.ljust(longest_file_name, ' ')}")

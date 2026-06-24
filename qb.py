@@ -14,8 +14,11 @@
 
 import sys
 
+from pyzx import VertexType
+
 from qelebrimbor.analysis.biconnected_components import BiconnectedComponentsAnalyser
 from qelebrimbor.analysis.connected_components import ConnectedComponentsAnalyser
+from qelebrimbor.formats.preprocessing.bialgebra_reduction import BialgebraReduction
 
 
 # Prevent the verbose KeyboardInterrupt no matter when it occurs. Thanks, Gemini.
@@ -40,7 +43,6 @@ from termcolor import colored  # noqa: E402
 from qelebrimbor.analysis.cycles import CycleAnalyser  # noqa: E402
 from qelebrimbor.analysis.vzx_analyser import VolumetricZxGraphAnalyser  # noqa: E402
 from qelebrimbor.core.zx import attributes as zx_attributes  # noqa: E402
-from qelebrimbor.core.zx.attributes import NodeType  # noqa: E402
 from qelebrimbor.core.zx.cycle import ZxCycle  # noqa: E402
 from qelebrimbor.formats.preprocessing.full_reduction import FullReduction  # noqa: E402
 from qelebrimbor.formats.pyzx import PYZX  # noqa: E402
@@ -205,11 +207,16 @@ def main() -> int:
         if verbose:
             print(f"> Applying preprocessor : {FullReduction.__name__}")
         pyzx_internal = FullReduction.process(pyzx_input)
+        internal_spider_count: int = sum(
+            1 for vertex in pyzx_internal.vertices() if pyzx_internal.type(vertex) in {VertexType.X, VertexType.Z}
+        )
+        if verbose:
+            print(f"> Applying preprocessor : {BialgebraReduction.__name__}")
+        pyzx_internal = BialgebraReduction.process(pyzx_internal)
     else:
         pyzx_internal = pyzx_input
 
     vzx = PYZX.from_pyzx_graph(pyzx_internal)
-    internal_spider_count: int = sum(1 for node in vzx.get_zx_nodes() if node.type in {NodeType.X, NodeType.Z})
     cycles: list[ZxCycle]
 
     if verbose:

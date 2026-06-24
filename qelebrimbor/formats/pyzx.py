@@ -15,6 +15,7 @@
 import logging
 from collections import defaultdict
 
+import networkx
 import networkx as nx
 import pyzx
 
@@ -168,3 +169,15 @@ class PYZX:
             edges.append((source, target, EdgeType.convert_from_pyzx(zx_graph.edge_type(edge))))
 
         return VolumetricZxGraph(nodes, edges, qubits, layers)
+
+    @staticmethod
+    def into_networkx_graph(zxg: pyzx.graph.base.BaseGraph) -> networkx.Graph:
+        nxg: networkx.Graph = networkx.Graph()
+
+        for vertex in zxg.vertices():
+            nxg.add_node(vertex, type=zxg.type(vertex), qubit=zxg.qubit(vertex), row=zxg.row(vertex))
+
+        for edge in zxg.edges():
+            nxg.add_edge(zxg.edge_s(edge), zxg.edge_t(edge), type=zxg.edge_type(edge))
+
+        return nxg
