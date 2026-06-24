@@ -20,6 +20,12 @@ from enum import Enum
 
 import pyzx
 
+from qelebrimbor.analysis.biconnected_components import BiconnectedComponentsAnalyser
+from qelebrimbor.analysis.connected_components import ConnectedComponentsAnalyser
+from qelebrimbor.analysis.cycles import CycleAnalyser
+from qelebrimbor.formats.preprocessing.full_reduction import FullReduction
+from qelebrimbor.formats.pyzx import PYZX
+
 
 class Dataset(Enum):
     SMALL = 0
@@ -35,17 +41,15 @@ class Benchmark:
     }
 
     def __init__(self, dataset: Dataset, robust: bool = False, hadamards: bool = False):
-        random.seed(42)
-        self.seeds = [
-            int(random.random() * 4242424242)
-            for _ in range(Benchmark.__ROBUST_COUNT if robust else Benchmark.__QUICK_COUNT)
-        ]
         self.hadamards = hadamards
         self.qubits = Benchmark.__DATASET_PARAMETERS[dataset.name]["QUBITS"]
         self.layers = Benchmark.__DATASET_PARAMETERS[dataset.name]["LAYERS"]
+        self.sample_count = Benchmark.__ROBUST_COUNT if robust else Benchmark.__QUICK_COUNT
         dataset_part = f"datasets/{dataset.name.lower()}"
         hadamard_part = "hadamard" if self.hadamards else "identity"
-        self.__directory = str(pathlib.Path(__file__).resolve().parent) + "/" + dataset_part + "/" + hadamard_part
+        sample_count_part = "robust" if robust else "quick"
+        self.__directory = str(pathlib.Path(__file__).resolve().parent)
+        self.__directory += "/" + dataset_part + "/" + hadamard_part + "/" + sample_count_part
 
     @property
     def directory(self) -> str:
@@ -53,33 +57,54 @@ class Benchmark:
 
     @property
     def parameters(self):
-        return itertools.product(self.qubits, self.layers, self.seeds)
+        return itertools.product(self.qubits, self.layers)
 
     @property
     def filenames(self) -> list[str]:
-        return list(
-            map(
-                lambda parameters: f"random-cnots-q{parameters[0]}-d{parameters[1]}-s{parameters[2]}.pyzx.json",
-                self.parameters,
+        filenames = []
+        listing = os.listdir(self.__directory)
+        for qubits, depth in self.parameters:
+            p_filenames = sorted(
+                filter(
+                    lambda name: name.startswith(f"random-cnots-q{qubits}-d{depth}") and name.endswith(".pyzx.json"),
+                    listing,
+                )
             )
-        )
+            filenames.extend(p_filenames)
+        return filenames
 
     def dataset_detected(self):
-        present_inputs = set(filter(lambda name: name.endswith(".pyzx.json"), os.listdir(self.directory)))
-        dataset_inputs = set(self.filenames)
+        for qubits, depth in self.parameters:
+            files_present = sum(
+                1
+                for name in self.filenames
+                if name.startswith(f"random-cnots-q{qubits}-d{depth}") and name.endswith(".pyzx.json")
+            )
+            if files_present < self.sample_count:
+                return False
 
-        return dataset_inputs.issubset(present_inputs)
+        return True
 
     def generate_dataset(self):
+        random.seed(42)
         directory = self.directory
-        for qubits, depth, seed in self.parameters:
-            random.seed(seed)
-            filename = f"random-cnots-q{qubits}-d{depth}-s{seed}"
-            if self.hadamards:
-                circuit = pyzx.generate.CNOT_HAD_PHASE_circuit(qubits=qubits, depth=depth, p_had=0.2, p_t=0.0)
-                zx = circuit.to_graph()
-            else:
-                zx = pyzx.generate.cnots(qubits=qubits, depth=depth)
+        for qubits, depth in self.parameters:
+            count: int = 0
+            while count < self.sample_count:
+                seed = int(random.random() * 4242424242)
+                random.seed(seed)
+                if self.hadamards:
+                    circuit = pyzx.generate.CNOT_HAD_PHASE_circuit(qubits=qubits, depth=depth, p_had=0.2, p_t=0.0)
+                    zx = circuit.to_graph()
+                else:
+                    zx = pyzx.generate.cnots(qubits=qubits, depth=depth)
 
-            with open(f"{directory}/{filename}.pyzx.json", "w") as file:
-                file.write(zx.to_json())
+                internal_zx = FullReduction.process(zx)
+                vzx = PYZX.from_pyzx_graph(internal_zx)
+                cc_count = ConnectedComponentsAnalyser.count(vzx)
+                bcc_count = BiconnectedComponentsAnalyser.count(vzx)
+                if CycleAnalyser.has_cycles(vzx) and cc_count == 1 and bcc_count == 1:
+                    filename = f"random-cnots-q{qubits}-d{depth}-s{seed}"
+                    with open(f"{directory}/{filename}.pyzx.json", "w") as file:
+                        file.write(zx.to_json())
+                    count += 1

@@ -38,7 +38,9 @@ if __name__ == "__main__":
     # edges = [(node_id, (node_id + 1) % COUNT, EdgeType.HADAMARD) for node_id in range(COUNT)]
     # vzx = VolumetricZxGraph(nodes, edges)
 
-    pyzx_input = PYZX.from_file("../benchmarking/datasets/small/identity/random-cnots-q4-d4-s2712719750.pyzx.json")
+    pyzx_input = PYZX.from_file(
+        "../benchmarking/datasets/small/identity/quick/random-cnots-q4-d4-s2712719750.pyzx.json"
+    )
     FullReduction.process(pyzx_input)
     vzx = PYZX.from_pyzx_graph(pyzx_input)
 
