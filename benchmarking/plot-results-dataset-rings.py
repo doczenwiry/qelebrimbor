@@ -43,7 +43,13 @@ if __name__ == "__main__":
         dataframes.append(df)
 
     data = pandas.concat(dataframes, ignore_index=True)
-    available = data[data["status"] == "COMPLETE"]
+
+    available = data[data.groupby(["qubits", "layers", "seed"])["status"].transform(lambda s: (s == "COMPLETE").all())]
+    available = available[
+        available.groupby(["qubits", "layers", "seed"])["status"].transform("count") == len(arguments.filepaths)
+    ]
+
+    available.info()
 
     seaborn.set_theme(rc={"figure.constrained_layout.use": True})
 
