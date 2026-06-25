@@ -37,8 +37,8 @@ logging.basicConfig(level=logging.INFO)
 __ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
 
 parser = ArgumentParser(
-    prog="qb",
-    description="A tool to construct a Volumetric ZX-graph (a.k.a. BlockGraph) from an input ZX-graph. Currently accepted files are *.json containing a PyZX graph in JSON format.",  # noqa: E501
+    prog="benchmark-dataset-rings",
+    description="A tool to benchmark the current version of qelebrimbor against a fixed dataset of randomly generated ZX-graphs.",  # noqa: E501
 )
 parser.add_argument("-c", "--comment", action="store", help="specify a comment to be appended to the filename")
 parser.add_argument(
