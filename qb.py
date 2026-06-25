@@ -14,6 +14,7 @@
 
 import sys
 
+import networkx
 from pyzx import VertexType
 
 from qelebrimbor.analysis.biconnected_components import BiconnectedComponentsAnalyser
@@ -123,8 +124,8 @@ parser.add_argument(
     "-r",
     "--preprocessor",
     action="store",
-    choices=["none", "full-reduce"],
-    default="full-reduce",
+    choices=["none", "default"],
+    default="default",
     help="choose which preprocessor to use on the input ZX-graph.",
 )
 parser.add_argument(
@@ -203,18 +204,20 @@ def main() -> int:
 
     start = time()
 
-    if arguments.preprocessor == "full-reduce":
+    if arguments.preprocessor == "default":
         if verbose:
             print(f"> Applying preprocessor : {FullReduction.__name__}")
         pyzx_internal = FullReduction.process(pyzx_input)
-        internal_spider_count: int = sum(
-            1 for vertex in pyzx_internal.vertices() if pyzx_internal.type(vertex) in {VertexType.X, VertexType.Z}
-        )
-        if verbose:
-            print(f"> Applying preprocessor : {BialgebraReduction.__name__}")
-        pyzx_internal = BialgebraReduction.process(pyzx_internal)
     else:
         pyzx_internal = pyzx_input
+
+    internal_spider_count: int = sum(
+        1 for vertex in pyzx_internal.vertices() if pyzx_internal.type(vertex) in {VertexType.X, VertexType.Z}
+    )
+
+    if verbose:
+        print(f"> Applying preprocessor : {BialgebraReduction.__name__}")
+    pyzx_internal = BialgebraReduction.process(pyzx_internal)
 
     vzx = PYZX.from_pyzx_graph(pyzx_internal)
     cycles: list[ZxCycle]
@@ -222,6 +225,8 @@ def main() -> int:
     if verbose:
         VolumetricZxGraphAnalyser.report(graph=vzx)
         cycles = CycleAnalyser.analyse(graph=vzx, minimal=True, plot=arguments.analysis_style == "plot")
+        planar, _ = networkx.check_planarity(PYZX.into_networkx_graph(pyzx_internal))
+        print(f"> Planarity : {planar}")
         runtime = round(time() - start, 2)
         print(f"> Completed in {'{:.2f}'.format(runtime)} seconds.")
     else:

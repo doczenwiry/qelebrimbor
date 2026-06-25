@@ -69,6 +69,8 @@ class CycleAnalyser:
                     zx_cycle = zx_cycles[index]
                     histogram[len(zx_cycle)] += 1
                 size = sorted(histogram.keys(), reverse=True)[0]
+                print(f"> Cyclomatic number : {len(zx_cycles)}")
+                print(f"> Largest cycle : {len(zx_cycles[0])}")
                 print(
                     f"> Cycle basis ({'minimal' if minimal else 'non-minimal'}, computed in {runtime}s) has largest cycle of size {size} [count={histogram[size]}]"  # noqa: E501
                 )
