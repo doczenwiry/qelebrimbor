@@ -114,11 +114,7 @@ class CycleAnalyser:
         zx_cycles: list[ZxCycle] = CycleAnalyser.convert(
             graph, nx.minimum_cycle_basis(nxg) if minimal else nx.cycle_basis(nxg)
         )
-
-        csg, _ = CycleSharingGraph.cycle_sharing_graph(zx_cycles)
-        indices = sorted(csg.nodes, key=lambda nd: CycleAnalyser.__cycle_sharing_weight(csg, nd), reverse=True)
-
-        return list(zx_cycles[index] for index in indices)
+        return sorted(zx_cycles, key=lambda cc: CycleAnalyser.weight(cc, zx_cycles))
 
     @staticmethod
     def extract(cycle: ZxCycle) -> ZxChain | None:
