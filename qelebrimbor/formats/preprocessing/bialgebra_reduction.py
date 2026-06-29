@@ -47,6 +47,7 @@ class BialgebraReduction(Preprocessor):
     # > The simplification on slides 82-88 leverages the bi-algebra rule to simplify the ZX-graph further.
     # > The bialgebra rule can be used to remove any instance of K_{m,n} that appears in the ZX-graph.
     # > This becomes a powerful tool to planarize a ZX-graph !
+    # TODO: fix this to take into account the type of edges (i.e. Identity or Hadamard)
     @staticmethod
     def reduce(zxg: pyzx.graph.base.BaseGraph, zs: list[int], xs: list[int]) -> None:
         if any(not zxg.connected(z, x) for z, x in product(zs, xs)):

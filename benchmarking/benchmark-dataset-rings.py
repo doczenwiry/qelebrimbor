@@ -17,15 +17,17 @@ import re
 import subprocess
 import sys
 from argparse import ArgumentParser
-from typing import Any
+from typing import Any, cast
 
 import git
+import networkx
 import pandas
 from benchmark import Benchmark, Dataset
 
 from qelebrimbor.analysis.biconnected_components import BiconnectedComponentsAnalyser
 from qelebrimbor.analysis.connected_components import ConnectedComponentsAnalyser
 from qelebrimbor.analysis.cycles import CycleAnalyser
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.formats.preprocessing.bialgebra_reduction import BialgebraReduction
 from qelebrimbor.formats.preprocessing.full_reduction import FullReduction
 from qelebrimbor.formats.pyzx import PYZX
@@ -39,6 +41,12 @@ __ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
 parser = ArgumentParser(
     prog="benchmark-dataset-rings",
     description="A tool to benchmark the current version of qelebrimbor against a fixed dataset of randomly generated ZX-graphs.",  # noqa: E501
+)
+parser.add_argument(
+    "-a",
+    "--analyse",
+    action="store_true",
+    help="perform feature analysis of the dataset.",
 )
 parser.add_argument("-c", "--comment", action="store", help="specify a comment to be appended to the filename")
 parser.add_argument(
@@ -60,6 +68,82 @@ parser.add_argument(
     action="store_true",
     help="enable robust run of the benchmark to increase the number of seeds from 10 to 100.",
 )
+
+
+def analyse(vzx: VolumetricZxGraph) -> dict[str, Any]:
+    nxg = cast(networkx.Graph, vzx)
+
+    planar, _ = networkx.check_planarity(nxg)
+
+    if CycleAnalyser.has_cycles(vzx):
+        largest_cycle = len(max(CycleAnalyser.decompose(vzx, minimal=True), key=lambda c: c.length))
+    else:
+        largest_cycle = None
+
+    report: dict[str, Any] = {
+        "CN": nxg.number_of_edges() - nxg.number_of_nodes() + networkx.number_connected_components(nxg),
+        "LC": largest_cycle,
+        "PL": planar,
+        "kC": networkx.node_connectivity(nxg),
+    }
+
+    print(report)
+
+    return report
+
+
+def process(filepath: str) -> dict[str, Any] | None:
+    report: dict[str, Any] | None = None
+    try:
+        outcome = subprocess.run(
+            [sys.executable, "-m", "qb", "-cs", filepath],
+            capture_output=True,
+            timeout=arguments.timeout,
+            text=True,
+        )
+        output: str = outcome.stdout
+        print(output, end="")
+
+        output = __ANSI_ESCAPE.sub("", output)
+        if output.startswith("FAILURE"):
+            report = {
+                "qubits": int(qubits[1:]),
+                "layers": int(layers[1:]),
+                "seed": int(seed[1:]),
+                "status": "FAILURE",
+            }
+        elif not output.startswith("ABORTED"):
+            parts = output.split(",")
+            report = {
+                "qubits": int(qubits[1:]),
+                "layers": int(layers[1:]),
+                "seed": int(seed[1:]),
+                "status": "COMPLETE" if float(parts[2].split(":")[1][:-1]) == 100.0 else "INCOMPLETE",
+                "run": float(parts[0].split(":")[1][:-1]),
+                "isc": int(parts[8].split(":")[1]),
+                "itv": int(parts[9].split(":")[1]),
+                "iir": float(parts[4].split(":")[1][:-1]),
+                "ewi": parts[10].split(":")[1][:-1] == "SUCCESS",
+            }
+
+    except KeyboardInterrupt:
+        print("Benchmarking interrupted by user.")
+
+    except subprocess.CalledProcessError as e:
+        # This catches the crash and prevents the main script from stopping
+        print(f"FAILURE (exit:{e.returncode})")
+
+    except subprocess.TimeoutExpired:
+        print(f"ABORTED RUN [longer than {arguments.timeout} seconds].")
+        report = {
+            "qubits": int(qubits[1:]),
+            "layers": int(layers[1:]),
+            "seed": int(seed[1:]),
+            "status": "ABORTED",
+        }
+
+    return report
+
 
 if __name__ == "__main__":
     arguments = parser.parse_args()
@@ -98,66 +182,19 @@ if __name__ == "__main__":
 
             basename, _, _ = input_path.split(".")
             _, _, qubits, layers, seed = basename.split("-")
+            filepath = f"{benchmark.directory}/{input_path}"
 
-            try:
-                result = subprocess.run(
-                    [sys.executable, "-m", "qb", "-cs", f"{benchmark.directory}/{input_path}"],
-                    capture_output=True,
-                    timeout=arguments.timeout,
-                    text=True,
-                )
-                output: str = result.stdout
-                print(output, end="")
+            result = analyse(vzx) if arguments.analyse else process(filepath)
 
-                output = __ANSI_ESCAPE.sub("", output)
-                if output.startswith("FAILURE"):
-                    results.append(
-                        {
-                            "qubits": int(qubits[1:]),
-                            "layers": int(layers[1:]),
-                            "seed": int(seed[1:]),
-                            "status": "FAILURE",
-                        }
-                    )
-                elif not output.startswith("ABORTED"):
-                    parts = output.split(",")
-                    results.append(
-                        {
-                            "qubits": int(qubits[1:]),
-                            "layers": int(layers[1:]),
-                            "seed": int(seed[1:]),
-                            "status": "COMPLETE" if float(parts[2].split(":")[1][:-1]) == 100.0 else "INCOMPLETE",
-                            "run": float(parts[0].split(":")[1][:-1]),
-                            "isc": int(parts[8].split(":")[1]),
-                            "itv": int(parts[9].split(":")[1]),
-                            "iir": float(parts[4].split(":")[1][:-1]),
-                            "ewi": parts[10].split(":")[1][:-1] == "SUCCESS",
-                        }
-                    )
-
-            except KeyboardInterrupt:
-                print("Benchmarking interrupted by user.")
+            if result is not None:
+                results.append(result)
+            else:
                 break
-
-            except subprocess.CalledProcessError as e:
-                # This catches the crash and prevents the main script from stopping
-                print(f"FAILURE (exit:{e.returncode})")
-
-            except subprocess.TimeoutExpired:
-                print(f"ABORTED RUN [longer than {arguments.timeout} seconds].")
-                results.append(
-                    {
-                        "qubits": int(qubits[1:]),
-                        "layers": int(layers[1:]),
-                        "seed": int(seed[1:]),
-                        "status": "ABORTED",
-                    }
-                )
-                continue
 
     commit = git.Repo().head.commit.hexsha
 
-    result_filename = f"benchmarking/results/benchmark-results-{dataset.name.lower()}-{sample_size}-{commit}"
+    runtype = "analysis" if arguments.analyse else "results"
+    result_filename = f"benchmarking/results/benchmark-{runtype}-{dataset.name.lower()}-{sample_size}-{commit}"
     if arguments.comment:
         result_filename += f"-{arguments.comment}"
     result_filename += ".csv"
