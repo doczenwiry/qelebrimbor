@@ -27,8 +27,6 @@ class BialgebraReduction(Preprocessor):
 
     @staticmethod
     def detect(zxg: pyzx.graph.base.BaseGraph) -> tuple[list[int], list[int]] | None:
-        # TODO: detect largest pattern for applying the bialgebra reduction rule (K_{m,n} -> single edge)
-        #       start from answer to https://cs.stackexchange.com/a/131087 (version: 2020-10-11)
         z_spiders = list(filter(lambda vt: zxg.type(vt) == VertexType.Z, zxg.vertices()))
         x_spiders = list(filter(lambda vt: zxg.type(vt) == VertexType.X, zxg.vertices()))
 
@@ -47,7 +45,6 @@ class BialgebraReduction(Preprocessor):
     # > The simplification on slides 82-88 leverages the bi-algebra rule to simplify the ZX-graph further.
     # > The bialgebra rule can be used to remove any instance of K_{m,n} that appears in the ZX-graph.
     # > This becomes a powerful tool to planarize a ZX-graph !
-    # TODO: fix this to take into account the type of edges (i.e. Identity or Hadamard)
     @staticmethod
     def reduce(zxg: pyzx.graph.base.BaseGraph, zs: list[int], xs: list[int]) -> None:
         if any(not zxg.connected(z, x) for z, x in product(zs, xs)):
@@ -56,16 +53,20 @@ class BialgebraReduction(Preprocessor):
         for z in zs:
             p = zxg.add_vertex(ty=VertexType.Z)
             for neighbor in list(filter(lambda nb: nb not in xs, zxg.neighbors(z))):
-                zxg.remove_edge((z, neighbor))
-                zxg.add_edge((p, neighbor))
-            zxg.add_edge((z, p))
+                edge = zxg.edge(z, neighbor)
+                edge_type = zxg.edge_type(edge)
+                zxg.add_edge((p, neighbor), edge_type)
+                zxg.remove_edge(edge)
+            zxg.add_edge((z, p), EdgeType.SIMPLE)
 
         for x in xs:
             p = zxg.add_vertex(ty=VertexType.X)
             for neighbor in list(filter(lambda nb: nb not in zs, zxg.neighbors(x))):
-                zxg.remove_edge((x, neighbor))
-                zxg.add_edge((p, neighbor))
-            zxg.add_edge((x, p))
+                edge = zxg.edge(x, neighbor)
+                edge_type = zxg.edge_type(edge)
+                zxg.remove_edge(edge)
+                zxg.add_edge((p, neighbor), edge_type)
+            zxg.add_edge((x, p), EdgeType.SIMPLE)
 
         pyzx.simplify.bialg_op_simp.apply(zxg, list(zs + xs))
         pyzx.simplify.id_simp(zxg)
