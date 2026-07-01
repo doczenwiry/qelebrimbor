@@ -85,6 +85,7 @@ def analyse(vzx: VolumetricZxGraph) -> dict[str, Any]:
         "LC": largest_cycle,
         "PL": planar,
         "kC": networkx.node_connectivity(nxg),
+        "MD": max(nxg.degree[node] for node in nxg.nodes),
     }
 
     print(report)

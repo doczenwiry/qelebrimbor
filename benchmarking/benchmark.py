@@ -52,6 +52,8 @@ class Benchmark:
         self.__directory = str(pathlib.Path(__file__).resolve().parent)
         self.__directory += "/" + dataset_part + "/" + hadamard_part + "/" + sample_count_part
 
+        pathlib.Path(self.__directory).mkdir(parents=True, exist_ok=True)
+
     @property
     def directory(self) -> str:
         return self.__directory
