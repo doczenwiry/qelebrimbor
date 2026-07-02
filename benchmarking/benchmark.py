@@ -38,7 +38,8 @@ class Benchmark:
     __QUICK_COUNT: int = 10
     __ROBUST_COUNT: int = 100
     __DATASET_PARAMETERS: dict[str, dict[str, list[int]]] = {
-        Dataset.SMALL.name: {"QUBITS": [4], "LAYERS": [4, 8, 16, 32, 64, 128, 256, 512, 1024]}
+        Dataset.SMALL.name: {"QUBITS": [4], "LAYERS": [4, 8, 16, 32, 64, 128, 256, 512, 1024]},
+        Dataset.MEDIO.name: {"QUBITS": [8], "LAYERS": [8, 16, 32, 64, 128, 256, 512, 1024]},
     }
 
     def __init__(self, dataset: Dataset, robust: bool = False, hadamards: bool = False):

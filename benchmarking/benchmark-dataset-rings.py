@@ -50,6 +50,14 @@ parser.add_argument(
 )
 parser.add_argument("-c", "--comment", action="store", help="specify a comment to be appended to the filename")
 parser.add_argument(
+    "-d",
+    "--dataset",
+    action="store",
+    choices=["small", "medio"],
+    default="small",
+    help="specify a dataset to be processed",
+)
+parser.add_argument(
     "-g",
     "--generate",
     action="store_true",
@@ -151,7 +159,7 @@ if __name__ == "__main__":
 
     sample_size: str = "robust" if arguments.robust else "quick"
 
-    dataset = Dataset.SMALL
+    dataset = Dataset[arguments.dataset.upper()]
     benchmark = Benchmark(dataset, robust=arguments.robust)
     print(f"Benchmarking dataset {dataset} [{'100' if arguments.robust else '10'} seeds per parameters]")
 
@@ -192,7 +200,7 @@ if __name__ == "__main__":
             else:
                 break
 
-    commit = git.Repo().head.commit.hexsha
+    commit = git.Repo().head.commit.hexsha[:8]
 
     runtype = "analysis" if arguments.analyse else "results"
     result_filename = f"benchmarking/results/benchmark-{runtype}-{dataset.name.lower()}-{sample_size}-{commit}"

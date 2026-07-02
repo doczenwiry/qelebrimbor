@@ -33,7 +33,7 @@ $ uv run qb.py -h
 ## Benchmarking script
 In order to benchmark the tool against a fixed dataset of small circuits, run the following command
 ```bash
-$ uv run benchmarking/benchmark-dataset-rings-small.py
+$ uv run benchmarking/benchmark-dataset-rings.py
 ```
 
 The results of the benchmarking execution are stored in a *.csv file under the benchmarking/results directory and marked with the commit hash.
@@ -71,7 +71,7 @@ The meaning of the various fields is as follows:
 The arguments accepted by the benchmarking tool can be obtained by running
 
 ```bash
-$ uv run benchmarking/benchmark-dataset-rings-small.py -h
+$ uv run benchmarking/benchmark-dataset-rings.py -h
 ```
 
 #### Plotting results
@@ -79,7 +79,7 @@ $ uv run benchmarking/benchmark-dataset-rings-small.py -h
 A script is available to plot the results of one or more benchmark result files. It can be invoked in the following way
 
 ```bash
-$ uv run benchmarking/plot-results-dataset-rings.py benchmark-results-small-robust-a9645276f320d3edb71f1c2cef6849e7a43a9162.csv benchmark-results-small-quick-b0ba145242194a12453eeb3963ffc65558f4b705.csv
+$ uv run benchmarking/plot-results-dataset-rings.py benchmark-results-small-robust-a9645276f320d3edb71f1c2cef6849e7a43a9162.csv benchmark-results-small-robust-b0ba145242194a12453eeb3963ffc65558f4b705.csv
 ```
 
 **Note: it is important to keep the names that the benchmark-dataset-rings.py script produces as they are, since the plotting script assume the specific name format used.**
