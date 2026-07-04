@@ -51,7 +51,7 @@ class CycleUntangler(Preprocessor):
     def process(input: pyzx.graph.base.BaseGraph) -> None:
         vzx = PYZX.from_pyzx_graph(input)
         new_spider_id: int = max(node.id for node in vzx.get_zx_nodes()) + 1
-        cycles = CycleAnalyser.decompose(vzx, minimal=True)
+        cycles = CycleAnalyser.decompose(vzx)
 
         completed: bool = False
         while not completed:
@@ -95,7 +95,7 @@ class CycleUntangler(Preprocessor):
 
             # Recompute the cycles
             vzx = PYZX.from_pyzx_graph(input)
-            cycles = CycleAnalyser.decompose(vzx, minimal=True)
+            cycles = CycleAnalyser.decompose(vzx)
 
             # if any(cycle.length % 2 != 0 for cycle in cycles):
             #     for cycle in cycles:

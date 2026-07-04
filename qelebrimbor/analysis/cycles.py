@@ -18,6 +18,7 @@ from collections import defaultdict
 from time import time
 from typing import cast
 
+import igraph
 import matplotlib.pyplot as plt
 import networkx as nx
 import pandas
@@ -43,9 +44,9 @@ class CycleAnalyser:
             return False
 
     @staticmethod
-    def analyse(graph: VolumetricZxGraph, plot: bool = False, minimal: bool = True) -> list[ZxCycle]:
+    def analyse(graph: VolumetricZxGraph, plot: bool = False) -> list[ZxCycle]:
         start = time()
-        zx_cycles = CycleAnalyser.decompose(graph, minimal)
+        zx_cycles = CycleAnalyser.decompose(graph)
         runtime = round(time() - start, 2)
 
         if len(zx_cycles) == 0:
@@ -55,7 +56,7 @@ class CycleAnalyser:
                 ax = seaborn.histplot(data=pandas.Series(map(len, zx_cycles), dtype=int), discrete=True)
                 ax.yaxis.set_major_locator(MaxNLocator(integer=True))
                 plt.title(
-                    f"Cycle basis [{'non-' if minimal is False else ''}minimal, computed in {str(runtime).rjust(2, ' ')}]"  # noqa: E501
+                    f"Cycle basis [minimum, computed in {str(runtime).rjust(2, ' ')}]"  # noqa: E501
                 )
                 plt.xlabel("Number of nodes")
                 plt.ylabel("Number of cycles")
@@ -72,7 +73,7 @@ class CycleAnalyser:
                 print(f"> Cyclomatic number : {len(zx_cycles)}")
                 print(f"> Largest cycle : {len(zx_cycles[0])}")
                 print(
-                    f"> Cycle basis ({'minimal' if minimal else 'non-minimal'}, computed in {runtime}s) has largest cycle of size {size} [count={histogram[size]}]"  # noqa: E501
+                    f"> Cycle basis (minimum, computed in {runtime}s) has largest cycle of size {size} [count={histogram[size]}]"  # noqa: E501
                 )
                 for cycle in zx_cycles:
                     print(f">> Cycle [{CycleAnalyser.weight(cycle, zx_cycles)}] : {cycle}")
@@ -92,7 +93,7 @@ class CycleAnalyser:
         return weight
 
     @staticmethod
-    def convert(graph: VolumetricZxGraph, basis) -> list[ZxCycle]:
+    def convert(graph: VolumetricZxGraph, basis: list[list[int]]) -> list[ZxCycle]:
         zx_cycles: list[ZxCycle] = []
 
         for cycle in basis:
@@ -109,11 +110,23 @@ class CycleAnalyser:
         return zx_cycles
 
     @staticmethod
-    def decompose(graph: VolumetricZxGraph, minimal: bool = True) -> list[ZxCycle]:
-        nxg = cast(nx.Graph, graph)
-        zx_cycles: list[ZxCycle] = CycleAnalyser.convert(
-            graph, nx.minimum_cycle_basis(nxg) if minimal else nx.cycle_basis(nxg)
-        )
+    def decompose(graph: VolumetricZxGraph) -> list[ZxCycle]:
+        ig: igraph.Graph = igraph.Graph.from_networkx(cast(nx.Graph, graph))
+        ig_basis: list[list[int]] = []
+        for cycle in ig.minimum_cycle_basis():
+            ig_cycle: list[int] = []
+            for edge in cycle:
+                src, tgt = ig.es[edge].tuple
+                source = ig.vs[src]["_nx_name"]
+                target = ig.vs[tgt]["_nx_name"]
+                if len(ig_cycle) == 0:
+                    ig_cycle.append(source)
+                    ig_cycle.append(target)
+                elif len(ig_cycle) < len(cycle):
+                    ig_cycle.append(target if ig_cycle[-1] == source else source)
+            ig_basis.append(ig_cycle)
+
+        zx_cycles: list[ZxCycle] = CycleAnalyser.convert(graph, ig_basis)
         return sorted(zx_cycles, key=lambda cc: CycleAnalyser.weight(cc, zx_cycles))
 
     @staticmethod
@@ -230,18 +243,18 @@ class CycleAnalyser:
         return chains
 
     @staticmethod
-    def cycle_node_realisation_rate(graph: VolumetricZxGraph, minimal: bool = False) -> float:
+    def cycle_node_realisation_rate(graph: VolumetricZxGraph) -> float:
         all_cycle_nodes: set[ZxNode] = set()
-        for cycle in CycleAnalyser.decompose(graph, minimal=minimal):
+        for cycle in CycleAnalyser.decompose(graph):
             nodes, _ = zip(*cycle)
             all_cycle_nodes.update(nodes)
         realised_nodes: int = sum(1 for node in all_cycle_nodes if node.is_realised())
         return realised_nodes / len(all_cycle_nodes)
 
     @staticmethod
-    def cycle_edge_realisation_rate(graph: VolumetricZxGraph, minimal: bool = False) -> float:
+    def cycle_edge_realisation_rate(graph: VolumetricZxGraph) -> float:
         all_cycle_edges: set[ZxEdge] = set()
-        for cycle in CycleAnalyser.decompose(graph, minimal=minimal):
+        for cycle in CycleAnalyser.decompose(graph):
             _, edges = zip(*cycle)
             all_cycle_edges.update(edges)
         realised_edges: int = sum(1 for edge in all_cycle_edges if edge.is_realised())

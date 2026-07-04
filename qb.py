@@ -224,13 +224,13 @@ def main() -> int:
 
     if verbose:
         VolumetricZxGraphAnalyser.report(graph=vzx)
-        cycles = CycleAnalyser.analyse(graph=vzx, minimal=True, plot=arguments.analysis_style == "plot")
+        cycles = CycleAnalyser.analyse(graph=vzx, plot=arguments.analysis_style == "plot")
         planar, _ = networkx.check_planarity(PYZX.into_networkx_graph(pyzx_internal))
         print(f"> Planarity : {planar}")
         runtime = round(time() - start, 2)
         print(f"> Completed in {'{:.2f}'.format(runtime)} seconds.")
     else:
-        cycles = CycleAnalyser.decompose(graph=vzx, minimal=True)
+        cycles = CycleAnalyser.decompose(graph=vzx)
         runtime = round(time() - start, 2)
     total_runtime += runtime
 
@@ -413,7 +413,7 @@ def main() -> int:
                 graph=vzx,
                 label=arguments.filepath,
                 size=window_size,
-                cycles=CycleAnalyser.decompose(vzx),
+                cycles=cycles,
                 layout=PlanarLayout(vzx, scale=3.0) if arguments.preprocessor != "none" else CircuitLayout(vzx),
             )
             viewer.display()

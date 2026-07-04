@@ -27,8 +27,8 @@ logging.getLogger("qelebrimbor.vedo").setLevel(logging.INFO)
 if __name__ == "__main__":
     vzx = PYZX.from_pyzx_graph(PYZX.from_file("../assets/pyzx/steane/steane-code-qubits7-spiders7.json"))
 
-    CycleAnalyser.analyse(vzx, minimal=True)
-    cycles = CycleAnalyser.decompose(vzx, minimal=True)
+    CycleAnalyser.analyse(vzx)
+    cycles = CycleAnalyser.decompose(vzx)
 
     index = 0
     cycle = cycles[index]

@@ -23,6 +23,7 @@ dependencies = [
     "pre-commit~=4.6",
     "zxlive~=1.0",
     "gitpython~=3.1",
+    "igraph>=1.0.0",
 ]
 
 [build-system]

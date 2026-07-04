@@ -61,7 +61,7 @@ class ZxGraphInflaterRings:
         zx_cycles = list(
             filter(
                 lambda cc: any(not edge.is_realised() for edge in cc.edges),
-                CycleAnalyser.decompose(graph=self.__graph, minimal=True),
+                CycleAnalyser.decompose(graph=self.__graph),
             )
         )
 
@@ -91,7 +91,7 @@ class ZxGraphInflaterRings:
             zx_cycles = list(
                 filter(
                     lambda cc: any(not edge.is_realised() for edge in cc.edges),
-                    CycleAnalyser.decompose(graph=self.__graph, minimal=True),
+                    CycleAnalyser.decompose(graph=self.__graph),
                 )
             )
 

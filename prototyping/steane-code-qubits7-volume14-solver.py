@@ -40,7 +40,7 @@ if __name__ == "__main__":
     strandfinder = StrandfinderDFS(graph=vzx, connectivity=ports_tracker, branch_and_bound=True)
 
     CycleAnalyser.analyse(vzx)
-    cycles = CycleAnalyser.decompose(vzx, minimal=True)
+    cycles = CycleAnalyser.decompose(vzx)
 
     # Realise the root ring
     index = 0

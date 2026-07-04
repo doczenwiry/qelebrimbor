@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     ringfinder = RingfinderBFS(vzx)
 
-    zx_cycle = CycleAnalyser.decompose(vzx, minimal=True)[0]
+    zx_cycle = CycleAnalyser.decompose(vzx)[0]
 
     ring = ringfinder.find_optimum(zx_cycle, maximal_excess=MAX_OVERHEAD + 4)
 

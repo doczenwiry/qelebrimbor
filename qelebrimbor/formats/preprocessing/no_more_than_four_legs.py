@@ -32,7 +32,7 @@ class NoMoreThanFourLegs(Preprocessor):
         vzx = PYZX.from_pyzx_graph(input)
         next_node_id: int = max(node.id for node in vzx.get_zx_nodes()) + 1
 
-        cycles = CycleAnalyser.decompose(vzx, minimal=True)
+        cycles = CycleAnalyser.decompose(vzx)
         for cycle in cycles:
             console.debug(f">> Cycle : {cycle}")
 

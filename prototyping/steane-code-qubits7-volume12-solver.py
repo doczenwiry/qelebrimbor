@@ -36,8 +36,8 @@ if __name__ == "__main__":
     ringfinder = RingfinderBFS(graph=vzx)
     strandfinder = StrandfinderDFS(graph=vzx, branch_and_bound=True)
 
-    CycleAnalyser.analyse(vzx, minimal=True)
-    cycles = CycleAnalyser.decompose(vzx, minimal=True)
+    CycleAnalyser.analyse(vzx)
+    cycles = CycleAnalyser.decompose(vzx)
 
     index = 0
     cycle = cycles[index]

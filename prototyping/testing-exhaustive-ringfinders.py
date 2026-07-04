@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     vzx = VolumetricZxGraph(nodes, edges)
 
-    cycle0 = CycleAnalyser.decompose(vzx, minimal=True)[0]
+    cycle0 = CycleAnalyser.decompose(vzx)[0]
     print(f"Cycle : {str(cycle0)}")
 
     ringfinder = RingfinderColorblindExhaustiveBFS(graph=vzx, reporting=SpacetimeTracingReport.FINAL)

@@ -35,6 +35,10 @@ class ZxCycle:
     def length(self) -> int:
         return len(self.__nodes)
 
+    @property
+    def terminal(self) -> ZxNode:
+        return self.__nodes[-1]
+
     def preceding(self, node: ZxNode) -> ZxNode:
         for index, current in enumerate(self.__nodes):
             if current.id == node.id:

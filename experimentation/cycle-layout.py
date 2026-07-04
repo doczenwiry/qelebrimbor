@@ -45,7 +45,7 @@ def edge_color(edge: ZxEdge):
 
 
 def alternating_cycle_plot(graph: VolumetricZxGraph, label: str):
-    all_cycles = CycleAnalyser.decompose(graph, minimal=False)
+    all_cycles = CycleAnalyser.decompose(graph)
 
     nxg = cast(nx.Graph, graph)
 

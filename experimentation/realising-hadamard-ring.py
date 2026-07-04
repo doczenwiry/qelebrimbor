@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     vzx.log_summary()
 
-    zx_cycle = CycleAnalyser.decompose(vzx, minimal=True)[0]
+    zx_cycle = CycleAnalyser.decompose(vzx)[0]
 
     ring = ringfinder.find_optimum(zx_cycle, maximal_excess=0)
 

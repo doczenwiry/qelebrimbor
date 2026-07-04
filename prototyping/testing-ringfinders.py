@@ -44,7 +44,7 @@ if __name__ == "__main__":
     FullReduction.process(pyzx_input)
     vzx = PYZX.from_pyzx_graph(pyzx_input)
 
-    cycle0 = CycleAnalyser.decompose(vzx, minimal=True)[0]
+    cycle0 = CycleAnalyser.decompose(vzx)[0]
     print(f"Cycle : {str(cycle0)}")
 
     # ringfinder = RingfinderBFS(graph=vzx, reporting=SpacetimeTracingReport.FINAL)

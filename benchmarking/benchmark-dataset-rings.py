@@ -87,7 +87,7 @@ def analyse(vzx: VolumetricZxGraph) -> dict[str, Any] | None:
         planar, _ = networkx.check_planarity(nxg)
 
         if CycleAnalyser.has_cycles(vzx):
-            largest_cycle = len(max(CycleAnalyser.decompose(vzx, minimal=True), key=lambda c: c.length))
+            largest_cycle = len(max(CycleAnalyser.decompose(vzx), key=lambda c: c.length))
         else:
             largest_cycle = None
 
