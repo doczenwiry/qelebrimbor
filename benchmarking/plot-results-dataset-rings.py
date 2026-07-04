@@ -39,7 +39,6 @@ if __name__ == "__main__":
         comment = "-" + components[5] if len(components) == 6 else ""
         df = pandas.read_csv(filepath)
         df["source"] = size + "-" + commit[:8] + comment
-        df.info()
         dataframes.append(df)
 
     data = pandas.concat(dataframes, ignore_index=True)
@@ -51,16 +50,18 @@ if __name__ == "__main__":
 
     available.info()
 
-    seaborn.set_theme(rc={"figure.constrained_layout.use": True})
+    if not available.empty:
+        seaborn.set_theme(rc={"figure.constrained_layout.use": True})
 
-    plot1 = seaborn.boxplot(data=available, x=available["layers"].astype(str), y="iir", hue="source")
-    seaborn.move_legend(plot1, "upper left", bbox_to_anchor=(1, 1))
-    plt.title("Internal Inflation Rate [4 qubits]")
-    plt.ylabel("Inflation (+%)")
-    plt.show()
+        plot1 = seaborn.boxplot(data=available, x=available["layers"].astype(str), y="iir", hue="source")
+        seaborn.move_legend(plot1, "upper left", bbox_to_anchor=(1, 1))
+        plt.title("Internal Inflation Rate [4 qubits]")
+        plt.ylabel("Inflation (+%)")
+        plt.show()
 
-    plot2 = seaborn.boxplot(data=available, x=available["layers"].astype(str), y="run", hue="source")
-    seaborn.move_legend(plot2, "upper left", bbox_to_anchor=(1, 1))
-    plt.title("Runtime [4 qubits]")
-    plt.ylabel("Time (s)")
-    plt.show()
+        plot2 = seaborn.boxplot(data=available, x=available["layers"].astype(str), y="run", hue="source")
+        seaborn.move_legend(plot2, "upper left", bbox_to_anchor=(1, 1))
+        plt.title("Runtime [4 qubits]")
+        plt.ylabel("Time (s)")
+        plt.show()
+    print("No results in common.")
