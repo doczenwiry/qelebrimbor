@@ -19,7 +19,6 @@ import networkx
 import networkx as nx
 import pyzx
 
-from qelebrimbor.core.components import BgCube
 from qelebrimbor.core.volumetric_zx_graph import LayerTransition, VolumetricZxGraph
 from qelebrimbor.core.zx.attributes import EdgeType, LayerId, NodeId, NodeType, QubitId
 
@@ -28,9 +27,15 @@ console = logging.getLogger(__name__)
 
 class PYZX:
     @staticmethod
-    def into_file(graph: pyzx.graph.base.BaseGraph, filepath: str) -> None:
+    def into_file(graph: pyzx.graph.base.BaseGraph, filepath: str, layout: dict[int, tuple[float, float]]) -> None:
+        placed_graph = graph.clone()
+
+        for node, (x, y) in layout.items():
+            placed_graph.set_row(node, x)
+            placed_graph.set_qubit(node, y)
+
         with open(filepath, "w") as file:
-            file.write(graph.to_json())
+            file.write(placed_graph.to_json())
 
     @staticmethod
     def from_file(filepath: str) -> pyzx.graph.base.BaseGraph:
@@ -38,9 +43,22 @@ class PYZX:
             return pyzx.Graph().from_json(file.read())
 
     @staticmethod
-    def into_pyzx_graph(graph: VolumetricZxGraph, planar_scale: int = 1) -> pyzx.graph.base.BaseGraph:
-        pyzx_graph = pyzx.Graph()
-        layout: dict[BgCube, tuple[float, float]] = dict()
+    def get_planar_layout(
+        graph: pyzx.graph.base.BaseGraph, planar_scale: float = 1.0
+    ) -> dict[int, tuple[float, float]]:
+        layout: dict[int, tuple[float, float]] = dict()
+
+        nxg = PYZX.into_networkx_graph(graph)
+        nx_layout = nx.spring_layout(nxg, k=0.5, iterations=200, scale=planar_scale)
+        for node_id, position in nx_layout.items():
+            x, y = position
+            layout[node_id] = (y, x)
+
+        return layout
+
+    @staticmethod
+    def get_circuit_layout(graph: VolumetricZxGraph, planar_scale: float = 1.0) -> dict[int, tuple[float, float]]:
+        layout: dict[int, tuple[float, float]] = dict()
 
         layer_qubit_information_missing = len(graph.get_zx_qubits()) == 0 or len(graph.get_zx_layers()) == 0
         # A PyZX graph obtained from a circuit has edges whose endpoints EITHER have the same layer OR the same qubit
@@ -51,7 +69,7 @@ class PYZX:
 
         if (layer_qubit_information_missing or non_circuit_pyzx_graph) and nx.is_planar(graph.blockgraph):
             for cube_id, coordinates in nx.planar_layout(graph.blockgraph, scale=planar_scale).items():
-                layout[graph.get_bg_cube(cube_id)] = tuple(coordinates)
+                layout[cube_id] = tuple(coordinates)
         else:
             # Compute the coordinates of the layers taking into account the extra nodes added to realise edges
             layer_coordinates: dict[LayerId, float] = defaultdict(int)
@@ -90,11 +108,11 @@ class PYZX:
 
             # Compute the placement of the nodes of the input ZX-graph
             for node in filter(lambda nd: nd.is_realised(), graph.get_zx_nodes()):
-                layout[node.realising_cube] = (
+                layout[node.realising_cube.id] = (
                     layer_coordinates[node.layer],
                     qubit_coordinates[node.qubit],
                 )
-                console.debug(f"Layout {node.realising_cube} : {layout[node.realising_cube]}")
+                console.debug(f"Layout {node.realising_cube} : {layout[node.realising_cube.id]}")
 
             # Compute the placement of the extra nodes added to realise the edges of the input ZX-graph
             for edge in filter(lambda ed: ed.is_realised(), graph.get_zx_edges()):
@@ -122,18 +140,21 @@ class PYZX:
                 for cube in excess_cubes:
                     offset += step
                     if edge.source.layer == edge.target.layer:
-                        layout[cube] = layer_coordinates[edge.source.layer], offset
+                        layout[cube.id] = layer_coordinates[edge.source.layer], offset
                     else:  # edge.source.qubit == edge.target.qubit
-                        layout[cube] = offset, qubit_coordinates[edge.source.qubit]
+                        layout[cube.id] = offset, qubit_coordinates[edge.source.qubit]
                     console.debug(f"Layout [E] {cube} : {layout[cube]}")
 
+        return layout
+
+    @staticmethod
+    def into_pyzx_graph(graph: VolumetricZxGraph) -> pyzx.graph.base.BaseGraph:
+        pyzx_graph = pyzx.Graph()
+
         for cube in graph.get_bg_cubes():
-            x, y = layout[cube] if cube in layout else (-1, -1)
             pyzx_graph.add_vertex(
                 index=cube.id if cube.realised_node is None else cube.realised_node.id,
                 ty=NodeType.convert_into_pyzx(cube.kind.get_type()),
-                row=x,
-                qubit=y,
             )
 
         for pipe in graph.get_bg_pipes():

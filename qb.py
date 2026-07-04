@@ -256,7 +256,7 @@ def main() -> int:
         if verbose:
             print(f"> Writing PyZX internal to {output}")
 
-        PYZX.into_file(pyzx_internal, output)
+        PYZX.into_file(pyzx_internal, output, layout=PYZX.get_planar_layout(pyzx_internal, planar_scale=10.0))
 
     if arguments.analysis:
         return 0
@@ -346,7 +346,7 @@ def main() -> int:
                 pyzx_output.set_inputs(pyzx_input.inputs())
                 pyzx_output.set_outputs(pyzx_input.outputs())
 
-            PYZX.into_file(pyzx_output, output)
+            PYZX.into_file(pyzx_output, output, layout=PYZX.get_planar_layout(pyzx_output, planar_scale=3.0))
 
         if arguments.output_tqec:
             output = path.splitext(arguments.filepath)[0] + str(".tqec")
