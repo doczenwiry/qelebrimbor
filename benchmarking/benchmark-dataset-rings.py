@@ -97,6 +97,7 @@ def analyse(vzx: VolumetricZxGraph) -> dict[str, Any] | None:
             "PL": planar,
             "kC": networkx.node_connectivity(nxg),
             "MD": max(nxg.degree[node] for node in nxg.nodes),
+            "GD": round(len(nxg.edges) / len(nxg.nodes), 1),
         }
 
         print(report)
@@ -189,6 +190,9 @@ if __name__ == "__main__":
         except KeyError as ke:
             print(f"> {input_path.ljust(longest_file_name, ' ')}")
             raise ke
+        except KeyboardInterrupt:
+            print("Benchmarking interrupted by user.")
+            break
 
         cc_count = ConnectedComponentsAnalyser.count(vzx)
         bcc_count = BiconnectedComponentsAnalyser.count(vzx)
