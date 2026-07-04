@@ -78,25 +78,31 @@ parser.add_argument(
 )
 
 
-def analyse(vzx: VolumetricZxGraph) -> dict[str, Any]:
-    nxg = cast(networkx.Graph, vzx)
+def analyse(vzx: VolumetricZxGraph) -> dict[str, Any] | None:
+    report: dict[str, Any] | None = None
 
-    planar, _ = networkx.check_planarity(nxg)
+    try:
+        nxg = cast(networkx.Graph, vzx)
 
-    if CycleAnalyser.has_cycles(vzx):
-        largest_cycle = len(max(CycleAnalyser.decompose(vzx, minimal=True), key=lambda c: c.length))
-    else:
-        largest_cycle = None
+        planar, _ = networkx.check_planarity(nxg)
 
-    report: dict[str, Any] = {
-        "CN": nxg.number_of_edges() - nxg.number_of_nodes() + networkx.number_connected_components(nxg),
-        "LC": largest_cycle,
-        "PL": planar,
-        "kC": networkx.node_connectivity(nxg),
-        "MD": max(nxg.degree[node] for node in nxg.nodes),
-    }
+        if CycleAnalyser.has_cycles(vzx):
+            largest_cycle = len(max(CycleAnalyser.decompose(vzx, minimal=True), key=lambda c: c.length))
+        else:
+            largest_cycle = None
 
-    print(report)
+        report = {
+            "CN": nxg.number_of_edges() - nxg.number_of_nodes() + networkx.number_connected_components(nxg),
+            "LC": largest_cycle,
+            "PL": planar,
+            "kC": networkx.node_connectivity(nxg),
+            "MD": max(nxg.degree[node] for node in nxg.nodes),
+        }
+
+        print(report)
+
+    except KeyboardInterrupt:
+        print("Benchmarking interrupted by user.")
 
     return report
 
