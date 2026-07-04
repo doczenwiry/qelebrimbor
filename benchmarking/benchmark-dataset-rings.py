@@ -53,7 +53,7 @@ parser.add_argument(
     "-d",
     "--dataset",
     action="store",
-    choices=["small", "medio"],
+    choices=["small", "medio", "large"],
     default="small",
     help="specify a dataset to be processed",
 )
