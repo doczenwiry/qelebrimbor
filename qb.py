@@ -225,8 +225,7 @@ def main() -> int:
     if verbose:
         VolumetricZxGraphAnalyser.report(graph=vzx)
         cycles = CycleAnalyser.analyse(graph=vzx, plot=arguments.analysis_style == "plot")
-        planar, _ = networkx.check_planarity(PYZX.into_networkx_graph(pyzx_internal))
-        print(f"> Planarity : {planar}")
+        print(f"> Planarity : {networkx.is_planar(PYZX.into_networkx_graph(pyzx_internal))}")
         runtime = round(time() - start, 2)
         print(f"> Completed in {'{:.2f}'.format(runtime)} seconds.")
     else:

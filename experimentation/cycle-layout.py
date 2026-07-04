@@ -122,7 +122,7 @@ if __name__ == "__main__":
     print(f"vzx : {len(vzx)}")
 
     nxg = cast(nx.Graph, vzx)
-    print(nx.check_planarity(nxg))
+    print(nx.is_planar(nxg))
     G_2core = nx.k_core(nxg, k=2)
     print(f"G_2core : {len(G_2core)}")
 

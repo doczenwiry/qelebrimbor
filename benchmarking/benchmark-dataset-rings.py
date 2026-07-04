@@ -84,8 +84,6 @@ def analyse(vzx: VolumetricZxGraph) -> dict[str, Any] | None:
     try:
         nxg = cast(networkx.Graph, vzx)
 
-        planar, _ = networkx.check_planarity(nxg)
-
         if CycleAnalyser.has_cycles(vzx):
             largest_cycle = len(max(CycleAnalyser.decompose(vzx), key=lambda c: c.length))
         else:
@@ -94,7 +92,7 @@ def analyse(vzx: VolumetricZxGraph) -> dict[str, Any] | None:
         report = {
             "CN": nxg.number_of_edges() - nxg.number_of_nodes() + networkx.number_connected_components(nxg),
             "LC": largest_cycle,
-            "PL": planar,
+            "PL": networkx.is_planar(nxg),
             "kC": networkx.node_connectivity(nxg),
             "MD": max(nxg.degree[node] for node in nxg.nodes),
             "GD": round(len(nxg.edges) / len(nxg.nodes), 1),
