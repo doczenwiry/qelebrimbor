@@ -20,6 +20,7 @@ from pyzx import VertexType
 from qelebrimbor.analysis.biconnected_components import BiconnectedComponentsAnalyser
 from qelebrimbor.analysis.connected_components import ConnectedComponentsAnalyser
 from qelebrimbor.formats.preprocessing.bialgebra_reduction import BialgebraReduction
+from qelebrimbor.vedo.zx_layout.orthogonal import OrthogonalLayout
 
 
 # Prevent the verbose KeyboardInterrupt no matter when it occurs. Thanks, Gemini.
@@ -54,7 +55,6 @@ from qelebrimbor.inflaters.trees import ZxGraphInflaterTrees  # noqa: E402
 from qelebrimbor.utilities.qb_reporting import print_report  # noqa: E402
 from qelebrimbor.vedo.vzx_viewer import VolumetricZxGraphViewer  # noqa: E402
 from qelebrimbor.vedo.zx_layout.circuit import CircuitLayout  # noqa: E402
-from qelebrimbor.vedo.zx_layout.planar import PlanarLayout  # noqa: E402
 
 logging.basicConfig(level=logging.CRITICAL)
 
@@ -413,7 +413,7 @@ def main() -> int:
                 label=arguments.filepath,
                 size=window_size,
                 cycles=cycles,
-                layout=PlanarLayout(vzx, scale=3.0) if arguments.preprocessor != "none" else CircuitLayout(vzx),
+                layout=OrthogonalLayout(vzx) if arguments.preprocessor != "none" else CircuitLayout(vzx),
             )
             viewer.display()
         elif verbose:
