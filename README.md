@@ -93,9 +93,9 @@ The summary of the Internal Inflation Rate and Runtime will be presented in the 
 
 It is possible to invoke qb.py directly to perform the construction of a specific circuit from the dataset. 
 ```bash
-$ uv run qb.py -zv benchmarking/datasets/small/identity/random-cnots-q4-d64-s106106234.pyzx.json
-ANALYSIS STAGE.
-> Input file : benchmarking/datasets/small/identity/random-cnots-q4-d64-s106106234.pyzx.json
+$ uv run qb.py -zv benchmarking/datasets/small/identity/quick/random-cnots-q4-d64-s882430282.pyzx.json
+ANALYSIS STAGE.                                                                                                                                                                                                                      
+> Input file : benchmarking/datasets/small/identity/quick/random-cnots-q4-d64-s882430282.pyzx.json
 > Number of nodes : 144 [O:8,X:64,Z:72]
 > Number of edges : 204 [IDENTITY:204]
 > Number of qubits : 4
@@ -103,37 +103,41 @@ ANALYSIS STAGE.
 > Completed in 0.00 seconds.
 
 PREPROCESSING STAGE.
-> Applying preprocessor : FullReduce
-> Number of nodes : 16 [O:8,X:3,Z:5]
-> Number of edges : 16 [IDENTITY:12,HADAMARD:4]
+> Applying preprocessor : FullReduction
+> Applying preprocessor : BialgebraReduction
+> Number of nodes : 14 [O:8,X:3,Z:3]
+> Number of edges : 14 [IDENTITY:14]
 > Number of qubits : 4
-> Number of layers : 4
-> Cycle basis (minimal, computed in 0.0s) has largest cycle of size 6 [count=1]
+> Number of layers : 8
+> Cyclomatic number : 1
+> Largest cycle : 6
+> Cycle basis (minimum, computed in 0.0s) has largest cycle of size 6 [count=1]
+>> Cycle [6] : X:N9 --I-- Z:N46 --I-- X:N133 --I-- Z:N12 --I-- X:N111 --I-- Z:N30 --I-- X:N9
+> Planarity : True
 > Completed in 0.01 seconds.
 
 INFLATION STAGE.
 > Phase  I : ZxGraphInflaterRings
 >> Ringfinder   : RingfinderColorblindBFS
 >> Strandfinder : StrandfinderColorblindFusionDFS
->> Attempting realisation of cycle [L=6] : X:N133 --I-- Z:N18 --I-- X:N31 --I-- Z:N124 --I-- X:N11 --I-- Z:N5 --I-- X:N133
->>> Realised as ring [EV=+0] : #146:N133:XZZ@( 0, 0, 0) --I-- #147:N18:XXZ@( 0,-1, 0) --I-- #148:N31:ZXZ@(-1,-1, 0) --I-- #149:N124:ZXX@(-1,-1,-1) --I-- #150:N11:ZZX@(-1, 0,-1) --I-- #151:N5:XZX@( 0, 0,-1) --I-- #146:N133:XZZ@( 0, 0, 0)
+>> Attempting realisation of cycle [L=6] : X:N9 --I-- Z:N46 --I-- X:N133 --I-- Z:N12 --I-- X:N111 --I-- Z:N30 --I-- X:N9
+>>> Realised as ring [EV=+0] : #144:N9:XZZ@( 0, 0, 0) --I-- #145:N46:XXZ@( 0,-1, 0) --I-- #146:N133:ZXZ@(-1,-1, 0) --I-- #147:N12:ZXX@(-1,-1,-1) --I-- #148:N111:ZZX@(-1, 0,-1) --I-- #149:N30:XZX@( 0, 0,-1) --I-- #144:N9:XZZ@( 0, 0, 0)
 >> Cycles realised : 1/1
->> Runtime : 0.313s
+>> Runtime : 0.321s
 > Phase II : ZxGraphInflaterTrees
->> Attempting realisation of level 0 : [Z:N5:#151, X:N31:#148, X:N11:#150, Z:N18:#147, Z:N124:#149, X:N133:#146]
->> Attempting realisation of level 1 : [Z:N144:#153, Z:N145:#155, O:N1:#152, O:N2:#156, O:N0:#154, O:N3:#157, O:N141:#158, O:N142:#159]
->> Attempting realisation of level 2 : [O:N143:#161, O:N140:#160]
->> Levels realised : 3/3
+>> Attempting realisation of level 0 : [X:N9:#144, Z:N12:#147, Z:N30:#149, X:N111:#148, Z:N46:#145, X:N133:#146]
+>> Attempting realisation of level 1 : [O:N1:#150, O:N141:#151, O:N2:#152, O:N143:#153, O:N3:#154, O:N142:#155, O:N0:#156, O:N140:#157]
+>> Levels realised : 2/2
 >> Runtime : 0.001s
 
 REPORTING STAGE.
 > Realisation of internal ZX-graph: 
->> Nodes realised : 16/16 [ 100.00%]; O: 100.00%/X: 100.00%/Z: 100.00%
->>> Portless nodes : 0/16 [   0.00%]
->> Edges realised : 16/16 [ 100.00%]; IDENTITY: 100.00%,HADAMARD: 100.00%
->> Total volume   :  8
+>> Nodes realised : 14/14 [ 100.00%]; O: 100.00%/X: 100.00%/Z: 100.00%
+>>> Portless nodes : 0/14 [   0.00%]
+>> Edges realised : 14/14 [ 100.00%]; IDENTITY: 100.00%
+>> Total volume   :  6
 >> Internal Inflation Rate :    0.00% [required:   0.00%]
-> Achieved Inflation Rate :  -94.12%
+> Achieved Inflation Rate :  -95.59%
 
 EQUIVALENCE VALIDATION STAGE.
 > Is input equivalent to output [method:iCwAI] ? SUCCESS
@@ -160,7 +164,7 @@ The reporting performed by the execution of the tool is split into five stages
 
 Furthermore, the following window will appear to visualise the output ZX-graph
 
-![Visualisation of a single run](documentation/single-run.png)
+![Visualisation of a single run](documentation/random-cnots-q4-d4-s4192395886.png)
 
 ## Visualisation
 
