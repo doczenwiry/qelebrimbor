@@ -55,8 +55,8 @@ class OrthogonalLayout(ZxLayout):
         algorithm.call(attributes)
 
         # Snap to unit coordinates on a Manhattan Grid
-        coordinates_x = {raw: idx for idx, raw in enumerate(set(map(lambda o: attributes.x[o], mapping.values())))}
-        coordinates_y = {raw: idx for idx, raw in enumerate(set(map(lambda o: attributes.y[o], mapping.values())))}
+        coordinates_x = {raw: raw for idx, raw in enumerate(set(map(lambda o: attributes.x[o], mapping.values())))}
+        coordinates_y = {raw: raw for idx, raw in enumerate(set(map(lambda o: attributes.y[o], mapping.values())))}
 
         # Scale down the positions and populate placements dictionary
         self.placements: dict[ZxNode, tuple[float, float]] = dict()
