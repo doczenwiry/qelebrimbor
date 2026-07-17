@@ -1820,6 +1820,7 @@ source = { editable = "." }
 dependencies = [
     { name = "gitpython" },
     { name = "igraph" },
+    { name = "ipython" },
     { name = "matplotlib" },
     { name = "mypy" },
     { name = "networkx" },
@@ -1846,7 +1847,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "gitpython", specifier = "~=3.1" },
-    { name = "igraph", specifier = ">=1.0.0" },
+    { name = "igraph", specifier = "~=1.0" },
+    { name = "ipython", specifier = "~=9.14" },
     { name = "matplotlib", specifier = "~=3.10" },
     { name = "mypy", specifier = "~=2.1" },
     { name = "networkx", specifier = "~=3.6" },

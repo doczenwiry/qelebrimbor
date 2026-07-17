@@ -28,11 +28,15 @@ cppinclude("ogdf/basic/graphics.h")
 
 class OGDF:
     @staticmethod
-    def from_pyzx_graph(zxg: pyzx.graph.base.BaseGraph) -> tuple[ogdf.Graph, ogdf.GraphAttributes]:
+    def from_pyzx_graph(zxg: pyzx.graph.base.BaseGraph) -> tuple[ogdf.Graph, ogdf.GraphAttributes, dict]:
+        # Convert the PyZX graph to an OGDF graph
         ogg = ogdf.Graph()
         mapping = {}
-        for node in zxg.vertices():
-            mapping[node] = ogg.newNode()
+        reverse = {}
+        for vertex in zxg.vertices():
+            node = ogg.newNode()
+            mapping[vertex] = node
+            reverse[node] = vertex
         for source, target in zxg.edges():
             ogg.newEdge(mapping[source], mapping[target])
 
@@ -52,4 +56,4 @@ class OGDF:
             else:
                 attributes.fillColor[node] = ogdf.Color(255, 255, 255, 255)
 
-        return ogg, attributes
+        return ogg, attributes, reverse
