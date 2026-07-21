@@ -69,9 +69,11 @@ class NoMoreThanFourEdges(Preprocessor):
                 inherited.append(reverse[other])
                 # Update splittings with inheritance
                 splittings[vertex].append(inherited)
+            # We need to attach the edge[3 + required_spiders - 1] to the last extra vertex
             if degree % 2 == 0:
-                # splittings[vertex][-1].append()
-                raise NotImplementedError("Splitting for even degrees > 4.")
+                edge = ordered_edges[3 + required_spiders - 1]
+                other = planarized.original(edge.target() if edge.source() == node else edge.source())
+                splittings[vertex][-1].append(reverse[other])
 
         return splittings
 
