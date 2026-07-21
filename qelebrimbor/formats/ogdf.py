@@ -27,6 +27,12 @@ cppinclude("ogdf/basic/graphics.h")
 
 
 class OGDF:
+    __VERTEX_COLORS = {
+        pyzx.VertexType.X: ogdf.Color(255, 0, 0, 255),
+        pyzx.VertexType.Z: ogdf.Color(0, 0, 255, 255),
+        pyzx.VertexType.BOUNDARY: ogdf.Color(64, 64, 64, 255),
+    }
+
     @staticmethod
     def from_pyzx_graph(zxg: pyzx.graph.base.BaseGraph) -> tuple[ogdf.Graph, ogdf.GraphAttributes, dict]:
         # Convert the PyZX graph to an OGDF graph
@@ -41,19 +47,19 @@ class OGDF:
             ogg.newEdge(mapping[source], mapping[target])
 
         attributes = ogdf.GraphAttributes(ogg, ogdf.GraphAttributes.all)
+
         for vertex, node in mapping.items():
-            attributes.width[node] = 20.0
-            attributes.height[node] = 20.0
-            attributes.shape[node] = ogdf.Shape.Ellipse
-            attributes.label[node] = str(vertex)
+            # Only style the nodes that correspond to a vertex in the original graph
             vertex_type = zxg.type(vertex)
-            if vertex_type == pyzx.VertexType.X:
-                attributes.fillColor[node] = ogdf.Color(255, 0, 0, 255)
-            elif vertex_type == pyzx.VertexType.Z:
-                attributes.fillColor[node] = ogdf.Color(0, 0, 255, 255)
-            elif vertex_type == pyzx.VertexType.BOUNDARY:
-                attributes.fillColor[node] = ogdf.Color(64, 64, 64, 255)
-            else:
-                attributes.fillColor[node] = ogdf.Color(255, 255, 255, 255)
+            attributes.fillColor[node] = OGDF.__VERTEX_COLORS.get(vertex_type, ogdf.Color(255, 255, 255, 255))
+
+            attributes.label[node] = str(vertex)
+            attributes.width[node] = 12.5 if vertex_type == pyzx.VertexType.BOUNDARY else 20.0
+            attributes.height[node] = 12.5 if vertex_type == pyzx.VertexType.BOUNDARY else 20.0
+            attributes.shape[node] = ogdf.Shape.Ellipse
+
+        undirected = getattr(ogdf.EdgeArrow, "None")
+        for edge in ogg.edges:
+            attributes.arrowType[edge] = undirected
 
         return ogg, attributes, reverse

@@ -20,5 +20,5 @@ import pyzx.graph.base
 class Preprocessor(ABC):
     @staticmethod
     @abstractmethod
-    def process(input: pyzx.graph.base.BaseGraph) -> None:
+    def process(input: pyzx.graph.base.BaseGraph) -> pyzx.graph.base.BaseGraph:
         pass
