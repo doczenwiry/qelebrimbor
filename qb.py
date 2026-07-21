@@ -20,6 +20,7 @@ from pyzx import VertexType
 from qelebrimbor.analysis.biconnected_components import BiconnectedComponentsAnalyser
 from qelebrimbor.analysis.connected_components import ConnectedComponentsAnalyser
 from qelebrimbor.formats.preprocessing.bialgebra_reduction import BialgebraReduction
+from qelebrimbor.formats.preprocessing.no_more_than_four_edges import NoMoreThanFourEdges
 from qelebrimbor.vedo.zx_layout.orthogonal import OrthogonalLayout
 
 
@@ -218,6 +219,9 @@ def main() -> int:
     if verbose:
         print(f"> Applying preprocessor : {BialgebraReduction.__name__}")
     pyzx_internal = BialgebraReduction.process(pyzx_internal)
+    if verbose:
+        print(f"> Applying preprocessor : {NoMoreThanFourEdges.__name__}")
+    pyzx_internal = NoMoreThanFourEdges.process(pyzx_internal)
 
     vzx = PYZX.from_pyzx_graph(pyzx_internal)
     cycles: list[ZxCycle]

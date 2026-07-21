@@ -16,6 +16,9 @@ import os
 
 import pyzx
 
+from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
+from qelebrimbor.core.zx.attributes import NodeType
+
 # Suppress warnings regarding case-insensitive filesystem on macOS
 os.environ["EXTRA_CLING_ARGS"] = "-Wno-nonportable-include-path"
 
@@ -54,8 +57,38 @@ class OGDF:
             attributes.fillColor[node] = OGDF.__VERTEX_COLORS.get(vertex_type, ogdf.Color(255, 255, 255, 255))
 
             attributes.label[node] = str(vertex)
-            attributes.width[node] = 12.5 if vertex_type == pyzx.VertexType.BOUNDARY else 20.0
-            attributes.height[node] = 12.5 if vertex_type == pyzx.VertexType.BOUNDARY else 20.0
+            attributes.width[node] = 0.75 if vertex_type == pyzx.VertexType.BOUNDARY else 1.0
+            attributes.height[node] = 0.75 if vertex_type == pyzx.VertexType.BOUNDARY else 1.0
+            attributes.shape[node] = ogdf.Shape.Ellipse
+
+        undirected = getattr(ogdf.EdgeArrow, "None")
+        for edge in ogg.edges:
+            attributes.arrowType[edge] = undirected
+
+        return ogg, attributes, reverse
+
+    @staticmethod
+    def from_vzx_graph(vzx: VolumetricZxGraph) -> tuple[ogdf.Graph, ogdf.GraphAttributes, dict]:
+        # Convert the VZX graph to an OGDF graph
+        ogg = ogdf.Graph()
+        mapping = {}
+        reverse = {}
+        for vertex in vzx.get_zx_nodes():
+            node = ogg.newNode()
+            mapping[vertex] = node
+            reverse[node] = vertex
+        for edge in vzx.get_zx_edges():
+            ogg.newEdge(mapping[edge.source], mapping[edge.target])
+
+        attributes = ogdf.GraphAttributes(ogg, ogdf.GraphAttributes.all)
+
+        for vertex, node in mapping.items():
+            # Only style the nodes that correspond to a vertex in the original graph
+            attributes.fillColor[node] = OGDF.__VERTEX_COLORS.get(vertex.type, ogdf.Color(255, 255, 255, 255))
+
+            attributes.label[node] = str(vertex)
+            attributes.width[node] = 0.75 if vertex.type == NodeType.O else 1.0
+            attributes.height[node] = 0.75 if vertex.type == NodeType.O else 1.0
             attributes.shape[node] = ogdf.Shape.Ellipse
 
         undirected = getattr(ogdf.EdgeArrow, "None")

@@ -14,6 +14,8 @@
 
 import os
 
+from qelebrimbor.formats.ogdf import OGDF
+
 # Suppress warnings regarding case-insensitive filesystem on macOS
 os.environ["EXTRA_CLING_ARGS"] = "-Wno-nonportable-include-path"
 
@@ -23,48 +25,34 @@ from qelebrimbor.core.components import ZxNode
 from qelebrimbor.core.volumetric_zx_graph import VolumetricZxGraph
 from qelebrimbor.vedo.zx_layout.abstract import ZxLayout
 
-cppinclude("ogdf/basic/Graph.h")
-cppinclude("ogdf/basic/GraphAttributes.h")
-cppinclude("ogdf/planarity/PlanarizationLayout.h")
 cppinclude("ogdf/orthogonal/OrthoLayout.h")
+cppinclude("ogdf/planarity/PlanarizationLayout.h")
+cppinclude("ogdf/planarity/EmbedderMinDepthMaxFaceLayers.h")
 
 
 class OrthogonalLayout(ZxLayout):
     def __init__(self, graph: VolumetricZxGraph, scale: float = 1.0):
         # Convert graph from VZX to OGDF for running layout algorithm
-        og = ogdf.Graph()
-        mapping = {}
-        for node in graph.get_zx_nodes():
-            mapping[node] = og.newNode()
-        for edge in graph.get_zx_edges():
-            og.newEdge(mapping[edge.source], mapping[edge.target])
-        attributes = ogdf.GraphAttributes(og, ogdf.GraphAttributes.all)
-        for node, o_node in mapping.items():
-            attributes.width[o_node] = 1.0
-            attributes.height[o_node] = 1.0
-            attributes.label[o_node] = f"{node.type.name}{node.id}"
+        ogg, attributes, reverse = OGDF.from_vzx_graph(graph)
 
         # Prepare algorithm to compute coordinates of ZX-nodes
         algorithm = ogdf.PlanarizationLayout()
+
         layout = ogdf.OrthoLayout()
-        layout.separation(1.0)
-        layout.cOverhang(0.0)
+        layout.separation(scale)
         layout.__python_owns__ = False  # Needed to avoid C++ segmentation fault when object is destroyed
         algorithm.setPlanarLayouter(layout)
 
-        algorithm.call(attributes)
+        embedder = ogdf.EmbedderMinDepthMaxFaceLayers()
+        embedder.__python_owns__ = False  # Needed to avoid C++ segmentation fault when object is destroyed
+        algorithm.setEmbedder(embedder)
 
-        # Snap to unit coordinates on a Manhattan Grid
-        coordinates_x = {raw: raw for idx, raw in enumerate(set(map(lambda o: attributes.x[o], mapping.values())))}
-        coordinates_y = {raw: raw for idx, raw in enumerate(set(map(lambda o: attributes.y[o], mapping.values())))}
+        algorithm.call(attributes)
 
         # Scale down the positions and populate placements dictionary
         self.placements: dict[ZxNode, tuple[float, float]] = dict()
-        for node, o_node in mapping.items():
-            coordinate_x = scale * coordinates_x[attributes.x[o_node]]
-            coordinate_y = scale * coordinates_y[attributes.y[o_node]]
-            # print(f"Node {node} @ ({coordinate_x},{coordinate_y})")
-            self.placements[node] = (coordinate_x, coordinate_y)
+        for ogg_node, vzx_node in reverse.items():
+            self.placements[vzx_node] = (scale * attributes.x[ogg_node], scale * attributes.y[ogg_node])
 
     def get_node_placement(self, node: ZxNode) -> tuple[float, float]:
         return self.placements[node]
