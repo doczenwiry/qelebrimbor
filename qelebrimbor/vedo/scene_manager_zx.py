@@ -47,6 +47,7 @@ class ZxSceneManager:
             if not show_nodes or node in show_nodes:
                 self.__plotter.add(vd_node)
 
+        # TODO: update to retrieve edge routing information for drawing the ZxEdge
         for edge in graph.get_zx_edges():
             vd_edge = VdEdge(
                 edge,

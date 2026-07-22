@@ -52,28 +52,29 @@ class NoMoreThanFourEdges(Preprocessor):
             # Connect the extras
             kept = []
             for idx, edge in enumerate(ordered_edges[:3]):
-                other = (
-                    planarized.original(edge).target() if edge.source() == node else planarized.original(edge).source()
-                )
-                kept.append(reverse[other])
+                orig = planarized.original(edge)
+                kept.append(reverse[orig.target() if orig.source() == planarized.original(node) else orig.source()])
             splittings[vertex].append(kept)
             for idx in range(required_spiders - 1):
                 inherited = []
                 # Edge[3 + idx] will be attached to extra
-                edge = ordered_edges[3 + idx]
-                other = planarized.original(edge.target() if edge.source() == node else edge.source())
-                inherited.append(reverse[other])
+                edge = planarized.original(ordered_edges[3 + idx])
+                inherited.append(
+                    reverse[edge.target() if edge.source() == planarized.original(node) else edge.source()]
+                )
                 # Edge[degree - 1 - idx] will be attached to extra
-                edge = ordered_edges[degree - 1 - idx]
-                other = planarized.original(edge.target() if edge.source() == node else edge.source())
-                inherited.append(reverse[other])
+                edge = planarized.original(ordered_edges[degree - 1 - idx])
+                inherited.append(
+                    reverse[edge.target() if edge.source() == planarized.original(node) else edge.source()]
+                )
                 # Update splittings with inheritance
                 splittings[vertex].append(inherited)
             # We need to attach the edge[3 + required_spiders - 1] to the last extra vertex
             if degree % 2 == 0:
-                edge = ordered_edges[3 + required_spiders - 1]
-                other = planarized.original(edge.target() if edge.source() == node else edge.source())
-                splittings[vertex][-1].append(reverse[other])
+                edge = planarized.original(ordered_edges[3 + required_spiders - 1])
+                splittings[vertex][-1].append(
+                    reverse[edge.target() if edge.source() == planarized.original(node) else edge.source()]
+                )
 
         return splittings
 
@@ -87,15 +88,15 @@ class NoMoreThanFourEdges(Preprocessor):
         for vertex, groups in splittings.items():
             console.debug(f"Vertex {vertex} : {groups}")
             preceding = vertex
-            for edges in groups[1:]:
+            for neighbours in groups[1:]:
                 # Add an extra vertex connected the one we are splitting
                 extra = reduced.add_vertex(
                     ty=reduced.type(vertex), qubit=reduced.qubit(vertex), row=reduced.qubit(vertex)
                 )
                 reduced.add_edge((preceding, extra))
                 # Move the selected edges to the extra vertex
-                console.debug(f"> Passing to {extra} : {edges}")
-                for other in edges:
+                console.debug(f"> Passing to {extra} : {neighbours}")
+                for other in neighbours:
                     zx_edge_type = reduced.edge_type(reduced.edge(vertex, other))
                     reduced.remove_edge((vertex, other))
                     reduced.add_edge((extra, other), zx_edge_type)
