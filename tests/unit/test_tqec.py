@@ -1,4 +1,7 @@
+from tempfile import TemporaryDirectory
 from unittest import TestCase
+
+import collada
 
 from qelebrimbor.core.bg.attributes import CubeKind
 from qelebrimbor.core.components import BgCube
@@ -19,10 +22,13 @@ class TestTQEC(TestCase):
         graph.place_cube(cube2)
         graph.connect_pipe(cube1, cube2, EdgeType.IDENTITY)
 
-        output_file = "test_output.dae"
+        with TemporaryDirectory() as temp_dir:
+            output_file = f"{temp_dir}/test_output.dae"
 
-        TQEC.into_dae_file(graph, output_file)
+            TQEC.into_dae_file(graph, output_file)
 
-        from pathlib import Path
+            model = collada.Collada(output_file)
 
-        self.assertTrue(Path(output_file).exists())
+            self.assertTrue(model.geometries)
+            self.assertTrue(model.materials)
+            self.assertTrue(model.scene)
