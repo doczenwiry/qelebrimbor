@@ -24,6 +24,7 @@ dependencies = [
     "zxlive~=1.0",
     "gitpython~=3.1",
     "igraph>=1.0.0",
+    "pycollada>=0.9.3",
 ]
 
 [build-system]
